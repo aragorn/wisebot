@@ -12,7 +12,7 @@ libsoftbotserver_la_LIBADD = ../platform/$(OS_TYPE)/libplatform.la
 if AIX5
 libsoftbotserver_la_LDFLAGS = $(THREAD_LIB) -static -avoid-version
 else
-libsoftbotserver_la_LDFLAGS = -shared -avoid-version
+libsoftbotserver_la_LDFLAGS = -static -avoid-version
 endif
 libsoftbotserver_la_DEPENDENCIES = delete-exports exports.c export_vars.h
 

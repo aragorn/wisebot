@@ -79,7 +79,7 @@ if ( sharedmemlog_des == -1 ) {	\
 	}	\
 }
 		
-void *_sb_malloc(size_t size, char *file, char *function, int line)
+void *_sb_malloc(size_t size, const char *file, const char *function, int line)
 {
 #ifdef DEBUG_MEMORY
 	void *ptr = calloc(size,1);
@@ -96,7 +96,7 @@ void *_sb_malloc(size_t size, char *file, char *function, int line)
 #endif //DEBUG_MEMORY
 }
 
-void *_sb_calloc(size_t nmemb, size_t size, char *file, char *function, int line)
+void *_sb_calloc(size_t nmemb, size_t size, const char *file, const char *function, int line)
 {
 #ifdef DEBUG_MEMORY
 	void *ptr = calloc(nmemb, size);
@@ -113,7 +113,7 @@ void *_sb_calloc(size_t nmemb, size_t size, char *file, char *function, int line
 #endif //DEBUG_MEMORY
 }
 
-void *_sb_strdup(char *inptr, char *file, char *function, int line)
+void *_sb_strdup(char *inptr, const char *file, const char *function, int line)
 {
 #ifdef DEBUG_MEMORY
 	int size =  strlen(inptr)+1;
@@ -132,7 +132,7 @@ void *_sb_strdup(char *inptr, char *file, char *function, int line)
 #endif //DEBUG_MEMORY
 }
 
-void *_sb_realloc(void *ptr, size_t size, char *file, char *function, int line)
+void *_sb_realloc(void *ptr, size_t size, const char *file, const char *function, int line)
 {
 #ifdef DEBUG_MEMORY
 	void *new_ptr = realloc(ptr, size);
@@ -151,7 +151,7 @@ void *_sb_realloc(void *ptr, size_t size, char *file, char *function, int line)
 #endif //DEBUG_MEMORY
 }
 
-void _sb_free(void *ptr, char *file, char *function, int line)
+void _sb_free(void *ptr, const char *file, const char *function, int line)
 {
 #ifdef DEBUG_MEMORY
 	INIT_LOCAL_MEM_LOG();
@@ -183,7 +183,7 @@ pid_t _sb_fork(void){
 
 
 
-void _sb_alloc_shm(int id, size_t size, char *file, char *function){
+void _sb_alloc_shm(int id, size_t size, const char *file, const char *function){
 #ifdef DEBUG_MEMORY
 	INIT_SHARED_MEM_LOG();
 	acquire_lock(memlog_lock);
@@ -193,7 +193,7 @@ void _sb_alloc_shm(int id, size_t size, char *file, char *function){
 #endif //DEBUG_MEMORY
 }
 
-void _sb_free_shm(int id, char *file, char *function){
+void _sb_free_shm(int id, const char *file, const char *function){
 #ifdef DEBUG_MEMORY
 	INIT_SHARED_MEM_LOG();
 	acquire_lock(memlog_lock);
@@ -204,7 +204,7 @@ void _sb_free_shm(int id, char *file, char *function){
 }
 
 void *_sb_mmap(void *start, size_t length, int prot, int flags, int fd, off_t offset,
-				char *file, char *function, int line){
+				const char *file, const char *function, int line){
 #ifdef DEBUG_MEMORY
 	struct stat buf;
 	void *ptr = mmap(start, length, prot, flags, fd, offset);
@@ -231,7 +231,7 @@ void *_sb_mmap(void *start, size_t length, int prot, int flags, int fd, off_t of
 #endif //DEBUG_MEMORY
 }
 
-int _sb_munmap(void *start, size_t length, char *file, char *function, int line){
+int _sb_munmap(void *start, size_t length, const char *file, const char *function, int line){
 #ifdef DEBUG_MEMORY
 	INIT_LOCAL_MEM_LOG();
 	INIT_SHARED_MEM_LOG();
@@ -286,13 +286,13 @@ REGISTRY int *nmemorystat = NULL;
 REGISTRY memory_stat_t *memorystat = NULL;
 REGISTRY memory_stat_key_t *memorystatkey[MAX_MSTAT_KEY] = {NULL};
 
-static memory_stat_t *get_memory_stat(char *file, char *function);
+static memory_stat_t *get_memory_stat(const char *file, const char *function);
 static memory_stat_t *search_memory_stat(char *key);
 static memory_stat_t *create_memory_stat(char *key);
 static int get_hash_key(char *key);
 
 
-void *_sb_malloc(size_t size, char *file, char *function, int line)
+void *_sb_malloc(size_t size, const char *file, const char *function, int line)
 {
 	memory_stat_t *mstat = NULL;
 	void *ptr=NULL;
@@ -339,7 +339,7 @@ void *_sb_malloc(size_t size, char *file, char *function, int line)
 	return ptr;
 }
 
-void *_sb_calloc(size_t nmemb, size_t size, char *file, char *function, int line)
+void *_sb_calloc(size_t nmemb, size_t size, const char *file, const char *function, int line)
 {
 	memory_stat_t *mstat = NULL;
 	void *ptr=NULL;
@@ -388,7 +388,7 @@ void *_sb_calloc(size_t nmemb, size_t size, char *file, char *function, int line
 	return ptr;
 }
 
-void *_sb_free(void *ptr, char *file, char *function)
+void *_sb_free(void *ptr, const char *file, const char *function)
 {
 	memory_stat_t *mstat = NULL;
 	FILE *fp;
@@ -414,7 +414,7 @@ void *_sb_free(void *ptr, char *file, char *function)
 	return ptr;
 }
 
-void *_sb_realloc(void *ptr, size_t size, char *file, char *function)
+void *_sb_realloc(void *ptr, size_t size, const char *file, const char *function)
 {
 	memory_stat_t *mstat = NULL;
 
@@ -446,7 +446,7 @@ void *_sb_realloc(void *ptr, size_t size, char *file, char *function)
 	return ptr;
 }
 
-static memory_stat_t *get_memory_stat(char *file,char *function)
+static memory_stat_t *get_memory_stat(const char *file,const char *function)
 {
 	memory_stat_t *mstat=NULL;
 	char key[STRING_SIZE];

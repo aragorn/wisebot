@@ -79,23 +79,23 @@ union semun {
 #define release_lockn(semid,idx)	_release_lock(semid,idx,__FILE__,__FUNCTION__)
 #define get_nsem(ipc,nsem) _get_nsem(ipc,nsem,__FILE__,__FUNCTION__)
 
-SB_DECLARE(int) _acquire_lock(int semid,int idx,char *file,char* caller);
-SB_DECLARE(int) _acquire_lock_nowait(int semid,int idx,char *file,char* caller);
-SB_DECLARE(int) _release_lock(int semid,int idx,char *filename,char* caller);
-SB_DECLARE(int) _get_nsem(ipc_t *ipc,int num,char* file,char* caller);
+SB_DECLARE(int) _acquire_lock(int semid,int idx,const char *file,const char* caller);
+SB_DECLARE(int) _acquire_lock_nowait(int semid,int idx,const char *file,const char* caller);
+SB_DECLARE(int) _release_lock(int semid,int idx,const char *filename,const char* caller);
+SB_DECLARE(int) _get_nsem(ipc_t *ipc,int num,const char* file,const char* caller);
 SB_DECLARE(int) add_semid_to_allocated_ipcs(int semid);
 
 #define alloc_shm(ipc) _alloc_shm(ipc,__FILE__,__FUNCTION__)
 
-SB_DECLARE(int) _alloc_shm(ipc_t *ipc,char* file,char* caller);
+SB_DECLARE(int) _alloc_shm(ipc_t *ipc,const char* file,const char* caller);
 
 #define alloc_mmap(ipc,offset) _alloc_mmap(ipc,offset,__FILE__,__FUNCTION__)
 #define sync_mmap(start,size) _sync_mmap(start,size,__FILE__,__FUNCTION__)
 #define free_mmap(start,size) _free_mmap(start,size,__FILE__,__FUNCTION__)
 
-SB_DECLARE(int) _alloc_mmap(ipc_t *ipc,off_t offset,char* file,char* caller);
-SB_DECLARE(int) _sync_mmap(void* start,int size,char* file,char* caller);
-SB_DECLARE(int) _free_mmap(void* start,int size,char* file,char* caller);
+SB_DECLARE(int) _alloc_mmap(ipc_t *ipc,off_t offset,const char* file,const char* caller);
+SB_DECLARE(int) _sync_mmap(void* start,int size,const char* file,const char* caller);
+SB_DECLARE(int) _free_mmap(void* start,int size,const char* file,const char* caller);
 
 SB_DECLARE(int) free_ipcs(void);
 

@@ -53,18 +53,18 @@
 #	define sb_fork()			fork()
 #endif
 
-SB_DECLARE(void *) _sb_malloc(size_t size, char *file, char *function, int line);
-SB_DECLARE(void *) _sb_calloc(size_t nmemb, size_t size, char *file, char *function, int line);
-SB_DECLARE(void *) _sb_realloc(void *ptr, size_t size, char *file, char *function, int line);
-SB_DECLARE(void *) _sb_strdup(char *ptr, char *file, char *function, int line);
-SB_DECLARE(void  ) _sb_free(void *ptr, char *file, char *function, int line);
+SB_DECLARE(void *) _sb_malloc(size_t size, const char *file, const char *function, int line);
+SB_DECLARE(void *) _sb_calloc(size_t nmemb, size_t size, const char *file, const char *function, int line);
+SB_DECLARE(void *) _sb_realloc(void *ptr, size_t size, const char *file, const char *function, int line);
+SB_DECLARE(void *) _sb_strdup(char *ptr, const char *file, const char *function, int line);
+SB_DECLARE(void  ) _sb_free(void *ptr, const char *file, const char *function, int line);
 
 SB_DECLARE(void *) _sb_mmap(void *start, size_t length, int prot, int flags, 
-					int fd, off_t offset, char *file, char *function, int line);
-SB_DECLARE(int   ) _sb_munmap(void *start, size_t length, char *file, char *function, int line);
+					int fd, off_t offset, const char *file, const char *function, int line);
+SB_DECLARE(int   ) _sb_munmap(void *start, size_t length, const char *file, const char *function, int line);
 			  
-SB_DECLARE(void  ) _sb_alloc_shm(int id, size_t size, char *file, char *function);
-SB_DECLARE(void  ) _sb_free_shm(int id, char *file, char *function);
+SB_DECLARE(void  ) _sb_alloc_shm(int id, size_t size, const char *file, const char *function);
+SB_DECLARE(void  ) _sb_free_shm(int id, const char *file, const char *function);
 
 SB_DECLARE(pid_t ) _sb_fork(void);
 

@@ -49,7 +49,7 @@ int free_ipcs()
 
 /* due to lack of uniqueness guarantee by ftok(3) */
 /*
-static int is_really_allocated_ipc(ipc_t *ipc, char *file, char *caller)
+static int is_really_allocated_ipc(ipc_t *ipc, const char *file, char *caller)
 {
 	int i=0,pid=0;
 	char *path=NULL;
@@ -77,7 +77,7 @@ static int is_really_allocated_ipc(ipc_t *ipc, char *file, char *caller)
 
 /*** SYS5 Semaphore ***********************************************************/
 
-int _acquire_lock(int semid,int idx,char *file,char* caller)
+int _acquire_lock(int semid,int idx,const char *file,const char* caller)
 {
 	struct sembuf semopt;
 
@@ -93,7 +93,7 @@ int _acquire_lock(int semid,int idx,char *file,char* caller)
 	return SUCCESS;
 }
 
-int _acquire_lock_nowait(int semid,int idx,char* file, char* caller)
+int _acquire_lock_nowait(int semid,int idx,const char* file, const char* caller)
 {
 	struct sembuf semopt;
 
@@ -108,7 +108,7 @@ int _acquire_lock_nowait(int semid,int idx,char* file, char* caller)
 	return SUCCESS;
 }
 
-int _release_lock(int semid,int idx,char* file, char* caller)
+int _release_lock(int semid,int idx,const char* file, const char* caller)
 {
 	struct sembuf semopt;
 
@@ -123,7 +123,7 @@ int _release_lock(int semid,int idx,char* file, char* caller)
 	return SUCCESS;
 }
 
-int _get_nsem(ipc_t *ipc,int num,char* file, char* caller)
+int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
 {
 	int created=1;
 	union semun semarg;
@@ -245,7 +245,7 @@ int add_semid_to_allocated_ipcs(int semid)
 }
 
 /*** SYS5 Shared Memory *******************************************************/
-int _alloc_shm(ipc_t *ipc,char* file,char* caller)
+int _alloc_shm(ipc_t *ipc,const char* file,const char* caller)
 {
 	static int counter = 0, size=0;
 	int created=1;
@@ -429,7 +429,7 @@ attached to the calling process, SHMSEG value of the kernel.");
  *   ipc->attr     : MMAP_CREATED - 파일 생성 or 확장
  *                   MMAP_ATTACHED - 원래 있던 파일...
  *********************************************************/
-int _alloc_mmap(ipc_t *ipc, off_t offset, char* file, char* caller)
+int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 {
 	char path[STRING_SIZE];
 	int fd, ret;
@@ -507,7 +507,7 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, char* file, char* caller)
 	return SUCCESS;
 }
 
-int _sync_mmap(void* start, int size, char* file, char* caller)
+int _sync_mmap(void* start, int size, const char* file, const char* caller)
 {
 	int ret;
 	unsigned int offset_correction;
@@ -526,7 +526,7 @@ int _sync_mmap(void* start, int size, char* file, char* caller)
 	else return SUCCESS;
 }
 
-int _free_mmap(void* start, int size, char* file, char* caller)
+int _free_mmap(void* start, int size, const char* file, const char* caller)
 {
 	int ret;
 	unsigned int offset_correction;

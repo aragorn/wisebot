@@ -90,8 +90,8 @@ SB_DECLARE(void) log_error(int level,const char *aModule,const char *aCaller,con
  __attribute__((format(printf,4,5)));
 SB_DECLARE(void) log_error_core(int level,const char *aModule,const char *aCaller,
  const char *format, va_list args);
-SB_DECLARE(void) log_assert(const char *exp,char *file,int line,char *func);
-SB_DECLARE(void) _sb_abort(char *file, char *function);
+SB_DECLARE(void) log_assert(const char *exp,const char *file,int line,const char *func);
+SB_DECLARE(void) _sb_abort(const char *file,const char *function);
 SB_DECLARE(void) set_screen_log();
 SB_DECLARE(double) timediff(struct timeval *first, struct timeval *later);
 SB_DECLARE(int) log_setlevelstr(const char* levelstr);

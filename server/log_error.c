@@ -242,7 +242,7 @@ void log_error_core(int          level,
 	return;
 }
 
-void log_assert(const char *exp,char *file,int line,char *func)
+void log_assert(const char *exp,const char *file,int line,const char *func)
 {
 	log_error(LEVEL_CRIT, file, func,
 			"line %d, assertion \"%s\" failed", line, exp);
@@ -255,7 +255,7 @@ void log_assert(const char *exp,char *file,int line,char *func)
 #endif
 }
 
-void _sb_abort(char *file, char *caller)
+void _sb_abort(const char *file, const char *caller)
 {
 	crit("%s: %s() called abort()", file, caller);
 	abort();
