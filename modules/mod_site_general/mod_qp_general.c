@@ -774,15 +774,18 @@ static int docattr_qpp_group(docattr_cond_t *cond, char* groupquery)
 	group_field = strtok( groupquery, "," );
 	while ( group_field != NULL && i < MAX_GROUP_FIELD ) {
 		group_count = group_field;
-		while ( *group_count != ':' ) group_count++;
+		while ( *group_count != ':' && *group_count != '\0' ) group_count++;
 
-		*group_count = '\0';
-		group_count++;
+		if ( *group_count != '\0' ) {
+			*group_count = '\0';
+			group_count++;
 
-		if ( isNumber( group_count, &group_field_limit[i] ) != SUCCESS ) {
-			error("invalid group_count[%s] of group_field[%s]", group_count, group_field);
-			return FAIL;
+			if ( isNumber( group_count, &group_field_limit[i] ) != SUCCESS ) {
+				error("invalid group_count[%s] of group_field[%s]", group_count, group_field);
+				return FAIL;
+			}
 		}
+		else group_field_limit[i] = 0;
 
 		return_docattr_field( group_field, &group_field_list[i] );
 		if ( group_field_list[i] == NULL ) {
