@@ -18,9 +18,6 @@ extern void init_operands();
 extern docattr_operand_t* get_new_operand();
 extern void add_field_to_cond(docattr_field_t* field);
 
-// YY_INPUT으로 쓸 거다.
-extern int get_from_lex_buffer(void* buf, int max_size);
-
 // operand->exec_func 3가지...
 #define operand_value_exec_func NULL
 #define operand_field_exec_func NULL
