@@ -666,17 +666,17 @@ static long long return_constants_value(char *value, int valuelen)
 static int init()
 {
 	if ( sizeof(test_attr_t) != 64 ) {
-		crit("sizeof(test_attr_t) (%d) != 64", sizeof(test_attr_t) );
+		crit("sizeof(test_attr_t) (%d) != 64", (int) sizeof(test_attr_t) );
 		return FAIL;
 	}
 
 	if ( sizeof(test_cond_t) >= STRING_SIZE ) {
-		crit("sizeof(test_cond_t) (%d) >= STRING_SIZE(%d)", sizeof(test_cond_t), STRING_SIZE);
+		crit("sizeof(test_cond_t) (%d) >= STRING_SIZE(%d)", (int) sizeof(test_cond_t), STRING_SIZE);
 		return FAIL;
 	}
 
 	if ( sizeof(test_mask_t) >= STRING_SIZE ) {
-		crit("sizeof(test_mask_t) (%d) >= STRING_SIZE(%d)", sizeof(test_mask_t), STRING_SIZE);
+		crit("sizeof(test_mask_t) (%d) >= STRING_SIZE(%d)", (int) sizeof(test_mask_t), STRING_SIZE);
 		return FAIL;
 	}
 
