@@ -1031,8 +1031,12 @@ static int prepare_db_scheme()
 		// scheme 颇老 货肺 积己
 		info("save docattr scheme");
 		for ( i = 0; i < docattr_field_count; i++ ) {
-			fprintf( fp, "%s %s(%d)\n", docattr_field[i].name,
-					get_field_type( docattr_field[i].field_type ), docattr_field[i].size );
+			if ( is_bit_field( docattr_field[i].field_type ) )
+				fprintf( fp, "%s %s(%d)\n", docattr_field[i].name,
+						get_field_type( docattr_field[i].field_type ), docattr_field[i].bit_size );
+			else
+				fprintf( fp, "%s %s(%d)\n", docattr_field[i].name,
+						get_field_type( docattr_field[i].field_type ), docattr_field[i].size );
 		}
 
 		fclose( fp );
