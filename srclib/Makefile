@@ -6,8 +6,7 @@
 # by aragorn, 2002/09/30
 #
 
-#prefix = $(shell cd .. && pwd)
-prefix = /home/softwise/wisebot
+prefix = $(shell cd .. && pwd)
 exec_prefix = ${prefix}
 ###############################################################################
 all: install
