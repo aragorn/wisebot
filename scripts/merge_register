@@ -1,0 +1,258 @@
+#!/usr/bin/perl -w
+#$Id$ 
+
+use lib "./lib/perl";
+use lib "../lib/perl";
+use strict;
+use SoftWise::SoftBot;
+use Benchmark;
+
+local $| = 1;
+my $host = shift;
+my $port = shift;
+my $file = shift;
+my $confirm = shift || 0;
+my $merge = shift || 0;
+my $stop = 0;
+my $max_size = 400_000;
+my $most_big_size = 0;
+my $most_big_dit;
+
+unless ($host and $port and $file) {
+	print <<END;
+Usage: $0 <host> <port> <file> [<confirm>]
+    host  - hostname of search server
+    port  - port number that softbot use
+    file  - text data file to register
+    confirm - set 1 if you want to confirm every document by key input
+END
+	exit;
+}
+
+$SIG{INT} = sub { $stop++; };
+
+open(FILE, $file) or die "cannot open file: $!";
+
+my %size_stat;
+my $state = 0;
+my ($dit, $body, $body_end, $success, $count) = ("", "", 0, 0, 0);
+while (<FILE>) {
+	last if $stop;
+
+	if ($state == 0) {
+		/TextForTest/ and do {
+			print "Regular Data File\n";
+			next;
+		};
+		/^-{80}$/ and do {
+			$state = 1;
+			next;
+		};
+		/OID=/ and do {
+			$dit = $_;
+			chomp $dit;
+			$body = "";
+			$state = 2;
+			print "Irregular Data File! Anyway I will handle this.\n";
+			next;
+		};
+	}
+	if ($state == 1) {
+		$dit = $_;
+		chomp $dit;
+		$body = "";
+		$state = 2;
+	}
+
+	if ($state == 2) {
+		$state = 3; # empty line
+		next;
+	}
+
+	if ($state == 3) {
+		/^-{80}$/ and $body_end and do {
+			$state = 1;
+			#print "." if (($count % 50) == 0);
+			if ($confirm > 1 and $count < $confirm) {
+				$count++;
+				next;
+			}
+
+			$success++ if merge_register($dit, $body, $host, $port);
+			$count++;
+			next;
+		};
+		if ( /<\/Document>/ ) {
+			$body_end = 1;
+		} elsif ( /\S/ ) {
+			$body_end = 0;
+		}
+
+		$body .= $_;
+	}
+}
+
+close(FILE);
+print "\nmost_big_size = $most_big_size\n";
+print "most_big_dit = $most_big_dit\n";
+print "registered $success/$count docs.\n";
+exit;
+
+
+my ($prev_rid,$merged_dit,$merged_jotitle,$merged_body);
+my ($body_part1,
+	$all_jotitle, $all_b_jotitle,
+	$body_part2,
+	$body_cdata, $b_body_cdata,
+	$body_part3);
+
+sub merge_register {
+	my $dit = shift;
+	my $body = shift;
+	my $host = shift;
+	my $port = shift;
+	my $registered = 0;
+
+	$body =~ m/RID><!\[CDATA\[(\d+)\]\]><\/RID/;
+	my $rid = $1;
+	unless (defined $rid and $rid ) {
+		print "error!!\n";
+		return;
+	}
+
+	if ( not defined $prev_rid ) {
+		($merged_jotitle, $merged_body) = ("", "");
+		print "^";
+	} elsif ( defined $prev_rid and $rid eq $prev_rid) {
+		$merged_jotitle .= $all_jotitle;
+		$merged_body .= $body_cdata;
+		print "=";
+	} elsif ($prev_rid) {
+		$merged_jotitle .= $all_jotitle;
+		$merged_body .= $body_cdata;
+		# RID가 다른 새로운 문서가 나타나면 그동안 합친 문서를 등록한다.
+		my $new_body = $body_part1
+				. "<ALL_JoTitle><![CDATA[" 
+				. $merged_jotitle
+				. "]]></ALL_JoTitle>\n"
+				. "<ALL_B_JoTitle><![CDATA["
+				. $merged_jotitle
+				. "]]></ALL_B_JoTitle>"
+				. $body_part2
+				. "<body><![CDATA["
+				. $merged_body
+				. "]]></body>\n"
+				. "<B_body><![CDATA["
+				. $merged_body
+				. "]]></B_body>"
+				. $body_part3;
+		if ( length($new_body) > $max_size ) {
+			printf("\nBIG SIZE(%d) %s\n", length($new_body), $merged_dit);
+			print "$body_part1\n\n";
+			if ( length($new_body) > $most_big_size ) {
+				$most_big_size = length($new_body);
+				$most_big_dit = $merged_dit . $body_part1;
+			}
+			#printf("r");
+			#$registered++ if register($merged_dit,$new_body,$host,$port);
+		}
+		#print STDERR ("-" x 80, "\n$merged_dit\n\n$new_body\n");
+		printf("r");
+		$registered++ if register($merged_dit,$new_body,$host,$port);
+		($merged_jotitle,$merged_body) = ("","");
+	} else {
+		print "?(rid=$rid,prev_rid=$prev_rid)";
+	}
+
+	$prev_rid = $rid;
+	$merged_dit = $dit;
+	($body_part1,$all_jotitle) = split(/<ALL_JoTitle>/,$body);
+	($all_jotitle,$all_b_jotitle) = split(/<\/ALL_JoTitle>/,$all_jotitle);
+	(undef,$all_b_jotitle) = split(/<ALL_B_JoTitle>/,$all_b_jotitle);
+	($all_b_jotitle,$body_part2) = split(/<\/ALL_B_JoTitle>/,$all_b_jotitle);
+	($body_part2,$body_cdata) = split(/<body>/,$body_part2);
+	($body_cdata,$b_body_cdata) = split(/<\/body>/,$body_cdata);
+	(undef,$b_body_cdata) = split(/<B_body>/,$b_body_cdata);
+	($b_body_cdata,$body_part3) = split(/<\/B_body>/,$b_body_cdata);
+
+	foreach ($all_jotitle,$all_b_jotitle,$body_cdata,$b_body_cdata) {
+		s/^<!\[CDATA\[//;
+		s/\]\]>//;
+	}
+
+	return $registered;
+}
+
+
+sub register {
+	my $dit = shift;
+	my $body = shift;
+	my $host = shift;
+	my $port = shift;
+
+	my %dit;
+	foreach my $pair ( split(/\^/, $dit) ) {
+		my ($key, $data) = split(/=/, $pair);
+		next unless defined $key and $key;
+		$key = uc($key);
+
+		$data =~ s/^\s+|\s+$//g;
+		$dit{$key} = $data;
+	}
+	$dit{OID} = substr($dit{OID}, -30) if length($dit{OID}) > 30;
+
+	my $dit2 = sprintf("PT=%s^CT=%s^OID=%s^RID=%s^KY=%s^DN=%s^TT=%s^",
+					$dit{PT},
+					0,
+					$dit{OID},
+					$dit{RID} || "",
+					$dit{OID},
+					substr($dit{OID}, 0, 20),
+					$dit{TT} || "제목없음");
+
+	printf ("![%dth,size%d]", $count, length($body)) if (length($body) > $max_size);
+
+	my $body_start = substr($body, 0, 60);
+	my $body_end = substr($body, -200, 200);
+	$body_end =~ s/.*(\]\]><\/B_body>)/$1/;
+
+	if ( $confirm eq 1) {
+		print <<END;
+--------------------------------------------------------------------------------
+host, port = $host, $port
+dit  = [$dit2]
+body = [$body_start]
+       ~
+       [$body_end]
+Press Enter To Register This Document.
+END
+		my $tmp = <STDIN>;
+	}
+
+	foreach my $try (1..3) {
+		last if $stop;
+		my $sb = new SoftWise::SoftBot($host, $port) or die "cannot connect to softbot: $!";
+		my $r = $sb->regist_doc($dit2, $body);
+		last if $stop;
+
+		if ( defined $r and $r > 0 ) {
+			return 1;
+		} else {
+			$r = "undef" unless defined $r;
+			printf "regist_doc error of $try-th try! [%s]\n", $r;
+			print <<END;
+--------------------------------------------------------------------------------
+host, port = $host, $port
+dit  = [$dit2]
+body = [$body_start]
+       ~
+       [$body_end]
+END
+			sleep 1;
+		}
+	}
+	printf "register_doc failed!\n";
+	return 0;
+
+}
+

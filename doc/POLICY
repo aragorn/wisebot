@@ -1,0 +1,56 @@
+# vim:ft=softbotdoc:tw=80
+# $Id$ 
+
+[SoftBotNext 개발정책, 지침]
+
+ 1) 적절히 module화한다
+ 2) framework에서 제공하는 os와의 interface, general library를 활용한다
+    2.1) 이 때, 아래의 Classification of modules를 따른다.
+ 3) debug info, status info를 적절히 출력한다
+ 4) 모든 open(2), fopen(3)를 sb_open(), sb_fopen()으로 대체하고, 파일경로를
+    지정할 때, gSoftBotRoot에서의 상대경로로 지정한다.
+    compile time에 결정되는 SERVER_ROOT를 절대! 사용하지 않는다.
+ 5) registry는 PERSISTENT_REGISTRY와 RUNTIME_REGISTRY로 구분되며, 
+    INIT_REGISTRY는 더이상 사용하지 않는다.
+
+[Classification of modules]
+  1) basic
+    * general하게 쓰이는 library성격의 module
+	* vbm(variable buffer manager), vrf(variable record manager), tcp, udp,
+	  http(hyper text transfer protocol) 등
+	* basic module은 context에 따른 state를 갖지 않는다.
+	* 다양하고 강력한 basic module을 기반으로 application을 빠르게 개발할 수
+	  있는 기반을 만들어낸다.
+	* basic module의 기능들은 단순한 library보다 대체로 무거울 것이다.
+	* TODO
+		* xml repository module for CDM
+		 sequential number를 id로 하는 xml 전문을 저장하고, 그 xml의 parsed
+		 tree information을 저장한다. 특정 xml문서의 특정 element를 손쉽게
+		 추출할 수 있어야 한다.
+  2) ftr(full text retrieval)
+    * 검색엔진과 관련된 module
+	* basic module과 분명히 구분되도록 만든다.
+	* ftr module은 context에 따른 state를 갖는다. 다시 말해, basic module은
+	  library이고, ftr module에서 object를 생성한다.
+  3) crawler
+    * crawler와 관련된 module
+	* ftr과 어떤 식으로 interface를 맞물릴 것인지 잘 고민한다.
+
+  위와 같은 분류에 따라 modules directory를 subdir로 나누고, softbot의 기능을
+  compile time에 결정하도록 한다. module들의 dependency에 대해 충분히 고려하고,
+  가능하면 compile time에 dependency문제를 발견할 수 있도록 설정한다.
+
+
+  synchronizing remote database
+  * db gateway를 구조적으로 개선할 필요가 있다.
+  * sync 작업에 있어 확실한 동기화 여부를 보장해 줄 수 있어야 한다.
+  * 오류가 발생하는 경우
+    - db gateway의 비정상 종료
+	- protocol에서 발생한 오류
+	- and ...???
+  * 오류를 해결하는 방법
+    - log-based recovery
+	- and ...???
+  * 예) 프리챌 게시판, 커뮤니티 검색의 경우 완전한 동기화가 안 되는 것으로
+        보이나 데이터의 크기가 너무 크기 때문에 확인하기 어려움.
+

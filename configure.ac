@@ -1,0 +1,469 @@
+dnl # $Id$ 
+dnl 
+dnl Autoconf configuration for SoftBotNext
+dnl
+dnl    Use ./buildconf to produce a configure script
+dnl
+
+dnl autoconf 2.13 is too buggy. should avoid autoconf 2.13 as much as possible.
+AC_PREREQ(2.50)
+AC_INIT(server/server.c)
+
+AC_CONFIG_AUX_DIR(build)
+AC_CANONICAL_HOST
+
+AM_INIT_AUTOMAKE(softbot,6.0,nodefine)
+AM_CONFIG_HEADER(include/auto_config.h)
+
+dnl #
+dnl # Include our own M4 macros along with those for APR and libtool
+dnl #
+dnl # XXX apr_common.m4 causes fatal error, exceeding recursion limit of 1024.
+dnl #     do not include apr_common.m4.
+dnl sinclude(build/apr_common.m4)
+
+dnl XXX WiseBot does not need apr and apu. 2004/08/03
+dnl sinclude(build/find_apr.m4)
+dnl sinclude(build/find_apu.m4)
+dnl sinclude(acinclude.m4)
+
+dnl sinclude(aclocal.m4)
+
+dnl # include lt config hack, which facilitates
+dnl sinclude(build/sb_ltconfig_hack.m4)
+
+dnl XXX setting default prefix to `pwd` is not a good idea. --jiwon
+dnl but, we can't avoid this for a time being. --aragorn
+AC_PREFIX_DEFAULT(`pwd`)
+
+nl='
+'
+
+dnl ---------------------------------------------------------------------------
+dnl ## echo $ac_n "${nl}Configuring Apache Portable Runtime library ...${nl}"
+dnl ## 
+dnl ## APR_FIND_APR("bin", , 1)
+dnl ## 
+dnl ## if test "$apr_found" = "no"; then
+dnl ##   AC_MSG_ERROR([APR not found. Please read the documentation.])
+dnl ## fi
+dnl ## 
+dnl ## APR_SETIFNULL(CC, `$apr_config --cc`)
+dnl ## APR_SETIFNULL(CPP, `$apr_config --cpp`)
+dnl ## 
+dnl ## APR_LIBS=`$apr_config --link-libtool --libs`
+dnl ## APR_INCLUDES=`$apr_config --includes`
+dnl ## APR_CFLAGS=`$apr_config --cflags`
+dnl ## APR_LDFLAGS=`$apr_config --ldflags`
+dnl ## dnl APR_BINDIR=`$apr_config --bindir`
+dnl ## dnl SHLIBPATH_VAR=`$apr_config --shlib-path-var`
+dnl ## 
+dnl ## 
+dnl ## echo $ac_n "${nl}Configuring Apache Portable Runtime Utility library...${nl}"
+dnl ## 
+dnl ## APR_FIND_APU("bin", , 1)
+dnl ## 
+dnl ## if test "$apu_found" = "no"; then
+dnl ##   AC_MSG_ERROR([APR-util not found.  Please read the documentation.])
+dnl ## fi
+dnl ## 
+dnl ## dnl XXX to test with new iconv
+dnl ## APU_LIBS=`$apu_config --link-libtool --libs`
+dnl ## APU_LDFLAGS=`$apu_config --ldflags`
+dnl ## APU_INCLUDES=`$apu_config --includes`
+dnl ## APU_BINDIR=`$apu_config --bindir`
+
+dnl ---------------------------------------------------------------------------
+echo $ac_n "${nl}Configuring SoftBotNext ...${nl}"
+
+dnl
+dnl header template, include/auto_config.h.in
+
+AH_TOP([#ifndef AUTO_CONFIG_H
+#define AUTO_CONFIG_H 1
+
+#include "auto_defines.h"
+
+/* some definitions related to layout */
+#ifndef SERVER_ROOT
+#       error SERVER_ROOT must be set by autoconf
+#endif
+
+#define DEFAULT_CONFIG_FILE     "etc/softbot.conf"
+#define DEFAULT_ERROR_LOG_FILE  "logs/error_log"
+#define DEFAULT_PID_FILE        "logs/softbotd.pid"
+#define DEFAULT_REGISTRY_FILE   "dat/softbotd.reg"
+
+#define CONFIG_PATH     "etc"
+#define DB_PATH         "dat"
+#define LOG_PATH        "logs"
+
+])
+
+AH_BOTTOM([
+#endif /* AUTO_CONFIG_H */
+])
+
+AH_VERBATIM([1_NEAR_TOP__],[
+/* checking system environment */
+#undef LINUX
+#undef FREEBSD
+#undef SOLARIS
+#undef AIX5
+
+/* whether indexer saves forward index or not. default is NOT using it. */
+#define FORWARD_INDEX 0
+
+/* whether to use apr, apr-util or not. default is NOT using it. */
+/* do not use APR anymore. 2004/08/03 */
+/* #define USE_APR 0 */
+
+/* hit size of hits of doc_hit_t. default size is 4 */
+#define HIT_SIZE 4
+
+/* If you don't have setproctitle, SB_ARGV_TYPE needs to be set to either
+* SB_ARGV_NEW (replace argv[] arguments), SB_ARGV_WRITEABLE (overwrite
+* argv[]), SB_ARGV_PSTAT (use the pstat function), or SB_ARGV_PSSTRINGS
+* (use PS_STRINGS).
+*
+* configure should, we hope <wink>, detect this for you.
+*/
+
+#define SB_ARGV_NONE        0
+#define SB_ARGV_NEW         1
+#define SB_ARGV_WRITEABLE   2
+#define SB_ARGV_PSTAT       3
+#define SB_ARGV_PSSTRINGS   4
+
+#undef SB_ARGV_TYPE
+])
+
+AC_ARG_WITH(forwardidx,
+[  --with-forwardidx       build with forward index support [default=no]], [
+if test "$withval" != yes
+then
+    AC_DEFINE(FORWARD_INDEX,0)
+else
+    AC_DEFINE(FORWARD_INDEX,1)
+fi
+])
+
+AC_ARG_WITH(hitsize,
+[  --with-hitsize          build with specified hit size,  [default=4]], [
+AC_DEFINE_UNQUOTED(HIT_SIZE,$withval)
+])
+
+dnl ## AC_ARG_ENABLE(apr,
+dnl ## [  --enable-apr            build with apr, apr-util support [default=no]], [
+dnl ## if test "$enableval" != yes
+dnl ## then
+dnl ##     AC_DEFINE(USE_APR,0)
+dnl ## else
+dnl ##     AC_DEFINE(USE_APR,1)
+dnl ## fi
+dnl ## ])
+
+
+
+dnl See if the compiler supports __attribute__ gracefully.
+AC_MSG_CHECKING(whether compiler supports __attribute__)
+AC_TRY_COMPILE([], [int x __attribute__((__unused__));],
+compiler_supports_attribute=yes,
+compiler_supports_attribute=no)
+AC_MSG_RESULT($compiler_supports_attribute)
+if test x"$compiler_supports_attribute" = xyes; then
+    attr_unused="__attribute__((__unused__))"
+else
+    attr_unused=""
+fi
+AC_DEFINE_UNQUOTED(ATTR_UNUSED, $attr_unused,
+                   [see if the compiler supports __attribute__ gracefully])
+
+
+dnl Check system environments
+CANONICAL_HOST="$host"
+SHORT_HOST=""
+SOFTBOTD_LDFLAGS=""
+SOFTBOTCLI_LDFLAGS=""
+case "$host" in 
+  *linux* )
+    SHORT_HOST="linux"
+    AC_DEFINE(LINUX,1)
+    OS_TYPE="unix"
+    THREAD_LIB="-lpthread"
+    DYN_LIB="-ldl"
+    ;;
+  *freebsd* )
+    SHORT_HOST="freebsd"
+    AC_DEFINE(FREEBSD,1)
+    OS_TYPE="unix"
+    THREAD_LIB="-lc_r"
+    DYN_LIB="-lc"
+    ;;
+  *-solaris* )
+    SHORT_HOST="solaris"
+    AC_DEFINE(SOLARIS,1)
+    OS_TYPE="unix"
+    THREAD_LIB="-lpthread"
+    DYN_LIB="-ldl"
+    SOFTBOTD_LDFLAGS='-lsocket -lnsl'
+    SOFTBOTCLI_LDFLAGS='-lsocket -lnsl'
+    ;;
+  *-ibm-aix5* )
+    # powerpc-ibm-aix5.1.0.0
+    SHORT_HOST="aix5"
+    AC_DEFINE(AIX5,1)
+    OS_TYPE="unix"
+    THREAD_LIB="-lc -lpthread"
+    DYN_LIB="-Wl,-brtl -lld"
+    EXTRA_CFLAGS="-fsigned-char"
+    SOFTBOTD_LDFLAGS='-Wl,-bdynamic -Wl,-bE:$(top_builddir)/server/softbotd.exp -Wl,-bmaxdata:0x40000000 -L/usr/local/lib -liconv'
+    SOFTBOTCLI_LDFLAGS='-Wl,-bdynamic -Wl,-bE:$(top_builddir)/client/softbotcli.exp -Wl,-bmaxdata:0x40000000 -L/usr/local/lib -liconv'
+dnl    LDFLAGS="-Wl,-brtl"
+    ;;
+esac
+AM_CONDITIONAL(LINUX,   test x$SHORT_HOST = xlinux)
+AM_CONDITIONAL(FREEBSD, test x$SHORT_HOST = xfreebsd)
+AM_CONDITIONAL(SOLARIS, test x$SHORT_HOST = xsolaris)
+AM_CONDITIONAL(AIX5,    test x$SHORT_HOST = xaix5)
+
+dnl XXX: from apache. LDR_CNTRL is also specified in 
+dnl      http://www.fortran-2000.com/ArnaudRecipes/sharedlib.html#export
+dnl      so.., I just attached it here. --jiwon
+case $host in
+    *aix*)
+        # for 32-bit builds, increase MAXDATA to allow lots of threads
+        if test x$OBJECT_MODE != x64; then
+            OS_SPECIFIC_VARS="LDR_CNTRL=\"MAXDATA=0x80000000\" ; export LDR_CNTRL ;"
+        fi
+        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS AIXTHREAD_SCOPE=S ; export AIXTHREAD_SCOPE"
+        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; AIXTHREAD_MUTEX_DEBUG=OFF ; export AIXTHREAD_MUTEX_DEBUG"
+        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; AIXTHREAD_RWLOCK_DEBUG=OFF ; export AIXTHREAD_RWLOCK_DEBUG"
+        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; AIXTHREAD_COND_DEBUG=OFF ; export AIXTHREAD_COND_DEBUG"
+        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; SPINLOOPTIME=1000 ; export SPINLOOPTIME"
+        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; YIELDLOOPTIME=8 ; export YIELDLOOPTIME"
+        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; MALLOCMULTIHEAP=considersize,heaps:8 ; export MALLOCMULTIHEAP"
+        ;;
+    *os390*)
+        OS_SPECIFIC_VARS="export _CEE_RUNOPTS=\"STACK(,,ANY)\" ; export _EDC_ADD_ERRNO2=1"
+        ;;
+    *)
+        OS_SPECIFIC_VARS=""
+esac
+
+
+
+dnl ---------------------------------------------------------------------------
+
+dnl Checks for programs
+AC_PROG_CXX
+AC_PROG_AWK
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+
+dnl Various OS checks that apparently set required flags
+dnl AC_AIX
+
+
+CFLAGS="-Wall -g3 -O2"
+
+AC_LIBTOOL_DLOPEN
+AC_PROG_LIBTOOL
+
+dnl Note: Avoid using AC_C_BIGENDIAN because it does not
+dnl work in a cross compile.
+sinclude(build/ac_c_bigendian_cross.m4)
+AC_C_BIGENDIAN_CROSS
+
+
+dnl ---------------------------------------------------------------------------
+
+AC_TYPE_SIGNAL
+
+dnl XXX: should fail configure when followings headers does not exist.
+AC_CHECK_HEADERS( \
+    inttypes.h string.h stdlib.h unistd.h fcntl.h getopt.h \
+    sys/stat.h sys/mman.h sys/times.h ctype.h getopt.h sys/types.h io.h \
+)
+
+AC_CHECK_FUNCS( \
+  getenv \
+  getopt \
+  getopt_long \
+  madvise \
+  memalign \
+  valloc \
+  alloca \
+  mmap \
+  mergesort \
+)
+AC_REPLACE_FUNCS(setproctitle)
+
+
+dnl
+dnl replacing setproctitle stuff.
+dnl corresponding header template is included above.
+
+if test "$ac_cv_func_setproctitle" = "yes"; then
+  AC_DEFINE(SB_ARGV_TYPE, SB_ARGV_NONE)
+else
+  sb_argv_set="no"
+  AC_CHECK_HEADERS([sys/pstat.h],have_pstat_h="yes",have_pstat_h="no")
+  if test "$have_pstat_h" = "yes"; then
+    AC_CHECK_FUNCS(pstat)
+
+    if test "$ac_cv_func_pstat" = "yes"; then
+      AC_DEFINE(SB_ARGV_TYPE, SB_ARGV_PSTAT)
+    else
+      AC_DEFINE(SB_ARGV_TYPE, SB_ARGV_WRITABLE)
+    fi
+
+    sb_argv_set="yes"
+  fi
+
+  if test "$sb_argv_set" = "no"; then
+    AC_EGREP_HEADER([#define.*PS_STRINGS.*],sys/exec.h,
+            have_psstrings="yes",have_psstrings="no")
+    if test "$have_psstrings" = "yes"; then
+      AC_DEFINE(SB_ARGV_TYPE, SB_ARGV_PSSTRINGS)
+      sb_argv_set="yes"
+    fi
+  fi
+
+  if test "$sb_argv_set" = "no"; then
+    AC_CACHE_CHECK([whether __progname and __progname_full are available],
+        pf_cv_var_progname,
+        [AC_TRY_LINK([extern char *__progname, *__progname_full;],
+            [__progname = "foo"; __progname_full = "foo bar";],
+            pf_cv_var_progname="yes",
+            pf_cv_var_progname="no"
+            )
+        ])
+
+    if test "$pf_cv_var_progname" = "yes"; then
+      AC_DEFINE(HAVE___PROGNAME, 1,
+            [whether __progname and __progname__full are available])
+    fi
+
+    AC_CACHE_CHECK([which argv replacement method to use],
+        pf_cv_argv_type,
+        [AC_EGREP_CPP(YES_IS_DEFINED,
+            [
+#if defined(__GNU_HURD__)
+  YES_IS_DEFINED
+#endif
+            ],
+            pf_cv_argv_type="new",
+            pf_cv_argv_type="writeable"
+            )
+        ])
+
+    if test "$pf_cv_argv_type" = "new"; then
+      AC_DEFINE(SB_ARGV_TYPE, SB_ARGV_NEW)
+      sb_argv_set="yes"
+    fi
+
+    if test "$sb_argv_set" = "no"; then
+      AC_DEFINE(SB_ARGV_TYPE, SB_ARGV_WRITABLE)
+    fi
+  fi
+fi
+
+TOP_BUILDDIR=`pwd`
+TIMESTAMP=`date`
+
+
+dnl following is due to a bug of autoconf.(LTLIBOBJS is not set properly)
+dnl (only until autoconf sets LTLIBOBJS appropriately)
+dnl I don't know if autoconf 2.5 is debugged for this,
+dnl but I want to be sure that wide distribution of autoconf
+dnl (now 2.13) can set it properly.
+dnl autoconf2.50 suggests LIBOBJS -> AC_LIBOBJ 
+
+dnl SED="sed"
+dnl Xsed="sed -e s/^X//"
+
+dnl LTLIBOBJS=`echo X"$LIBOBJS"|\
+dnl            [$Xsed -e "s,\.[^.]* ,.lo ,g;s,\.[^.]*$,.lo,"]`
+dnl AC_SUBST(LTLIBOBJS)
+
+dnl AC_SUBST(APR_LIBS)
+dnl AC_SUBST(APR_INCLUDES)
+dnl AC_SUBST(APR_CFLAGS)
+dnl AC_SUBST(APR_LDFLAGS)
+dnl AC_SUBST(APU_LIBS)
+dnl AC_SUBST(APU_INCLUDES)
+dnl AC_SUBST(APU_CFLAGS)
+dnl AC_SUBST(APU_LDFLAGS)
+
+dnl AC_SUBST(CFLAGS)
+AC_SUBST(OS_TYPE)
+dnl AC_SUBST(PLATFORM_OS)
+AC_SUBST(THREAD_LIB)
+AC_SUBST(DYN_LIB)
+AC_SUBST(SOFTBOTD_LDFLAGS)
+AC_SUBST(SOFTBOTCLI_LDFLAGS)
+AC_SUBST(TOP_BUILDDIR)
+AC_SUBST(TIMESTAMP)
+AC_SUBST(ac_aux_dir)
+AC_SUBST(am_aux_dir)
+AC_SUBST(CANONICAL_HOST)
+
+AC_CONFIG_FILES([
+    include/auto_defines.h
+    include/timestamp.h
+
+    Make.defs
+    Makefile
+
+    include/Makefile
+    server/Makefile
+    client/Makefile
+    debug/Makefile
+
+    modules/Makefile
+    modules/mod_api/Makefile
+    modules/mod_mp/Makefile
+
+    modules/mod_tcp/Makefile
+    modules/mod_udp/Makefile
+
+	modules/mod_hash/Makefile
+
+    modules/mod_sfs/Makefile
+    modules/mod_ifs/Makefile
+    modules/mod_vrfi/Makefile
+    modules/mod_indexer/Makefile
+
+    modules/mod_qpp/Makefile
+    modules/mod_qp/Makefile
+
+    modules/mod_tokenizer/Makefile
+    modules/mod_morpheme/Makefile
+    modules/mod_index_word_extractor/Makefile
+
+    modules/mod_vrm/Makefile
+    modules/mod_vbm/Makefile
+
+    modules/mod_docapi/Makefile
+    modules/mod_docattr/Makefile
+    modules/mod_cdm/Makefile
+    modules/mod_protocol4/Makefile
+    modules/mod_softbot4/Makefile
+    modules/mod_did/Makefile
+    modules/mod_xmlparser/Makefile
+    modules/mod_frm/Makefile
+
+    modules/mod_lexicon/Makefile
+
+    modules/mod_site/Makefile
+
+    platform/Makefile
+    platform/unix/Makefile
+
+	util/Makefile
+])
+AC_OUTPUT

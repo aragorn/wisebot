@@ -1,0 +1,24 @@
+# $Id$
+CC = gcc
+
+#CFLAGS = -O2 -DNDEBUG -D_REENTRANT
+CFLAGS = -g -Wall
+
+AR = ar -r
+
+FLAGS = -I../../include -I../../platform -I../
+
+LD = -lm
+
+.c.o: 
+	$(CC) -c $(CFLAGS) $(FLAGS) $<
+
+# build basic library
+
+all: TEST
+
+TEST: koma_test.o mod_koma.o
+	$(CC) $(CFLAGS) $(FLAGS) -o $@ koma_test.o mod_koma.o koma/koma.a $(LD)
+
+clean:
+	rm -rf TEST mod_koma.o koma_test.o

@@ -1,0 +1,126 @@
+#!/usr/bin/perl
+# $Id$
+
+use strict;
+use Getopt::Std;
+
+sub BEGIN {
+	$Getopt::Std::STANDARD_HELP_VERSION = 1;
+	our $VERSION = "1.0";
+}
+
+my $BOLD  = "\e[1m";
+my $BLINK = "\e[5m";
+my $RESET = "\e[0m";
+my $CLEAR = "\e[0m";
+
+my $RED     = "\e[31m";
+my $GREEN   = "\e[32m";
+my $YELLOW  = "\e[33m";
+my $BLUE    = "\e[34m";
+my $MAGENTA = "\e[35m";
+my $CYAN    = "\e[36m";
+my $WHITE   = "\e[37m";
+my $ON_BLACK   = "\e[40m";
+my $ON_RED     = "\e[41m";
+my $ON_GREEN   = "\e[42m";
+my $ON_YELLOW  = "\e[43m";
+my $ON_BLUE    = "\e[44m";
+my $ON_MAGENTA = "\e[45m";
+my $ON_CYAN    = "\e[46m";
+my $ON_WHITE   = "\e[47m";
+
+my %color_format = (
+	emerg => $BLINK . $BOLD . $WHITE . $ON_RED , # emerg
+	alert => $BLINK . $BOLD . $WHITE . $ON_RED , # alert
+	crit  => $BOLD . $WHITE . $ON_RED          , # crit
+	error => $BOLD . $RED                      , # error
+	warn  => $YELLOW                           , # warn
+	notice => $CYAN                             , # notice
+	info  => $CYAN                             , # info
+	debug => ""                                , # debug
+);
+
+our ($opt_t, $opt_g, $opt_c);
+getopts('tg:c:');
+
+my $log = shift || "";
+if ($log and $log eq "-") {
+	# do nothing
+	# read log from stdin
+} elsif ($log and -r $log) {
+	open(STDIN, $log) or die "cannot open log file[$log]: $!";
+} elsif ($log) {
+	die "cannot open log file[$log]: $!";
+}
+
+my $level_to_show = get_level($opt_g);
+my $context = $opt_c || 0;
+my @history;
+while ( <STDIN> ) {
+	m/^\[([\w: ]+)\] \[(\w+)\] ([\w\.]+) (\w+\(\)) (.+)/;
+	#m/^(\[[\w: ]+\])/;
+	#my ($date, $level, $module, $function, $message) = @_;
+	my @log = ($1, $2, $3, $4, $5);
+	if ($context > 0) {
+	}
+
+	if ($level_to_show > get_level($log[1]) ) {
+		if ($context > 0) {
+			push @history, \@log;
+			shift @history if $#history >= $context;
+		}
+		next;
+	}
+
+	if ($context > 0) {
+		foreach my $l ( @history ) {
+			print_log(@{$l});
+		}
+		@history = ();
+	}
+	print_log(@log);
+}
+
+
+#printf($color_format[3], "modules.", "function()", "\n");
+#foreach my $f (@color_format) { print $f, "\n"; };
+#
+sub HELP_MESSAGE {
+	print <<END;
+Usage:
+    $0 [-t] [-g level]            read log message from stdin
+    $0 [-t] [-g level] -          read log message from stdin
+    $0 [-t] [-g level] [log file]    read log message from log file
+
+Options:
+    -t         show timestamp
+    -t level   do not show under given debug level.
+               levels are debug,info,notice,warn,error,crit,alert,emerg.
+END
+}
+
+sub print_log {
+	my ($date, $level, $module, $function, $message) = @_;
+
+	if ($opt_t) {
+	  print $CLEAR,"[",$date,"] ",$GREEN,$module,$CLEAR," ",
+			$function,"  ",$color_format{$level},$message,$CLEAR,"\n";
+    } else {
+	  print $CLEAR,$GREEN,$module,$CLEAR," ",
+			$function,"  ",$color_format{$level},$message,$CLEAR,"\n";
+    }
+}
+
+sub get_level {
+	my $level = shift;
+
+	if ($level eq 'emerg') { return 7; }
+	elsif ($level eq 'alert' ) { return 6; }
+	elsif ($level eq 'crit'  ) { return 5; }
+	elsif ($level eq 'error' ) { return 4; }
+	elsif ($level eq 'warn'  ) { return 3; }
+	elsif ($level eq 'notice') { return 2; }
+	elsif ($level eq 'info'  ) { return 1; }
+	else  { return 0; }
+}

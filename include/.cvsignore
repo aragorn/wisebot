@@ -1,0 +1,21 @@
+auto_config.h
+auto_config.h.in
+auto_defines.h
+auto_defines.h.in
+stamp-h
+stamp-h.in
+stamp-h1
+timestamp.h
+apr.h apu.h
+apr_*.h
+apu_*.h
+xmlrpc_*.h
+xmlrpc.h
+XmlRpcCpp.h
+wwwconf.h
+w3c-libwww
+expat.h
+apr-0
+KomaAPI.h
+HanTagAPI.h
+koma_global.h

@@ -1,0 +1,28 @@
+# $Id$ 
+
+ initializing module and spawning child process
+
+method 1 : difficult to find out module dependency
+ 1) master parent process - frame
+  - needs nothing
+ 2) qp child process
+  - morpheme, qpp, vrf
+  - init required module after spawning child process
+ 3) m1 child process
+  - requires m2, m3, m4
+  - init required modules, m2, m3, m4 after spawning child process
+
+
+method 2 : obsolete
+ 1) initialize each module with mo main function
+ 2) spawn each child process and initialize
+   - may have unused modules initialized
+
+ !problem. a module with no main function which requires large resource
+
+method 3 : currently useing method
+ 1) initialize every init function before forking any module
+    all objects created while init() would be shared.
+ 2) if any local initialization is needed after forking,
+    do it yourself in child_main()
+

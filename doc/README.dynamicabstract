@@ -1,0 +1,77 @@
+# $Id$ 
+
+
+                                                         DocumentObjectHandler
+                                                           +-------------+
+fixed data                                    O------------|  object     |  
+of cdm                                   readdb interface  +-------------+
++--------------------------------+                            loaded by load_document_object3
+| (word position, byte opsition) |
++--------------------------------+
+|                                |
+       .
+       .
+       .
+
+
+
+
+
+
+
+
+
+                            DocumentDatabase
+                      api: get_abstracted_doc
+                      -> hook readdb interface of document object handler
+
+
+
+struct _fixed_data_of_position {
+    uint16_t header_size;
+
+    uint16_t abstract_field_num; /* need? */
+    struct field_info {
+        uint16_t fieldid;
+        struct field_position {
+            uint32_t word_position;
+            uint32_t byte_position;
+        } positions[MAX_POSITION_INFO_NUM];
+    } fields[MAX_FIELD_NUM]; /* number of field is proper? */
+};
+
+get_abstracted_doc(db, key, abstract_field_num, info)
+begin
+    obj = sb_run_create_document_object();
+
+    sb_run_cdm_get_fixed_data(db.cdmdb, key, &fixeddata);
+
+    sb_run_cdm_retrieve_part(db.cdmdb, info.key, 0, fixeddata.header_size, 
+                             tmpbuf, tmpbuflen);
+
+    doc = sb_run_load_document_object3(tmpbuf, tmpbuflen);
+
+    foreach info (iterate 'abstract_field_num' times)
+    begin
+        foreach info.pos_info (iterate 'info.abstract_info_num' times)
+        begin
+            /* calculate real byte offset from start point of document object */
+            sb_run_document_object_get_field_position(doc, info.fieldid);
+
+            /* get approximate start, finish byte position of field */
+            start_byte_pos = get_byte_position(fixeddata, info.start_word_pos);
+            finish_byte_pos = get_byte_position(fixeddata, info.finish_word_pos);
+
+            /* read partly */
+            sb_run_cdm_retrieved_part(db.cdmdb, info.key,
+                                      start_byte_pos, finish_byte_pos - start_byte_pos, 
+                                      buf, buflen);
+
+            merge abstracted data properly;
+        end
+
+        sb_run_document_object_insert_field_i(obj, info.fieldid, result, resultlen);
+    end
+
+    return obj;
+end.

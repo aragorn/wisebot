@@ -1,0 +1,14 @@
+# $Id$ 
+
+mod_lexicon_core.c	:lexicon 의 핵심 함수(자료 구조에 직접 접근하는 함수들..)
+mod_lexicon_daemon.c :client message를 읽고 적절한 함수호출을 하고, 결과를 client에게 준다
+mod_lexicon_client.c :server에 함수호출을 
+
+daemon 은 클라이언트의 메시지를 받아서 meta api 를 사용해 원하는 서비스를 전해 주는 역할을 합니다.
+
+
+1. daemon version
+	init data (load word id to hash)
+
+2. client version
+

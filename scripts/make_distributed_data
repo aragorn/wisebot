@@ -1,0 +1,119 @@
+#!/usr/bin/perl
+# $Id $
+
+use strict;
+
+my $orig_path   = shift || "";
+my $first_path  = shift || "";
+my $second_path = shift || "";
+
+unless ( $orig_path and $first_path and $second_path ) {
+  print <<END;
+Usage: $0 <original data path> <first data path> <second data path>
+  It will automatically identify the type of original data, cdm or indexer
+  by name of the directory.
+END
+  exit 1;
+}
+
+foreach my $dir ( $orig_path, $first_path, $second_path ) {
+  die "$dir is not a directory." unless -d $dir;
+}
+
+my $filename_format;
+if ( $orig_path =~ m/cdm(\/?)$/
+     or
+     -f "$orig_path/keys.idx" ) {
+  $filename_format = "cdm%06d.db";
+} 
+elsif ( $orig_path =~ m/indexer(\/?)$/
+     or
+     -f "$orig_path/index" ) {
+  $filename_format = "index.data.%02d";
+} else {
+  die "unknown type of data directory. cdm or indexer type is available.";
+}
+
+
+foreach my $n ( 0..11 ) {
+  my $filename  = sprintf($filename_format, $n);
+  my $dest_path = $first_path; $dest_path = $second_path if $n % 2 == 1;
+  my $relative_path = relative_path($orig_path, $dest_path);
+
+  if ( -e "$dest_path/$filename" ) {
+    die "$dest_path/$filename already exists. please delete this file by your hand.";
+  }
+
+  if ( -e "$orig_path/$filename" ) {
+    print "moves $orig_path/$filename to $dest_path/$filename\n";
+    system("mv", "$orig_path/$filename", "$dest_path/$filename");
+  } else {
+    print "creates $dest_path/$filename\n";
+    open(FILE, ">$dest_path/$filename") or die "cannot create file, $dest_path/$filename: $!";
+    close(FILE);
+  }
+  symlink("$relative_path/$filename", "$orig_path/$filename")
+    or die "symlink($relative_path/$filename, $orig_path/$filename) failed: $!";
+}
+
+
+
+sub relative_path {
+  my $from = shift || ".";
+  my $to   = shift || ".";
+
+  $from = abs_path($from) unless $from =~ m|^/|;
+  $to   = abs_path($to  ) unless $to   =~ m|^/|;
+
+  my @p1 = split_path($from);
+  my @p2 = split_path($to);
+  my ($common, $l1, $l2) = common_path([split_path($from)], [split_path($to)]);
+
+  my @p;
+  foreach ( @{$l1} ) {
+    push @p, "..";
+  }
+  push @p, @{$l2};
+
+  return join("/", @p);
+
+  sub split_path {
+    my $path = shift;
+    $path =~ s|//|/|g;  # removed repeated /
+    $path =~ s|/$||g;   # removed trailing /
+    return split(/\//, $path);
+  }
+
+  sub common_path {
+    my $p1 = shift || [()];
+    my $p2 = shift || [()];
+    my $common = shift || [()];
+
+    return ($common, $p1, $p2) if @{$p1} < 1;
+    return ($common, $p1, $p2) if @{$p2} < 1;
+    return ($common, $p1, $p2) unless $p1->[0] eq $p2->[0];
+
+    push @{$common}, shift @{$p1};
+    shift @{$p2};
+
+    return common_path($p1, $p2, $common);
+  }
+
+  sub abs_path {
+    my $path = shift || ".";
+    my $cwd  = `pwd`; chomp $cwd;
+
+    my @path = split_path($path);
+    my @cwd  = split_path($cwd);
+
+    foreach ( @path ) {
+      next if $_ eq ".";
+      if ($_ eq "..") { pop @cwd; next;  }
+      else            { push @cwd, $_;     }
+    }
+
+    return join("/", @cwd);
+  }
+}
+
+

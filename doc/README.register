@@ -1,0 +1,61 @@
+# $Id$ 
+
+* Register
+
+      External Register Client
+         O         O      O            O           O
+		 \         \      \            /           /
+		  \         \      \          /           /
+    +---------------------------------------------------+
+	|           DATABASE FRONT API(?)                   |
+	+---------------------------------------------------+
+				| Put Document with Docid           \  \   Get Docid with
+				| Is it need to pass any other data? \	\     key, such as URL
+	            | Such as meta data in case of web..   +==========+
+				|								       |          |
+	  +~~~~~~~~ CDM ~~~~~~~~~~~~~+             		   |  Dodid   |
+	  |   |                      |					   |   Server |
+      |   | input to spool       |                     |          |
+	  |   |                      |					   +==========+
+		  |		+--------+
+	      |		| CDM DB |
+		  |		+--------+
+		  |			 ^
+		  v			 |     +----------+
+		   +--+      +-----| register |
+		   |  |----------->| process  |
+		   |--|            +----------+
+		   |  |<----+
+		   |--|     |
+		   |  |   +----------+
+		   |--|-->|  filter  |-+
+		   |  |   |  process | | <filter process
+		   +--+   +----------+ |  also parse cdm>
+		  spool    +-----------+ ...
+
+
+* Spool detail blueprint
+
+External -+        +--> Internal register process
+register  |        |
+client    v        |
+        +--+     +--+
+        |  |     |  |
+        |  |     |  |
+        |  |     |  |
+        |  |     |  |
+        |  |     |  |
+        |  |     |  |
+        |  |     |  |
+        |  |     |  |
+        +--+     +--+
+       spool 1  spool 2
+         |        ^
+	     |        |
+		 |        |
+		  \      /
+		  +=======+
+		  | filter|-+
+		  |process| |
+		  +=======+ |
+		    +=======+

@@ -1,0 +1,63 @@
+#!/bin/sh
+# $Id$ 
+
+distdir=softbotnext
+subdirs="bin dat dat/koma dat/cdm dat/dic dat/did dat/indexer dat/lexicon dat/vrf dat/forward_index etc include lib lib/perl libexec logs scripts"
+
+## if dist is not defined, all the files and directories of 'subdirs' are insert to package
+dist="softbot bin/softbotd bin/softbotcli dat/clean*.sh dat/koma/* dat/dic/* etc/* include/*.h lib/*.so lib/*.so.* lib/*.a libexec/*.so scripts/* lib/perl/*"
+
+## if you want to remove some file or directory from whole directory of package
+globalnodist="Makefile.in Makefile.am Makefile CVS"
+
+## if you want to remove specific files from package
+nodist="bin/debug_* dat/*.txt dat/did/* dat/cdm/* dat/indexer/* dat/vrf/* dat/lexicon/* include/*.in libexec/*.a logs/* scripts/wc"
+
+## below codes need not modify
+
+if [ ! -d server ]; then
+	echo "you must run this script in root directory of project"
+	exit 1
+fi
+
+if [ -d "$distdir" ]; then
+	rm -rf "$distdir"
+fi
+mkdir "$distdir"
+
+set -x
+for subdir in $subdirs; do
+	mkdir "$distdir"/"$subdir"
+done
+
+dist=${dist:-null_value}
+if [ "$dist" = "null_value" ]; then
+	for subdir in $subdirs; do
+		cp -rf "$subdir" "$distdir"/"$subdir"
+	done
+else
+	for name in $dist; do
+		cp -rf "$name" "$distdir"/"$name"
+	done
+fi
+
+nodist=${nodist:-null_value}
+if [ "$nodist" != "null_value" ]; then
+	for name in $nodist; do
+		rm -rf "$distdir"/"$name"
+	done
+fi
+
+globalnodist=${globalnodist:-null_value}
+if [ "$globalnodist" != "null_value" ]; then
+	for name in $globalnodist; do
+		find "$distdir" -name "$name" -exec rm -rf {} \;
+	done
+fi
+
+if [ -f "$distdir".tar.gz ]; then
+	rm -f "$distdir".tar.gz
+fi
+
+tar chof - "$distdir" | GZIP=--fast gzip -c > "$distdir".tar.gz
+rm -rf "$distdir"

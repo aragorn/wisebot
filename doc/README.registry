@@ -1,0 +1,62 @@
+/* $Id$ */
+
+
+module {
+	blah blah
+	conftable;
+	registry_t *registry;
+	blah blah
+}
+
+static regist_t registry[] = {
+    REGISTRY("LogLevelStat", "count log calls by each log level", 40,
+                                   init_logLevelStat, getLevelStat, setLevelStat),
+    REGISTRY("CurrentLogLevel", "current log level", 1, 
+								   init_CurrentLogLevel, getLogLevel, setLogLevel),
+    {NULL}
+};
+
+
+                              |
+EACH PROCESS                  |               SHARED SPACE
+                              |
+module                        |
+ errorlog registry            |               shared memory
+   LogLevelStat               |              +--------------+
+      data --------------------------------> |              |  mapped by registry.c
+	  desc                    |              +--------------+
+   CurrentLogLevel            |         /--> |              |
+      data ----------------------------/     +--------------+
+      desc                    |          /-> |              |
+   LogFilePath                |         /    +--------------+
+      data ----------------------------/ /-> |              |
+      desc                    |         /    +--------------+
+ qp registry                  |        /     |              |
+   QueryStat                  |       /      |              |
+      data --------------------------/       |              |
+      desc                    |              |              |
+                              |              |              |
+                              |                                
+                              |                              
+
+
+
+  1. module.c
+    - build up module structure
+  2. registry.c
+    - allocate shared memory for registry
+    - assign memory to each data value
+	- initialize to default value
+  3. module.c
+    - fork each process
+  4. registry.c
+    - re-map data pointer with data_relative to shared memory
++-5. each module
+|   - set registry value
+|   - get registry value
++-6. another module
+    - set registry value
+    - get registry value
+
+
+

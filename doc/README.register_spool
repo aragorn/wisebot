@@ -1,0 +1,113 @@
+# $Id$ 
+
+Register Spool
+* mod_softbot4 등을 통해 등록되는 외부 문서를 임시로 저장하는 spool
+* shared-memory base의 spool 사용하여 빠른 속도로 문서를 access
+* spool은 fixed-size circular queue로 구현
+
+-------------------------------------------------------------------------------
+1) Initial State
+  [FL][ ][ ][ ][ ][ ][ ][ ] : L - F == 0 --> empty
+2) Inserted One
+  [F][L][ ][ ][ ][ ][ ][ ] : L - F == 1
+3) About Half Filled
+  [ ][ ][ ][ ][ ][F][ ][L] : L - F == n : number of elements 2
+4) One More
+  [L][ ][ ][ ][ ][F][ ][ ] : L - F == n : number of elements 3 == SIZE + ( L - F )
+   0  1  2  3  4  5  6  7
+3) Spool Full - (1)
+  [F][ ][ ][ ][ ][ ][ ][L] : L - F == SPOOL_SIZE - 1
+4) Spool Full - (2)
+  [ ][ ][ ][L][F][ ][ ][ ] : L - F == -1
+
+L-F의 변화  0 --> SPOOL_SIZE-1
+            +n --> SPOOL_SIZE - n
+-------------------------------------------------------------------------------
+  [ ][ ][ ][f][f][#][#][#][l][l][ ][ ][ ]
+  [E][E][e][E][e][O][O][O][o][O][o][E][E]
+        ~~~~~~~~~         ~~~~~~~~~  <=== transient state, minimize this state
+         <        <        <        <
+-------------------------------------------------------------------------------
+#define REGISTER_SPOOL_SIZE (1000)
+#define REGISTER_SPOOL_SLOT_SIZE (20000)
+
+typedef struct {
+	char data[REGISTER_SPOOL_SLOT_SIZE];
+} spool_slot_t;
+
+typedef struct {
+	int size; /* number of queue slots */
+	int slot_size; /* length of slot data buffer */
+	volatile int first_slot; /* first occupied slot */
+	volatile int last_slot; /* last occupied slot */
+
+	int empty_sem_id; /* semaphore id for process to get an empty slot */
+	pthread_cond_t empty_cond; /* cond for thread to get an emptry slot */
+	pthread_mutex_t empty_mutex; /* mutex for thread to get an emptry slot */
+
+	int occupied_sem_id; /* semaphore id for process to get an occupied slot */
+	pthread_cond_t occupied_cond; /* cond for thread to get an occupied slot */
+	pthread_mutex_t occupied_mutex; /* mutex for thread to get an occupied slot */
+	
+	spool_slot_t slot[REGISTER_SPOOL_SIZE];
+} spool_t;
+
+static int spool_is_full(spool_t *spool)
+{
+	/* L - F == SIZE-1 or L - F == -1 */
+	if ( (spool->last_slot - spool->first_slot == -1) ||
+		(spool->last_slot - spool->first_slot == spool->size -1) )
+		return TRUE;
+	else return FALSE;
+}
+
+static int number_of_occupied(spool_t *spool)
+{
+	if ( L == F ) return 0;
+	else if ( L > F ) return (L - F);
+	else if ( L < F ) return SIZE + (L - F);
+}
+
+static int lock_empty_slot(spool_t *spool, int size)
+{
+	int slot;
+
+	empty_mutex_lock();
+	empty_counter--;
+
+	slot = spool->last;	
+	spool->last++;
+	if ( spool->last == REGISTER_SPOOL_SIZE )
+		spool->last = 0;
+
+	return slot;
+}
+
+static int unlock_empty_slot(spool_t *spool, int slot)
+{
+	occupied_sem++;
+	empty_mutex_unlock();
+	return slot;
+}
+
+static int lock_occupied_slot(spool_t *spool)
+{
+	int slot;
+
+	occupied_mutex_lock();
+	occupied_counter--;
+
+	current = spool->first;	
+	spool->first++;
+	if ( spool->first == REGISTER_SPOOL_SIZE )
+		spool->first = 0;
+
+	return current;
+}
+
+static int unlock_empty_slot(spool_t *spool, int slot)
+{
+	empty_sem++;
+	occupied_mutex_unlock();
+	return slot;
+}

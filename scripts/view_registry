@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+
+use strict;
+
+my $file = shift || "";
+unless ($file) {
+	print <<END;
+Usage: $0 <registry file>
+END
+	exit;
+}
+
+open(FILE, $file) or die "cannot open file[$file]: $!";
+my $first_line = <FILE>;
+$first_line =~ m/Registry File/ or die "$file is not a registry file";
+my (@registry, $line);
+while ( <FILE> ) {
+	chomp;
+	next if m/^#/;
+
+	if ( $line =~ m/\\$/ )
+	{
+		$line .= $_;
+		push @registry, $line;
+	} else {
+		$line = $_;
+	}
+}
+close(FILE);
+
+foreach my $r ( @registry ) {
+	my ($module, $name, $size, undef, $value) = split(/\s+/, $r, 5);
+	printf("%-30s %-25s", $module, $name);
+	foreach (split(/ /, $value)) {
+		if (length($_) == 8)    { printf(" %8d", unpack("I", pack("H*", $_))); }
+		elsif (length($_) == 4) { printf(" %8d", unpack("S", pack("H*", $_))); }
+		else                    { printf(" %8s", $_); };
+	}
+	print "\n";
+}
+

@@ -1,0 +1,10 @@
+
+HEADERS = api_lib.h api_sr.h lb_std.h lb_tcp.h softbot4.h
+SOURCES = api_lib.c api_sr.c lb_std.c lb_tcp.c ut_stest.c
+
+all: ut_stest
+
+ut_stest: $(SOURCES) $(HEADERS)
+	$(CC) -Wall -D_USE_FILTER_DOCS_ -D_REENTRANT -lpthread $(SOURCES) -o ut_stest
+
+

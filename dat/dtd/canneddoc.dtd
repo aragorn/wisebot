@@ -1,0 +1,78 @@
+<!--
+<?xml version="1.0" ?>
+
+<!DOCTYPE Document [
+-->
+
+<!ELEMENT Document (Title, Author,KeyWord,LoginId,Body,FD1,FD2,FD3)>
+
+<!ELEMENT Title (#PCDATA)>
+<!ATTLIST Title
+			fieldNo		ID			#IMPLIED
+			morphAnal	(yes|no)	"yes"
+			synonym		(yes|no)	"no"
+			weight		CDATA		#FIXED			"1"
+>
+<!ELEMENT Author (#PCDATA)>
+<!ATTLIST Author
+			fieldNo		ID			#IMPLIED
+			morphAnal	(yes|no)	"yes"
+			synonym		(yes|no)	"no"
+			weight		CDATA		#FIXED			"1"
+>
+
+<!ELEMENT KeyWord (#PCDATA)>
+<!ATTLIST KeyWord
+			fieldNo		ID			#IMPLIED
+			morphAnal	(yes|no)	"yes"
+			synonym		(yes|no)	"no"
+			weight		CDATA		#FIXED			"1"
+>
+
+<!ELEMENT LoginId (#PCDATA)>
+<!ATTLIST LoginId
+			fieldNo		ID			#IMPLIED
+			morphAnal	(yes|no)	"yes"
+			synonym		(yes|no)	"no"
+			weight		CDATA		#FIXED			"0.9"
+>
+
+<!ELEMENT Body (#PCDATA)>
+<!ATTLIST Body
+			fieldNo		ID			#IMPLIED
+			morphAnal	(yes|no)	"yes"
+			synonym		(yes|no)	"no"
+			weight		CDATA		#FIXED			"0.9"
+>
+
+<!ELEMENT FD1 (#PCDATA)>
+<!ATTLIST FD1
+			fieldNo		ID			#IMPLIED
+			morphAnal	(yes|no)	"yes"
+			synonym		(yes|no)	"no"
+			weight		CDATA		#FIXED			"0.9"
+>
+
+<!ELEMENT FD2 (#PCDATA)>
+<!ATTLIST FD2
+			fieldNo		ID			#IMPLIED
+			morphAnal	(yes|no)	"yes"
+			synonym		(yes|no)	"no"
+			weight		CDATA		#FIXED			"0.9"
+>
+
+<!ELEMENT FD3 (#PCDATA)>
+<!ATTLIST FD3
+			fieldNo		ID			#IMPLIED
+			morphAnal	(yes|no)	"no"
+			synonym		(yes|no)	"no"
+			weight		CDATA		#FIXED			"0"
+>
+
+<!ELEMENT Rank (#PCDATA)>
+
+<!ELEMENT Rsv (#PCDATA)>
+
+<!--
+]>
+-->

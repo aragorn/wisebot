@@ -1,0 +1,69 @@
+/* $Id$ */
+#ifndef __MOD_IFS_H__
+#define __MOD_IFS_H__
+
+#include "table.h"
+#include "../mod_sfs/mod_sfs.h"
+
+#ifdef WIN32
+#  include "../mod_sfs/wisebot.h"
+#  define PATH_SEP '\\'
+#else
+#  include "softbot.h"
+#  define PATH_SEP '/'
+#endif
+
+#define IFS_MAGIC "IFS0"
+#define IFS_FILE_NAME "ifs"
+#define SFS_FILE_NAME "sfs"
+
+#define DEFAULT_FILE_SIZE  (1*1024*1024*1024)        /* 1*1024*1024*1024 */
+#define DEFAULT_SEGMENT_SIZE (256*1024*1024)
+#define DEFAULT_BLOCK_SIZE (128)
+#define MAX_FILE_COUNT MAX_SECTOR_COUNT    /* index file max 200Gbyte */
+
+typedef struct _local_t {
+	int ifs_fd;
+    int sfs_fd[MAX_FILE_COUNT];
+    sfs_t* sfs[MAX_SECTOR_COUNT*MAX_SEGMENT_COUNT];
+	char full_path[MAX_FILE_COUNT][MAX_PATH_LEN];	/* index file system path, one more ifs can not exist in the path */
+	int lock;
+} local_t;
+
+typedef struct _shared_t {
+    char magic[4];
+
+	table_t mapping_table;		/* index logical/physical mmapping table */
+	
+    int segment_size;
+	int block_size;
+	int append_segment;         /* indexer에 의해서만 수정 가능하다 */
+
+	char root_path[MAX_PATH_LEN];	/* index file system path, one more ifs can not exist in the path */
+} shared_t;
+
+typedef struct _ifs_t {
+	local_t local;
+	shared_t* shared;
+} ifs_t;
+
+int ifs_init();
+void* ifs_create();
+int ifs_destroy(void* indexdb);
+int ifs_open(void* indexdb, int opt);
+int _ifs_open(ifs_t* ifs, char* root_path, int segment_size, int block_size);
+int ifs_close(void* ifs);
+int ifs_append(void* indexdb, int file_id, int size, void* buf);
+int ifs_read(void* indexdb, int file_id, int offset, int size, void* buf);
+int ifs_getsize(void* indexdb, int file_id);
+
+int __sfs_activate(ifs_t* ifs, int p, int type, int perform_format, int format_option);
+int __sfs_all_activate(ifs_t* ifs, int* physical_segment_array, int count, int type);
+int __sfs_deactivate(ifs_t* ifs, int p);
+int __file_open(ifs_t* ifs, int sec);
+
+int __get_start_segment(ifs_t* ifs, int* pseg, int count, int file_id, int offset,
+		                               int* start_segment, int* start_offset);
+
+#endif
+

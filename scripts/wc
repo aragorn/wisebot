@@ -1,0 +1,17 @@
+#!/bin/sh
+#$Id$
+
+
+date
+echo "wc client/*.[ch] server/*.[ch] include/*.h \
+modules/*/*.[ch] modules/*/*/*.[ch] \
+platform/*.[ch] platform/*/*.[ch] | tail -1"
+wc client/*.[ch] server/*.[ch] include/*.h \
+	modules/*/*.[ch] modules/*/*/*.[ch] \
+	platform/*.[ch] platform/*/*.[ch] | tail -1
+
+#echo "wc src/*/*.[ch] src/*/*/*.[ch] | tail -1"
+#wc src/*/*.[ch] src/*/*/*.[ch] | tail -1
+
+#echo "(cd srclib/apr && wc *.[ch] */*.[ch] */*/*.[ch] */*/*/*.[ch]) | tail -1"
+#(cd srclib/apr && wc *.[ch] */*.[ch] */*/*.[ch] */*/*/*.[ch]) | tail -1

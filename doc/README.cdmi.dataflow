@@ -1,0 +1,50 @@
+# $Id$ 
+
+        Raw Document 
+              |
+    +------------+
+    |  external  |------ API: sb_run_cdm_register_doc
+    |  register  |   X   n
+    +------------+
+              |
+              |
+              |
+              V
+    +============+
+    |  1st spool |
+    +============+
+              |
+              |------ API: sb_run_cdm_get_doc_to_filter
+              |
+              V
+    +------------+
+    |  filter    |  X  n
+    +------------+
+              |
+              |------ API: sb_run_cdm_put_filtered_doc
+              |
+              V
+    +============+
+    | 2nd spool  |
+    +============+
+              |
+              |
+              |
+              V
+    +------------+
+    |  register  |------ API: sb_run_cdm_batch_write -----+
+    +------------+    |                                   |
+              |       |    parsing(?)                     |
+              |       |    register docattr               |
+              |       |    create internal docid          |
+              |       |    write to db                    |
+              |       |        write parsed document      |
+              |       |        write row document         |
+              |       |                                   |
+              |       +-----------------------------------+
+              |
+              |
+              V
+    +============+
+    |  cd db     |
+    +============+

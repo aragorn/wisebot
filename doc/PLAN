@@ -1,0 +1,140 @@
+# vim:ft=softbotdoc:ts=4:tw=80:
+# $Id$ 
+
+[Tokenizer/Lexer/Parser]
+  <modules using these tools and how they use the tools>
+	* indexer: indexing시에  white space(혹은 지정된delimiter)로 구분된 토큰들을 한번 호출시 마다 요구.
+  		e.g) set_fieldtext(&tokenizer,&fieldtext); 
+						// (혹은, set_...(&tok,&field," \t") )
+			 while ( (token=tokenizer.get_nexttoken(&tokenizer)) != NULL ) {
+				 do_something..
+			 }
+
+			 이 때, 원래 fieldtext는 const가 아니어도 되며 따라서 fieldtext에 
+			 수정을 하는 것은 indexer는 상관없다.
+
+			 fieldtext를 건드리지 않고 한다면 아마도 다음과 같을 것이다.
+
+			 while( tokenizer.get_nexttoken(&tokenizer,token,&token_size) == SUCCESS ){
+				 // tokenizer는 next token을 pointing하고 있고, token length는
+				 // token_size로 결정된다. 즉, token 끝에는 null character가 없고
+				 // strncpy(dest,token,token_size), dest[token_size]='\0'; 이런
+				 // 식으로 null character를 임의로 넣어줘야 함..
+			 }
+			 
+			 위 두 경우 모두 indexer로는 별 문제 없으므로 좀더 일반적으로 쓸 수
+			 있는 후자가 더 바람직함..
+
+
+	* qpp: delimiter로 tokenizing한 후에 lexer에게 넘겨서 각 token의 의미를
+		   얻어서 parser에게 넘겨준다.
+		   만약에 이런 식으로 query를 process하게 되면, 거의 special character에
+		   대한 처리를 하지 않는 것이 낫게 되며(delimiter를 적절히 넘겨줘서
+		   delimiter에 대한 판단을 lexer가 하게 할 수도 있겠으나,그럴 경우 
+		   look-ahead가 필요하게 된다), 모든 operator에 대해 띄어쓰기가 적용된
+		   경우에만 operator로 인식하게 하는 것이 무난할 수도 있다.
+
+	* docapi(?):
+
+	* ...
+
+[Job Assignments] : Due 06/28
+ Moved to last of this file.
+  
+[Todo list] 
+ -  XXX -> 높은 우선순위
+
+  <register>
+    * SoftBot4 Protocol
+      -> 속도 느림: Spool을 추가하여 속도 개선
+      -> 속도 느림: DocID Server를 library로 바꾸기
+         -> data를 shared memory에 올릴 것
+         -> lock을 pthread_mutex와 semaphore 둘 중 하나로 선택할 수
+            있도록 처리할 것.
+ XXX  -> 불안정, 등록 도중 종료: 디버깅
+    * DocAttri
+      -> 구현 미비: 설계 및 구현
+    * CDM
+      -> libxml2 문제: xml parser 새로 구현
+  <indexing>
+    * indexer
+      -> 속도 느림: Lexicon Manager를 library로 바꾸기
+         -> data를 shared memory에 올릴 것
+         -> lock을 pthread_mutex와 semaphore 둘 중 하나로 선택할 수
+            있도록 처리할 것. XXX: is this done? --jiwon
+      -> start, stop 선택이 안 됨.
+      -> forward index 저장하기: debugging에 필요
+         특정 문서의 색인어 목록 열람 기능 필요
+  <query processing>
+    * qp
+      -> 구현된 연산자: AND
+      -> 구현 안된 연산자: OR, NOT, position 등
+ XXX  -> 불안정: 에러처리, 디버깅
+  <morpheme analyzer>
+    * korean
+      -> 부사, 형용사, 동사 색인, 불용어 최소화
+    * japanese
+      -> 구현 안됨: 설계 및 구현
+  <frame, cleaning up>
+    * gSoftBotRoot
+      -> 완료: config.c, log_error.c
+      -> 미비: cdm, lexicon
+	* sb_fopen(), sb_freopen()
+  <protocol>
+    * SoftBotNext Protocol
+      -> HTTP: 설계 및 구현 XXX: !병목!
+	  
+
+[Check Point]
+  1) 1만건 문서 등록/색인/검색
+    * 등록 과정 중 일부 에러 --- done. delete this?
+    * 색인이 완료되지 않음   XXX --- done. delete this?
+    * AND연산 검색 확인 안됨 XXX --- done. delete this?
+    * 엔진 종료, 재시작 후 재가동 안됨 --- done. delete this?
+  2) 100만건 문서 등록/색인/검색
+    * 속도 및 vmstat 결과 화면 check ! as soon as possible !
+
+
+TODO - 위의 Check Point 이후의 계획
+
+	doc/POLICY로 옮김. 2002/08/28 --jiwon
+
+[Priority가 낮은 TODO list]
+
+  <INDEXER RELATED>
+  * easier for debugging
+		1. save forward index
+  		2. save header information in vrf for debugging.(like how many headers are full)
+  * work right
+  		1. make shared memory of vrf grow
+ 		2. defragmentation of mod_vrf should be implemented.
+  * faster
+		1. substitute merge_sort_by_wid(at mod_indexer.c) with something 
+		   derived from mergesort(at platform/generic/msort.c) 
+		   I steal it from freebsd source tree and it's far more fast
+		2. remake VRF with mmap
+
+
+[Done list]
+ ---------------------------                           aragorn's memo
+ * DocAttri     <-------------------+--- 김정겸
+   -> 설계 및 구현                  `--- 김영훈 ---+
+                                                   |
+ * QP/Indexer   <-------------------+--- 서지원    |
+   -> request object에 문제가 없나? `--- 박동훈 ---+
+   -> logic flow에 문제가 없나?                    |
+   -> 미구현 연산자들 구현                         |
+   -> 기본적인 Ranking : IDF                       |
+   -> 코드 정리, 안정화                            |
+                                                   |
+ * CDM,Lexicon -> 마무리,library화 <---- 이동원 <--+
+   -> logic flow에 문제가 없나?
+   -> 코드 정리
+   -> 안정화
+   -> library화 : inter-process환경에서 작동
+
+ * SoftBot App. Protocol  <------------- 최우성
+   -> 설계에 따른 구현
+
+ Low Priority
+ * Custom XML Parser

@@ -1,0 +1,557 @@
+# vim:ft=softbotdoc:tw=80:
+# $Id$ 
+
+Last modified: [$Date$]
+ * 현재 softbot server을 static으로 컴파일 하게 바꾸었다. linking시에
+   --all-static을 추가해 주면 정적으로 컴파일됨. 
+   혹시라도 저렇게 하는게 느려서 불편하다면, Make.defs.in에 
+   softbotd_la_LDFLAGS= -all-static이라고 하고, server/Makefile.am에
+   있는 softbotd_la_LDFLAGS= 으로 된 부분을 softbotd_la_LDFLAGS+=으로
+   바꾸면 될 듯..  --jiwon, 2002/09/27
+
+ * 모든 모듈의 listen port는 server의 gSoftBotListenPort에 상대적으로
+   결정된다. 더 이상 configuration file에 각 모듈의 port를 적지 말고, 
+   <server.c> section에만 Listen directive로 port를 명시해 준다. 
+   (softbot.conf에 그렇게 되어 있음)
+   실행 시킬 때, -p 8705을 하면 8705이 기본적인 listen port로 잡히며
+   register/client connect시에 8705을 사용하면 된다. did server/client는
+   8705에 일정한 숫자가 더해져서(구체적으로는 'D'-'A'+1) port값이 정해진다.
+   -p 100 처럼 1024보다 작은 값을 적게 되면 기본 port(8605)에 더해진 값이
+   gSoftBotListenPort로 사용하게 된다. 다른 사람과 port가 충돌하면 
+   100~200정도를 하면 충돌하지 않을 것이다. 
+   새로운 port를 자신의 모듈에 할당하고 싶으면, assignSoftBotPort(modules.c) 
+   함수를 이용해 할당하면 된다.assignSoftBotPort(__FILE__,'A')처럼 call하면 됨.
+   이 때 module_portid는 'A', 'B', .. 'Z', 'a',..'z'를 사용하며(대문자 권장) 
+   이미 사용되고 있는 포트를 보려면 -p show라고 하면 된다.
+   !요거 좀 불편한거 같은데 누가 좀 고쳐줘요~!
+   --jiwon, 2002/09/17
+
+
+ * log error 함수를 추가하였다. ERROR, DEBUG, INFO 등으로 기존과 동일한 이름을
+   대문자로 추가하였다. 사용법은 동일하나 이들 대문자 함수는 Release 버전을
+   컴파일할 때 모두 제거된다.
+   따라서 디버깅 환경에서 필요한 오류메시지를 출력하는데 쓰는 것이 적절하다.
+   특히 눈에 잘 띄는 칼라링을 위해 error, crit 등을 사용한 경우에는 각각
+   ERROR, CRIT 정도로 바꾸어주는 것이 적절하다.
+   앞으로 error, crit 등의 소문자 log error 함수는 정확히 필요한 정보만을
+   출력하도록 손보아야 한다.
+   -- aragorn, 2002/09/12
+
+ * function의 return값을 SUCCESS, FAIL, DONE, DECLINE 4가지로 정리하였다.
+   (DECLINE은 hook.h에 위치하지 않아도 상관없으며, hook의 decline 값은 임의로
+    지정할 수 있다.)
+   -- aragorn, 2002/09/12
+    !Question (delete this after read this)! 왜 DONE값을 minus로 정하셨나요?
+	comment로 적은 save to die() 가 무슨 뜻인지 잘 모르겠습니다. 
+	그리고 errorCode.h이름을 다른걸로 바꾸는게 좋을까요?  -- jiwon, 2002/09/13
+
+ * !see! modules/mod_httpd/STATUS
+
+ * 영훈 !이상! cdm fill_title_and_comment안되남?.. 잘 안되는듯. (dynamic
+   comment때문?)
+   p.s) screen history buffer size 조절할 수 있다. screen -h bufsize
+
+ * orange:/usr/local/bin/clear_ipcs 을 만들어 놓았음. 실행시키면 자신의 sys5
+   ipc를 모두 제거시킨다. 경고없이 제거하므로 조심할 것. softbotd 종료시에
+   반드시 shared memory와 semaphore를 모두 제거하도록 개발해야 하고, 기존의
+   ipc와 충돌한다면 작동시키지 않는 정책이 필요하다. shared memory가 깨진
+   경우 원인을 모르고 계속 삽질할 가능성 높음.
+   -- aragorn, 2002/09/12
+
+ * doc/README.database.scheme에 field information에 관한 고찰을 써 놓음.
+   -- nominam, 2002/09/04
+
+ * CDM Improved 개발중... README.cdm.c에 디자인중...
+   왠지 엄청난걸 건들여버린듯한 느낌... 초난감... --;;
+   -- nominam, 2002/09/02
+
+ * doc/PLAN에 tokenizer/lexer/parser에 대한 discussion이 있음. !빨리 처리해야..!
+     -- jiwon, 2002/08/31
+
+ * softbotdoc 용 syntax highlighting을 시험적으로 만들었음. 이 파일 첫째 줄처럼
+   vim:ft=softbotdoc: 라고 해 주면 적용 됨.
+[Title] 처럼 제일 처음에 []로 둘러쌓인 문자가 있으면 자주색으로, 줄 아무 곳에서나
+   <subtitle> 이라고 하면 파란 색으로, !병목! 처럼 !로 둘러쌓면 빨간색 반전,
+   IMPORTANT/Important 도 같게, TODO FIXME XXX 는 노란 반전, 1) 1.2) 1. 1.1.1.
+   등의 숫자 lable은 자주색으로 (숫자로 시작해서 점이나 괄호로 끝나야 함), *는 
+   노란색으로 되게 해 놓았음 (그줄에서 white space를 제외한 제일 첫 문자가 *일
+   경우에만..) (!참 쓸데없는거 했다고 생각함!. ;;;) 
+   orange의 /usr/share/vim/vim61/syntax/softbotdoc.vim 에 있음. 카피해서 white나
+   red 등에서 써도 됨..
+   한동안 써 보고 싫으면 다시 없애도록 합시다. -- jiwon, 2002/08/30
+
+ * exuberant ctags 깔았음. (man exuberant-ctags 혹은 man ctags)
+   /maketags added. ~/.vimrc에 set exrc 라고 되어 있으면,
+   maketags실행후에 vi에서 tags를 편하게 쓸 수 있음. -- jiwon, 2002/08/29
+
+ * %s/AP_DECLARE(\([^()]*\))/\1/gc
+   mod_httpd 에서 함수를 선언할 때 사용한 AP_DECLARE(int)를 int로 벗겨내는
+   regular expression for vim.
+   ctags  -I -w -t --globals --members *.[ch]
+   vim를 위한 tags파일 생성. 자세한 것은 vim에서 :help tag 참조.
+   -- aragorn, 2002/08/22
+
+ * Expat을 사용하는데 가장 꺼려졌던 것이 libxml과 마찬가지로 한글코드를 
+   지원하지 않는 것이었는데 expat에는 unknown charset을 변환하는 handler를
+   등록해서 사용할 수 있도록 하는 놀라운 기능이 있었습니다.. ^^
+   -- nominam, 2002/07/31
+
+ * debian package에서 colormake와 colorgcc를 추가했습니다. 현재 colorgcc는
+   적용되어 있는 상태이고, colormake의 경우 man colormake(1)을 확인해 보시기
+   바랍니다.
+   colormake의 경우에는 불필요한 것까지 coloring하기 때문에 화면이 지저분하고
+   어지럽습니다. colorgcc는 깔끔하고 단순한 편입니다.
+   -- aragorn, 2002/07/31
+
+
+ * 밑에 언급된 VRF 문제 해결된것 확실한지 확인해 보기 바랍니다.
+   dat.txt  색인해서 지진이라는 단어를 보면 순서대로 되어있지 않는것 발견.
+   -- susia
+
+ * 문단 검색 됩니다..
+  	A NEAR B 라고 하면 문단 검색입니다.
+	QPP 쪽에서  QPP_OP_PARA 가 없어서. 임시로 NEAR 를 사용하였습니다.
+	나중에 바꾸어야 합니다. 2002/07/27 -- Susia
+
+
+  * VRF와 다른 module사이에 버그 발견.
+    VRF에서 variable을 줄때 docid 순서대로 주지 않음.
+	qp에서 최근의 data를 우선시 해서 달라고 하리라는 예상에서
+	header를 거꾸로 가지고 있는 것이 문제임.
+	header를 indexing한 순서대로 가지고 있거나,
+	qp에서 stack에 넣을 때 한번 sorting을 해야 함.
+
+	VRF를 고쳐서 header를 indexing한 순서대로 가지고 있을 때의
+	문제점은 메모리에 caching하는 header가 최근의 header가
+	아니라는 것. 2002/07/16 --jiwon
+
+  * sb_assert() 를 새로 만듬.
+    sb_assert(expression)의 형태로 사용하게 되면, expression이 참이 아닐 때
+    LEVEL_CRIT의 에러메시지를 남기고 abort()하여 core파일을 남기게 된다.
+    발생해서는 안 되는 critical error 상황에서 sb_assert를 호출한다.
+    --07/08 aragorn
+
+  * softbotd 죽을 때 
+    indexed data 저장됨. 07/06 --jiwon
+
+  * docattr, mod_qp와 붙어서 잘 돌아감...
+    client> delete [docid]
+	ex)
+	client> delete 1, 2, 5-10, 20, 100
+	--07/02 nominam 
+
+  * incomplete type
+    see http://www.tru64unix.compaq.com/dtk/Compaq_C_Compiler/doc/lrm/DOCU0004.HTM
+    xml관련 data structure를 incomplete type으로 선언하여 xml library를
+    감추어버린다.
+
+  * apr, apr-util
+    mod_httpd와 관련해 반드시 필요하게 되었다. apr-pool을 도입하는 것을
+    준비할 것. memory allocation, memory leak문제는 apr-pool로 해결.
+
+  * Makefile.am를 제대로 설정하도록 한다.
+    1) make install 이전의 make에서 오류없이 compile되어야 한다.
+      따라서 미리 compile, linking되어야 하는 library는 모두 $(libdir)에
+      위치하도록 만든다. noinst_ prefix를 사용한다.
+    2) runtime에 dlopen되는 library, module은 모두 $(libexecdir)에 넣는다.
+    3) mod_api 이름을 바꾼다. 적절하지 않은 이름이다.
+      see STATUS_BOARD
+    4) include 안의 불필요한 header파일들을 모두 없앤다. QProcessor.h 등의
+      header는 모두 불필요한 것으로 없애어 버린다. 이런 header는 모두
+      API모듈이나 mod_qp로 사라져야 한다. 애매한 header파일이 include에
+      남아있지 않게 만든다.
+    5) 새로 cvs checkout을 한 후,
+      ./bootstrap && ./configure && make && make install
+      를 실행시켜서 정상적으로 compile, 실행되는지 확인한다. 한번에 반드시
+      오류없이 설치되어야 한다.
+    6) 엔진을 실행시키는 것은 make install 이후에 bin/softbotd를 실행시켜야
+      한다.
+
+  * mod_docattr 대충 돌아갑니다... 빨리 mod_qp에 넣어보고 싶군요.
+    1000개의 문서셋에서 80%가 걸러져 나오는 연산을 10만번반복하면
+	Realtime:3(s), User Time 3(s), System Time 0(s)
+	이 걸립니다. --06/26 nominam
+
+  * DoxyGen 테스트 중. http://orange.softwise.co.kr/~aragorn/SoftBotNext/
+    doxygen에 대한 자세한 설명은 아래 URL을 참고할 것.
+    http://www.stack.nl/~dimitri/doxygen/manual.html
+    Doxygen이 configuration파일이고, 프로젝트 루트 디렉토리에서 doxygen
+    이라고 명령을 실행하면 doc/html 아래에 문서파일을 생성한다.
+    -- 06/23 aragorn
+
+
+  * log_error.c의 config를 server.c, client.c로 옮김. command line config
+    와의 문제도 깔끔하게 해결되고, server와 client의 log level 등을 원하는대로
+    설정할 수 있게 되었다.
+    -- 06/21 aragorn
+
+  * server의 registry가 경우에 따라 깨어지는 현상의 원인을 찾아냈음.
+    client에서도 동일한 key로 registry를 loading하는 것이 원인이었으며,
+    client의 registry값이 update되었기 때문에, 반복적으로 registry값이
+    바뀌는 현상이 나타났음. client의 registry를 disable시키는 것을 일단 해결.
+
+    앞으로 엔진에서 사용하는 모든 shared memory, semaphore는 이미 그것이
+    존재하는지 확인하여 확실한 경고나 에러를 내도록 만들어야 한다.
+    -- 06/21 aragorn
+
+  * daemon이 제대로 종료 안 되는 문제는 udp recvfrom, sendto에 timeout이 없기
+    때문으로 추측됨. 모든 udp 관련 코드에서 mod_udp를 사용하도록 수정하고,
+    mod_udp에서 timeout을 제대로 설정할 것. --aragorn
+       mod_udp에서 timeout 설정되었음. 그러나 위의 에러와는 별 관계없고,
+       signal handler가 제대로 설정되지 않았던 것이 문제로 추측됨.
+       06/21 현재 엔진이 잘 종료되는 것으로 보임.
+
+  * 크기가 큰 문서가 등록이 안되는 문제를 추적중..
+    mod_sbcdm_tcp에서는 300k이상의 문서는 등록이 되고
+	아직 mod_softbot4를 통한 문서등록시 큰문서에서 가끔 어쩌다 등록실패가 되는
+	이유는 모름... -nominam
+
+  * gConfigPath, gSoftBotRoot
+    1) 데이터 파일은 모두 상대경로를 지정하며, open()때 gSoftBotRoot를 앞에
+      붙여서 사용한다.
+    2) config, log_error는 수정되었음. 나머지 코드들도 수정할 것.
+      모두 수정되는대로 doc/STATUS에 기록 남길 것.
+      * DONE : config.c, log_error.c
+    -- 06/14
+
+  * TODO : 가능하면 무조건! 빨리!
+    1) full search - 06/14 : 김영훈
+    2) persistent data store - 06/14 : 각자 minor
+    3) doc attribute - 06/20 : 김정겸
+    4) detail query processing - position/boolean operation - 06/25 : 서지원
+    5) xml base protocol - 06/28 : 박동훈, 김영훈
+	6) japanese morphological analyzer import - 06/?? : nominam
+    7) etc
+    -- 06/10
+
+  * FIXME
+    실행시 입력된 옵션의 우선순위는 가장 높아야 한다. debug level의 경우 
+    getopt로 입력한 것보다 config file의 것이 나중에 적용되어 config file의
+    값으로 무조건 설정되는데, 모든 설정의 우선순위는 다음과 같다.
+      1) 명령 실행시 입력한 옵션 (높은 우선순위)
+      2) registry file에서 읽어들인 값
+      3) config file에서 설정된 값
+      4) compile time의 default값 (낮은 우선순위)
+    config와 registry의 우선순위에 대한 건은 아래 README 05/29를 참조한다.
+
+  * FIXME
+	child process[3761, mod_indexer.c] killed by signal[2]. 
+	child process[3755, mod_sbcdm_tcp.c] killed by signal[2].
+    SIGINT, SIGQUIT, SIGTERM으로 엔진을 종료할 때, signal handler없이 위처럼
+    곧바로 죽어버리면 안 됩니다. signal handler를 제대로 설정하고, 종료시에
+    처리할 작업을 모두 제대로 처리하는지 확인하기 바랍니다.
+
+  * STATUS CHECK! 아래 항목들에 대해 SoftBotNext.txt 에 문서로 남기기 바랍니다.
+  x 1) 문서 등록 방법 : 어떤 명령으로 어떻게 등록하는지? 
+    2) 문서 등록 상태 확인 ? -> registry
+  x 3) 색인 시작 ?
+    4) 색인 상태, 색인 속도 확인 방법 ?
+    5) Lexicon Server 상태 ?
+    6) DocId Server 상태 ?
+    7) 검색 수행 방법? 웹 CGI, console client 모두
+       http://orange.softwise.co.kr/cgi-bin/search/hostname:port
+    8) 검색 속도 확인 방법?
+    위의 항목들에서 구현 안 된 것이 있으면 같이 구현합니다.
+
+  * mod_sock -> mod_tcp, mod_sbcdm_tcp
+    bind(), listen(), accept() 등 일반적인 함수는 모두 mod_tcp 로 옮기고,
+    tcp_send(), tcp_recv()는 cdm에 국한된 것이므로, mod_sbcdm_tcp로 옮기고,
+    API로 노출시키지 않고 감추도록 합니다. mod_sock의 udp 관련 코드는
+    당분간 그대로 둔 상태에서, mod_udp로 옮기거나, 다른 상위레벨 protocol에
+    넣어서 감추도록 합니다.
+
+    코드가 모두 정리되면, mod_softbot4, mod_protocol4 가 mod_sbcdm_tcp,
+    mod_sock 등을 모두 대체하도록 합니다.
+
+    이렇게 코드가 모두 정리되고 나면, NEXT만의 효율적인 프로토콜을 만들고,
+    이것을 기반으로 mod_softbot4, mod_protocol4의 모든 기능을 대체하도록 
+    합니다.
+
+  * mod_softbot4에 scoreboard가 적용되었습니다. mod_softbot4의 module_main(),
+    thread_main()을 참고하기 바랍니다. 전체적으로 코드가 간결해지고, 재사용
+    가능한 코드가 모두 mod_mp, mod_tcp로 옮겨졌습니다. 다른 daemon들 또한
+    mod_softbot4를 참고하여 작성하면 됩니다.
+
+  * lexicon signal handler debugged.
+  	thanx to nominam ^^
+
+  * mod_mp 추가. multi process/thread 관련 코드는 모두 이쪽으로 모을 예정.
+    06/04 --aragorn
+
+  * log error 방식 변화..
+  	configuration file에 LogLevel을 적을 때 숫자로 적지 않고 
+	string(debug, info..)으로 적게 바뀜.
+	log level 이상의 log message 는 모두 출력. 
+	log level 이하의 메시지는 policy 에 따라 해당 모듈만 출력.
+	DebugModulePolicy가 include일 경우에는 DebugModuleName에 명시된
+	module에 대해서는 모든 message(debug 포함)를 출력. exclude일 경우는 
+	예상하는 대로.. 05/30
+
+  * NEVER, NEVER, NEVER use malloc/free.
+    memory allocation하기 어렵다고, malloc/free를 쓰는 곳이 중간중간
+    보이는데, unused memory를 제대로 free하기 어려운 상황에서 이런 식으로
+    코딩하면 절대, 절대 안 됩니다.
+    지금 mod_protocol4.c 의 register_doc 중간에 malloc 쓴 code가 보이는데,
+    어디에도 free가 없습니다. 마지막에 free를 넣더라도, 중간중간 에러처리되면서
+    return FAIL을 하게 되면, 제대로 자원을 반환하지 못하게 됩니다.
+
+    malloc을 하지 말고, 명확히 boundary를 예상하여 memory를 재활용하도록
+    코딩해야 합니다. 05/29 --aragorn
+	  
+	    보통 malloc/free나 lock/release등의, resource를 할당한 후에,
+	    꼭 해제를 해 주어야 하는 경우에는, return은 곳은 한 곳에서 하고, 
+	    goto문을 써서 해결합니다.
+	    e.g)if (fail_cond) {
+                retval=FAIL;
+                goto DONE;
+            }
+  		    ...
+  		    retval=SUCCESS;
+  	     DONE:
+  		    free(memory); // or release(lock);
+  		    return retval;
+        malloc/free를 안쓰고 프로그래밍 할 수는 없습니다. lock/release하지 않고
+  	    프로그래밍 할 수 없듯이. 피할 수 있으면 피하겠지만, 피치 못할 경우에는
+  	    당연히 써야죠. 아닌가요?  05/30 --jiwon
+            no. daemon은 malloc/free 안 쓰고 얼마든지 프로그래밍할 수 있습니다.
+            검색엔진은 예상되지 않은 메모리를 쓰는 경우가 없습니다.
+		
+  * README 05/29 (aragorn)
+    config/registry 어느 것이 먼저 읽혀야 하나?
+    config는 etc/softbot.conf에서 값을 읽어오게되고,
+    registry는 logs/softbotd.reg에서 값을 읽어오게 된다.
+     1) registry에서 저장된 값을 config 변경을 통해 바꾸려는 경우, config가
+       나중에 읽혀야 한다. 이런 경우는?
+       - ServerRoot : 검색엔진이 설치된 위치를 모두 바꾸려는 경우, config의
+         ServerRoot값을 수정하고, 엔진을 restart한다.
+     2) 기본값은 config에서 가져오되 registry를 통해 변경된 값을 계속 유지
+       하고자 하는 경우, registry가 나중에 읽혀야 한다. 이런 경우는?
+       - registry와 config를 연동시키고자 하는 모든 경우. 수정된 registry값이
+         config에 의해 다시 초기화되면 곤란하다.
+       - 여러가지의 maximum limits들.
+    흐음.... 정리하면,
+    Registry가 크게 2가지로 나뉘어야 한다.
+    persistent registry와 onetime registry.
+    persistent : softbotd.reg에 저장되어 항상 그 상태가 유지된다.
+    onetime : 매번 config에서 읽어온 값으로 초기화되고, softbotd.reg에는
+              저장되지 않는다.
+    05/29 --aragorn
+	    config가 먼저 읽히고 registry가 나중에 읽히면 별 문제 없을 것 같은데요?
+		ServerRoot의 경우에는 그냥 registry에 저장을 하지 않으면 안되나요?..
+		제가 생각하기에는 ServerRoot는 그냥 configuration file에 명시만
+		되면 될 것 같은데... 그렇게 해서 문제가 되는 경우가 있는가요?
+		 05/30 --jiwon
+           ServerRoot 값을 어떤 방식으로 공유하려고?
+		     configuration file에 명시해서요. 뭔가 서로 다르게 생각하고 있는 것
+			 같습니다.
+               you CANNOT share config value between modules. that's why i intended
+               to replace config with registry. registry is the "shared version of
+               config".
+
+  * save/restore registry가 정상적으로 작동합니다. 그동안 제대로 작동하지
+    않은 것은 restore쪽 버그 때문입니다. 05/27 --aragorn
+
+  * ipc.c의 shared memory routine을 변경하였습니다. 기존의 getshm 등의 
+    코드는 더이상 쓰지 않도록 하겠습니다. 새 방식은 ipc_t 라는 통합 데이터
+    구조를 사용하게 되고, 미리 delete mark를 set하여 프로세스가 종료될 때
+    자동적으로 shared memory를 삭제하도록 바꾸었습니다. 
+    앞으로는 엔진이 종료되면 엔진이 사용하던 모든 자원은 반환하는 것을 원칙
+    으로 하겠습니다. semaphore는 signal handling을 통해 삭제하는 것으로 
+    합니다. any better idea? 05/27 --aragorn
+	
+  * docid server work well. but not yet thread safe.
+    try getnewdocid and getdocid commend in client, once.
+	--nominam
+
+  * lexicon 잘 죽습니다. not often, well...
+  
+    external bucket 생성 확인 필요.
+
+
+  * TODO: 1.indexing시 형태소 분석 여부, 형태소분석기에서 나온 noise처리,
+          2. indexing시 numToIndexThisTime 와 file에 저장하는 부분에 대해
+		     논리적으로 오류없이 고치기.
+		05/23 --jiwon
+
+  * auto_defines.h.in에 CANONICAL_HOST추가.
+    "i686-pc-linux-gnu" 식으로 찍힌다. 05/23 --jiwon
+
+  * sys_errlist[errno] -> strerror(errno) 로 수정한다. see strerror(3)
+     05/17 --aragorn
+
+  * lexicon suffix 수정.
+  	테스트 통과...
+	prefix 에서 totNum 제거.
+	 05/16 --Susia
+
+  * TODO: SYSV IPC의 key를 만들어 내기 위해 ftok를 쓸 때, existing file을 
+    써야 하고, project id를 ascii character로 지정한다. 이때 project id가 
+    충돌하지 않게 ipc.h에서 종류별로 미리 character를 지정해 놓고 써야 한다.
+    --aragorn
+
+  * did server module을 사용할 모듈은 결국 canned doc밖에 없는
+    관계로 nominam 작업중...
+	 thanks 05/15 --jiwon
+
+  * 주의할 점
+    1. module structure에 넣는 init의 역할이 바뀌었으므로 README.init을 읽어볼 것.
+	2. 1로 인해 init이 forking전에 불리므로, process가 forking됨에 따라
+	   잃게 되는 resources는 각자가 initialize한다. 05/15 --jiwon
+
+  * docattr에서 mmap, msync를 사용하여 db관리하려 합니다.
+    mmap을 사용하요 100MB를 한번씩 read, write한 결과
+	real    0m2.057s
+	user    0m0.700s
+	sys     0m1.360s
+	malloc을 사용하여 같은 시행은
+	real    0m2.000s
+	user    0m0.180s
+	sys     0m1.830s
+	의견 개진 바랍니다.
+	--nominam
+      msync는 된 겁니까?
+	  msync시간은 빼고 입니다. 
+	  msync는자주하는 작업이 아니라서 뺐습니다만..
+        msync를 하지 않으면, main memory에 operation하는 것과 mmap memory에
+        operation하는 속도가 비슷한 것이 당연합니다. msync의 속도가 관건입니다.
+
+  * dfil을 document attribute manager로 명명하려고 합니다.
+    줄여서 docattr. 이의있으신분은 의견 개진 바랍니다.
+	--nominam
+	  찬성 05/13 --jiwon
+      찬성 05/13 --aragorn
+
+  * vrf shared memory version done for compile.
+    컴파일만 되고 제대로 동작하는지 테스트는 
+	하지 않았음. 05/13 --jiwon
+
+  * vrf의 data를 shared memory에 올리는 작업중.
+    시간이 많이 걸릴 듯함. shared memory에
+	올릴 생각을 하지 않고 만든 구조라, 고치는 데
+	시간이 걸린다. 05/11 --jiwon
+
+  * client에 registry, config 명령 추가. server의 상태를 보여준다.
+     05/09 --aragorn
+
+  * registry에서 information을 get하는 함수 (registry_t의 get함수)
+    는 status를 얻는 경우에 불린다. 따라서 여러 thread에서 
+	동시에 불릴 경우가 없으며, thread safe할 필요가 없다.
+	 05/07 --jiwon
+
+  * configuration parameter convention을 만들면 좋을 것 같다.
+    기본적으로 LogLevel, ProcessTitle 정도로 하겠음.
+	약자에 대해서는 underbar(_)로 연결해도 좋다.(e.g QPP_OP_AND)
+	softbot.conf.in 등등 파일 수정중.. 05/06 --jiwon
+
+  * lexicon not support suffix 개선중, 일단 지원하지 않는 것으로 보고
+    테스트하기 바람.
+    --Susia
+
+  * client에서 getfield명령어로 필드하나만 뽑아서 볼수 있음.
+  	usage: getfield docid fieldname
+	--nominam
+
+  * docapi의 문제 고쳤습니다. indexer랑 물려서 잘 돌아갑니다
+    --nominam
+
+  * client에서 register4명령어로 softbot4.x의 문서를 등록할 수 있음.
+    register4의 syntax는
+
+	register4 filename
+
+	file의 구조-> dit형식문자열\n본문
+	ex) clinet디렉토리의 test파일
+	--nominam
+
+  * modules/mod_protocol4 새로 작성. 버그 수정되어 정상 작동함.
+    modules/mod_softbot4 전체적으로 손봄. client와 작동하는 것을 확인함.
+    client status, test 명령 추가 05/02 --aragorn
+
+  * modules/mod_tests 추가.  mod_lexicon_test.c 등이 들어갈 것임.
+    (좀 있으면 이 message는 지울 것임..)
+    2002/05/02 --jiwon
+
+  * client에 drop명령어 삽입(canneddoc db에있는 모든 문서를 지운다.)
+	--nominam
+
+  * remote버전 canneddoc_last_registered_id API추가 --nominam
+
+  * get_prefix_wordid/get_suffix_wordid에서 totalNum pointer가 NULL일
+    경우에 totalNum을 세지 않는다. (assigned to dong-hun)
+	(바꾼 후에 jiwon에게 말해줄것.)
+	[05/02 03:30] --jiwon dong-hun
+
+  * mod_lexicon_daemon에서 suffix관련 함수들의 hooking 고려.
+    signal 받았을 때, suffix를 지원하는 경우 free할 memory가
+	더 있으므로, sb_run_lexicon_finalize 같은 api를 만드는 것을 고려
+	2002/05/02 02:30 --jiwon,dong-hun
+
+  * mod_docapi에서의 canned document format validation by dtd과정은 일단
+    접어두기로 했다. --;;
+
+  * client에서 register, get명령어 잘 동작함.
+    client의 Makefile.am에 libmod_cdmclt가 active한 상태면 반드시
+	mod_sbcdm_tcp모듈이 active되어 있는 server가 local에 떠있어야 한다.
+	-- nominam
+
+  * The cdm interface of php extended module version is added to
+    srclib/php_cdm directory.
+    아직 컴파일인되지만 전체컴파일에는 영향없음
+    -- nominam
+
+  * modules디렉토리에 있는 static_modules.c를 server디렉토리로 옮김
+    -- nominam
+
+  * config에 document field configuration(tag name of canned document)추가
+    Title, Body등은 문서를 등록하는 사람, 행위자 (intranet의 경우 
+	site작업중인 엔지니어, internet의 경우 robot), 이 알고 있어야 한다.
+	-- nominam
+
+  * 형태소 분석기와 query pre processor사이 부분을 좀더 
+    명확하게 할 필요가 있음.
+	예를 들면, "" 안에 들어있는 부분에 대해서는 
+	한꺼번에 형태소 분석기에 넘겨 준 다음에 wordlist를 
+	받는다던지.. --jiwon
+
+  * compile 안될 수도 있음. mod_qpp, mod_indexer, 를 빼고/*{{{*/
+	컴파일하면 아마 될 것임.(그냥 modules/Makefile.am에서
+	mod_qpp, mod_indexer등을 빼면 됨.) --jiwon/*}}}*/
+  
+  * nextsoftbot/client에 register_doc 추가 중.(almost done.., 
+    but need review if it's proper for testing) --jiwon, nominam
+	  I think it need to be changed to use protocol.. --jiwon.
+
+  * variable buffer manager(VBM) 를 thread safe하게 fix해야 함. 
+    혹은, malloc wrapper를 써야 하는걸까? .. --jiwon
+
+  * mod_morpheme의 register_hooks부분을 commentify하였다.
+    morpheme 관련된 api는 mod_morpheme이 implement_hook 해야 하는걸까?
+	(현재는 mod_index에서 되어 있다.) --jiwon
+
+  * libtool을 채택하였으므로 더 이상 library dependency에 신경을 안써도 됨.
+	물론 build order는 SUBDIRS로 controlling 해야 한다. --jiwon
+
+  * refer to Apache APR section of 
+    http://www.devspace.com/Technology/ApacheStuff.html
+	for APR samples (how to use apr_pool_t, apr initializing, etc) --jiwon
+
+  *	project root directory에서 cvs2cl을 실행하면 ChangeLog가
+    만들어지는데, 이 파일과 viewcvs를 잘 보면 다른 사람이 
+	edit한 부분을 효과적으로 볼 수 있다. --jiwon
+
+  * compile시, _REENTRANT를 errno.h를 include 하기 전에 정의해 주면 
+    errno가 per thread value가 됨.
+	(thread safe함. refer to errno.h) --jiwon
+
+  * connect를 nonblocking으로 starting만 시키고
+    send, recv할 때 error 처리를(getsockopt - SO_ERROR) 하게 하면
+	성능 향상이 많이 될까? 
+	(다른 일 하는 동안에 connection이 이루어질 수 있으므로)
+	현재는 connect_nonb안에서 connection이 이루어 지는 쪽으로
+	되어 있다. (현재는 성능 향상보다는 소스의 simplicity가 중요)
+	--jiwon
+
+  * nonblocking TCPRecv,TCPSend must be modified.
+    current code seems something wrong. --jiwon
+
+  

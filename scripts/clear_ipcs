@@ -1,0 +1,97 @@
+#!/usr/bin/perl
+#
+# remove all the System V IPCs
+# $Id$
+
+use strict;
+
+my ($login, $tmp) = getpwuid $>;
+
+my $ipcrm_opt = "";
+my $os = get_os_type();
+my ($key, $id, $owner, $nattch);
+
+my $psout = `ps x | grep softbotd | grep -v grep`;
+if ($psout) {
+	# shared memory중 nattch가 0인 것만이라도 청소한다.
+	open(IPCS, "ipcs -m|") or die "cannot execute ipcs: $!";
+	foreach( <IPCS> ) {
+		next unless $_;
+
+		/Shared Memory/  and $ipcrm_opt = "-m" and next;
+
+		if ( $os =~ /^Linux/ ) {
+			($key, $id, $owner, undef, undef, $nattch) = split(/\s+/);
+		}
+		else {
+			print stderr "unsupported operating system: $os\n";
+			last;
+		}
+
+		next unless $owner eq $login;
+		next unless $nattch == 0;
+
+		ipcrm( $ipcrm_opt, $id );
+	}
+	close(IPCS);
+
+	print "softbot is running. don't clear ipcs.\n";
+	exit;
+}
+
+open(IPCS, "ipcs|") or die "cannot execute ipcs: $!";
+foreach ( <IPCS> ) {
+	next unless $_;
+
+	/Shared Memory/  and $ipcrm_opt = "-m" and next;
+	/Message Queues/ and $ipcrm_opt = "-q" and next;
+	/Semaphore/      and $ipcrm_opt = "-s" and next;
+
+	if ( $os =~ /^Linux/ ) {
+		($key, $id, $owner) = split(/\s+/);
+	} elsif ( $os =~ /SunOS/ ) {
+		(undef, $id, $key, undef, $owner) = split(/\s+/);
+	} elsif ( $os =~ /AIX 1/ ) { # AIX 5.1
+		(undef, $id, $key, undef, $owner) = split(/\s+/);
+	} elsif ( $os =~ /AIX 2/ ) { # AIX 5.2
+		(undef, $id, $key, undef, $owner) = split(/\s+/);
+	} else {
+		print stderr "unsupported operating system: $os\n";
+		last;
+	}
+
+	next unless $owner eq $login;
+
+	ipcrm( $ipcrm_opt, $id );
+}
+close(IPCS);
+
+sub get_os_type {
+	my $type = `uname -sr`;
+	chomp $type;
+
+	return $type;
+}
+
+sub ipcrm {
+	my $ipcrm_opt = shift;
+	my $id = shift;
+
+	print "ipcrm $ipcrm_opt $id -> ";
+	my $rv = system "ipcrm", $ipcrm_opt, $id;
+	if ($rv != 0) {
+		# ipcrm(8) of debian linux stable does not support standard syntax.
+		# tricky hack of deprecated usage for debian woody(stable).
+		# -- aragorn, 2003/08/27
+		my $opt = "shm";
+		$opt = "msg" if $ipcrm_opt eq "-q";
+		$opt = "sem" if $ipcrm_opt eq "-s";
+
+		$rv = system "ipcrm", $opt, $id;
+	}
+
+	$rv = "done" if $rv == 0;
+	print "$rv\n";
+#	print "$rv\n" unless $os =~ /^Linux/;
+}
+

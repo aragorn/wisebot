@@ -1,0 +1,139 @@
+# $Id$ 
+
+ SoftBotNext Application Protocol
+
+ SoftBotNext의 Application Protocol은 SoftBotNext와 외부 시스템의 일반적인
+ 인터페이스 역할을 수행한다.
+
+ 주요 특징은 다음과 같다.
+ 1) HTTP, XML기반의 프로토콜
+ 2) URL을 통해 database object와 data에 대한 action을 지시
+ 3) 시스템의 성능와 개발의 편의성, 운용 편의성의 균형
+
+ 1. URL의 구성
+   1) http://host:port/
+     (host,port: 검색엔진이 Listen하는 address, port)
+     * 검색엔진에 등록된 database의 목록과 간략한 상태를 출력
+     * 전체 검색엔진에 요청할 수 있는 query의 목록
+       - server shutdown/restart
+       - create database
+       - drop database
+       - 등등
+   2) http://host:port/?query
+     * 검색엔진에 전달된 query를 적용,수행
+   3) http://host:port/database
+     * database: database의 이름
+     * 해당 database의 통계 정보
+     * 해당 database에 요청할 수 있는 query의 목록
+   4) http://host:port/database?query
+     * 해당 database에 전달된 query를 적용,수행
+   5) http://host:port/database/document
+     * document: document id
+     * 해당 document에 대한 통계 정보
+     * 해당 document에 요청할 수 있는 query의 목록
+   6) http://host:port/database/document?query
+     * 해당 document에 전달된 query를 적용,수행
+
+ 2. Query의 구성
+   1) engine에 요청할 수 있는 query
+     * server shutdown/restart
+     * create database
+     * drop database
+     * etc
+   2) database에 요청할 수 있는 query
+     * search
+     * register
+     * status
+     * etc
+   3) document에 요청할 수 있는 query
+     * brief info.
+     * download
+     * update
+     * delete
+     * etc
+
+ 3. HTTP와 XML
+   1) 기본 프로토콜은 HTTP를 그대로 사용한다.
+   2) 사용자 인증은 HTTP의 Authentication 기능을 이용한다.
+   3) 모든 서버의 반응은 XML 혹은 html/plain text로 출력된다.
+      (개발 초기에는 plain text로, 그 다음 XML, 그 후에 여유가 되면 html 구현)
+   4) 등록되는 문서는 XML포맷이다.
+   5) 개발 초기에는 Keep-Alive를 지원하지 않아도 되나, 추후 Keep-Alive기능을
+      지원해야 한다.
+
+ 4. database create/drop/merge
+   1) create
+     * database생성시 database의 field구성을 적절히 엔진에 전달한다.
+      (이 부분은 추후 자세히 확정.)
+     * 당분간은 default database하나만을 미리 생성해두며, running 상태에서
+      database를 생성하는 기능은 제공하지 않는다.
+   2) drop
+     * database를 drop하면 모든 데이터를 잃어버리게 되고, database가 사라진다.
+      database는 복구 불가능하며, 엔진은 삭제된 database가 점유하던 모든
+      자원을 OS에 반환하거나 초기화한다.
+
+ 5. document register/search/update
+   1) register
+     * 문서는 XML포맷으로 HTTP의 POST Method를 사용하여 등록한다.
+     * 서버는 등록 성공 여부를 결과로 출력해 준다.
+     * 등록 성공 여부는 실제로 문서가 database에 오류없이 등록되었음을
+      알려주지는 않으며, 단지 spool에 정상적으로 저장되었음을 알려준다.
+     * spool의 문서가 실제 database에 등록되는 과정에서 오류가 발생하여
+      문서가 등록되지 않을 수도 있으며, 이 경우는 서버의 error_log등을 참조
+      하는 수밖에 없다.
+   2) search
+     * 검색 결과는 XML포맷으로 출력된다.
+       (개발 초기에는 plain text로 출력한다.)
+
+ 6. document brief info./download/update/delete
+   1) brief info.
+     * 해당 문서에 대한 간략한 통계정보를 보여준다.
+   2) download
+     * 등록된 문서의 모든 정보를 출력한다.
+     * 등록 당시의 XML 문서 + update된 정보
+         + 검색엔진 내에서의 통계정보(등록일 등)
+   3) update
+     * document의 update는 숫자정보, 즉 DocAttri의 값에 한하여, 업데이트
+      가능한 정보만을 수정할 수 있다.
+     * 일반적인 문서의 update는 기존 문서 삭제/신규 등록의 방법을 쓴다.
+     * update되는 정보는 query string으로 전달한다.
+      XML로 전달하는 것은 번거롭고, 실제 update된 정보의 양이 많지 않다고
+      가정한다.
+   4) delete
+     * 해당 문서를 삭제한다. 삭제된 문서는 undelete를 통해 되살릴 수도 있다.
+     * delete는 delete DocAttri를 on시키는 update query의 일종이다.
+
+ 7. server의 state
+   1) read HTTP Request
+     * HTTP Request를 읽어들여서 적당한 object에 담는다.
+   2) parse URI
+     * URI를 parse하여 database/document/query를 판별해낸다.
+   3) access check
+     * Authentication/Authorization/Other Access Checking
+     * 현재는 구현하지 않는다.
+   4) process request/send response
+     * register/search 등의 request를 처리한다.
+   5) log request
+     * access_log를 남긴다.
+
+
+ 8. 구현의 방향
+   1) 우선 주요 기능을 간략히 dummy로 구현한다.
+     * request 데이터 구조 등을 정의한다.
+     * request의 action에 따른 handler를 호출한다.
+     * handler는 앞의 5단계 state에 대해 구분된다.
+     * 위 4)번 state에서, handler가 호출되면, 해당 handler에 hook된 함수가
+       순차적으로 호출된다. 각 함수는 request의 action/database/document를
+       보고 그 request를 handle하거나, decline하거나, HTTP error code를
+       되돌려보낸다.
+   2) document register/search/download/delete 기능을 최우선으로 구현하며
+     이 네 기능들은 나열된 순서대로 우선하여 구현한다.
+   3) 기본 기능으 충분히 안정화된 후, 나머지 기능을 구현해 나간다. 기능
+     안정화 단계에서 결과 출력내용을 XML포맷으로 구현해야 한다.
+   4) 이 상태에서 대법원 프로젝트에 투입된다.
+   5) Keep-Alive 기능을 구현한 후, 웹검색 서비스에 테스트한다.
+   6) 서비스에 필요한 최소한의 기능을 갖추어 서비스에 적용한다.
+   8) SoftBotNext의 Frame에 맞추도록 하며, mod_softbot4.c를 참조하여
+      mod_mp.c, mod_tcp.c, scoreboard 등을 그대로 활용한다.
+
+

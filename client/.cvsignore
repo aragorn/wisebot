@@ -1,0 +1,4 @@
+softbotcli
+*.exp
+ut_stest
+export_vars.h exports.c

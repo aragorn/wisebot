@@ -1,0 +1,153 @@
+/**
+ * $Id$
+ * Designed & Implemented by YoungHoon
+ */
+
+================================================================================
+                                   문서등록API
+================================================================================
+
+
+REQUIREMENT
+
+   1. 문서형식이 단일하고 정의된바있다.
+   2. 등록자(엔지니어)는
+      1) SYSTEM CONFIG의 DOCUMENT FIELD들에 대해 알고 있으며 등록할 문서중 
+         어떤 요소와 일치하는지 알고 있다.
+      1) SBCDM과 WID를 가동시킬 줄 알거나 이미 가동되어 있다.
+      2) 사이트의 데이타베이스를 알고 있다.
+      3) C프로그래밍이 가능하다. (차후 타 언어 지원)
+   3. 등록할 문서(RAW DOCUMENT)는
+      1) 각자 고유한 KEY를 가지고 있다.
+      2) 문서의 형식이 알려져있다. (적어도 텍스트로 추출이 가능하다)
+      3) FIELD별로 추출이 가능하다. (적어도 하나이상의 FIELD가 구분되어 있다)
+   4. 등록할 Canned Document의 DTD는 QP서버측에서 미리 생성되어 등록시 참조하여 
+      문서의 적격성을 판단할수 있도록 준비되어 있어야 한다. -- not yet implemented
+
+
+
+
+------------------
+   *데이타타입*
+------------------
+
+typedef struct {
+/* private */
+   void key[MAX_KEY_LENGTH];
+   xmlDocPtr doc;
+   xmlNodePtr root;
+   xmlDtdPtr dtd;
+} DocObject;
+
+typedef struct {
+/* private */
+   xmlNodePtr node;
+} FieldObject;
+
+enum DataType {
+   Integer,
+   Float,
+   String
+};
+
+------------------
+     *METHOD*
+------------------
+
+함수 : *DAPI_init*
+
+설명 : 문서등록기를 초기화한다. CDM서버와 연결을 시도하고 결과를 리턴한다.
+
+------------------
+함수 : *DAPI_close*
+
+설명 : 문서등록기의 설정을 모두 해제한다.
+
+------------------
+함수 : *DAPI_put*
+
+인자
+   * DocObject* doc
+
+설명 : 문서를 등록한다.
+
+------------------
+함수 : *DAPI_initDoc*
+
+인자
+   * DocObject* doc           : DocObject 객체
+   * char* key                : 문서고유키 ex) url
+   * char* version            : 문서형식(Canned Document Protocol)의 버전, 없으면 NULL
+   * char* rootElement        : 문서의 root element로 쓰일 태그 ex) html문서는 html태그
+
+설명 : 문서객체를 초기화한다.
+
+------------------
+함수 : *DAPI_freeDoc*
+
+인자
+   * DocObject* doc
+
+설명 : 문서 객체에 묶여있는 메모리를 모두 해방한다.
+
+------------------
+
+함수 : *DAPI_addField*
+
+인자
+   * DocObject* doc
+   * FieldObject* field           : 필드정보로 등록하려면 사용, 보통 NULL을 넣으면 된다.
+   * char* fieldname              : 등록하려는 필드의 태그이름
+   * char* data                   : 등록하려는 내용, 마지막은 null character로 끝나는 문자열
+
+설명 : 필드하나 추가
+
+------------------
+
+함수 : *DAPI_getField*
+
+인자
+   * DocObject* doc
+   * FieldObject* field           : 필드정보를 얻어오려면 사용, 보통 NULL을 넣으면 된다.
+   * char* fieldname              : 얻어오려는 필드의 태그이름
+   * char** buf                   : 얻어올곳, 내부적으로 메모리할당을 하므로 나중에
+                                    알아서 해제해주어야 한다.
+
+설명 : 필드하나 추가
+
+------------------
+함수 : *DAPI_setAttrOfField*
+
+인자
+   * FieldObject* field           : 속성을 추가하려는 필드의 FieldObject객체
+   * char* attr                   : 추가하려는 속성의 이름
+   * char* value                  : 추가하려는 속성
+
+설명 : 필드의 속성 지정
+
+------------------
+함수 : *DAPI_getAttrOfField*
+
+인자
+   * FieldObject* field           : 속성을 얻으려는 필드의 FieldObject객체
+   * char* attr                   : 얻으려는 속성의 이름
+   * char** value                 : 얻으려는 속성을 저장할 것, 나중에 알아서 해제해주길.
+
+설명 : 필드의 속성 지정
+
+
+--------------------
+      *사용예*
+--------------------
+
+문서등록시:
+
+   1. DAPI_init()
+   1. foreach docuement
+      1. DAPI_initDoc (&doc, "http://www.advancedlab.pe.kr", "1.0", "Document")
+      1. DAPI_addField (&doc, "Title", stringOfTitle, lengthOfTitle)
+      1. DAPI_addField (&doc, "Body", stringOfBody, lengthOfBody)
+      1. DAPI_addField (&doc, "URL", stringOfURL, lengthOfURL)
+      1. DAPI_put (&doc)
+      1. DAPI_freeDoc (&doc)
+   1. DAPI_close()

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+while [ 1 ]
+do
+    clear
+    scripts/view_registry dat/softbotd.reg
+    ./softbot status
+    sleep 3
+done
+

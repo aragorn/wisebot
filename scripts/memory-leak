@@ -1,0 +1,129 @@
+#!/usr/bin/perl
+
+use strict;
+use Getopt::Std;
+
+sub BEGIN {
+	$Getopt::Std::STANDARD_HELP_VERSION = 1;
+	our $VERSION = "1.0";
+}
+
+sub HELP_MESSAGE {
+	print <<END;
+Usage: $0 [-s] [-/filename]
+	- means "read log message from stdin".
+	if filename is omitted, use nextsoftbot/logs/local_mem_log
+
+	-s : show status in stderr
+END
+	exit;
+}
+
+HELP_MESSAGE() unless ( getopts( "s" ) );
+our ( $opt_s );
+
+my $filename = shift;
+if ( !$filename ) {
+	$filename = "logs/local_mem_log";
+}
+
+if ( not $filename eq "-" ) {
+	open STDIN, "<$filename" or die $!;
+}
+
+my ( $pid, $action, $address, $size, $file, $function, $line, $time );
+my ( $key, $value );
+my ( %log, $log_value );
+
+my $last_printed_time = 0;
+my $line_number = 0;
+my $entire_line_number;
+if ( $opt_s ) { $entire_line_number = int( `wc -l $filename` ); }
+
+while ( <STDIN> ) {
+	$line_number++;
+	if ( $opt_s ) {
+		my $current_time = time;
+		if ( $last_printed_time < $current_time ) {
+			my $percent = int( $line_number * 100 / $entire_line_number );
+			print STDERR "line: $line_number/$entire_line_number ($percent%)\r";
+			$last_printed_time = $current_time;
+		}
+	}
+
+	( $pid, $action ) = /^(\d+)\t(\w+)/ or die "Invalid line: $_";
+	next if ( $action eq "fork" );
+
+	( $pid, $action, $address, $size, $file, $function, $line, $time ) =
+		/^(\d+)\t(\w+)\t(\S+)\t(\d+)\t(\S+)\t(\S+)\t(\d+)\t(\d+)/ or die "Invalid line: $_";
+
+	$key = $pid." # ".$address;
+	$value = $line_number." # ".$action." # ".$size." # ".$file." # ".$function." # ".$line." # ".$time;
+
+	$log_value = $log{$key};
+
+	##############################
+	#           free
+	##############################
+	if ( $action eq "free" ) {
+		next if ( $address eq "(nil)" );
+
+		if ( $log_value ) {
+			delete $log{$key};
+		}
+		else {
+			print "** unknown free: $key # $value\n";
+		}
+		next;
+	} # free
+	
+	##############################
+	#           malloc
+	##############################
+	if ( $log_value ) { # incredible...
+		print "** incredible malloc...: $key # $value + $key # $log_value\n";
+		next;
+	}
+
+	$log{$key} = $value;
+	next;
+} # while ( <STDIN> )
+
+print <<END;
+** ==========================================================
+**                     leak from here
+** pid # addr # seq # addr # size # file # func # line # time
+** ==========================================================
+END
+
+sub cmp_log_key
+{
+	my ( $c ) = ( $log{$a} =~ /^(\d+) / );
+	my ( $d ) = ( $log{$b} =~ /^(\d+) / );
+
+	$c <=> $d;
+}
+
+sub cmp_log_value
+{
+	my ( $c ) = ( $a =~ /^(\d+) / );
+	my ( $d ) = ( $b =~ /^(\d+) / );
+
+	$c <=> $d;
+}
+
+my @sorted_key   = sort cmp_log_key keys %log;
+my @sorted_value = sort cmp_log_value values %log;
+
+my $leak_size = 0;
+my $i;
+
+for( $i=0; $i<=$#sorted_key; $i++ ) {
+	$_ = $sorted_value[$i];
+	( $line_number, $address, $size, $file, $function, $line, $time ) =
+		/^(\d+) # (\S+) # (\d+) # (\S+) # (\S+) # (\d+) # (\d+)/ or die "Invalid value: $_";
+	$leak_size += $size;
+
+	print $sorted_key[$i]." # ".$sorted_value[$i]."\n";
+}
+print "** leak size: $leak_size\n";

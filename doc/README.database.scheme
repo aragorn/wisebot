@@ -1,0 +1,51 @@
+# vim:ft=softbotdoc:
+
+[DATABASE SCHEME]
+CDM과 INDEXER는 이 설정을 읽고 데이타베이스를 생성한다.
+RDBM의 create table을 연상시키면 될것이다.
+
+referenced by
+* cdm
+* indexer
+* qp
+
+* document consists of fields
+* each field has some attribution
+
+[ referencing range ]
+
+                       <----------------- QP ----------------------------------------->
+       <----------- INDEXER ------------------>
+       <--- CDM ------->
+
+	                   [ information table ]
+
+ FIELD |   store in(1) |  index(2)  | size     |  morphanal  |  result document set(4)|
+ NAME  +-----+---------+------+-----+----------+    mode(3)  +------------------------+
+ (ID)  | CDM | docattr |  yes |  no |long|short|             | no | yes[comment info] |
+-------+-----+---------+------+-----+----------+-------------+------------------------+
+       |               |            |          |             |
+
+e.g) 
+	Date { docattr, index=no, morph=-1, result=yes }
+	Body { cdm, index=yes, morph=1, result=yes, comment(2,40) }
+
+* [comment info]: extract comment or not
+                  if extract comment,
+				  number of commenting and sizeof comment is followed
+
+* if there is a change in (1) attribution, all database should be rebuilded.
+  if there is a change in (2) attribution, only index database should be rebuilded.
+  if there is a change in (3), (4) attribution, no database need to be rebuilded.
+
+
+[ morphanal library id ]
+* referenced by morphological analyzing module
+* morphanal mode is combination of several morphanalyzer function
+
+morphanal mode 1:  "morphanalyzer 1", "morphanalyzer 2"
+morphanal mode 2:  "morphanalyzer 3", "morphanalyzer 1"
+
+e.g) morphanal mode 1: "대법원형태소분석기", "기본형태소분석기"
+    morphanal mode 2: "간단형태소분석기", "2그램형태소분석기"
+XXX: 형태소분석기에서는 decline을 어떻게 판단하는가...

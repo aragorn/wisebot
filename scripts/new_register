@@ -1,0 +1,166 @@
+#!/usr/bin/perl -w
+#$Id$
+
+use lib "/home/local2/perl";
+
+use strict;
+use SoftWise::SoftBot;
+use Benchmark;
+
+local $| = 1;
+my $host = shift;
+my $port = shift;
+my $file = shift;
+my $confirm = shift || 0;
+my $stop = 0;
+my $max_size = 600_000;
+
+unless ($host and $port and $file) {
+	print <<END;
+Usage: $0 <host> <port> <file> [<confirm>]
+    host  - hostname of search server
+    port  - port number that softbot use
+    file  - text data file to register
+    confirm - set 1 if you want to confirm every document by key input
+END
+	exit;
+}
+
+$SIG{INT} = sub { $stop++; };
+
+open(FILE, $file) or die "cannot open file: $!";
+#my $first_line = <FILE>;
+#$first_line =~ /TextForTest/ or die "invalid data file";
+
+
+my $state = 1;
+my ($dit, $body, $count) = ("", "", 0);
+while (<FILE>) {
+	last if $stop;
+
+	if ($state == 0) {
+		/^-{78,82}$/ and do {
+			$state = 1;
+			next;
+		};
+	}
+	if ($state == 1) {
+		$dit = $_;
+		chomp $dit;
+		$body = "";
+		$state = 2;
+	}
+
+	if ($state == 2) {
+		$state = 3; # empty line
+		next;
+	}
+
+	if ($state == 3) {
+		/^-{78,82}$/ and do {
+			$state = 1;
+			print "." if (($count % 50) == 0);
+			if ($confirm > 1 and $count < $confirm) {
+				$count++;
+				next;
+			}
+			register($dit, $body, $host, $port);
+			$count++;
+			next;
+		};
+		$body .= $_;
+	}
+}
+
+close(FILE);
+print "\nregistered $count docs.\n";
+exit;
+
+
+sub register {
+	my $dit = shift;
+	my $body = shift;
+	my $host = shift;
+	my $port = shift;
+
+	my %dit;
+	foreach my $pair ( split(/\^/, $dit) ) {
+		my ($key, $data) = split(/=/, $pair);
+		next unless defined $key and $key;
+		$key = uc($key);
+
+		$data =~ s/^\s+|\s+$//g;
+		$dit{$key} = $data;
+	}
+	$dit{OID} = substr($dit{OID}, -30) if length($dit{OID}) > 30;
+#	$dit{TT} = substr($dit{TT}, -60) if length($dit{TT}) > 60;
+
+	my $dit2 = sprintf("PT=%s^CT=%s^OID=%s^RID=%s^KY=%s^DN=%s^TT=%s^",
+					$dit{PT},
+					0,
+					$dit{OID},
+					$dit{RID} || "",
+					$dit{OID},
+					substr($dit{OID}, 0, 20),
+					$dit{TT} || "제목없음");
+
+	if (length($body) > $max_size) {
+		#printf("oops, text with size of %d is found!\n", length($body));
+		my ($b1, $b2, $b3, $b4, $b5, $tmp);
+		($b1, $tmp) = split(/<body>/, $body);
+		($b2, $tmp) = split(/<\/body>/, $tmp);
+		($b3, $tmp) = split(/<B_body>/, $tmp);
+		($b4, $b5) = split(/<\/B_body>/, $tmp);
+		#printf("body: %d <body> %d </body> %d <B_body> %d </B_body> %d\n",
+		#	length($b1), length($b2), length($b3), length($b4), length($b5) );
+		$b2 = substr($b2, 0, 200_000);
+		$b4 = substr($b4, 0, 200_000);
+		$body = $b1 . "<body>" . $b2 . "</body>" . $b3 . "<B_body>" . $b4 . "</B_body>" . $b5;
+	}
+
+
+printf ("![%d,%d]", $count, length($body)) if (length($body) > $max_size);
+	my $body_start = substr($body, 0, 60);
+	my $body_end = substr($body, -100, 100);
+	$body_end =~ s/.*(\]\]><\/B_body>)/$1/;
+
+	if ( $confirm < 0 ) {
+		return 0;
+	} elsif ( $confirm eq 1) {
+		print <<END;
+--------------------------------------------------------------------------------
+host, port = $host, $port
+dit  = [$dit2]
+body = [$body_start]
+       ~
+       [$body_end]
+Press Enter To Register This Document.
+END
+		my $tmp = <STDIN>;
+	}
+
+	foreach (1..3) {
+		last if $stop;
+		my $sb = new SoftWise::SoftBot($host, $port) or die "cannot connect to softbot: $!";
+		my $r = $sb->regist_doc($dit2, $body);
+		last if $stop;
+
+		if ( defined $r and $r > 0 ) {
+			return 1;
+		} else {
+			$r = "undef" unless defined $r;
+			printf "regist_doc error! [%s]\n", $r;
+			print <<END;
+--------------------------------------------------------------------------------
+host, port = $host, $port
+dit  = [$dit2]
+body = [$body_start]
+       ~
+       [$body_end]
+END
+			sleep 1;
+		}
+	}
+	return 0;
+
+}

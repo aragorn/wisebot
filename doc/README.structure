@@ -1,0 +1,22 @@
+# $Id$ 
+
+API TABLE
+	: struct declare_api
+
+----------------------------------------------
+| name1| function1 | function2 | function3   |
+|---------------------------------------------
+| name2| function1 |
+|------------------------------
+| name3| function1 | function2|
+|------------------------------
+
+API OBJECT
+	: struct api
+
+-------------------
+| name | function |
+-------------------
+
+hello
+

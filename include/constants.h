@@ -1,0 +1,28 @@
+/* $Id$ */
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
+#define MAX_WORD_LEN			(40)
+#define MAX_PHRASE_LEN			(200)
+#define MAX_WORD_PER_PHRASE		(128)
+
+#define MAX_PATH_LEN			(256)
+#define MAX_FILE_LEN			(256)
+
+#define COMMENT_LIST_SIZE		(130)
+#define DOCUMENT_SIZE			(10000*1024)
+#define DEFAULT_DOCUMENT_SIZE	(10000*1024)
+#define BIN_DOCUMENT_SIZE			(40000*1024)
+
+#define FIELD_NUM_PER_DOC		(64)
+#define MAX_FIELD_NUM			FIELD_NUM_PER_DOC
+
+#define LONG_LONG_STRING_SIZE	(8192)
+#define LONG_STRING_SIZE		(1024)
+#define STRING_SIZE				(256)
+#define SHORT_STRING_SIZE		(64)
+
+#define FIELD_NUM_PER_DOC		(64)
+#define MAX_FIELD_NUM			FIELD_NUM_PER_DOC
+#define MAX_FIELD_LEN			SHORT_STRING_SIZE
+#endif

@@ -1,0 +1,160 @@
+# $Id$ 
+
+typedef struct module_t module;
+
+struct module_t {
+	int version;   /* API version, *not* module version;
+					* check that module is compatible with this
+					* version of the server.
+					*/
+	int minor_version;	/* API minor version. Provides API feature
+					* milestones. Not checked during module init.
+					*/
+	module_type type;	/* type of module */
+	const char *name;	/* module name */
+	module *next, *prev;
+	unsigned long magic; /* magic cookie to identify a module structure. */
+	
+	conftable	*conf; /* configuration table */
+	apitable	*api; /* api function implementation */
+	regtable	*registry; /* registry of module */
+	child_main	*main;	/* main function of meta module */
+	declare_table	*declare_api; /* meta module declares apis */
+	scoreboard_t	*scoreboard; /* status of threads */
+} module;
+
+#define STANDARD_MODULE_STUFF \
+			MODULE_MAGIC_NUMBER_MAJOR, \
+			MODULE_MAGIC_NUMBER_MINOR, \
+			STANDARD_MODULE_TYPE, \
+			__FILE__, \		/* name */
+			NULL, \			/* next module */
+			NULL, \			/* prev module */
+			MODULE_MAGIC_COOKIE
+
+#define META_MODULE_STUFF \
+			MODULE_MAGIC_NUMBER_MAJOR, \
+			MODULE_MAGIC_NUMBER_MINOR, \
+			META_MODULE_TYPE, \
+			__FILE__, \		/* name */
+			NULL, \			/* next module */
+			NULL, \			/* prev module */
+			MODULE_MAGIC_COOKIE
+
+module static_modules[MAX_STATIC_MODULES];
+
+--------------------
+main.c
+
+
+load_static_modules();
+
+read_config();
+/* load_dynamic_modules(); */
+
+/*
+for (module = first_module; module->next; module = module->next)
+{
+	if ( module->type != META_MODULE_TYPE ) continue;
+
+	load_api_declaration(module->delcare_api);
+}*/
+
+load_modules_api();
+
+for (module = first_module; module->next; module = module->next)
+{
+	if ( module->type != META_MODULE_TYPE ) continue;
+
+	spawn_child(module->main);
+}
+
+--------------------
+mod_foo.c
+
+int myfunc1(void)
+{
+	blah
+};
+int myfunc2(void)
+{
+	blah
+};
+
+typedef void (*VoidFuncPtr)(void);
+typedef void (VoidFunc)(void);
+
+apitable foo_api[] = {
+	{ "api_id1", (VoidFuncPtr)myfunc1 },
+	{ "api_id2", (VoidFuncPtr)myfunc2 },
+};
+
+typedef struct {
+	char api_name[];
+	VoidFunc* functions[MAX_API_LIST];
+	int max_func;
+	char description[];
+} declare_api;
+
+declare_api foo_declare_api_table[] = {
+	{ "api_id1", {NULL}, MAX_API_LIST, "description blah blah" },
+	{ "api_id2", {NULL}, MAX_API_LIST, "description blah blah" },
+	{ "api_id3", {NULL}, MAX_API_LIST, "description blah blah" },
+};
+
+hash {
+	"api_function_name" -> pointer to function array
+}
+conftable foo_conf = {
+	{ blah blah },
+	{ blah blah },
+	{ blah blah }
+};
+
+/* plain module */
+module foo_module = {
+	STANDARD_MODULE_STUFF,
+	foo_conf,
+	foo_api,
+	foo_registry,
+	NULL,
+	NULL
+};
+
+/* meta module */
+module foo_module = {
+	STADARD_MODULE_STUFF,
+	foo_conf,
+	foo_api,
+	foo_registry,
+	foo_declare_api,
+	foo_scoreboard,
+};
+
+------------------------------------------------
+module* module_array[MAX_NUM_MODULES];
+
+
+int add_module(module *this) {
+	static int mod_array_index = 0;
+	module* prev;
+
+	if (mod_array_index >= MAX_NUM_MODULES) {
+		error("too many modules are loaded");
+		return ERROR;
+	}
+
+	if (mod_array_index == 0) {
+		module_array[mod_array_index++] = this;
+		this->prev = NULL;
+		this->next = NULL;
+	} else {
+		prev = module_array[mod_array_index-1];
+		prev->next = this;
+		module_array[mod_array_index++] = this;
+		this->prev = prev;
+		this->next = NULL;
+	}
+
+	return SUCCESS;
+}

@@ -1,0 +1,16 @@
+# $Id$ 
+# for cleaning Makefile, Makefile.in
+MAINTAINERCLEANFILES = Makefile Makefile.in
+
+# for porting
+OS_TYPE= @OS_TYPE@
+THREAD_LIB= @THREAD_LIB@
+DYN_LIB= @DYN_LIB@
+
+UNIT_TEST_INCLUDES= -I/usr/local/include
+LIBXML2_INCLUDES= -I/usr/include/libxml2
+
+INCLUDES= -I$(top_builddir)/modules -I$(top_builddir)/platform
+AM_CFLAGS+= -Wall -g3 -O2
+# CFLAGS : add custom CFLAGS here
+# CFLAGS=

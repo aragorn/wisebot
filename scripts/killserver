@@ -1,0 +1,5 @@
+#!/bin/sh
+
+ps x | grep server\.c | grep -v grep
+ps x | grep server\.c | grep -v grep | awk '{print "kill " $1}'
+ps x | grep server\.c | grep -v grep | awk '{print "kill " $1}' | sh

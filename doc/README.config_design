@@ -1,0 +1,85 @@
+# $Id$ 
+
+see also README.conf, README.database.scheme
+
+
+2002년 9월 현재 SoftBotNext의 config구조
+ 1. 각 module별 config를 설정
+   -> 기능요소별로 config를 설정하며, config file에서 각 module별로 config
+     값을 입력하도록 namespace가 분리되어 있다.
+ 2. server/config.c의 역할
+   -> config file을 읽어들이며 각 directive에 해당하는 module의 config 
+     callback function을 호출해준다.
+   -> 각 module은 callback function을 통해 config값을 읽어들이며 실제 변수에
+     그 값을 저장하는 것은 callback function이 알아서 처리해야 한다.
+
+
+Apache2의 config구조
+ 1. virtual server/directory/location에 따라 config를 설정
+   -> 내부적으로 server/dir에 따라 config를 설정할 수 있도록 design되어 있으며
+     config값과 config file의 directive가 SoftBotNext처럼 1:1 match관계가
+     아니다.
+ 2. command(directive)와 config의 분리
+   -> module에게 관리자의 설정값을 알려주는 command와 module의 내부적인 config
+     가 분리되어 있으며, command를 해석하고 적용하는 과정을 거쳐 config값이
+     결정되는 구조를 갖고 있다.
+   -> command는 SoftBotNext의 config와 유사하게 기능한다.
+ 3. 각 module별 config 구조체와 create/merge function
+   -> 각 module별로 config값을 저장하는 구조체의 type을 정의하고 있으며,
+     이 structure는 server config와 dir config가 완전히 다르다.
+     see core_dir_config, core_server_config of include/http_core.h of Apache2
+   -> 이 구조체를 생성하는 create function이 module구조체에 연결되어 있으며,
+     계층적인 구분에 따라 설정값을 상속하거나 기본값을 적용하기 위한 merge
+     function이 별도로 제공된다.
+      create/merge function이 별도로 존재하기 때문에 자유자재로 config값을
+     virtual server/directory에 따라 적용가능하다.
+
+
+현재 SoftBotNext config의 문제
+ 1. 기능요소별 configuration은 자유자재로 지정할 수 있으나, database별로
+   config를 설정하는 것이 불가능하다.
+   -> 따라서 이 문제를 해결하기 위해 database scheme이라는 것을 만들어 내려고
+     하고 있다.
+   -> 그러나 database scheme으로 모든 것을 해결할 수 있는가? TODO 확인필요
+
+
+            |
+   기능요소 |
+    각 모듈 |                설정값
+            |
+            |
+            |
+            |
+            +----------------------------------------
+                                  데이터 영역 구분
+
+
+  위와 도식과 같은 2차원 공간을 생각할 때, 세로축은 각 기능요소별로 구분되고
+  가로축은 데이터 영역별로 구분된다. 각 기능요소별 구분은 module별 구분이라
+  볼 수 있고, 가로축의 데이터영역별 구분은 directory나 database에 따른 구분
+  이라 볼 수 있다.
+
+  현재 SoftBotNext는 기능요소별 설정은 자유로우나 가로축 방향, 즉 데이터 영역
+  구분에 따른 설정이 불가능하다. 애초에 하나의 database만이 존재할 것으로
+  잘못 가정하고 design된 것이 문제이다.
+
+  (참조) 이러한 config scheme의 차이는 Apache2의 code를 SoftBotNext framework
+        안에 맞추어 재작성하는데 있어 가장 큰 걸림돌이 되고 있다. Apache2의
+        code는 module구조체와 config가 tight하게 엮여있는 동시에 전체 code에서
+        이러한 구조를 바탕으로 작성된 부분이 상당히 많다.
+
+
+다음과 같은 새로운 SoftBotNext의 config구조를 개발할 필요가 있는지 검토, 
+연구가 필요하다.
+ 1. database와 같은 데이터 영역 구분에 따라 config를 자유자재로 설정할 수
+   있는 design을 적용시킨다.
+   -> config는 크게 server에 따른 설정과 database에 따른 설정으로 구분한다.
+   -> 데이터 영역 구분은 mutual-exclusive이며, Apache2와 같이 계층적인 구분은
+     불필요할 것으로 판단된다.
+   -> database scheme을 일반화시켜 문제를 해결할 수 있는지 연구해 본다.
+ 2. command와 config의 분리가 필요한지 여부에 대한 연구가 더 필요하다.
+ 3. config와 registry의 통합이 필요한지 여부에 대한 연구가 더 필요하다.
+
+--aragorn, 2002/09/11
+
+

@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+
+use strict;
+use Getopt::Std;
+
+sub BEGIN {
+	$Getopt::Std::STANDARD_HELP_VERSION = 1;
+	our $VERSION = "1.0";
+}
+
+sub HELP_MESSAGE {
+	print <<END;
+Usage: $0 [-/filename]
+       - means "read log message from stdin".
+	   if filename is omitted, use logs/error_log
+END
+	exit;
+}
+
+HELP_MESSAGE() unless( getopts( "" ) );
+
+my $filename = shift;
+$filename = "logs/error_log" if ( !$filename );
+
+if ( not $filename eq "-" ) {
+	open STDIN, "<$filename" or die $!;
+}
+
+my $query;
+while ( <STDIN> ) {
+	($query) = /request:\|(.*)\|/;
+	next unless $query;
+
+	print "$query\n";
+}
+

@@ -1,0 +1,44 @@
+# $Id$ 
+
+
+        Internet or other database system
+         | (1)
+         |
+       (Crawler)           external area of document database
+         |        
++--------|----------- DocumentObjectHandler (loosely wrapped) ---------------------+
+|        |                                                                         |
+|        |                  +--------+                                             |
+|        |                  | CDM DB |  CannedDocumentManagerImproved              |
+|        |                  +--------+                                             |
+|        |                         ^       +-------------+                         |
+|        |                         |  +--->|  DocAttr db | DocAttrModule           |
+|        |                         |  |    +-------------+ DocAttrCoreModule       |
+|        |                         |  |                                            |
+|        | DocAPI                  |  |                                            |
+|       ~~~~~~~~~                  |--+   +----------+                             |
+|       by docapi                  |----->|  Did Db  | DocIdModule                 |
+|       ~~~~~~~~~      SpoolModule |      +----------+                             |
+|        | (2)      register spool |     +----------+                              |
+|        |    +--+       +--+      +-----| register |                              |
+|        |    |  |       |  |----------->| process  |                              |
+|        +--> |--|       |--|            +----------+                              |
+|             |  |       |  |<----+ (3)                                            |
+|             |--|       |--|     |                                                |
+|             |  |       |  |   +----------+    FilterModule                       |
+|             |--|       |--|   |  filter  |-+                                     |
+|             |  |       |  |   |  process | | (filter processes :                 |
+|             +--+       +--+   +----------+ |  make packed document object )      |
+|        filter spool            +-----------+ ...                                 |
+|               |                  ^                                               |
+|               +------------------+                                               |
+|           (data in filter spool is                                               |
+|            formatted by docapi)                                                  |
+|                                                (1): raw document (such as html)  |
+|                                                (2): some format that is known    |
+|                                                     to external register(crawler)|
+|                                                     and filter                   |
+|                                                (3): packed document object       |
+|                                                     writen with                  |
+|                                                     DocumentObjectHandler        |
++----------------------------------------------------------------------------------+

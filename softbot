@@ -1,0 +1,437 @@
+#!/bin/sh
+# Start/stop the softbotd daemon.
+
+# XXX change SOFTBOT_ROOT path
+SOFTBOT_ROOT=
+
+##############################################################################
+SOFTBOTD=bin/softbotd
+SOFTBOTD_CONF=etc/softbot.conf
+SOFTBOTD_PID_FILE=logs/softbotd.pid
+SOFTBOTD_LOG_FILE=logs/error_log
+
+# set WITH_RMAS=1 when you use rmas daemon
+WITH_RMAS=0
+
+RMAS=bin/softbotd
+RMAS_CONF=etc/softbot.rmas.conf
+RMAS_PID_FILE=logs/rmas.pid
+RMAS_LOG_FILE=logs/rmas-error_log
+
+PS=ps
+SIGTERM=15
+SIGKILL=9
+SIGHUP=1
+
+export LD_LIBRARY_PATH="$SOFTBOT_ROOT/lib:$LD_LIBRARY_PATH"
+##############################################################################
+# uncomment next line when you debug this script
+# set -x
+
+##############################################################################
+# library functions
+run_command()
+{
+	local CMD=$@
+	$CMD > /dev/null 2>&1
+
+	return $?
+}
+
+send_signal()
+{
+	local PID=$1
+	local SIGNAL=$2
+
+	if [ -n "$SIGNAL" ]
+	then
+		kill -$SIGNAL $PID > /dev/null 2>&1
+	else
+		kill $PID > /dev/null 2>&1
+	fi
+
+	return $?
+}
+
+is_running()
+{
+	# RETURN VALUE
+	# > 0 : PID of the process
+	#   0 : is not running
+	#  -1 : empty pid file
+	#  -2 : no pid file
+	local ROOT=$1
+	local PID_FILE=$2
+
+	if [ ! -r "$ROOT/$PID_FILE" ]; then
+		# no pid file
+		echo "-2"
+		return -2
+	fi
+
+	local PID=`cat $ROOT/$PID_FILE 2>/dev/null`
+
+	if [ ! -n "$PID" ]; then
+		# empty pid file
+		echo "-1"
+		return -1
+	fi
+
+	kill -0 $PID > /dev/null 2>&1
+
+	if [ $? != "0" ]; then
+		# no such process
+		echo "0"
+		return 0
+	fi
+
+	echo "$PID"
+	return 1
+}
+
+wait_for()
+{
+	local PID=$1
+	local SECONDS=$2
+
+	local COUNT=0
+	while (( COUNT < SECONDS ))
+	do
+		sleep 1
+		(( COUNT+=1 ))
+		kill -0 $PID > /dev/null 2>&1
+		[ $? != "0" ] && return
+	done
+
+	return 1
+}
+
+send_signal_all()
+{
+	local PID=$1 && shift
+	local SIGNAL=$2 && shift
+	local NAME=$@
+
+	local COUNT=0
+	local PID_TO_KILL
+	for PID_TO_KILL in `$PS -g $PID -f | grep "$NAME" | awk '{ print $2; }'`
+	do
+		if (( $SIGNAL == $SIGKILL ))
+		then
+			printf "[$PID_TO_KILL]"
+		fi
+		send_signal $PID_TO_KILL $SIGNAL
+		(( COUNT+=1 ))
+	done
+	#ps -g $PID -f | grep "$NAME" | awk '{ print "kill " $2; }' | sh 
+	#ps -g $PID -f | grep "$NAME" | awk '{ print "kill " $2 " (name: " $9 ")"; }' 
+
+	if (( COUNT == 0 ))
+	then
+		#echo -n "[ERROR: no such process($NAME)"
+		printf "!"
+		return 1
+	fi
+}
+
+##############################################################################
+# main functions
+
+start_daemon()
+{
+	local ROOT=$1
+	local EXEC=$2
+	local PID_FILE=$3
+	local CONF=$4
+
+	local PID=`is_running "$ROOT" "$PID_FILE"`
+	(( PID > 0 )) && printf "[ERROR: already running($PID)] " && return
+
+	local CMD="$ROOT/$EXEC"
+	[ -n "$CONF" ] && CMD="$CMD -c $CONF" 
+
+	run_command $CMD
+	local STATUS=$?
+
+	(( STATUS != 0 )) && echo "[ERROR: cannot run $EXEC] " && exit 1
+}
+
+
+force_shutdown()
+{
+	local ROOT=$1
+	local PID_FILE=$2
+	local NAME=$3
+
+	printf "Force shutdown $NAME "
+
+
+	local PID=`is_running "$ROOT" "$PID_FILE"`
+	[ $PID = "0" ] && return
+
+	local SECONDS
+	for SECONDS in 3 3 3 3 3
+	do
+		if send_signal_all $PID $SIGKILL $NAME
+		then
+			wait_for $PID $SECONDS && return
+			printf "."
+		else
+			wait_for $PID $SECONDS && return
+
+			echo "[ERROR: no such process] " && return 1
+		fi
+	done
+
+	echo "[ERROR: failed to force shutdown $NAME]"
+
+	return 1
+}
+
+stop_daemon()
+{
+	local ROOT=$1
+	local PID_FILE=$2
+	local SECONDS=$3
+
+
+	local PID=`is_running "$ROOT" "$PID_FILE"`
+	case $PID in
+	-2)
+		printf "[ERROR: no pid file] ";
+		return
+		;;
+	-1)
+		printf "[ERROR: empty pid file] ";
+		return
+		;;
+	0)
+		printf "[ERROR: is not running] ";
+		return
+		;;
+	*)
+	esac
+
+	local COUNT=0
+	while (( COUNT < SECONDS ))
+	do
+		send_signal $PID $SIGTERM
+		wait_for $PID 2 && return
+		printf "."
+		(( COUNT += 2 ))
+	done
+
+	echo "[ERROR: cannot shutdown gracefully] "
+	return 1
+}
+
+force_shutdown_softbotd()
+{
+	local ROOT=$1
+	local PID_FILE=$2
+
+	force_shutdown $ROOT $PID_FILE "softbotd: mod_softbot4.c" && return
+	sleep 5
+	force_shutdown $ROOT $PID_FILE "softbotd: mod_rmac2.c" && return
+	sleep 5
+	stop_daemon    $ROOT $PID_FILE 60 && return
+	sleep 5
+	force_shutdown $ROOT $PID_FILE "softbotd: mod_daemon_indexer.c" && return
+	sleep 5
+	force_shutdown $ROOT $PID_FILE "softbotd: monitoring mod_daemon_indexer.c" && return
+	sleep 5
+	#force_shutdown $ROOT $PID_FILE "softbotd: mod_" && return
+	#sleep 5
+	force_shutdown $ROOT $PID_FILE "softbotd:" && return
+
+	echo "[ERROR: failed to stop daemon]"
+}
+
+force_shutdown_rmas()
+{
+	local ROOT=$1
+	local PID_FILE=$2
+
+	force_shutdown $ROOT $PID_FILE "softbotd: mod_softbot4.c" && return
+	sleep 5
+	force_shutdown $ROOT $PID_FILE "softbotd:" && return
+
+	echo "[ERROR: failed to stop daemon]"
+}
+
+daemon_status()
+{
+	local ROOT=$1
+	local PID_FILE=$2
+
+
+	local PID=`is_running "$ROOT" "$PID_FILE"`
+	case $PID in
+	-2)
+		printf "[ERROR: no pid file] ";
+		return
+		;;
+	-1)
+		printf "[ERROR: empty pid file] ";
+		return
+		;;
+	0)
+		printf "[ERROR: is not running] ";
+		return
+		;;
+	*)
+	esac
+
+	$PS -g $PID -f
+
+}
+
+reopen_log()
+{
+	local ROOT=$1
+	local PID_FILE=$2
+
+
+	local PID=`is_running "$ROOT" "$PID_FILE"`
+	case $PID in
+	-2)
+		printf "[ERROR: no pid file] ";
+		return
+		;;
+	-1)
+		printf "[ERROR: empty pid file] ";
+		return
+		;;
+	0)
+		printf "[ERROR: is not running] ";
+		return
+		;;
+	*)
+	esac
+
+	send_signal_all $PID $SIGHUP "softbotd"
+	return 1
+}
+
+check_errors()
+{
+	if [ ! -n "$SOFTBOT_ROOT" ]
+	then
+		echo "SOFTBOT_ROOT is not set properly. Please edit this file."
+		exit 1
+	fi
+}
+
+##############################################################################
+# Function Map
+##############################################################################
+# main
+# *     - check_errors
+# start - run_command,
+#         start_daemon, 
+#             `-- is_running, run_command
+# stop  - stop_daemon,
+#             `-- is_running, send_signal, wait_for
+#         force_shutdown_softbotd,
+#             `-- force_shutdown
+#                    `-- is_running, send_signal_all, wait_for
+#                                      `-- send_signal
+#         force_shutdown_rmas,
+#             `-- force_shutdown
+#                    `-- is_running, send_signal_all, wait_for
+#                                      `-- send_signal
+#         run_command
+# reopen - reopen_log
+#             `-- is_running
+# status - daemon_status
+#             `-- is_running
+# 
+
+start() {
+	printf "Starting softbot daemon: "
+
+	run_command "$SOFTBOT_ROOT/scripts/clear_ipcs"
+	[ $WITH_RMAS = "0" ] || {
+	    printf "rmas "
+	    start_daemon $SOFTBOT_ROOT $RMAS \
+					$RMAS_PID_FILE $RMAS_CONF
+	    sleep 3
+	}
+
+	printf "softbotd"
+	start_daemon $SOFTBOT_ROOT $SOFTBOTD \
+					$SOFTBOTD_PID_FILE $SOFTBOTD_CONF
+	echo "." 
+}
+
+stop_cmd() {
+	printf "Stopping softbot daemon: "
+
+	printf "softbotd"
+		stop_daemon $SOFTBOT_ROOT $SOFTBOTD_PID_FILE 60 \
+		  || force_shutdown_softbotd $SOFTBOT_ROOT $SOFTBOTD_PID_FILE 
+
+	[ $WITH_RMAS = "0" ] || {
+		printf " rmas"
+		stop_daemon $SOFTBOT_ROOT $RMAS_PID_FILE 10 \
+		  || force_shutdown_rmas $SOFTBOT_ROOT $RMAS_PID_FILE
+	}
+	echo "."
+	run_command "$SOFTBOT_ROOT/scripts/clear_ipcs"
+}
+
+reopen() {
+	printf "Reopening softbot log files: "
+
+	printf "softbotd"
+		reopen_log $SOFTBOT_ROOT $SOFTBOTD_PID_FILE
+
+	[ $WITH_RMAS = "0" ] || {
+		printf " rmas"
+		reopen_log $SOFTBOT_ROOT $RMAS_PID_FILE
+	}
+	echo "."
+}
+
+status() {
+	echo "Status of softbot daemon: "
+
+	echo
+	echo "softbotd"
+		daemon_status $SOFTBOT_ROOT $SOFTBOTD_PID_FILE
+
+	[ $WITH_RMAS = "0" ] || {
+		echo
+		echo "rmas"
+		daemon_status $SOFTBOT_ROOT $RMAS_PID_FILE 
+	}
+}
+
+cron() {
+	stop_cmd
+	mv $SOFTBOT_ROOT/$SOFTBOTD_LOG_FILE $SOFTBOT_ROOT/${SOFTBOTD_LOG_FILE}.1
+	mv $SOFTBOT_ROOT/$RMAS_LOG_FILE $SOFTBOT_ROOT/${RMAS_LOG_FILE}.1
+	start
+}
+
+check_errors
+case "$1" in
+start)  start
+	;;
+stop)   stop_cmd
+	;;
+restart)
+	stop_cmd
+	start
+	;;
+reopen) reopen
+	;;
+status) status
+	;;
+cron) cron
+        ;;
+*)	echo "Usage: $0 start|stop|status|restart|reopen|cron"
+	exit 1 
+    ;;
+esac
+exit 0

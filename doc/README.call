@@ -1,0 +1,54 @@
+## need fixing
+# $Id$ 
+
+아래의 세 모듈의 차이를 명확히 인식하고, 전체적인 코드의 구조를 정리해야 한다.
+
+1. 어떤 API는 callee.[ch] 에서 선언된다.
+   이때 sb_hook_*, sb_run_* 두 개의 함수가 만들어진다.
+2. 그 API의 실제 코드를 구현하는 모듈에서는 sb_hook_* 를 호출한다.
+3. 그 API를 사용하는 모듈에서는 sb_run_* 를 호출한다.
+4. 보통의 callee 모듈은 2)와 3)을 한 file에서 구현하는 것이 일반적이다.
+
+1) caller -----------------------------------------------------------------------
+this calls an api. - sb_run_foo_bar()
+
+  caller.h                                 caller.c
+                                           #include "callee.h"
+
+                                           sb_run_foo_bar();
+
+
+
+2) callee -----------------------------------------------------------------------
+this defines an api and hooking functions.
+
+  callee.h                                 callee.c
+  SB_DECLARE_HOOK(...)                     HOOK_STRUCT (
+   -> will be expanded as below               HOOK_LINK(..)
+  typedef ..                                  ..
+  sb_hook_foo_bar();                       ) _hook;
+  sb_run_foo_bar();
+                                           SB_IMPLEMENT_HOOK_... (..)
+
+3) implementer 1 ----------------------------------------------------------------
+actual code - sb_hook_foo_bar()
+
+  code.h                                   code.c
+  #include "callee.h"                      real_foo_bar() {
+                                              ...
+                                           }
+
+                                           module->register_hook
+                                             sb_hook_foo_bar(real_foo_bar, ...);
+
+4) implementer 2 ----------------------------------------------------------------
+actual code 2 - sb_hook_foo_bar()
+
+  code.h                                   code.c
+  #include "callee.h"                      real_foo_bar2() {
+                                              ...
+                                           }
+
+                                           module->register_hook
+                                             sb_hook_foo_bar(real_foo_bar2, ...);
+

@@ -1,0 +1,9 @@
+# vim:ft=softbotdoc:tw=80:
+# $Id$ 
+
+ * shall we use prefix 'r' for registry variable, like rVrfSemid ?
+   I'll use it in indexer, qp. --jiwon, 2002/09/02
+
+ * indent -kr -nce -ut -ts4 filename [-o output filename]
+	; if no output filename, write over file.
+		this style is best look to me --2002.7.17 nominam :)

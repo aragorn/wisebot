@@ -1,0 +1,143 @@
+# vim:ft=softbotdoc:tw=80
+# $Id$ 
+
+[SoftBotNext - SoftBot 6.0]
+
+SoftBot은 빠르고 정확한 全文 검색엔진으로,
+유연한 확장성을 제공하여 여타의 솔루션과 연동할 수 있으며,
+대용량 분산, 병렬처리 구조를 갖추어 많은 수의 문서를 효과적으로 검색할 수 있다.
+
+
+1. SoftBotNext의 특징
+  1) 새로운 server framework
+  2) 강력하고 편리한 runtime configuration
+  3) 추가 module을 통한 유연한 기능확장, customizing
+  4) 편리한 개발, 디버깅 환경
+
+2. SoftBotNext의 설치
+  1) 압축파일을 푼다.
+  2) etc/softbotd.conf 를 설정한다.
+  3) server/softbotd 를 실행시킨다.
+  4) client/softbotcli 를 실행시켜 확인한다.
+  5) etc/softbot.conf 를 수정하여 엔진 설정을 변경한 후, 
+    엔진을 다시 실행시킬 수 있다.
+  6) 엔진을 종료하고자 하는 경우, killall softbotd 이라고 명령을 준다.
+
+  SoftBotNext 컴파일
+  1) 압축파일을 풀고, 디렉토리에 들어간다.
+  2) ./bootstrap 파일을 실행시켜 automake, autoconf 관련 파일을 생성한다.
+  3) ./configure 파일을 실행시켜 autoconf 설정을 마친다.
+  4) make 명령을 실행시켜 엔진을 컴파일한다.
+  5) server/softbotd, client/softbotcli 가 생성되었는지 확인한다.
+
+3. SoftBotNext의 적용/연동
+4. SoftBotNext의 기능과 얼개
+  1) indexing
+   register - cdm - index 
+  2) searching
+   qpp - qp - vrf - cdm
+  3) document managing
+   delete, update,
+   categorize, move, link
+  4) lexicon (TODO)
+
+5. SoftBotNext의 구조 (1) Module Architecture
+  SoftBotNext의 module 구조와 각 세부 개념에 대해 설명한다. SoftBotNext는 크게
+  server program과 client program, 두 개의 애플리케이션으로 구성되며, 각 애플리
+  케이션은 여러 module로 구성되어 있다.
+
+  1) server
+    SoftBotNext의 server program은 다음과 같은 요소들을 갖고 있다.
+    * api    - 표준화된 기능요소
+    * module - 기능요소의 구현단위
+    * process - 기능작동의 흐름
+
+    API는 미리 잘 정의된 함수로 검색엔진 내부/외부의 주요 함수들이 곧 API이다.
+    이러한 API는 SoftBot Hook Function에 의해 구현되어 있으며, Hook Function이
+    유연한 API Customizing이 가능하게 만들어 준다.
+
+    caller.h                             caller.c
+   +----------------------------------+ +------------------------------------+
+   |                                  | |#include "callee.h"                 |
+   |                                  | |                                    |
+   |                                  | |data = foo_bar();                   |
+   |                                  | |                                    |
+   +----------------------------------+ +------------------------------------+
+
+    callee.h                             callee.c
+   +----------------------------------+ +------------------------------------+
+   |foo_bar();                        | |foo_bar()                           |
+   |                                  | |{                                   |
+   |                                  | |  int x;                            |
+   |                                  | |  // do something                   |
+   |                                  | |  ...                               |
+   |                                  | |  return x;                         |
+   |                                  | |}                                   |
+   +----------------------------------+ +------------------------------------+
+    
+    일반적인 c함수 호출은 위와 같이 caller와 callee의 구조로 구성되어 있으며,
+    컴파일러가 컴파일과정에서 링킹을 하여 caller.c가 callee.c의 함수를 호출
+    할 수 있게 된다.
+
+    SoftBot Hook Function은 위의 단계를 분리시켜 compile time이 아닌 runtime에
+    원하는 함수를 링크하고, 손쉽게 API함수를 대체, 확장시켜나갈 수 있는 기능을
+    제공한다.
+
+    caller.h                             caller.c                             
+   +----------------------------------+ +------------------------------------+
+   |                                  | |#include "callee.h"                 |
+   |                                  | |                                    |
+   |                                  | |data = sb_run_foo_bar();            |
+   +----------------------------------+ +------------------------------------+
+                                                                  
+    callee.h                             callee.c
+   +----------------------------------+ +------------------------------------+
+   |DECLARE(foo_bar, ...)             | |HOOK_STRUCT(                        |
+   |                                  | |  HOOK_LINK(foo_bar)                |
+   |                                  | |  ...                               |
+   |                                  | |) _hook;                            |
+   |                                  | |                                    |
+   |                                  | |SB_IMPLEMENT_HOOK_RUN_FIRST(foo_bar,|
+   |                                  | |                     ..., NULL)     |
+   +----------------------------------+ +------------------------------------+
+    
+    implementer1.h                       implementer1.c
+   +----------------------------------+ +------------------------------------+
+   |#include "callee.h"               | |real_foo_bar()                      |
+   |                                  | |{                                   |
+   |                                  | |  int x;                            |
+   |                                  | |  // do something                   |
+   |                                  | |  ...                               |
+   |                                  | |  return x;                         |
+   |                                  | |}                                   |
+   |                                  | |                                    |
+   |                                  | |sb_hook_foo_bar(real_foo_bar,       |
+   |                                  | |                  ..., HOOK_MIDDLE) |
+   +----------------------------------+ +------------------------------------+
+
+  2) module
+    module - api - registry - conf - main
+  3) process
+    scoreboard
+  4) client
+    module - 기능요소
+    process - only one
+6. SoftBotNext의 기능 확장, 커스터마이징
+7. SoftBotNext Module의 구조, 예제
+8. SoftBotNext의 기본 API
+9. SoftBotNext의 확장 API
+
+
+10. SoftBotNext의 구조 (2) 분산/병렬처리 시스템
+  1) load balancer
+  2) cache
+  3) search agent
+  4) search
+  5) crawler
+  6) indexer
+
+
+11. SoftBotNext의 작동 환경
+  1) OS
+  2) Hardware
+
