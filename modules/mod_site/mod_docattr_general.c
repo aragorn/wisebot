@@ -549,7 +549,7 @@ static int compare_rid_general(const void* dest, const void* sour)
 		return 0;
 	}
 
-	if ( sb_run_docattr_get( ((doc_hit_t*) dest)->id, &attr2 ) != SUCCESS ) {
+	if ( sb_run_docattr_get( ((doc_hit_t*) sour)->id, &attr2 ) != SUCCESS ) {
 		error("cannot get docattr element");
 		return 0;
 	}
