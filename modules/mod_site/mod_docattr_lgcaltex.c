@@ -279,8 +279,11 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
 		if (i == doccond->SystemName_check) return 0;
 	}
 	
-	if (doccond->Part_check == 1 && doccond->Part != docattr->Part) {
-		return 0;
+	if (doccond->Part_check > 0 && doccond->Part[0] != 255) {
+		for (i=0; i<doccond->Part_check; i++) {
+			if (doccond->Part[i] == docattr->Part) break;
+		}
+		if (i == doccond->Part_check) return 0;
 	}
 	
 	if (doccond->FileExt_check == 1 && doccond->FileExt != docattr->FileExt) {
@@ -818,8 +821,20 @@ static int set_doccond_function(void *dest, char *key, char *value)
 		doccond->SystemName_check = 1;
 	}*/
 	else if (strcmp(key, "Part") == 0) {
-		doccond->Part = (uint8_t)return_constants_value(value, strlen(value));
-		doccond->Part_check = 1;
+		info = (char**)sb_calloc(cnt, sizeof(char*));
+		if ( info == NULL )
+		{
+			error("fail calling calloc: %s", strerror(errno));
+			return -1;
+		}	
+		
+		nRet = get_item(value, info, ' ');			
+			
+		for (i=0; i<cnt; i++) {
+			doccond->Part[i] = 
+				return_constants_value(info[i], strlen(info[i]));
+		}
+		doccond->Part_check = cnt;		
 	}
 	
 	else if (strcmp(key, "FileName") == 0) {

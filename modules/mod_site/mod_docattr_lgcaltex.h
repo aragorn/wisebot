@@ -61,7 +61,7 @@ typedef struct {
 	uint8_t SystemName[60];
 
 	uint8_t Part_check;
-	uint8_t Part;
+	uint8_t Part[16];
 
 	uint8_t FileExt_check;
 	uint8_t FileExt;
