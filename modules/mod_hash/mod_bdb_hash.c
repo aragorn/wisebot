@@ -106,6 +106,17 @@ static int bdb_hash_open(api_hash_t** hash, int opt)
 	// no fail
 	db_env_create( &bdb_hash->dbenvp, 0 );
 
+	if ( hash_set[opt].set_cache_size ) {
+		int gbytes = hash_set[opt].cache_size / (1*1024*1024*1024);
+		int bytes = hash_set[opt].cache_size % (1*1024*1024*1024);
+
+		ret = bdb_hash->dbenvp->set_cachesize( bdb_hash->dbenvp, gbytes, bytes, 1 );
+		if ( ret != 0 ) {
+			warn("DB_ENV->set_cachesize() failed. it will be ignored: cache_size[%d], %d, %s",
+					hash_set[opt].cache_size, ret, strerror(ret));
+		}
+	}
+
 	ret = bdb_hash->dbenvp->open( bdb_hash->dbenvp, abs_path,
 			DB_INIT_LOCK|DB_INIT_MPOOL|DB_CREATE, 0 );
 	if ( ret != 0 ) {
@@ -118,17 +129,6 @@ static int bdb_hash_open(api_hash_t** hash, int opt)
 	if ( ret != 0 ) {
 		error("db_create failed. ret:%d, EINVAL[%d]", ret, EINVAL);
 		goto fail;
-	}
-
-	if ( hash_set[opt].set_cache_size ) {
-		int gbytes = hash_set[opt].cache_size / (1*1024*1024*1024);
-		int bytes = hash_set[opt].cache_size % (1*1024*1024*1024);
-
-		ret = bdb_hash->dbp->set_cachesize( bdb_hash->dbp, gbytes, bytes, 1 );
-		if ( ret != 0 ) {
-			warn("DB->set_cachesize() failed. it will be ignored: cache_size[%d], %d, %s",
-					hash_set[opt].cache_size, ret, strerror(ret));
-		}
 	}
 
 	ret = bdb_hash->dbp->open( bdb_hash->dbp, NULL, abs_file, NULL, DB_HASH, DB_CREATE, 0 );
