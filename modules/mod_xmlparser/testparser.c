@@ -9,14 +9,14 @@
 #include "parser.h"
 
 #define BUF_SIZE			(1024 * 1024)
-#define REPEAT_TEST			10000
+//#define REPEAT_TEST			10000
 
 #include "softbot.h"
 char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
 //char gErrorLogFile[MAX_PATH_LEN] = DEFAULT_ERROR_LOG_FILE;
 module *static_modules;
 
-int keynum = 0;
+int keynum = 4;
 char *keys[] = {"/Document/Author", "/Document/Title", "/Document/Body", "/Document/URL"};
 
 int test_retrieve(parser_t *p) {
@@ -114,7 +114,8 @@ int main (int argc, char *argv[]) {
 	}
 #endif
 
-#ifndef REPEAT_TEST
+//#ifndef REPEAT_TEST
+#if 0
 	/* test loaddom */
 	printf("test loaddom...\n");
 	if (p == NULL) {
