@@ -16,7 +16,7 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 #define SET_EXPR \
 	yylval->operand_type = OPERAND_EXPR; \
 	yylval->exec_func = operand_expr_exec_func; \
-	yylval->result = &yylval->expr.result; \
+	yylval->result = &yylval->o.expr.result; \
 	strncpy( yylval->o.expr.operator_string, yytext, sizeof(yylval->o.expr.operator_string) );
 
 %}
@@ -28,6 +28,7 @@ R [rR]
 T [tT]
 
 %START ESC
+%option nounput
 %%
 
 [\t\r\n ]+ ;
@@ -65,8 +66,8 @@ T [tT]
 	SET_YYLVAL;
 
 	// field 이름과 같은 게 있으면 NAME 아니면 VALUE
-	return_docattr_field( yytext, &yylval->field );
-	if ( yylval->field ) {
+	return_docattr_field( yytext, &yylval->o.field );
+	if ( yylval->o.field ) {
 		prepare_field( yylval );
 		return NAME;
 	}
@@ -119,13 +120,13 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 	else strcpy( operand->o.value.my_string, text );
 
 	// 숫자(or enum)라면 그걸로 OK
-	if ( maybeint && isNumber( text, &operand->o.value.integer ) == SUCCESS ) {
+	if ( maybeint && isNumber( text, &operand->o.value.v.integer ) == SUCCESS ) {
 		operand->value_type = VALUE_INTEGER;
 		return SUCCESS;
 	}
 
 	operand->value_type = VALUE_STRING;
-	operand->o.value.string = operand->o.value.my_string;
+	operand->o.value.v.string = operand->o.value.my_string;
 	return SUCCESS;
 }
 
