@@ -87,6 +87,10 @@ int isNumber(const char* string, docattr_integer* number)
 	return SUCCESS;
 }
 
+// 미리 컴파일된 sorting 조건들
+#define MAX_GENERAL_SORT 32
+static general_sort_t* general_sort = NULL;
+
 /********************************************************
  *                field 연산 함수들
  ********************************************************/
@@ -607,7 +611,11 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 {
 	int i, diff = 0;
 	general_docattr_t attr1, attr2;
-	docattr_sort_t *sh;
+	docattr_value_t value1, value2;
+	general_sort_t *sort;
+	docattr_field_t* field;
+
+	if ( general_sort == NULL ) return 1;
 
 	if ( sb_run_docattr_get(((doc_hit_t*) dest)->id, &attr1) != SUCCESS ) {
 		error("cannot get docattr element");
@@ -618,15 +626,20 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 		return 0;
 	}
 
-	sh = (docattr_sort_t*) userdata;
-	for ( i = 0; i < MAX_SORTING_CRITERION && sh->keys[i].key[0] != '\0'; i++ ) {
+	sort = &general_sort[((docattr_sort_t*) userdata)->index];
+	if ( !sort->set ) return 1;
 
-		switch ( sh->keys[i].key[0] ) {
-		}
+	for ( i = 0; i < sort->condition_count; i++ ) {
+		field = sort->condition[i].field;
+
+		field->get_func( &attr1, field, &value1 );
+		field->get_func( &attr2, field, &value2 );
+
+		diff = field->compare_func( &value1, &value2 );
 
 		if ( diff != 0 ) {
 			diff = diff > 0 ? 1 : -1;
-			return diff * sh->keys[i].order;
+			return diff * sort->condition[i].order;
 		}
 	} // for (i)
 
@@ -962,6 +975,65 @@ static int build_field_offset()
 	return SUCCESS;
 }
 
+// 왠만한 에러로는 FAIL을 리턴하면 안된다... init() 의 성공여부가 달려있어서..
+static int build_sort_field()
+{
+	char *string;
+	char *field_name, *sort_order;
+	docattr_field_t* field;
+	int i, j;
+
+	if ( general_sort == NULL ) {
+		warn("no sort condition set");
+		return SUCCESS;
+	}
+
+	string = (char*) sb_malloc( sizeof(general_sort[0].string) );
+
+	for ( i = 0; i < MAX_GENERAL_SORT; i++ ) {
+		if ( !general_sort[i].set ) continue;
+		info("build sort condition: %d, %s", i, general_sort[i].string);
+
+		strcpy( string, general_sort[i].string );
+		field_name = strtok( string, ";" );
+		j = 0;
+
+		do {
+			sort_order = strchr( field_name, ':' );
+			if ( sort_order == NULL ) {
+				warn("invalid condition: %s, index:%d", field_name, i);
+				continue;
+			}
+
+			*(sort_order++) = '\0';
+
+			return_docattr_field( field_name, &field );
+			if ( field == NULL ) {
+				warn("unknown field[%s], index:%d", field_name, i);
+				continue;
+			}
+
+			general_sort[i].condition[j].field = field;
+
+			if ( strcasecmp( sort_order, "ASC" ) == 0 )
+				general_sort[i].condition[j].order = 1;
+			else if ( strcasecmp( sort_order, "DESC" ) == 0 )
+				general_sort[i].condition[j].order = -1;
+			else {
+				warn("unknown sort order:%s, index:%d", field_name, i);
+				continue;
+			}
+
+			j++;
+		} while ( (field_name = strtok( NULL, ";" )) != NULL );
+
+		general_sort[i].condition_count = j;
+	}
+
+	sb_free(string);
+	return SUCCESS;
+}
+
 static int init()
 {
 	docattr_field_t* delete_field;
@@ -989,6 +1061,7 @@ static int init()
 		return FAIL;
 	}
 
+	// rid field 설정
 	if ( rid_field_name[0] != '\0' ) {
 		return_docattr_field( rid_field_name, &rid_field );
 		if ( rid_field == NULL ) {
@@ -1007,6 +1080,11 @@ static int init()
 						docattr_distinct_rid_general, NULL, NULL, HOOK_MIDDLE);
 			}
 		}
+	}
+
+	if ( build_sort_field() != SUCCESS ) {
+		error("build sort field failed");
+		return FAIL;
 	}
 
 	return SUCCESS;
@@ -1051,10 +1129,34 @@ static void get_enum(configValue v)
 	info("Enum[%s]: %" PRId64, enum_names[i], enum_values[i]);
 }
 
+static void get_field_sorting_order(configValue v)
+{
+	static general_sort_t local_general_sort[MAX_GENERAL_SORT];
+	int index;
+
+	if ( general_sort == NULL ) {
+		general_sort = local_general_sort;
+		memset( local_general_sort, 0, sizeof(local_general_sort) );
+	}
+
+	index = atoi( v.argument[0] );
+	if ( local_general_sort[index].set )
+		warn("overwrite sorting condition[%d]", index);
+
+	if ( strlen( v.argument[1] ) >= sizeof(local_general_sort[index].string) )
+		warn("sort condition is too long. FieldSortingOrder %s %s",
+				v.argument[0], v.argument[1]);
+
+	local_general_sort[index].set = 1;
+	strcpy( local_general_sort[index].string, v.argument[1] );
+}
+
 static config_t config[] = {
 	CONFIG_GET("DocAttrField", get_docattr_field, 2, "docattr field : name type"),
 	CONFIG_GET("RidField", get_rid_field, 1, "rid field name"),
 	CONFIG_GET("Enum", get_enum, 2, "constant"),
+	CONFIG_GET("FieldSortingOrder", get_field_sorting_order, 2,
+			"FieldSortingOrder index field:(asc|desc);..."),
 	{NULL}
 };
 

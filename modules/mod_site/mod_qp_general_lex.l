@@ -93,6 +93,7 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 {
 	operand->operand_type = OPERAND_VALUE;
 	operand->result = &operand->value;
+	operand->exec_func = operand_value_exec_func;
 
 	if ( len >= sizeof(operand->value.my_string) ) {
 		error("string[%s] is too long. max is %d", text, (int) sizeof(operand->value.my_string));

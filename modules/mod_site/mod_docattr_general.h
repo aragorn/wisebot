@@ -7,6 +7,7 @@
 #define MAX_DOCATTR_FIELD 32
 
 typedef long		docattr_integer;
+typedef long		docattr_boolean;
 typedef uint64_t	docattr_md5;
 
 typedef struct {
@@ -32,13 +33,15 @@ typedef enum {
 typedef enum {
 	VALUE_INTEGER = 1,
 	VALUE_MD5,
-	VALUE_STRING
+	VALUE_STRING,
+	VALUE_BOOLEAN
 } docattr_value_type_t;
 
 typedef struct _docattr_value_t {
 	union {
 		char*               string;
 		docattr_integer		integer;
+		docattr_boolean		boolean;
 		docattr_md5			md5;
 	};
 	char my_string[MAX_DOCATTR_ELEMENT_SIZE];
@@ -119,11 +122,27 @@ struct _docattr_operand_t {
 
 typedef struct {
 	docattr_operand_t* root_operand;
-	docattr_field_t *field_list[MAX_DOCATTR_FIELD];
+	docattr_field_t *field_list[MAX_DOCATTR_FIELD]; // 미리 계산해야 하는 field들
 	int field_list_count;
 } general_cond_t;
 
 extern int isNumber(const char* string, docattr_integer* number);
+
+/**************************************************************
+ * docattr sorting에 필요한 기능
+ **************************************************************/
+
+typedef struct {
+	int set; // 0 이면 초기화 되지 않은 것.
+	char string[STRING_SIZE];
+
+	// 요 부분은 init() 에서 초기화.. field를 아직 모를 수도 있으니까..
+	struct {
+		docattr_field_t* field;
+		int order;
+	} condition[MAX_SORTING_CRITERION];
+	int condition_count;
+} general_sort_t;
 
 #endif // MOD_DOCATTR_GENERAL_H
 

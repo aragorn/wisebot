@@ -19,6 +19,7 @@ extern int yylex(void);
 logi_expr:  logi_expr LOGICAL_AND logi_expr {
 				general_cond.root_operand = $2;
 				$$ = $2;
+				$$->value_type = VALUE_BOOLEAN;
 				$$->expr.operand1 = $1;
 				$$->expr.operand2 = $3;
 				$$->expr.exec_func = expr_logical_and;
@@ -26,6 +27,7 @@ logi_expr:  logi_expr LOGICAL_AND logi_expr {
 			| logi_expr LOGICAL_OR logi_expr {
 				general_cond.root_operand = $2;
 				$$ = $2;
+				$$->value_type = VALUE_BOOLEAN;
 				$$->expr.operand1 = $1;
 				$$->expr.operand2 = $3;
 				$$->expr.exec_func = expr_logical_or;
@@ -33,6 +35,7 @@ logi_expr:  logi_expr LOGICAL_AND logi_expr {
 			| LOGICAL_NOT logi_expr {
 				general_cond.root_operand = $1;
 				$$ = $1;
+				$$->value_type = VALUE_BOOLEAN;
 				$$->expr.operand1 = $2;
 				$$->expr.exec_func = expr_logical_not;
 			}

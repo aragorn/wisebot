@@ -26,9 +26,9 @@ docattr_operand_t* get_new_operand()
 	return &operands[current_operand_index++];
 }
 
-char* get_value_type_name(docattr_operand_type_t type)
+char* get_value_type_name(docattr_value_type_t type)
 {
-	static char name[][20] = { "INTEGER", "STRING", "MD5", "UNKNOWN" };
+	static char name[][20] = { "INTEGER", "STRING", "MD5", "BOOLEAN", "UNKNOWN" };
 
 	switch( type ) {
 		case VALUE_INTEGER:
@@ -37,9 +37,11 @@ char* get_value_type_name(docattr_operand_type_t type)
 			return name[1];
 		case VALUE_MD5:
 			return name[2];
+		case VALUE_BOOLEAN:
+			return name[3];
 	}
 
-	return name[3];
+	return name[4];
 }
 
 void print_operand(docattr_operand_t* operand)
@@ -118,14 +120,14 @@ int operand_expr_exec_func(docattr_operand_t* operand)
 
 int expr_eq_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer == RESULT2->integer );
+	RESULT.boolean = ( RESULT1->integer == RESULT2->integer );
 
 	return SUCCESS;
 }
 
 int expr_eq_string_string(docattr_expr_t* expr)
 {
-	RESULT.integer =
+	RESULT.boolean =
 		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) == 0 );
 
 	return SUCCESS;
@@ -148,20 +150,20 @@ int expr_eq_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_INTEGER;
+	operand->value_type = VALUE_BOOLEAN;
 	return SUCCESS;
 }
 
 int expr_neq_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer != RESULT2->integer );
+	RESULT.boolean = ( RESULT1->integer != RESULT2->integer );
 
 	return SUCCESS;
 }
 
 int expr_neq_string_string(docattr_expr_t* expr)
 {
-	RESULT.integer =
+	RESULT.boolean =
 		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) != 0 );
 
 	return SUCCESS;
@@ -184,20 +186,20 @@ int expr_neq_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_INTEGER;
+	operand->value_type = VALUE_BOOLEAN;
 	return SUCCESS;
 }
 
 int expr_gt_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer > RESULT2->integer );
+	RESULT.boolean = ( RESULT1->integer > RESULT2->integer );
 
 	return SUCCESS;
 }
 
 int expr_gt_string_string(docattr_expr_t* expr)
 {
-	RESULT.integer =
+	RESULT.boolean =
 		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) > 0 );
 
 	return SUCCESS;
@@ -220,20 +222,20 @@ int expr_gt_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_INTEGER;
+	operand->value_type = VALUE_BOOLEAN;
 	return SUCCESS;
 }
 
 int expr_gteq_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer >= RESULT2->integer );
+	RESULT.boolean = ( RESULT1->integer >= RESULT2->integer );
 
 	return SUCCESS;
 }
 
 int expr_gteq_string_string(docattr_expr_t* expr)
 {
-	RESULT.integer =
+	RESULT.boolean =
 		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) >= 0 );
 
 	return SUCCESS;
@@ -256,20 +258,20 @@ int expr_gteq_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_INTEGER;
+	operand->value_type = VALUE_BOOLEAN;
 	return SUCCESS;
 }
 
 int expr_lt_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer < RESULT2->integer );
+	RESULT.boolean = ( RESULT1->integer < RESULT2->integer );
 
 	return SUCCESS;
 }
 
 int expr_lt_string_string(docattr_expr_t* expr)
 {
-	RESULT.integer =
+	RESULT.boolean =
 		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) < 0 );
 
 	return SUCCESS;
@@ -292,20 +294,20 @@ int expr_lt_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_INTEGER;
+	operand->value_type = VALUE_BOOLEAN;
 	return SUCCESS;
 }
 
 int expr_lteq_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer <= RESULT2->integer );
+	RESULT.boolean = ( RESULT1->integer <= RESULT2->integer );
 
 	return SUCCESS;
 }
 
 int expr_lteq_string_string(docattr_expr_t* expr)
 {
-	RESULT.integer =
+	RESULT.boolean =
 		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) <= 0 );
 
 	return SUCCESS;
@@ -328,13 +330,13 @@ int expr_lteq_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_INTEGER;
+	operand->value_type = VALUE_BOOLEAN;
 	return SUCCESS;
 }
 
 int expr_bitand_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer & RESULT2->integer );
+	RESULT.boolean = ( RESULT1->integer & RESULT2->integer );
 
 	return SUCCESS;
 }
@@ -352,13 +354,13 @@ int expr_bitand_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_INTEGER;
+	operand->value_type = VALUE_BOOLEAN;
 	return SUCCESS;
 }
 
 int expr_bitor_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer | RESULT2->integer );
+	RESULT.boolean = ( RESULT1->integer | RESULT2->integer );
 
 	return SUCCESS;
 }
@@ -376,25 +378,25 @@ int expr_bitor_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_INTEGER;
+	operand->value_type = VALUE_BOOLEAN;
 	return SUCCESS;
 }
 
 int expr_logical_and(docattr_expr_t* expr)
 {
-	RESULT.integer = RESULT1->integer && RESULT2->integer;
+	RESULT.boolean = RESULT1->boolean && RESULT2->boolean;
 	return SUCCESS;
 }
 
 int expr_logical_or(docattr_expr_t* expr)
 {
-	RESULT.integer = RESULT1->integer || RESULT2->integer;
+	RESULT.boolean = RESULT1->boolean || RESULT2->boolean;
 	return SUCCESS;
 }
 
 int expr_logical_not(docattr_expr_t* expr)
 {
-	RESULT.integer = !RESULT1->integer;
+	RESULT.boolean = !RESULT1->boolean;
 	return SUCCESS;
 }
 
@@ -456,7 +458,7 @@ static int compare_function(void* dest, void* cond, uint32_t docid)
 	fetch_docattr_field( docattr, doccond );
 	doccond->root_operand->exec_func( doccond->root_operand );
 
-	return (int) doccond->root_operand->result->integer;
+	return (int) doccond->root_operand->result->boolean;
 }
 
 /*
