@@ -263,7 +263,7 @@ module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, 
 }
 
 
-void init_core_modules(module *start_module)
+int init_core_modules(module *start_module)
 {
 	module *mod;
 	int ret;
@@ -273,15 +273,19 @@ void init_core_modules(module *start_module)
 
 		if (mod->init) {
 			ret=mod->init();
-			if (ret < 0) 
+			if (ret < 0) {
 				error("Initialization %s failed",mod->name);
+				return FAIL;
+			}
 		}
 		else 
 			debug("module %s has no init function",mod->name);
 	}
+
+	return SUCCESS;
 }
 
-void init_standard_modules(module *start_module)
+int init_standard_modules(module *start_module)
 {
 	module *mod;
 	int ret;
@@ -292,12 +296,16 @@ void init_standard_modules(module *start_module)
 		if (mod->init) {
 			debug("module %s ->init()",mod->name);
 			ret=mod->init();
-			if (ret < 0) 
+			if (ret < 0) {
 				error("Initialization %s failed",mod->name);
+				return FAIL;
+			}
 		}
 		else 
 			info("module %s has no init function",mod->name);
 	}
+
+	return SUCCESS;
 }
 
 

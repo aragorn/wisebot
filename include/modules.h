@@ -194,8 +194,8 @@ SB_DECLARE(module*) add_dynamic_module(const char *mod_struct_name,
 									   const char *modulename,
 									   char registry_only);
 
-SB_DECLARE(void) init_core_modules(module *start_module);
-SB_DECLARE(void) init_standard_modules(module *start_module);
+SB_DECLARE(int) init_core_modules(module *start_module);
+SB_DECLARE(int) init_standard_modules(module *start_module);
 
 SB_DECLARE(void) list_static_modules(FILE *out);
 SB_DECLARE(void) list_static_modules_str(char *result);

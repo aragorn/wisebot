@@ -273,8 +273,8 @@ int server_main()
 
 	/* method 3 of doc/README.init */
 	set_proc_desc(NULL, "softbotd: master - init each module");
-	init_core_modules(first_module); 
-	init_standard_modules(first_module); 
+	if ( init_core_modules(first_module) != SUCCESS ) goto STOP;
+	if ( init_standard_modules(first_module) != SUCCESS ) goto STOP;
 
 	if (clc_listen_port >= 2) { /* show using ports */
 		show_portinfo();
