@@ -1991,7 +1991,10 @@ static void fill_title_and_comment(request_t *req)
 	RetrievedDoc rdoc[MAX_NUM_RETRIEVED_DOC];
 	DocObject    *doc[MAX_NUM_RETRIEVED_DOC] = {NULL};
 
-	if (req->result_list->ndochits == 0) { info("no searched result"); return; }
+	if ( req->result_list == NULL || req->result_list->ndochits == 0) {
+		info("no searched result");
+		return;
+	}
 
 	if ( req->result_list->ndochits <  req->first_result ) {
 		searched_list_size = 0;
@@ -2526,7 +2529,11 @@ int light_search (void* word_db, request_t *req)
 	}
 	else if (num_of_node == 0) {
 		warn("no operand is available");
-		return FAIL;
+		// word_list는 가라로 만든다.
+		strncpy( req->word_list, " ", sizeof(req->word_list) );
+		req->result_list = NULL;
+		req->list_size = 0;
+		return SUCCESS;
 	}
 	else if (num_of_node > MAX_QUERY_NODES) {
 		crit("num_of_node[%d] > MAX_QUERY_NODES[%d]", num_of_node, MAX_QUERY_NODES);
