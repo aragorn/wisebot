@@ -55,6 +55,8 @@ int main (int argc, char *argv[]) {
 		return 1;
 	}
 
+	log_setlevelstr("debug");
+
 	fp = fopen(argv[1], "r");
 	if (fp == NULL) {
 		fprintf(stderr, "cannot open file[%s]: %s\n", argv[1], strerror(errno));
