@@ -6,6 +6,26 @@
 #ifndef WIN32
 #include <string.h>
 #include "mod_api/indexdb.h"
+
+typedef struct _ifs_set_t {
+	int set;
+
+	int set_ifs_path;
+	char ifs_path[MAX_PATH_LEN];
+
+	int set_segment_size;
+	int segment_size;
+
+	int set_block_size;
+	int block_size;
+
+	int set_lock_id;
+	int lock_id;
+} ifs_set_t;
+
+#define MAX_IFS_SET (10)
+ifs_set_t* ifs_set = NULL;
+int current_ifs_set = -1;
 #endif
 
 static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg);
@@ -18,11 +38,7 @@ int __sfs_all_activate(ifs_t* ifs, int* physical_segment_array, int count, int t
 int __sfs_deactivate(ifs_t* ifs, int p);
 int __file_open(ifs_t* ifs, int sec);
 
-static int ifs_lock = -1;
-static char ifs_path[MAX_PATH_LEN] = "dat/indexer";
 static int file_size = DEFAULT_FILE_SIZE;
-static int segment_size = DEFAULT_SEGMENT_SIZE;
-static int block_size = DEFAULT_BLOCK_SIZE;
 
 #define ACQUIRE_LOCK() \
 	if ( acquire_lock( ifs->local.lock ) != SUCCESS ) { \
@@ -38,15 +54,28 @@ static int block_size = DEFAULT_BLOCK_SIZE;
 int ifs_init()
 {
 	ipc_t lock;
+	int i;
 
     lock.type = IPC_TYPE_SEM;
     lock.pid = SYS5_IFS;
-    lock.pathname = ifs_path;
 
-    if ( get_sem(&lock) != SUCCESS )
-		return FAIL;
+	for ( i = 0; i < MAX_IFS_SET; i++ ) {
+		if ( !ifs_set[i].set ) continue;
 
-	ifs_lock = lock.id;
+		if ( !ifs_set[i].set_ifs_path ) {
+			warn("IfsPath [IndexDbSet:%d] is not set", i);
+			continue;
+		}
+
+		lock.pathname = ifs_set[i].ifs_path;
+
+		if ( get_sem(&lock) != SUCCESS )
+			return FAIL;
+
+		ifs_set[i].lock_id = lock.id;
+		ifs_set[i].set_lock_id = 1;
+	}
+
 	return SUCCESS;
 }
 
@@ -204,7 +233,7 @@ static int __lock_init(ifs_t* ifs, char* path)
 
     ifs->local.lock = ifs_lock.id;
 #else
-	ifs->local.lock = ifs_lock;
+	// ifs_open() 에서 이미 줬다
 #endif
 
     return SUCCESS;
@@ -309,7 +338,44 @@ fail:
 
 int ifs_open(void* indexdb, int opt)
 {
-	return _ifs_open((ifs_t*)indexdb, ifs_path, segment_size, block_size);
+	if ( ifs_set == NULL ) {
+		error("ifs_set is NULL. you must set IndexDbSet in config file");
+		return FAIL;
+	}
+
+	if ( opt >= MAX_IFS_SET || opt < 0 ) {
+		error("opt[%d] is invalid. MAX_IFS_SET[%d]", opt, MAX_IFS_SET);
+		return FAIL;
+	}
+
+	if ( !ifs_set[opt].set ) {
+		error("IndexDbSet[opt:%d] is not defined", opt);
+		return FAIL;
+	}
+
+	if ( !ifs_set[opt].set_ifs_path ) {
+		error("IfsPath is not set [IndexDbSet:%d]. see config", opt);
+		return FAIL;
+	}
+
+	if ( !ifs_set[opt].set_segment_size ) {
+		error("SegmentSize is not set [IndexDbSet:%d]. see config", opt);
+		return FAIL;
+	}
+
+	if ( !ifs_set[opt].set_block_size ) {
+		error("BlockSize is not set [IndexDbSet:%d]. see config", opt);
+		return FAIL;
+	}
+
+	if ( !ifs_set[opt].set_lock_id ) {
+		error("lock init failed? [IndexDbSet:%d].", opt);
+		return FAIL;
+	}
+	else ((ifs_t*)indexdb)->local.lock = ifs_set[opt].lock_id;
+
+	return _ifs_open((ifs_t*)indexdb, ifs_set[opt].ifs_path,
+						ifs_set[opt].segment_size, ifs_set[opt].block_size);
 }
 
 int ifs_close(void* indexdb)
@@ -740,11 +806,6 @@ static void set_temp_alive_time(configValue v)
 	temp_alive_time = atoi(v.argument[0]);
 }
 
-static void set_ifs_path(configValue v)
-{
-	strncpy(ifs_path, v.argument[0], sizeof(ifs_path));
-}
-
 static void set_file_size(configValue v)
 {
 	file_size = atoi( v.argument[0] ) * 1024 * 1024;
@@ -755,31 +816,81 @@ static void set_file_size(configValue v)
 	}
 }
 
+static void set_ifs_set(configValue v)
+{
+	int value = atoi( v.argument[0] );
+	static ifs_set_t local_ifs_set[MAX_IFS_SET];
+
+	if ( value < 0 || value >= MAX_IFS_SET ) {
+		error("Invalid IndexDbSet value[%s], MAX_IFS_SET[%d]",
+				v.argument[0], MAX_IFS_SET);
+		return;
+	}
+
+	if ( ifs_set == NULL ) {
+		memset( local_ifs_set, 0, sizeof(local_ifs_set) );
+		ifs_set = local_ifs_set;
+	}
+
+	current_ifs_set = value;
+	ifs_set[value].set = 1;
+}
+
+static void set_ifs_path(configValue v)
+{
+	if ( ifs_set == NULL || current_ifs_set < 0 ) {
+		error("first, set IndexDbSet");
+		return;
+	}
+
+	strncpy(ifs_set[current_ifs_set].ifs_path, v.argument[0], MAX_PATH_LEN);
+}
+
 static void set_segment_size(configValue v)
 {
+	int segment_size;
+
+	if ( ifs_set == NULL || current_ifs_set < 0 ) {
+		error("first, set IndexDbSet");
+		return;
+	}
+
 	segment_size = atoi( v.argument[0] ) * 1024 * 1024;
 	if ( segment_size <= 0 ) {
 		warn("invalid segment_size[%s]. set to default[%d]",
 				v.argument[0], DEFAULT_SEGMENT_SIZE);
 		segment_size = DEFAULT_SEGMENT_SIZE;
 	}
+
+	ifs_set[current_ifs_set].segment_size = segment_size;
 }
 
 static void set_block_size(configValue v)
 {
+	int block_size;
+
+	if ( ifs_set == NULL || current_ifs_set < 0 ) {
+		error("first, set IndexDbSet");
+		return;
+	}
+
 	block_size = atoi( v.argument[0] );
 	if ( block_size <= 0 ) {
 		warn("invalid block_size[%s]. set to default[%d]",
 				v.argument[0], DEFAULT_BLOCK_SIZE);
 		block_size = DEFAULT_BLOCK_SIZE;
 	}
+
+	ifs_set[current_ifs_set].block_size = block_size;
 }
 
 static config_t config[] = {
 	CONFIG_GET("TempAliveTime", set_temp_alive_time, 1, "time for temp segment is kept alive"),
-	CONFIG_GET("IfsPath", set_ifs_path, 1, "ifs path(not file). but, remove last '/'"),
 	CONFIG_GET("FileSize", set_file_size, 1,
 					"size of one file (segment * sector. e.g: FileSize 1024)"),
+
+	CONFIG_GET("IndexDbSet", set_ifs_set, 1, "ifs set. (e.g: IndexDbSet 1)"),
+	CONFIG_GET("IfsPath", set_ifs_path, 1, "ifs path(not file). but, remove last '/'"),
 	CONFIG_GET("SegmentSize", set_segment_size, 1, "sfs segment size(MB) (e.g: SegmentSize 256"),
 	CONFIG_GET("BlockSize", set_block_size, 1, "sfs block size (e.g: BlockSize 256)"),
 	{NULL}
