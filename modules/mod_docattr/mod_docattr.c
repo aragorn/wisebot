@@ -113,6 +113,13 @@ static int docattr_get(DocId docid, void *p_doc_attr)
 	return TRUE;
 }
 
+static int docattr_ptr_get(DocId docid, docattr_t **p_doc_attr)
+{
+	*p_doc_attr = (docattr_t*) (docattr_array+(docid-1)*DOCATTR_ELEMENT_SIZE);
+
+	return TRUE;
+}
+
 static int docattr_set(DocId docid, void *p_doc_attr)
 {
 	memcpy(docattr_array+((int)docid-1)*DOCATTR_ELEMENT_SIZE,
@@ -254,6 +261,7 @@ static void register_hooks(void)
 	sb_hook_docattr_close(docattr_close,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_docattr_synchronize(docattr_synchronize,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_docattr_get(docattr_get,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_docattr_ptr_get(docattr_ptr_get,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_docattr_set(docattr_set,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_docattr_get_array(docattr_get_array,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_docattr_set_array(docattr_set_array,NULL,NULL,HOOK_MIDDLE);

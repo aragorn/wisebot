@@ -447,7 +447,7 @@ void print_tree(docattr_operand_t* operand)
 }
 
 // general_cond 의 field 에 있는 값들을 미리 가져온다.
-void fetch_docattr_field(general_docattr_t* docattr, general_cond_t* cond)
+void fetch_docattr_field(docattr_t* docattr, general_cond_t* cond)
 {
 	int i;
 	docattr_field_t* field;
@@ -475,7 +475,7 @@ static int init()
 
 static int compare_function(void* dest, void* cond, uint32_t docid)
 {
-	general_docattr_t* docattr = (general_docattr_t*) dest;
+	docattr_t* docattr = (docattr_t*) dest;
 	general_cond_t* doccond = (general_cond_t*) cond;
 
 	fetch_docattr_field( docattr, doccond );

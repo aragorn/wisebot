@@ -11,13 +11,9 @@ typedef long		docattr_boolean;
 typedef uint64_t	docattr_md5;
 
 typedef struct {
-	char data[MAX_DOCATTR_ELEMENT_SIZE];
-} general_docattr_t; // sizeof(docattr_t) 보다 작아야 한다.
-
-typedef struct {
 	int init; // 0이면 id를 0xff로 초기화해야 한다.
 	int id[MAX_DOCATTR_FIELD];
-	general_docattr_t docattr;
+	docattr_t docattr;
 } general_mask_t; // sizeof(docattr_mask_t) 보다 작아야 한다.
 
 typedef enum {
@@ -59,10 +55,10 @@ typedef struct _docattr_field_t {
 	int bit_offset;
 	int bit_size;
 
-	int (*set_func)(general_docattr_t* docattr, struct _docattr_field_t* field, char* value);
-	void (*get_func)(general_docattr_t* docattr,
+	int (*set_func)(docattr_t* docattr, struct _docattr_field_t* field, char* value);
+	void (*get_func)(docattr_t* docattr,
 			struct _docattr_field_t* field, docattr_value_t* value);
-	void (*get_as_string_func)(general_docattr_t* docattr, struct _docattr_field_t* field,
+	void (*get_as_string_func)(docattr_t* docattr, struct _docattr_field_t* field,
 			docattr_value_t* value);
 	int (*compare_func)(docattr_value_t* value1, docattr_value_t* value2);
 

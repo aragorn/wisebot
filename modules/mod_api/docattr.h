@@ -54,6 +54,7 @@ SB_DECLARE_HOOK(int,docattr_open,(void))
 SB_DECLARE_HOOK(int,docattr_close,(void))
 SB_DECLARE_HOOK(int,docattr_synchronize,(void))
 SB_DECLARE_HOOK(int,docattr_get,(DocId docid, void *p_doc_attr))
+SB_DECLARE_HOOK(int,docattr_ptr_get,(DocId docid, docattr_t **p_doc_attr))
 SB_DECLARE_HOOK(int,docattr_set,(DocId docid, void *p_doc_attr))
 SB_DECLARE_HOOK(int,docattr_get_array, \
 	(DocId *dest, int destsize, DocId *sour, \

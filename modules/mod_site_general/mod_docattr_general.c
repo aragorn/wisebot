@@ -15,6 +15,9 @@ int docattr_field_count = 0;
 docattr_field_t* rid_field = NULL;
 char rid_field_name[SHORT_STRING_SIZE] = "";
 
+// zero 를 대표하는 값. 하나 만들어 놓고 두고두고 쓴다...
+docattr_value_t value_zero;
+
 // 발견하면 field 수정하고, 못찾으면 field = NULL
 // 리턴값은 항상 현재 index. 그래서 새로운 field 할당에도 쓸 수 있다.
 int return_docattr_field(const char* name, docattr_field_t** field)
@@ -95,9 +98,9 @@ static general_sort_t* general_sort = NULL;
  *                field 연산 함수들
  ********************************************************/
 
-#define DATA_POSITION (docattr->data + field->offset)
+#define DATA_POSITION (docattr->rsv + field->offset)
 
-static int string_set_func(general_docattr_t* docattr, docattr_field_t* field, char *value)
+static int string_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
 	// 한자 -> 한글 처리 해야 한다
 	int left;
@@ -121,7 +124,7 @@ static int string_set_func(general_docattr_t* docattr, docattr_field_t* field, c
 	return SUCCESS;
 }
 
-static void string_get_func(general_docattr_t* docattr,
+static void string_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	value->string = DATA_POSITION;
@@ -132,7 +135,7 @@ static int string_compare_func(docattr_value_t* value1, docattr_value_t* value2)
 	return hangul_strncmp( value1->string, value2->string, (int) sizeof(value1->my_string) );
 }
 
-static int integer_set_func(general_docattr_t* docattr, docattr_field_t* field, char *value)
+static int integer_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
 	docattr_integer number;
 
@@ -145,13 +148,13 @@ static int integer_set_func(general_docattr_t* docattr, docattr_field_t* field, 
 	return SUCCESS;
 }
 
-static void integer_get_func(general_docattr_t* docattr,
+static void integer_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	value->integer = *((docattr_integer*) DATA_POSITION);
 }
 
-static void integer_get_as_string_func(general_docattr_t* docattr,
+static void integer_get_as_string_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	field->get_func( docattr, field, value );
@@ -165,7 +168,7 @@ static int integer_compare_func(docattr_value_t* value1, docattr_value_t* value2
 	return value1->integer - value2->integer;
 }
 
-static int integer4_set_func(general_docattr_t* docattr, docattr_field_t* field, char *value)
+static int integer4_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
 	docattr_integer number;
 
@@ -178,13 +181,13 @@ static int integer4_set_func(general_docattr_t* docattr, docattr_field_t* field,
 	return SUCCESS;
 }
 
-static void integer4_get_func(general_docattr_t* docattr,
+static void integer4_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	value->integer = *((int32_t*) DATA_POSITION);
 }
 
-static int integer2_set_func(general_docattr_t* docattr, docattr_field_t* field, char *value)
+static int integer2_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
 	docattr_integer number;
 
@@ -202,13 +205,13 @@ static int integer2_set_func(general_docattr_t* docattr, docattr_field_t* field,
 	return SUCCESS;
 }
 
-static void integer2_get_func(general_docattr_t* docattr,
+static void integer2_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	value->integer = *((int16_t*) DATA_POSITION);
 }
 
-static int integer1_set_func(general_docattr_t* docattr, docattr_field_t* field, char *value)
+static int integer1_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
 	docattr_integer number;
 
@@ -226,13 +229,13 @@ static int integer1_set_func(general_docattr_t* docattr, docattr_field_t* field,
 	return SUCCESS;
 }
 
-static void integer1_get_func(general_docattr_t* docattr,
+static void integer1_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	value->integer = *((int8_t*) DATA_POSITION);
 }
 
-static int onebit_set_func(general_docattr_t* docattr, docattr_field_t* field, char *value)
+static int onebit_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
 	if ( value[1] != '\0' || ( value[0] != '0' && value[0] != '1' ) ) {
 		error("1 bit value is only 0 or 1. current[%s]. not 01, 0x1 ...", value);
@@ -247,7 +250,7 @@ static int onebit_set_func(general_docattr_t* docattr, docattr_field_t* field, c
 	return SUCCESS;
 }
 
-static void onebit_get_func(general_docattr_t* docattr,
+static void onebit_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	if ( *((docattr_integer*) DATA_POSITION) & (1<<field->bit_offset) )
@@ -255,7 +258,7 @@ static void onebit_get_func(general_docattr_t* docattr,
 	else value->integer = 0;
 }
 
-static void onebit_get_as_string_func(general_docattr_t* docattr,
+static void onebit_get_as_string_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	onebit_get_func( docattr, field, value );
@@ -265,7 +268,7 @@ static void onebit_get_as_string_func(general_docattr_t* docattr,
 	value->string = value->my_string;
 }
 
-static int bit_set_func(general_docattr_t* docattr, docattr_field_t* field, char *value)
+static int bit_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
 	docattr_integer number, mask;
 	docattr_integer* attr_position = (docattr_integer*) DATA_POSITION;
@@ -290,7 +293,7 @@ static int bit_set_func(general_docattr_t* docattr, docattr_field_t* field, char
 	return SUCCESS;
 }
 
-static void bit_get_func(general_docattr_t* docattr,
+static void bit_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	docattr_integer number, mask;
@@ -305,7 +308,7 @@ static void bit_get_func(general_docattr_t* docattr,
 
 // bit_compare_func -> integer_compare_func
 
-static void bit_get_as_string_func(general_docattr_t* docattr,
+static void bit_get_as_string_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	bit_get_func( docattr, field, value );
@@ -314,7 +317,7 @@ static void bit_get_as_string_func(general_docattr_t* docattr,
 	value->string = value->my_string;
 }
 
-static void enum_get_as_string_func(general_docattr_t* docattr,
+static void enum_get_as_string_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	docattr_value_t integer_value;
@@ -330,7 +333,7 @@ static void enum_get_as_string_func(general_docattr_t* docattr,
 	}
 }
 
-static int md5_set_func(general_docattr_t* docattr, docattr_field_t* field, char *value)
+static int md5_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
 	MD5_CTX context;
 	unsigned char digest[16];
@@ -344,7 +347,7 @@ static int md5_set_func(general_docattr_t* docattr, docattr_field_t* field, char
 	return SUCCESS;
 }
 
-static void md5_get_func(general_docattr_t* docattr,
+static void md5_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	value->md5 = *((docattr_md5*) DATA_POSITION);
@@ -355,7 +358,7 @@ static int md5_compare_func(docattr_value_t* value1, docattr_value_t* value2)
 	return value1->md5 - value2->md5;
 }
 
-static void md5_get_as_string_func(general_docattr_t* docattr,
+static void md5_get_as_string_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	md5_get_func( docattr, field, value );
@@ -402,7 +405,7 @@ static int set_docmask_function(void* dest, char* key, char* value)
 // 거의 사용하지 않는다.. 대충 만들도록 한다.
 static int mask_function(void* dest, void* source_mask)
 {
-	general_docattr_t* docattr = (general_docattr_t*) dest;
+	docattr_t* docattr = (docattr_t*) dest;
 	general_mask_t* mask = (general_mask_t*) source_mask;
 	docattr_field_t* field;
 	int i;
@@ -419,13 +422,13 @@ static int mask_function(void* dest, void* source_mask)
 			docattr_integer bit_mask = ( ((1<<field->bit_size)-1)<<field->bit_offset );
 			docattr_integer *src, *dest;
 
-			src = (docattr_integer*) (mask->docattr.data + field->offset);
-			dest = (docattr_integer*) (docattr->data + field->offset);
+			src = (docattr_integer*) (mask->docattr.rsv + field->offset);
+			dest = (docattr_integer*) (docattr->rsv + field->offset);
 
 			*dest = (*dest & ~bit_mask) | (*src & bit_mask);
 		}
 		else {
-			memcpy( docattr->data + field->offset, mask->docattr.data + field->offset,
+			memcpy( docattr->rsv + field->offset, mask->docattr.rsv + field->offset,
 					field->size );
 		}
 	}
@@ -443,12 +446,12 @@ static int set_docattr_function(void* dest, char *key, char *value)
 		return FAIL;
 	}
 
-	return field->set_func( (general_docattr_t*) dest, field, value );
+	return field->set_func( (docattr_t*) dest, field, value );
 }
 
 static int get_docattr_function(void* dest, char* key, char* buf, int buflen)
 {
-	general_docattr_t* docattr = (general_docattr_t*) dest;
+	docattr_t* docattr = (docattr_t*) dest;
 	docattr_field_t* field;
 
 	return_docattr_field( key, &field );
@@ -472,21 +475,21 @@ static int get_docattr_function(void* dest, char* key, char* buf, int buflen)
 
 static int compare_rid_md5(const void* dest, const void* sour)
 {
-	general_docattr_t attr1, attr2;
+	docattr_t *attr1, *attr2;
 	docattr_value_t value1, value2;
 
-	if ( sb_run_docattr_get( ((doc_hit_t*) dest)->id, &attr1 ) != SUCCESS ) {
+	if ( sb_run_docattr_ptr_get( ((doc_hit_t*) dest)->id, &attr1 ) != SUCCESS ) {
 		error("cannot get docattr element");
 		return 0;
 	}
 
-	if ( sb_run_docattr_get( ((doc_hit_t*) sour)->id, &attr2 ) != SUCCESS ) {
+	if ( sb_run_docattr_ptr_get( ((doc_hit_t*) sour)->id, &attr2 ) != SUCCESS ) {
 		error("cannot get docattr element");
 		return 0;
 	}
 
-	rid_field->get_func( &attr1, rid_field, &value1 );
-	rid_field->get_func( &attr2, rid_field, &value2 );
+	rid_field->get_func( attr1, rid_field, &value1 );
+	rid_field->get_func( attr2, rid_field, &value2 );
 
 	if ( value1.md5 > value2.md5 ) return 1;
 	else if ( value1.md5 == value2.md5 ) return 0;
@@ -496,18 +499,18 @@ static int compare_rid_md5(const void* dest, const void* sour)
 static int docattr_distinct_rid_md5(int id, index_list_t* list)
 {
 	int i, abst;
-	general_docattr_t attr1, attr2;
+	docattr_t *attr1, *attr2;
 	docattr_value_t value1, value2;
 
 	qsort( list->doc_hits, list->ndochits, sizeof(doc_hit_t), compare_rid_md5);
 
 	abst = 0;
 
-	if ( sb_run_docattr_get( list->doc_hits[0].id, &attr1 ) != SUCCESS ) {
+	if ( sb_run_docattr_ptr_get( list->doc_hits[0].id, &attr1 ) != SUCCESS ) {
 		error("cannot get docattr element");
 		return FAIL;
 	}
-	rid_field->get_func( &attr1, rid_field, &value2 );
+	rid_field->get_func( attr1, rid_field, &value2 );
 	info("md5: %" PRIu64, value2.md5);
 
 	for ( i = 0; i < list->ndochits; ) {
@@ -519,12 +522,12 @@ static int docattr_distinct_rid_md5(int id, index_list_t* list)
 		}
 
 		for ( i++; i < list->ndochits; i++ ) {
-			if ( sb_run_docattr_get( list->doc_hits[i].id, &attr2 ) != SUCCESS ) {
+			if ( sb_run_docattr_ptr_get( list->doc_hits[i].id, &attr2 ) != SUCCESS ) {
 				error("cannot get docattr element");
 				return FAIL;
 			}
 			
-			rid_field->get_func( &attr2, rid_field, &value2 );
+			rid_field->get_func( attr2, rid_field, &value2 );
 			info("md5: %" PRIu64, value2.md5);
 
 			if ( value1.md5 == 0 || value2.md5 == 0 ) break;
@@ -541,43 +544,41 @@ static int docattr_distinct_rid_md5(int id, index_list_t* list)
 
 static int compare_rid_general(const void* dest, const void* sour)
 {
-	general_docattr_t attr1, attr2;
+	docattr_t *attr1, *attr2;
 	docattr_value_t value1, value2;
 
-	if ( sb_run_docattr_get( ((doc_hit_t*) dest)->id, &attr1 ) != SUCCESS ) {
+	if ( sb_run_docattr_ptr_get( ((doc_hit_t*) dest)->id, &attr1 ) != SUCCESS ) {
 		error("cannot get docattr element");
 		return 0;
 	}
 
-	if ( sb_run_docattr_get( ((doc_hit_t*) sour)->id, &attr2 ) != SUCCESS ) {
+	if ( sb_run_docattr_ptr_get( ((doc_hit_t*) sour)->id, &attr2 ) != SUCCESS ) {
 		error("cannot get docattr element");
 		return 0;
 	}
 
-	rid_field->get_func( &attr1, rid_field, &value1 );
-	rid_field->get_func( &attr2, rid_field, &value2 );
+	rid_field->get_func( attr1, rid_field, &value1 );
+	rid_field->get_func( attr2, rid_field, &value2 );
 
 	return rid_field->compare_func( &value2, &value1 );
 }
 
+// value.string 은 attr 내부를 가리키고 있으므로 조심
 static int docattr_distinct_rid_general(int id, index_list_t* list)
 {
 	int i, abst;
-	general_docattr_t attr1, attr2;
+	docattr_t *attr1, *attr2;
 	docattr_value_t value1, value2;
-	docattr_value_t value_zero;
 
-	memset( &value_zero, 0, sizeof(value_zero) );
-	value_zero.string = value_zero.my_string;
 	qsort( list->doc_hits, list->ndochits, sizeof(doc_hit_t), compare_rid_general);
 
 	abst = 0;
 
-	if ( sb_run_docattr_get( list->doc_hits[0].id, &attr1 ) != SUCCESS ) {
+	if ( sb_run_docattr_ptr_get( list->doc_hits[0].id, &attr1 ) != SUCCESS ) {
 		error("cannot get docattr element");
 		return FAIL;
 	}
-	rid_field->get_func( &attr1, rid_field, &value2 );
+	rid_field->get_func( attr1, rid_field, &value2 );
 
 	for ( i = 0; i < list->ndochits; ) {
 		value1 = value2;
@@ -588,18 +589,21 @@ static int docattr_distinct_rid_general(int id, index_list_t* list)
 		}
 
 		for ( i++; i < list->ndochits; i++ ) {
-			if ( sb_run_docattr_get( list->doc_hits[i].id, &attr2 ) != SUCCESS ) {
+			if ( sb_run_docattr_ptr_get( list->doc_hits[i].id, &attr2 ) != SUCCESS ) {
 				error("cannot get docattr element");
 				return FAIL;
 			}
 			
-			rid_field->get_func( &attr2, rid_field, &value2 );
+			rid_field->get_func( attr2, rid_field, &value2 );
 
 			if ( rid_field->compare_func( &value1, &value_zero ) == 0
 					|| rid_field->compare_func( &value2, &value_zero ) == 0 ) break;
 			if ( rid_field->compare_func( &value1, &value2 ) != 0 ) break;
+
+			info("same value: %s, %s", value1.string, value2.string);
 		}
 
+		info("abst inc");
 		abst++;
 	}
 
@@ -611,7 +615,7 @@ static int docattr_distinct_rid_general(int id, index_list_t* list)
 static int compare_function_for_qsort(const void* dest, const void* sour, void* userdata)
 {
 	int i, diff = 0;
-	general_docattr_t attr1, attr2;
+	docattr_t *attr1, *attr2;
 	docattr_value_t value1, value2;
 	general_sort_t *sort;
 	docattr_field_t* field;
@@ -621,11 +625,11 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 	sort = &general_sort[((docattr_sort_t*) userdata)->index];
 	if ( !sort->set ) return 0;
 
-	if ( sb_run_docattr_get(((doc_hit_t*) dest)->id, &attr1) != SUCCESS ) {
+	if ( sb_run_docattr_ptr_get(((doc_hit_t*) dest)->id, &attr1) != SUCCESS ) {
 		error("cannot get docattr element");
 		return 0;
 	}
-	if ( sb_run_docattr_get(((doc_hit_t*) sour)->id, &attr2) != SUCCESS ) {
+	if ( sb_run_docattr_ptr_get(((doc_hit_t*) sour)->id, &attr2) != SUCCESS ) {
 		error("cannot get docattr element");
 		return 0;
 	}
@@ -633,8 +637,8 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 	for ( i = 0; i < sort->condition_count; i++ ) {
 		field = sort->condition[i].field;
 
-		field->get_func( &attr1, field, &value1 );
-		field->get_func( &attr2, field, &value2 );
+		field->get_func( attr1, field, &value1 );
+		field->get_func( attr2, field, &value2 );
 
 		diff = field->compare_func( &value1, &value2 );
 
@@ -1039,9 +1043,9 @@ static int init()
 {
 	docattr_field_t* delete_field;
 
-	if ( sizeof(general_docattr_t) > sizeof(docattr_t) ) {
-		crit("sizeof(general_docattr_t) (%d) > sizeof(docattr_t) (%d)",
-				(int) sizeof(general_docattr_t), (int) sizeof(docattr_t) );
+	if ( sizeof(docattr_t) > sizeof(docattr_t) ) {
+		crit("sizeof(docattr_t) (%d) > sizeof(docattr_t) (%d)",
+				(int) sizeof(docattr_t), (int) sizeof(docattr_t) );
 		return FAIL;
 	}
 
@@ -1050,6 +1054,10 @@ static int init()
 				(int) sizeof(general_mask_t), (int) sizeof(docattr_mask_t) );
 		return FAIL;
 	}
+
+	// value_zero 초기화
+	memset( &value_zero, 0, sizeof(value_zero) );
+	value_zero.string = value_zero.my_string;
 
 	// 반드시 있어야 하는 field 강제로 추가
 	return_docattr_field( "Delete", &delete_field );

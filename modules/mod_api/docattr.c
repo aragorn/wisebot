@@ -7,6 +7,7 @@ HOOK_STRUCT(
 	HOOK_LINK(docattr_close)
 	HOOK_LINK(docattr_synchronize)
 	HOOK_LINK(docattr_get)
+	HOOK_LINK(docattr_ptr_get)
 	HOOK_LINK(docattr_set)
 	HOOK_LINK(docattr_get_array)
 	HOOK_LINK(docattr_set_array)
@@ -28,6 +29,8 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_open, (void), (), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_close, (void), (), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_synchronize, (void), (), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_get, (DocId docid, void *p_doc_attr), \
+	(docid, p_doc_attr), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_ptr_get, (DocId docid, docattr_t **p_doc_attr), \
 	(docid, p_doc_attr), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_set, (DocId docid, void *p_doc_attr), \
 	(docid, p_doc_attr), DECLINE)
