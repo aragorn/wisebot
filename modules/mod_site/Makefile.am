@@ -3,6 +3,10 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
+AM_YFLAGS = -d
+BUILT_SOURCE = mod_qp_general_yacc.h
+LEXFLAG = -ll
+
 pkglib_LTLIBRARIES = mod_supreme_court_precedent.la \
 					  mod_supreme_court_literature.la \
 					  mod_supreme_court_regulation.la \
@@ -11,7 +15,8 @@ pkglib_LTLIBRARIES = mod_supreme_court_precedent.la \
 					  mod_lgcaltex.la \
 					  mod_supreme_court.la \
 					  mod_momaf.la \
-					  mod_supreme_home.la
+					  mod_supreme_home.la \
+					  mod_site_general.la
 
 mod_supreme_court_la_SOURCES = $(mod_supreme_court_precedent_la_SOURCES) \
 		$(mod_supreme_court_literature_la_SOURCES) \
@@ -59,5 +64,11 @@ mod_supreme_home_la_SOURCES = mod_docattr_supreme_home.c \
                               mod_docattr_supreme_home.h \
 							  mod_qp_supreme_home.c
 mod_supreme_home_la_LDFLAGS = -module -avoid-version
+
+mod_site_general_la_SOURCES = mod_docattr_general.c \
+							  mod_qp_general.c \
+							  mod_qp_general_yacc.y \
+							  mod_qp_general_lex.l
+mod_site_general_la_LDFLAGS = -module -avoid-version $(LEXFLAG)
 
 include ../install-pkglib.mk

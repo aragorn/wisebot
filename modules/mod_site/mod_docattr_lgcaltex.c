@@ -1444,7 +1444,7 @@ static int del_main(slot_t *slot) {
             docattr_mask_t docmask;
    
             DOCMASK_SET_ZERO(&docmask);
-            sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+            sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
             docid = i;
             sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
         }
