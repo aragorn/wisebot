@@ -568,6 +568,7 @@ static int docattr_distinct_rid_general(int id, index_list_t* list)
 	docattr_value_t value_zero;
 
 	memset( &value_zero, 0, sizeof(value_zero) );
+	value_zero.string = value_zero.my_string;
 	qsort( list->doc_hits, list->ndochits, sizeof(doc_hit_t), compare_rid_general);
 
 	abst = 0;
