@@ -49,6 +49,7 @@ typedef int (*condfunc)(void *dest, void *cond, uint32_t docid);
 typedef int (*maskfunc)(void *dest, void *mask);
 
 struct index_list_t;
+struct group_result_t;
 
 SB_DECLARE_HOOK(int,docattr_open,(void))
 SB_DECLARE_HOOK(int,docattr_close,(void))
@@ -73,6 +74,8 @@ SB_DECLARE_HOOK(int,docattr_index_list_sortby, \
 
 SB_DECLARE_HOOK(int,docattr_compare_function,(void *dest, void *cond, uint32_t docid))
 SB_DECLARE_HOOK(int,docattr_compare2_function,(void *dest, void *cond, uint32_t docid))
+SB_DECLARE_HOOK(int,docattr_set_group_result_function,
+		(void *cond, struct group_result_t* group_result, int* size))
 SB_DECLARE_HOOK(int,docattr_mask_function,(void *dest, void *mask))
 SB_DECLARE_HOOK(int,docattr_sort_function, \
 	(const void *dest, const void *sour, void *userdata))

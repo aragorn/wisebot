@@ -33,6 +33,15 @@ enum requesttype {
 	NO_HANDLER
 };
 
+// 통합검색 지원
+typedef struct group_result_t {
+	char field[20];
+	char value[16];
+	int count;
+} group_result_t;
+
+#define MAX_GROUP_RESULT 200
+
 struct index_list_t {
 	struct index_list_t *prev; /* for managing free index list */
 	struct index_list_t *next;
@@ -48,6 +57,9 @@ struct index_list_t {
 	enum		index_list_type list_type;
 	char		word[STRING_SIZE];
 	char 		is_complete_list; /* if doc_hits, relevancy, idf is allocated, its true */
+
+	group_result_t group_result[MAX_GROUP_RESULT];
+	int group_result_count;
 };
 
 struct request_t{

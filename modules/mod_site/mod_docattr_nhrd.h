@@ -22,6 +22,7 @@ typedef struct {
 	char rsv2[8];
 } __attribute__((packed)) nhrd_attr_t;
 
+#define MAX_CATE1 (6)
 #define MAX_CATE2 (30)
 
 /* must smaller than STRING_SIZE(256) byte */
@@ -32,9 +33,15 @@ typedef struct {
 	uint32_t Date_start;
 	uint32_t Date_finish;
 
-	// 통합검색중인지 여부...
-	uint32_t Cate_check;	
+	// cate1 로 통합검색
+	uint32_t Cate1_count;
+	uint32_t Cate1Sum_check;
+	uint32_t Cate1Sum[MAX_CATE1]; // [0]은 전체 합계로 사용하자, 1~4
+
+	// cate2 로 통합검색
 	uint32_t Cate2_count; // cate2를 몇개씩 출력할 것인가 하는...
+	uint32_t Cate2Sum_check;
+	uint32_t Cate2Sum[MAX_CATE2]; // 1~29 만 저장할 수 있으면 된다.
 
 	uint32_t Cate1_check;
 	uint32_t Cate1;
@@ -42,9 +49,6 @@ typedef struct {
 	uint32_t Cate2_check;
 	uint32_t Cate2;
 
-	// Cate가 query로 들어오면 count한다.
-	uint32_t Cate2Sum_check;
-	uint32_t Cate2Sum[MAX_CATE2]; // 1~29 만 저장할 수 있으면 된다.
 } nhrd_cond_t;   /* 검색시 조건 입력 */
 
 

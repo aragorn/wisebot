@@ -13,19 +13,24 @@
 static char *constants[MAX_ENUM_NUM] = { NULL };
 static long long constants_value[MAX_ENUM_NUM];
 
+static int cate1_limit[MAX_CATE1] = { -1 };
 static int cate2_limit[MAX_CATE2] = { -1 };
 
-static void init_cate2_limit()
+static void init_cate_limit()
 {
 	int i;
 
 	if ( cate2_limit[0] != -1 ) return;
 
 	for ( i = 0; i < MAX_CATE2; i++ )
-		cate2_limit[i] = 30;
+		cate2_limit[i] = 10;
+
+	for ( i = 0; i < MAX_CATE1; i++ )
+		cate1_limit[i] = 20;
 }
 
-static long long return_constants_value(char *value, int valuelen);
+static int return_constants_value(char *value, int valuelen);
+static char* return_constants(int value);
 
 static int compare_function(void *dest, void *cond, uint32_t docid)
 {
@@ -43,15 +48,6 @@ static int compare_function(void *dest, void *cond, uint32_t docid)
 			return 0;
 	}
 
-
-    if (doccond->Cate1_check == 1 && doccond->Cate1 != docattr->Cate1) {
-            return 0;
-    }
-
-    if (doccond->Cate2_check == 1 && doccond->Cate2 != docattr->Cate2) {
-            return 0;
-    }
-
 	return 1;
 }
 
@@ -60,18 +56,80 @@ static int compare2_function(void *dest, void *cond, uint32_t docid)
 	nhrd_attr_t *docattr = (nhrd_attr_t*)dest;
 	nhrd_cond_t *doccond = (nhrd_cond_t*)cond;
 
-	if ( doccond->Cate2Sum_check == 1 ) {
-		if ( docattr->Cate2 < 1 || docattr->Cate2 >= MAX_CATE2 ) return 0;
+	doccond->Cate1Sum[0]++;
+	if ( docattr->Cate1 < 1 || docattr->Cate1 >= MAX_CATE1 ) {
+		warn("invalid cate1 value: %u(MAX_CATE1:%d), docid[%u]", docattr->Cate1, MAX_CATE1, docid);
+		return 0;
+	}
+	doccond->Cate1Sum[docattr->Cate1]++;
 
-		if ( doccond->Cate2Sum[docattr->Cate2] >= doccond->Cate2_count
-				|| doccond->Cate2Sum[docattr->Cate2] >= cate2_limit[docattr->Cate2] ) return 0;
-		else {
-			doccond->Cate2Sum[docattr->Cate2]++;
-			return 1;
-		}
+	doccond->Cate2Sum[0]++;
+	if ( docattr->Cate2 < 1 || docattr->Cate2 >= MAX_CATE2 ) {
+		warn("invalid cate2 value: %u(MAX_CATE2:%d), docid[%u]", docattr->Cate2, MAX_CATE2, docid);
+		return 0;
+	}
+	doccond->Cate2Sum[docattr->Cate2]++;
+
+	if ( doccond->Cate1Sum_check == 1 ) {
+		if ( (doccond->Cate1_count > 0 && doccond->Cate1Sum[docattr->Cate1] > doccond->Cate1_count)
+				|| doccond->Cate1Sum[docattr->Cate1] > cate1_limit[docattr->Cate1] ) return 0;
 	}
 
+	if ( doccond->Cate2Sum_check == 1 ) {
+		if ( (doccond->Cate2_count > 0 && doccond->Cate2Sum[docattr->Cate2] > doccond->Cate2_count)
+				|| doccond->Cate2Sum[docattr->Cate2] > cate2_limit[docattr->Cate2] ) return 0;
+	}
+
+	if (doccond->Cate1_check == 1 && doccond->Cate1 != docattr->Cate1) {
+		return 0;
+    }
+
+    if (doccond->Cate2_check == 1 && doccond->Cate2 != docattr->Cate2) {
+		return 0;
+    }
+
 	return 1;
+}
+
+static int set_group_result_function(void* cond, group_result_t* group_result, int* size)
+{
+	nhrd_cond_t *doccond = (nhrd_cond_t*)cond;
+	int i, curr = 0;
+
+	strcpy( group_result[curr].field, "Cate1" );
+	strcpy( group_result[curr].value, "#" );
+	group_result[curr++].count = doccond->Cate1Sum[0];
+
+	for ( i = 1; i < MAX_CATE1 && curr < *size; i++ ) {
+		if ( doccond->Cate1Sum[i] == 0 ) continue;
+
+		strcpy( group_result[curr].field, "Cate1" );
+		strcpy( group_result[curr].value, return_constants( i ) );
+		group_result[curr++].count = doccond->Cate1Sum[i];
+	}
+
+	if ( curr < *size ) {
+		strcpy( group_result[curr].field, "Cate2" );
+		strcpy( group_result[curr].value, "#" );
+		group_result[curr++].count = doccond->Cate2Sum[0];
+	}
+
+	for ( i = 1; i < MAX_CATE2 && curr < *size; i++ ) {
+		if ( doccond->Cate2Sum[i] == 0 ) continue;
+
+		strcpy( group_result[curr].field, "Cate2" );
+		strcpy( group_result[curr].value, return_constants( i ) );
+		group_result[curr++].count = doccond->Cate2Sum[i];
+	}
+
+	if ( curr >= *size ) {
+		error("not enough group_result size[%d]", *size);
+		return FAIL;
+	}
+
+	*size = curr;
+
+	return SUCCESS;
 }
 
 static int compare_function_for_qsort(const void *dest, const void *sour, void *userdata)
@@ -358,11 +416,12 @@ static int set_doccond_function(void *dest, char *key, char *value)
 		}
 	    doccond->Date_check = 1;
 	}
-    else if (strcasecmp(key, "Cate") == 0) {
-		memset( doccond->Cate2Sum, 0, sizeof(doccond->Cate2Sum) );
+    else if (strcasecmp(key, "Cate1Sum") == 0) {
+		doccond->Cate1Sum_check = 1;
+		doccond->Cate1_count = atoi( value );
+    }
+    else if (strcasecmp(key, "Cate2Sum") == 0) {
 		doccond->Cate2Sum_check = 1;
-
-		doccond->Cate_check = 1;
 		doccond->Cate2_count = atoi( value );
     }
     else if (strcasecmp(key, "Cate1") == 0) {
@@ -456,7 +515,7 @@ static int set_docmask_function(void *dest, char *key, char *value)
     delimiter: split(,) */
  
 /* if fail, return 0 */
-static long long return_constants_value(char *value, int valuelen)
+static int return_constants_value(char *value, int valuelen)
 {
 	int i;
 	for (i=0; i<MAX_ENUM_NUM && constants[i]; i++) {
@@ -470,9 +529,25 @@ static long long return_constants_value(char *value, int valuelen)
 	return constants_value[i];
 }
 
+static char* return_constants(int value)
+{
+	int i;
+	static char unknown[16];
+
+	for (i=0; i<MAX_ENUM_NUM && constants[i]; i++) {
+		if ( constants_value[i] == value ) break;
+	}
+
+	if (i == MAX_ENUM_NUM || constants[i] == NULL) {
+		snprintf(unknown, sizeof(unknown), "%d", value);
+		return unknown;
+	}
+	return constants[i];
+}
+
 static int init()
 {
-	init_cate2_limit();
+	init_cate_limit();
 
 	if ( sizeof(nhrd_attr_t) != 64 ) {
 		crit("sizeof(nhrd_attr_t) (%d) != 64", (int)sizeof(nhrd_attr_t));
@@ -519,6 +594,23 @@ static void get_enum(configValue v)
 	INFO("Enum[%s]: %lld", constants[i], constants_value[i]);
 }
 
+static void set_cate1_limit(configValue v)
+{
+	int cate1 = return_constants_value( v.argument[0], strlen( v.argument[0] ) );
+
+	if ( cate1 >= MAX_CATE1 ) {
+		warn("cate1[%d] is larger than MAX_CATE1[%d]", cate1, MAX_CATE1);
+		return;
+	}
+	else if ( cate1 == 0 ) {
+		warn("unknown cate1[%s]", v.argument[0]);
+		return;
+	}
+
+	init_cate_limit();
+	cate1_limit[cate1] = atoi( v.argument[1] );
+}
+
 static void set_cate2_limit(configValue v)
 {
 	int cate2 = return_constants_value( v.argument[0], strlen( v.argument[0] ) );
@@ -532,12 +624,13 @@ static void set_cate2_limit(configValue v)
 		return;
 	}
 
-	init_cate2_limit();
+	init_cate_limit();
 	cate2_limit[cate2] = atoi( v.argument[1] );
 }
 
 static config_t config[] = {
 	CONFIG_GET("Enum", get_enum, 2, "constant"),
+	CONFIG_GET("Cate1Limit", set_cate1_limit, 2, "max document of each cate1"),
 	CONFIG_GET("Cate2Limit", set_cate2_limit, 2, "max document of each cate2"),
 	{NULL}
 };
@@ -546,6 +639,7 @@ static void register_hooks(void)
 {
 	sb_hook_docattr_compare_function(compare_function, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_docattr_compare2_function(compare2_function, NULL, NULL, HOOK_MIDDLE);
+	sb_hook_docattr_set_group_result_function(set_group_result_function, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_docattr_mask_function(mask_function, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_docattr_sort_function(compare_function_for_qsort, NULL, NULL, HOOK_MIDDLE);
 //	sb_hook_docattr_hit_sort_function(compare_hit_for_qsort, NULL, NULL, HOOK_MIDDLE);

@@ -16,6 +16,7 @@ HOOK_STRUCT(
 	HOOK_LINK(docattr_index_list_sortby)
 	HOOK_LINK(docattr_compare_function)
 	HOOK_LINK(docattr_compare2_function)
+	HOOK_LINK(docattr_set_group_result_function)
 	HOOK_LINK(docattr_mask_function)
 	HOOK_LINK(docattr_sort_function)
 	HOOK_LINK(docattr_set_docattr_function)
@@ -58,6 +59,8 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int,docattr_compare_function, \
 	(void *dest, void *cond, uint32_t docid), (dest,cond,docid), MINUS_DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,docattr_compare2_function, \
 	(void *dest, void *cond, uint32_t docid), (dest,cond,docid), MINUS_DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int,docattr_set_group_result_function, \
+	(void *cond, struct group_result_t* group_result, int* size), (cond,group_result,size), DECLINE)
 	
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,docattr_mask_function, \
 	(void *dest, void *mask), (dest,mask), DECLINE)

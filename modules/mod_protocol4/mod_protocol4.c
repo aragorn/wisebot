@@ -2237,6 +2237,188 @@ static int sb4s_search_doc(int sockfd)
 	return SUCCESS;
 }
 
+static int sb4s_search2_doc(int sockfd)
+{
+	int i, len, error_status, n;
+	char buf[SB4_MAX_SEND_SIZE+1];
+	request_t req;
+	int searched_list_size=0,tmp=0;
+
+	error_status = 0;
+	/* 1. send ACK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+		error("cannot send ACK");
+		return FAIL;
+	}
+
+	/* 2. recv query string */
+	n = TCPRecvData(sockfd, buf, &len, TRUE);
+	if ( n != SUCCESS ) {
+		error("cannot recv query string");
+		send_nak(sockfd, SB4_ERT_RECV_DATA);
+		return FAIL;
+	}
+
+    buf[len] = '\0';
+    strcat(buf, "^");
+
+    info("request:|%s|",buf);
+
+    req.list_size = get_int_item(buf, "LC=", '^');
+    /*if ( req.list_size < 1 || req.list_size > 100 )
+        req.list_size = 20;*/
+	if ( req.list_size < 1 )
+		req.list_size = 20;
+    req.first_result = get_long_item(buf, "PG=", '^') * req.list_size;
+    if ( req.first_result < 0 )
+        req.first_result = 0;
+    get_str_item(req.query_string, buf, "QU=", '^', MAX_QUERY_STRING_SIZE);
+    get_str_item(req.attr_string, buf, "AT=", '^', MAX_ATTR_STRING_SIZE);
+    get_str_item(req.sort_string, buf, "SH=", '^', MAX_SORT_STRING_SIZE);
+    req.filtering_id = get_int_item(buf, "FT=", '^');
+
+	DEBUG("req buf size :%d",len);
+	DEBUG("req.query_string:[%s]",req.query_string);
+	DEBUG("req.attr_string:[%s]",req.attr_string);
+	DEBUG("req.sort_string:[%s]",req.sort_string);
+	DEBUG("req.list_size:%d",req.list_size);
+	DEBUG("req.first_result:%d",req.first_result);
+	DEBUG("req.filtering_id:%d", req.filtering_id);
+
+	if (query_log_fd == -1)
+		open_query_log();
+
+	if (query_log_fd != -1) {
+		write_query_log(req.query_string, req.attr_string);
+	}
+
+/*	req.type = LIGHT_SEARCH;*/
+	req.type = FULL_SEARCH;
+	
+/*	sb_run_qp_light_search(&req);*/
+	n = sb_run_qp_full_search(word_db, &req);
+	if (n != SUCCESS) {
+		error("full search failed. ret.sb4error:%d", req.sb4error);
+		send_nak(sockfd, req.sb4error);
+		return FAIL;
+	}
+
+	/* 3. send OP_ACK */
+	n = TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE);
+	if ( n != SUCCESS ) {
+		send_nak(sockfd, SB4_ERT_SEND_ACK);
+		sb_run_qp_finalize_search(&req);
+		return FAIL;
+	}
+
+	/* 4. send word_list to client */
+	len = snprintf(buf, sizeof(buf), "WORD:%s", req.word_list);
+	n = TCPSendData(sockfd, buf, len, TRUE);
+	if ( n != SUCCESS ) {
+		send_nak(sockfd, SB4_ERT_SEND_DATA);
+		sb_run_qp_finalize_search(&req);
+		return FAIL;
+	}
+
+	/* if req.result list is NULL, */
+	if (req.result_list == NULL) {
+		/* send total list count(0) to client */
+		DEBUG("result is NULL");
+
+		len = snprintf(buf, sizeof(buf), "TOT:0");
+		n = TCPSendData(sockfd, buf, len, TRUE);
+		if ( n != SUCCESS ) {
+			send_nak(sockfd, SB4_ERT_SEND_DATA);
+			return FAIL;
+		}
+
+		len = snprintf(buf, sizeof(buf), "RS:0");
+		n = TCPSendData(sockfd, buf, len, TRUE);
+		if ( n != SUCCESS ) {
+			send_nak(sockfd, SB4_ERT_SEND_DATA);
+			return FAIL;
+		}
+
+		return SUCCESS;
+	}
+
+	/* 5. send total list count to client */
+	len = sprintf(buf, "TOT:%d", req.result_list->ndochits);
+	n = TCPSendData(sockfd, buf, len, TRUE);
+	if ( n != SUCCESS ) {
+		send_nak(sockfd, SB4_ERT_SEND_DATA);
+		sb_run_qp_finalize_search(&req);
+		return FAIL;
+	}
+
+	/* 6. calc list count */
+	if (req.result_list->ndochits < req.first_result) {
+		searched_list_size = 0;
+	}
+	else {
+		tmp = req.result_list->ndochits - req.first_result;
+
+		if (tmp > req.list_size) {
+			searched_list_size = req.list_size;
+		}
+		else {
+			searched_list_size = tmp;
+		}
+
+		if ( searched_list_size > COMMENT_LIST_SIZE ) {
+			warn("searched_list_size[%d] > COMMENT_LIST_SIZE[%d]",
+					searched_list_size, COMMENT_LIST_SIZE);
+			searched_list_size = COMMENT_LIST_SIZE;
+		}
+	}
+
+	DEBUG("searched_list_size[%d] req.result_list->ndochits [%d] req.first_result[%d]"
+			,searched_list_size , req.result_list->ndochits , req.first_result);
+	
+	/* 7. seng group result to client */
+	for (i = 0; i < req.result_list->group_result_count; i++) {
+		len = snprintf(buf, sizeof(buf), "GR_CNT:%s,%s,%d",
+				req.result_list->group_result[i].field, req.result_list->group_result[i].value,
+				req.result_list->group_result[i].count);
+
+		n = TCPSendData(sockfd, buf, len, TRUE);
+		if ( n != SUCCESS ) {
+			send_nak(sockfd, SB4_ERT_SEND_DATA);
+			sb_run_qp_finalize_search(&req);
+			return FAIL;
+		}
+	}
+
+	/* 8. send each result to client */
+	len = sprintf(buf, "RS:%d", searched_list_size);
+	n = TCPSendData(sockfd, buf, len, TRUE);
+	if ( n != SUCCESS ) {
+		send_nak(sockfd, SB4_ERT_SEND_DATA);
+		sb_run_qp_finalize_search(&req);
+		return FAIL;
+	}
+
+	for (i = 0; i < searched_list_size; i++) {
+		len = snprintf(buf, sizeof(buf), "DID=%d^HIT=%d^WH=%d^CMT=%s^",
+					req.result_list->doc_hits[i].id,
+					req.result_list->doc_hits[i].hitratio,
+					req.result_list->doc_hits[i].nhits,
+					replace_newline_to_space(req.comments[i])
+				); 			
+		DEBUG("result[%d]:%s",i,buf);
+		
+		n = TCPSendData(sockfd, buf, len, TRUE);
+		if ( n != SUCCESS ) {
+			send_nak(sockfd, SB4_ERT_SEND_DATA);
+			sb_run_qp_finalize_search(&req);
+			return FAIL;
+		}
+	}
+
+	sb_run_qp_finalize_search(&req);
+	return SUCCESS;
+}
+
 static int sb4s_dispatch(int sockfd)
 {
 	int len, n;
@@ -2262,6 +2444,8 @@ static int sb4s_dispatch(int sockfd)
 /*		return sb_run_sb4s_register_docs(sockfd); */
 	else if ( strncmp(buf, SB4_OP_SEARCH_DOC, 3) == 0 )
 		return sb_run_sb4s_search_doc(sockfd);
+	else if ( strncmp(buf, SB4_OP_SEARCH2_DOC, 3) == 0 )
+		return sb_run_sb4s_search2_doc(sockfd);
 	else if ( strncmp(buf, SB4_OP_STATUS, 3) == 0 )
 		return sb_run_sb4s_status(sockfd);
 	else if ( strncmp(buf, SB4_OP_LAST_DOCID, 3) == 0 )
@@ -3448,6 +3632,7 @@ static void register_hooks(void)
 	sb_hook_sb4c_init_search(sb4c_init_search,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4c_free_search(sb4c_free_search,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4c_search_doc(sb4c_search_doc,NULL,NULL,HOOK_MIDDLE);
+//	sb_hook_sb4c_search2_doc(sb4c_search2_doc,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4c_last_docid(sb4c_last_docid,NULL,NULL,HOOK_MIDDLE);
 
 	sb_hook_sb4s_dispatch(sb4s_dispatch,NULL,NULL,HOOK_MIDDLE);
@@ -3458,6 +3643,7 @@ static void register_hooks(void)
 	sb_hook_sb4s_delete_doc(sb4s_delete_doc,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_delete_oid(sb4s_delete_oid,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_search_doc(sb4s_search_doc,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_sb4s_search2_doc(sb4s_search2_doc,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_last_docid(sb4s_last_docid,NULL,NULL,HOOK_MIDDLE);
 
 	sb_hook_sb4c_status(sb4c_status,NULL,NULL,HOOK_MIDDLE);

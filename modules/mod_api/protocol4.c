@@ -13,6 +13,7 @@ HOOK_STRUCT(
 	HOOK_LINK(sb4c_delete_oid)
 	HOOK_LINK(sb4c_init_search)
 	HOOK_LINK(sb4c_search_doc)
+	HOOK_LINK(sb4c_search2_doc)
 	HOOK_LINK(sb4c_free_search)
 	HOOK_LINK(sb4c_status)
 	HOOK_LINK(sb4c_last_docid)
@@ -25,6 +26,7 @@ HOOK_STRUCT(
 	HOOK_LINK(sb4s_delete_doc)
 	HOOK_LINK(sb4s_delete_oid)
 	HOOK_LINK(sb4s_search_doc)
+	HOOK_LINK(sb4s_search2_doc)
 	HOOK_LINK(sb4s_status)
 	HOOK_LINK(sb4s_last_docid)
 	HOOK_LINK(sb4s_remote_morphological_analyze_doc)
@@ -76,6 +78,10 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4c_search_doc, \
 	(int sockfd, char *query, char *attr, int listcount, int page, char *sc, \
 	 sb4_search_result_t *result), \
 	(sockfd, query, attr, listcount, page, sc, result),DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4c_search2_doc, \
+	(int sockfd, char *query, char *attr, int listcount, int page, char *sc, \
+	 sb4_search_result_t *result), \
+	(sockfd, query, attr, listcount, page, sc, result),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4c_status, \
 	(int sockfd, char *cmd, FILE *output), (sockfd, cmd, output), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4c_last_docid, \
@@ -92,6 +98,7 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_set_docattr, (int sockfd), (sockfd), DECLI
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_delete_doc, (int sockfd), (sockfd), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_delete_oid, (int sockfd), (sockfd), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_search_doc, (int sockfd), (sockfd), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_search2_doc, (int sockfd), (sockfd), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_dispatch, (int sockfd), (sockfd), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_status, (int sockfd), (sockfd), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_last_docid, (int sockfd), (sockfd), DECLINE)

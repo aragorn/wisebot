@@ -55,9 +55,16 @@ static int docattr_filtering(docattr_cond_t *cond, char *attrquery)
 			}
 		}
 
-		get_str_item(buf, attrquery, "Cate:", '&', STRING_SIZE);
+		get_str_item(buf, attrquery, "Cate1Sum:", '&', STRING_SIZE);
 		if (buf[0]) {
-			if (sb_run_docattr_set_doccond_function(cond, "Cate", buf) == -1) {
+			if (sb_run_docattr_set_doccond_function(cond, "Cate1Sum", buf) == -1) {
+				return -1;
+			}
+		}
+
+		get_str_item(buf, attrquery, "Cate2Sum:", '&', STRING_SIZE);
+		if (buf[0]) {
+			if (sb_run_docattr_set_doccond_function(cond, "Cate2Sum", buf) == -1) {
 				return -1;
 			}
 		}

@@ -20,6 +20,7 @@
 #define SB4_OP_DELETE_OID			"404"
 #define SB4_OP_DELETE_SYSTEM_DOC		"405"
 #define SB4_OP_SEARCH_DOC			"700"
+#define SB4_OP_SEARCH2_DOC          "701"
 #define SB4_OP_EXTRACT_BODY			"903"
 #define SB4_OP_STATUS				"950"
 #define SB4_OP_RMA_DOC				"800"
@@ -129,6 +130,8 @@ SB_DECLARE_HOOK(int,sb4c_init_search,(sb4_search_result_t **result, int list_siz
 SB_DECLARE_HOOK(int,sb4c_free_search,(sb4_search_result_t **result))
 SB_DECLARE_HOOK(int,sb4c_search_doc,(int sockfd, char *query, char *attr, \
 	int listcount, int page, char *sc, sb4_search_result_t *result))
+SB_DECLARE_HOOK(int,sb4c_search2_doc,(int sockfd, char *query, char *attr, \
+	int listcount, int page, char *sc, sb4_search_result_t *result))
 SB_DECLARE_HOOK(int,sb4c_status,(int sockfd, char *cmd, FILE *output))
 SB_DECLARE_HOOK(int,sb4c_last_docid,(int sockfd, DocId *docid))
 SB_DECLARE_HOOK(int,sb4c_remote_morphological_analyze_doc, \
@@ -141,6 +144,7 @@ SB_DECLARE_HOOK(int,sb4s_set_docattr,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_delete_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_delete_oid,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_search_doc,(int sockfd))
+SB_DECLARE_HOOK(int,sb4s_search2_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_dispatch,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_status,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_last_docid,(int sockfd))

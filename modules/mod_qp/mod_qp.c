@@ -2447,7 +2447,13 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 	}	
 
 	CRIT("before filter: %d", list->ndochits);
-	if (sb_run_docattr_get_index_list(list, list, SC_COMP2, &cond) == -1) {  /* 문서 filitering */
+	if (sb_run_docattr_get_index_list(list, list, SC_COMP2, &cond) == FAIL) {  /* 문서 filitering */
+		return FAIL;
+	}
+
+	list->group_result_count = MAX_GROUP_RESULT;
+	if (sb_run_docattr_set_group_result_function(
+				&cond, list->group_result, &list->group_result_count) == FAIL) {
 		return FAIL;
 	}
 
