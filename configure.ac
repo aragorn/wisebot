@@ -201,6 +201,8 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+AM_PROG_LEX
+AC_PROG_YACC
 
 dnl Various OS checks that apparently set required flags
 dnl AC_AIX
