@@ -539,7 +539,7 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 
 	extractor = sb_run_new_index_word_extractor(morp_id);
 	if (extractor == NULL || extractor == (index_word_extractor_t*)MINUS_DECLINE) {
-		error("cannot create index_word_extractor: %x", (unsigned int)extractor);
+		error("cannot create index_word_extractor: %p", extractor);
 		return FAIL;
 	}
 
@@ -935,7 +935,7 @@ static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_q
 	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN);
 	extractor = sb_run_new_index_word_extractor(20);
 	if (extractor == NULL || extractor == (index_word_extractor_t*)MINUS_DECLINE) {
-		crit("error while allocating index word extractor: %x", (unsigned int)extractor);
+		crit("error while allocating index word extractor: %p", extractor);
 		return FAIL;
 	}
 

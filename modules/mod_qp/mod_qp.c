@@ -113,7 +113,7 @@ int get_num_of_incomplete_free_list()
 }
 
 #define show_num_of_free_nodes() _show_num_of_free_nodes(__FUNCTION__)
-void _show_num_of_free_nodes(char *function)
+void _show_num_of_free_nodes(const char *function)
 {
 	int num=0;
 
@@ -273,7 +273,7 @@ static void init_free_list()
 
 #define show_stack(stack) _show_stack(__FUNCTION__, stack)
 
-void _show_stack(char *function, sb_stack_t *stack)
+void _show_stack(const char *function, sb_stack_t *stack)
 {
 	index_list_t *current = stack->first;
 	DEBUG("%s(): stack status", function);

@@ -350,7 +350,7 @@ static int get_docattr_function(void *dest, char *key, char *buf, int buflen)
 		snprintf(buf, buflen, "%s",docattr->Author);
 	}
 	else if (strcasecmp(key, "Rid") == 0) {
-		snprintf(buf, buflen, "%llu", *((uint64_t *)docattr->Rid));
+		snprintf(buf, buflen, "%llu", *((unsigned long long *)docattr->Rid));
 	}
 	else if (strcasecmp(key, "FileNo") == 0) {
 		snprintf(buf, buflen, "%u",docattr->FileNo);

@@ -215,7 +215,7 @@ int sb4_com_get_abstracted_doc(int sockfd, char *arg)
 	}
 	
 	/* 6. send field size */
-	snprintf(tmpbuf, STRING_SIZE, "%d", strlen(buf));
+	snprintf(tmpbuf, STRING_SIZE, "%u", (uint32_t)strlen(buf));
 	tmpbuf[STRING_SIZE-1] = '\0';
 	len = strlen(tmpbuf);
 
@@ -273,7 +273,7 @@ int sb4_com_get_field(int sockfd, char *arg)
 
 
 	/* 6. send field size */
-	snprintf(tmpbuf, STRING_SIZE, "%d", strlen(value));
+	snprintf(tmpbuf, STRING_SIZE, "%u", (uint32_t)strlen(value));
 	
 	tmpbuf[STRING_SIZE-1] = '\0';
 	len = strlen(tmpbuf);

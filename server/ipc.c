@@ -365,7 +365,7 @@ RETRY:
 
 	ipc->addr = shmat(ipc->id,NULL,SHM_R|SHM_W);
 	info("shmat(ipc->id:%d) returned ipc->addr:%p, errno:%d, [%s]", ipc->id, ipc->addr, errno, strerror(errno));
-	if ((int)(ipc->addr) == -1) {
+	if ((intptr_t)(ipc->addr) == -1) {
 		crit("error while attaching shared memory[%s:%s()]: %s", 
 			  file, caller, strerror(errno));
 		if (errno == EMFILE)
@@ -512,10 +512,10 @@ int _sync_mmap(void* start, int size, const char* file, const char* caller)
 	int ret;
 	unsigned int offset_correction;
    
-	offset_correction = (unsigned int)start % getpagesize();
+	offset_correction = (uintptr_t)start % getpagesize();
 	if ( offset_correction != 0 ) {
-		crit( "offset[0x%x] is not multiple of PAGE_SIZE[%d] - correction[%u]",
-				(unsigned int)start, getpagesize(), offset_correction);
+		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%u]",
+				start, getpagesize(), offset_correction);
 	}
 
 	ret = msync( start-offset_correction, size+offset_correction, MS_ASYNC );
@@ -531,10 +531,10 @@ int _free_mmap(void* start, int size, const char* file, const char* caller)
 	int ret;
 	unsigned int offset_correction;
    
-	offset_correction = (unsigned int)start % getpagesize();
+	offset_correction = (uintptr_t)start % getpagesize();
 	if ( offset_correction != 0 ) {
-		crit( "offset[0x%x] is not multiple of PAGE_SIZE[%d] - correction[%u]",
-				(unsigned int)start, getpagesize(), offset_correction);
+		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%u]",
+				start, getpagesize(), offset_correction);
 	}
 
 	ret = munmap( start-offset_correction, size+offset_correction );
