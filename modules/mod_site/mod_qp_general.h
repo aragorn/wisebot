@@ -3,8 +3,8 @@
 
 #include "mod_docattr_general.h"
 
-typedef docattr_operand_t* YYSTYPE;
-#define yystype YYSTYPE // obsolete ... 라고 한다...
+typedef docattr_operand_t* yystype;
+#define YYSTYPE yystype // obsolete ... 라고 한다...
 #define YYSTYPE_IS_DECLARED 2
 #define YYSTYPE_IS_TRIVIAL 1 // 이걸 해야되는 건지 모르겠다...??
 

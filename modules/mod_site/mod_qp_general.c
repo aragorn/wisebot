@@ -1,5 +1,4 @@
 #include "mod_qp_general.h"
-#include "mod_qp_general_yacc.h"
 #include "mod_api/qp.h"
 #include <ctype.h>
 #include <stdio_ext.h>
