@@ -814,7 +814,7 @@ int com_strcmp(char *arg)
 
 	*space = '\0';
 	space++;
-	while ( isspace(*space) && *space != '\0' ) space++;
+	while ( isspace((int) *space) && *space != '\0' ) space++;
 
 	info("hangul_strncmp result: %d", hangul_strncmp( arg, space, STRING_SIZE ));
 	return SUCCESS;
