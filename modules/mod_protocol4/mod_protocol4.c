@@ -1370,7 +1370,7 @@ protocol_cdm:
 			docattr_mask_t docmask;
 
 			DOCMASK_SET_ZERO(&docmask);
-			sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+			sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 			sb_run_docattr_set_array(&olddocid, 1, SC_MASK, &docmask);
 		}
 		return FAIL;
@@ -1395,7 +1395,7 @@ protocol_cdm:
 		info("old docid[%ld] of OID[%s] is deleted. new docid is %ld", olddocid,
 				sb4_dit.OID, docid);
 		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 		sb_run_docattr_set_array(&olddocid, 1, SC_MASK, &docmask);
 	}
 #endif
@@ -1655,7 +1655,7 @@ int sb4s_delete_oid(int sockfd)
 		docattr_mask_t docmask;
 
 		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 		sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
 	}
 
@@ -1765,7 +1765,7 @@ int sb4s_delete_doc(int sockfd)
 		docattr_mask_t docmask;
 
 		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 		sb_run_docattr_set_array((DocId*)&docid, 1, SC_MASK, &docmask);
 	}
 
@@ -1886,7 +1886,7 @@ int sb4s_delete_doc(int sockfd)
 		docattr_mask_t docmask;
 
 		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 		sb_run_docattr_set_array(docid, j, SC_MASK, &docmask);
 		//info("end sb_run_docattr_set_array:%d",j);		
 	}

@@ -607,7 +607,8 @@ int sb4_com_undelete (int sockfd, char *arg)
 		docattr_mask_t docmask;
 
 		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Undelete", NULL);
+		if ( sb_run_docattr_set_docmask_function(&docmask, "Undelete", "1") == FAIL )
+			sb_run_docattr_set_docmask_function(&docmask, "Delete", "0");
 		sb_run_docattr_set_array(docid, j, SC_MASK, &docmask);
 	}
 	
@@ -678,7 +679,7 @@ int sb4_com_undelete (int sockfd, char *arg)
 		docattr_mask_t docmask;
 
 		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 		sb_run_docattr_set_array(docid, j, SC_MASK, &docmask);
 	}
 	return SUCCESS;
@@ -1442,7 +1443,7 @@ int sb4_com_del_system_doc (int sockfd, char *arg)
 					DocId docid[1] = { i };
 			
 					DOCMASK_SET_ZERO(&docmask);
-					sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+					sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 					sb_run_docattr_set_array(docid, 1, SC_MASK, &docmask);
 				}
 			}

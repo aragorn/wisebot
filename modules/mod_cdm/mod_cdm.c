@@ -617,7 +617,7 @@ int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuff
 			info("old docid[%u] of OID[%s] is deleted. new docid is %u", 
 					olddocid, oid, docid);
 			DOCMASK_SET_ZERO(&docmask);
-			sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+			sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 			sb_run_docattr_set_array(&olddocid, 1, SC_MASK, &docmask);
 		}
 		else {
