@@ -2700,10 +2700,8 @@ static int private_init(void)
 			return FAIL;
 		}
 
-		if (mVRFI == NULL) {
-			error("error allocating memory for vrf object");
-			return FAIL;
-		}
+		if (mVRFI == NULL)
+			warn("vrf object is null.");
 
 		ret = sb_run_vrfi_open(mVRFI,
 				mIdxFilePath,sizeof(inv_idx_header_t), sizeof(doc_hit_t), O_RDONLY);
