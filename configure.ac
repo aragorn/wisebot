@@ -374,6 +374,7 @@ AC_CONFIG_FILES([
     modules/mod_lexicon/Makefile
 
     modules/mod_site/Makefile
+	modules/mod_site_general/Makefile
 
     platform/Makefile
     platform/unix/Makefile
