@@ -13,18 +13,18 @@ typedef struct {
 
 typedef struct {
 	lexicon_shared_t *shared;
-	api_hash_t* strtoid_hash;
-	api_hash_t* idtostr_hash; // 없어도 된다...
+	api_hash_t* wordtoid_hash;
+	api_hash_t* idtoword_hash; // 없어도 된다...
 } lexicon_t;
 
 typedef struct _word_db_set_t {
 	int set;
 
-	int set_strtoid_hash_set;
-	int strtoid_hash_set;
+	int set_wordtoid_hash_set;
+	int wordtoid_hash_set;
 
-	int set_idtostr_hash_set;
-	int idtostr_hash_set;
+	int set_idtoword_hash_set;
+	int idtoword_hash_set;
 
 	int set_shared_file;
 	char shared_file[MAX_PATH_LEN];
@@ -97,8 +97,8 @@ static int open_word_db(word_db_t** word_db, int opt)
 		return DECLINE;
 	}
 
-	if ( !word_db_set[opt].set_strtoid_hash_set ) {
-		error("StrToIdHashSet is not set [WordDbSet:%d]. see config", opt);
+	if ( !word_db_set[opt].set_wordtoid_hash_set ) {
+		error("WordToIdHashSet is not set [WordDbSet:%d]. see config", opt);
 		return FAIL;
 	}
 	
@@ -125,16 +125,16 @@ static int open_word_db(word_db_t** word_db, int opt)
 		return FAIL;
 	}
 
-	ret = sb_run_hash_open( &db->strtoid_hash, word_db_set[opt].strtoid_hash_set );
+	ret = sb_run_hash_open( &db->wordtoid_hash, word_db_set[opt].wordtoid_hash_set );
 	if ( ret != SUCCESS ) {
-		error("string->id hash[opt:%d] open failed", word_db_set[opt].strtoid_hash_set);
+		error("word->id hash[opt:%d] open failed", word_db_set[opt].wordtoid_hash_set);
 		goto error;
 	}
 
-	if ( word_db_set[opt].set_idtostr_hash_set ) {
-		ret = sb_run_hash_open( &db->idtostr_hash, word_db_set[opt].idtostr_hash_set );
+	if ( word_db_set[opt].set_idtoword_hash_set ) {
+		ret = sb_run_hash_open( &db->idtoword_hash, word_db_set[opt].idtoword_hash_set );
 		if ( ret != SUCCESS ) {
-			error("id->string hash[opt:%d] open failed", word_db_set[opt].idtostr_hash_set);
+			error("id->word hash[opt:%d] open failed", word_db_set[opt].idtoword_hash_set);
 			goto error;
 		}
 	}
@@ -145,8 +145,8 @@ static int open_word_db(word_db_t** word_db, int opt)
 
 error:
 	if ( db ) {
-		if ( db->idtostr_hash ) sb_run_hash_close( db->idtostr_hash );
-		if ( db->strtoid_hash ) sb_run_hash_close( db->strtoid_hash );
+		if ( db->idtoword_hash ) sb_run_hash_close( db->idtoword_hash );
+		if ( db->wordtoid_hash ) sb_run_hash_close( db->wordtoid_hash );
 		if ( db->shared ) free_shared_word_db( db );
 		sb_free( db );
 	}
@@ -173,13 +173,13 @@ static int sync_word_db(word_db_t* word_db)
 		return FAIL;
 	}
 
-	if ( sb_run_hash_sync( db->strtoid_hash ) != SUCCESS ) {
-		error("string->id hash sync failed");
+	if ( sb_run_hash_sync( db->wordtoid_hash ) != SUCCESS ) {
+		error("word->id hash sync failed");
 		return FAIL;
 	}
 	
-	if ( !db->idtostr_hash && sb_run_hash_sync( db->idtostr_hash ) != SUCCESS ) {
-		error("id->string hash sync failed");
+	if ( !db->idtoword_hash && sb_run_hash_sync( db->idtoword_hash ) != SUCCESS ) {
+		error("id->word hash sync failed");
 		return FAIL;
 	}
 	
@@ -197,11 +197,11 @@ static int close_word_db(word_db_t* word_db)
 
 	info("word db[set:%d] closing...", word_db->set);
 
-	if ( sb_run_hash_close( db->strtoid_hash ) != SUCCESS )
-		error("string->id hash close failed");
+	if ( sb_run_hash_close( db->wordtoid_hash ) != SUCCESS )
+		error("word->id hash close failed");
 
-	if ( db->idtostr_hash && sb_run_hash_close( db->idtostr_hash ) != SUCCESS )
-		error("id->string hash close failed");
+	if ( db->idtoword_hash && sb_run_hash_close( db->idtoword_hash ) != SUCCESS )
+		error("id->word hash close failed");
 
 	if ( free_shared_word_db( db ) != SUCCESS )
 		error("word db shared free failed");
@@ -248,19 +248,19 @@ static int get_new_wordid( word_db_t* word_db, word_t *word )
 	oldwordid.data_len = (int) sizeof(word->id);
 	oldwordid.partial_op = 0;
 
-	ret = sb_run_hash_put( db->strtoid_hash, &string, &wordid, 0, &oldwordid );
+	ret = sb_run_hash_put( db->wordtoid_hash, &string, &wordid, 0, &oldwordid );
 	if ( ret == HASH_KEY_EXISTS ) return WORD_OLD_REGISTERED;
 	else if ( ret != SUCCESS ) {
-		error("write to hash (string->id) failed. word[%s]", word->string);
+		error("write to hash (word->id) failed. word[%s]", word->string);
 		return FAIL;
 	}
 
 	db->shared->last_wordid++;
 
-	// id->string hash는 없으면 여기서 끝
-	if ( !db->idtostr_hash ) return WORD_NEW_REGISTERED;
+	// id->word hash는 없으면 여기서 끝
+	if ( !db->idtoword_hash ) return WORD_NEW_REGISTERED;
 
-	ret = sb_run_hash_put( db->idtostr_hash, &wordid, &string, 0, NULL );
+	ret = sb_run_hash_put( db->idtoword_hash, &wordid, &string, 0, NULL );
 	if ( ret == HASH_KEY_EXISTS ) {
 		// 위쪽에서는 잘 통과했는데 여기서 이럴 수는 없다....
 		crit("that's problem");
@@ -268,7 +268,7 @@ static int get_new_wordid( word_db_t* word_db, word_t *word )
 		return FAIL;
 	}
 	else if ( ret != SUCCESS ) {
-		error("write to hash (id->string) failed. word[%s]", word->string);
+		error("write to hash (id->word) failed. word[%s]", word->string);
 		return FAIL;
 	}
 
@@ -297,7 +297,7 @@ static int get_wordid(word_db_t* word_db, word_t *word )
 	wordid.data_len = sizeof(word->id);
 	wordid.partial_op = 0;
 
-	ret = sb_run_hash_get( db->strtoid_hash, &string, &wordid );
+	ret = sb_run_hash_get( db->wordtoid_hash, &string, &wordid );
 	if ( ret == HASH_KEY_NOTEXISTS ) return WORD_NOT_REGISTERED;
 	else if ( ret != SUCCESS ) {
 		error("hash_get failed[%d]. word[%s]", ret, word->string);
@@ -316,8 +316,8 @@ static int get_word_by_wordid(word_db_t* word_db, word_t *word )
 		return DECLINE;
 	db = (lexicon_t*) word_db->db;
 
-	if ( !db->idtostr_hash ) {
-		warn("id->string hash is not exists. see config");
+	if ( !db->idtoword_hash ) {
+		warn("id->word hash is not exists. see config");
 		return DECLINE; // 이렇게 해도 괜찮겠지?
 	}
 
@@ -335,7 +335,7 @@ static int get_word_by_wordid(word_db_t* word_db, word_t *word )
 	string.data_len = sizeof(word->string);
 	string.partial_op = 0;
 
-	ret = sb_run_hash_get( db->idtostr_hash, &wordid, &string );
+	ret = sb_run_hash_get( db->idtoword_hash, &wordid, &string );
 	if ( ret == HASH_KEY_NOTEXISTS ) return WORD_NOT_REGISTERED;
 	else if ( ret != SUCCESS ) {
 		error("hash_get failed[%d]. wordid[%u]", ret, word->id);
@@ -379,26 +379,26 @@ static void get_word_db_set(configValue v)
 	word_db_set[value].set = 1;
 }
 
-static void get_strtoid_hash_set(configValue v)
+static void get_wordtoid_hash_set(configValue v)
 {
 	if ( word_db_set == NULL || current_word_db_set < 0 ) {
 		error("first, set WordDbSet");
 		return;
 	}
 
-	word_db_set[current_word_db_set].strtoid_hash_set = atoi( v.argument[0] );
-	word_db_set[current_word_db_set].set_strtoid_hash_set = 1;
+	word_db_set[current_word_db_set].wordtoid_hash_set = atoi( v.argument[0] );
+	word_db_set[current_word_db_set].set_wordtoid_hash_set = 1;
 }
 
-static void get_idtostr_hash_set(configValue v)
+static void get_idtoword_hash_set(configValue v)
 {
 	if ( word_db_set == NULL || current_word_db_set < 0 ) {
 		error("first, set WordDbSet");
 		return;
 	}
 
-	word_db_set[current_word_db_set].idtostr_hash_set = atoi( v.argument[0] );
-	word_db_set[current_word_db_set].set_idtostr_hash_set = 1;
+	word_db_set[current_word_db_set].idtoword_hash_set = atoi( v.argument[0] );
+	word_db_set[current_word_db_set].set_idtoword_hash_set = 1;
 }
 
 static void get_shared_file(configValue v)
@@ -414,8 +414,8 @@ static void get_shared_file(configValue v)
 
 static config_t config[] = {
 	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDbSet {number}"),
-	CONFIG_GET("StrToIdHashSet", get_strtoid_hash_set, 1, "hash for string -> id"),
-	CONFIG_GET("IdToStrHashSet", get_idtostr_hash_set, 1, "hash for id -> string"),
+	CONFIG_GET("WordToIdHashSet", get_wordtoid_hash_set, 1, "hash for word -> id"),
+	CONFIG_GET("IdToWordHashSet", get_idtoword_hash_set, 1, "hash for id -> word"),
 	CONFIG_GET("SharedFile", get_shared_file, 1, "full filename of lexicon_t.shared"),
 	{NULL}
 };
