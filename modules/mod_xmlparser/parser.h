@@ -72,6 +72,8 @@ int get_domsize(parser_t *p);
 field_t *retrieve_field(parser_t *p, char *query);
 attribute_t *retrieve_attr(parser_t *p, const char *query);
 
+extern char unicode_name[SHORT_STRING_SIZE];
+
 #if defined (__cplusplus)
 }
 #endif

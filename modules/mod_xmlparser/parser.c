@@ -167,6 +167,8 @@ static int unknown_encoding_handler(void* encodingHandlerData,
 static int expanddblen(parser_t *p, const int len);
 static int expanddb(parser_t *p);
 
+char unicode_name[SHORT_STRING_SIZE];
+
 /* creates xml parser object and parse xml document and 
  * returns parser object. length of xml document is needed.
  *
@@ -977,11 +979,8 @@ static int unknown_encoding_handler(void* encodingHandlerData,
                              XML_Encoding *info)
 {
 	int i;
-#if defined(AIX5) || defined(SOLARIS)
-	*(iconv_t *)encodingHandlerData = iconv_open("CSUNICODE",name);
-#else
-	*(iconv_t *)encodingHandlerData = iconv_open("UNICODE",name);
-#endif
+
+	*(iconv_t *)encodingHandlerData = iconv_open(unicode_name,name);
 	if (*(iconv_t *)encodingHandlerData == (iconv_t)-1)
 	return 0;
 

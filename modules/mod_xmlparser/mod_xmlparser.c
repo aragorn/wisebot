@@ -2,6 +2,26 @@
 #include "softbot.h"
 #include "mod_api/xmlparser.h"
 
+static int init()
+{
+#if defined(AIX5) || defined(SOLARIS)
+	strcpy( unicode_name, "UTF-16LE" );
+#else
+	strcpy( unicode_name, "UNICODE" );
+#endif
+	return SUCCESS;
+}
+
+static void get_unicode_name(configValue v)
+{
+	strncpy( unicode_name, v.argument[0], sizeof(unicode_name) );
+}
+
+static config_t config[] = {
+	CONFIG_GET("UnicodeName", get_unicode_name, 1, "cp949 -> unicode"),
+	{NULL}
+};
+
 static void register_hooks(void)
 {
 //	sb_hook_xmlparser_parse(parse,NULL,NULL,HOOK_MIDDLE);
@@ -19,9 +39,9 @@ static void register_hooks(void)
 
 module xmlparser_module = {
 	STANDARD_MODULE_STUFF,
-	NULL,				/* config */
+	config,				/* config */
 	NULL,				/* registry */
-	NULL,               /* initialize function */
+	init,               /* initialize function */
 	NULL,				/* child_main */
 	NULL,				/* scoreboard */
 	register_hooks		/* register hook api */
