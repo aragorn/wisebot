@@ -9,7 +9,7 @@
 #include "mod_api/docattr.h"
 #include "mod_api/did.h"
 
-#include "expat.h"
+#include "expat/expat.h"
 
 #define MAX_FILE_SIZE		250000000
 
