@@ -15,6 +15,10 @@ static int docattr_field_count = 0;
 static docattr_field_t* rid_field = NULL;
 static char rid_field_name[SHORT_STRING_SIZE] = "";
 
+// dummy, 실제 field가 아니다.
+#define HIT_FIELD "<HIT>"
+static docattr_field_t* hit_field = (docattr_field_t*) 0x11;
+
 // zero 를 대표하는 값. 하나 만들어 놓고 두고두고 쓴다...
 docattr_value_t value_zero;
 
@@ -660,10 +664,16 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 	for ( i = 0; i < sort->condition_count; i++ ) {
 		field = sort->condition[i].field;
 
-		field->get_func( attr1, field, &value1 );
-		field->get_func( attr2, field, &value2 );
+		// hit는 docattr field 가 아니다.
+		if ( field == hit_field ) {
+			diff = ((doc_hit_t*) dest)->hitratio - ((doc_hit_t*) sour)->hitratio;
+		}
+		else { // 일반 docattr field
+			field->get_func( attr1, field, &value1 );
+			field->get_func( attr2, field, &value2 );
 
-		diff = field->compare_func( &value1, &value2 );
+			diff = field->compare_func( &value1, &value2 );
+		}
 
 		if ( diff != 0 ) {
 			diff = diff > 0 ? 1 : -1;
@@ -1104,7 +1114,11 @@ static int build_sort_field()
 
 			*(sort_order++) = '\0';
 
-			return_docattr_field( field_name, &field );
+			if ( strcasecmp( field_name, HIT_FIELD ) == 0 ) {
+				field = hit_field;
+			}
+			else return_docattr_field( field_name, &field );
+
 			if ( field == NULL ) {
 				warn("unknown field[%s], index:%d", field_name, i);
 				continue;
