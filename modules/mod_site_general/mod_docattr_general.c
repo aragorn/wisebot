@@ -982,9 +982,11 @@ static int build_field_offset()
 				field->name, field->offset, field->size, field->bit_offset, field->bit_size);
 	}
 
-	if ( bit_offset ) {
+/*  BIG ENDIAN 에서 정상적으로 작동하지 않는 코드다 */
+/*	if ( bit_offset ) {
 		offset += (bit_offset-1)/BIT_PER_BYTE+1;
-	}
+	} */
+	if ( bit_offset ) offset += sizeof(long);
 
 	// other. byte align 필요없음
 	for ( i = 0; i < docattr_field_count; i++ ) {
