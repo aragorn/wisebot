@@ -56,18 +56,18 @@ static int compare2_function(void *dest, void *cond, uint32_t docid)
 	nhrd_attr_t *docattr = (nhrd_attr_t*)dest;
 	nhrd_cond_t *doccond = (nhrd_cond_t*)cond;
 
-	doccond->Cate1Sum[0]++;
 	if ( docattr->Cate1 < 1 || docattr->Cate1 >= MAX_CATE1 ) {
 		warn("invalid cate1 value: %u(MAX_CATE1:%d), docid[%u]", docattr->Cate1, MAX_CATE1, docid);
 		return 0;
 	}
+	doccond->Cate1Sum[0]++;
 	doccond->Cate1Sum[docattr->Cate1]++;
 
-	doccond->Cate2Sum[0]++;
 	if ( docattr->Cate2 < 1 || docattr->Cate2 >= MAX_CATE2 ) {
 		warn("invalid cate2 value: %u(MAX_CATE2:%d), docid[%u]", docattr->Cate2, MAX_CATE2, docid);
 		return 0;
 	}
+	doccond->Cate2Sum[0]++;
 	doccond->Cate2Sum[docattr->Cate2]++;
 
 	if ( doccond->Cate1Sum_check == 1 ) {

@@ -13,7 +13,7 @@
 #elif defined (SOLARIS)
 /* this will include $(top_builddir)/include/iconv.h
  */
-#  include "iconv.h"
+#  include "iconv/iconv.h"
 #else
 #  include <iconv.h>
 #endif

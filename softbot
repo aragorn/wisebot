@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 # Start/stop the softbotd daemon.
 
 # XXX change SOFTBOT_ROOT path
-SOFTBOT_ROOT=
+SOFTBOT_ROOT=/home/softwise/wisebot
 
 ##############################################################################
 SOFTBOTD=bin/softbotd
@@ -11,7 +11,7 @@ SOFTBOTD_PID_FILE=logs/softbotd.pid
 SOFTBOTD_LOG_FILE=logs/error_log
 
 # set WITH_RMAS=1 when you use rmas daemon
-WITH_RMAS=0
+WITH_RMAS=1
 
 RMAS=bin/softbotd
 RMAS_CONF=etc/softbot.rmas.conf
@@ -24,6 +24,7 @@ SIGKILL=9
 SIGHUP=1
 
 export LD_LIBRARY_PATH="$SOFTBOT_ROOT/lib:$LD_LIBRARY_PATH"
+export LIBPATH="$SOFTBOT_ROOT/lib:$LIBPATH"
 ##############################################################################
 # uncomment next line when you debug this script
 # set -x
