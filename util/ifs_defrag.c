@@ -4,6 +4,16 @@
 #define DEFAULT_PATH ""
 static char path[MAX_PATH_LEN] = DEFAULT_PATH;
 static char* optstring = "hpg:m:t:sr:";
+
+#ifndef HAVE_GETOPT_LONG
+struct option {
+  const char *name;
+  int has_arg;
+  int *flag;
+  int val;
+};
+#endif
+
 static struct option opts[] = {
 	{ "help",            0, NULL, 'h' },
 	{ "pause",           0, NULL, 'p' },
