@@ -11,7 +11,7 @@
 #include "mod_api/xmlparser.h"
 
 #include <errno.h>
-#include "expat.h"
+#include "expat/expat.h"
 
 #define MAX_ATTR_NUM			32
 
