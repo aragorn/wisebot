@@ -125,7 +125,8 @@ static int bdb_hash_open(void* hash, int opt)
 	ret = bdb_hash->dbenvp->open( bdb_hash->dbenvp, abs_path,
 			DB_INIT_LOCK|DB_INIT_MPOOL|DB_CREATE, 0 );
 	if ( ret != 0 ) {
-		error("DB_ENV->open() failed: %d, %s", ret, strerror(ret));
+		error("DB_ENV->open() failed: DB[%s], %d, %s",
+				abs_path, ret, strerror(ret));
 		goto fail;
 	}
 
@@ -137,7 +138,7 @@ static int bdb_hash_open(void* hash, int opt)
 
 	ret = bdb_hash->dbp->open( bdb_hash->dbp, NULL, abs_file, NULL, DB_HASH, DB_CREATE, 0 );
 	if ( ret != 0 ) {
-		error("DB->open() failed: %d, %s", ret, strerror(ret));
+		error("DB->open() failed: file[%s], %d, %s", abs_file, ret, strerror(ret));
 		goto fail;
 	}
 
