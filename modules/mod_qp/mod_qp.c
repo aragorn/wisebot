@@ -2421,10 +2421,17 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 	docattr_cond_t cond;
 	int rv=0;
 
-	if (sb_run_qp_docattr_query_process(&cond, req->attr_string) 
-			== -1) {
+	// AT
+	if (sb_run_qp_docattr_query_process(&cond, req->attr_string) == FAIL)
 		return FAIL;
-	}
+
+	// AT2
+	if (sb_run_qp_docattr_query2_process(&cond, req->attr2_string) == FAIL)
+		return FAIL;
+
+	// GR
+	if (sb_run_qp_docattr_group_query_process(&cond, req->group_string) == FAIL)
+		return FAIL;
 
 	CRIT("before filter: %d", list->ndochits);
 	if (sb_run_docattr_get_index_list(list, list, SC_COMP, &cond) == -1) {  /* ¹®¼­ filitering */
@@ -2467,15 +2474,15 @@ static void reduce_dochits_to_one_per_doc(index_list_t *list)
 	uint32_t i=0,idx=0, j=0;
 	uint32_t current_docid=0;
 
-	DEBUG("ndochits:%d (before reduce)", list->ndochits);
+//	DEBUG("ndochits:%d (before reduce)", list->ndochits);
 
-	DEBUG("list->doc_hits[0].id :%u", list->doc_hits[0].id);
-	DEBUG("list->doc_hits[1].id :%u", list->doc_hits[1].id);
+//	DEBUG("list->doc_hits[0].id :%u", list->doc_hits[0].id);
+//	DEBUG("list->doc_hits[1].id :%u", list->doc_hits[1].id);
 
 	idx=0;
 	for (i=0; i<list->ndochits; i++) {
 		if (list->doc_hits[i].id != current_docid) {
-			DEBUG("list->doc_hits[%d].id:%u", i, list->doc_hits[i].id);
+//			DEBUG("list->doc_hits[%d].id:%u", i, list->doc_hits[i].id);
 			list->doc_hits[idx] = list->doc_hits[i];
 			list->relevancy[idx] = list->relevancy[i];
 			idx++;
@@ -2487,8 +2494,6 @@ static void reduce_dochits_to_one_per_doc(index_list_t *list)
 		{
 			list->relevancy[idx-1] += list->relevancy[i];
 		}
-
-	
 	}
 
 	for (j=0; j < idx; j++)
@@ -2497,7 +2502,7 @@ static void reduce_dochits_to_one_per_doc(index_list_t *list)
 	}
 	
 	list->ndochits = idx;
-	DEBUG("ndochits:%d after reduce", list->ndochits);
+//	DEBUG("ndochits:%d after reduce", list->ndochits);
 }
 
 #ifdef DEBUG_SOFTBOTD

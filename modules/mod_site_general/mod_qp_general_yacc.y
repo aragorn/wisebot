@@ -20,7 +20,7 @@ extern int yylex(void);
 %%
 
 logi_expr:  logi_expr LOGICAL_AND logi_expr {
-				general_cond.root_operand = $2;
+				parser_result.root_operand = $2;
 				$$ = $2;
 				$$->value_type = VALUE_BOOLEAN;
 				$$->o.expr.operand1 = $1;
@@ -28,7 +28,7 @@ logi_expr:  logi_expr LOGICAL_AND logi_expr {
 				$$->o.expr.exec_func = expr_logical_and;
 			}
 			| logi_expr LOGICAL_OR logi_expr {
-				general_cond.root_operand = $2;
+				parser_result.root_operand = $2;
 				$$ = $2;
 				$$->value_type = VALUE_BOOLEAN;
 				$$->o.expr.operand1 = $1;
@@ -36,14 +36,14 @@ logi_expr:  logi_expr LOGICAL_AND logi_expr {
 				$$->o.expr.exec_func = expr_logical_or;
 			}
 			| LOGICAL_NOT logi_expr {
-				general_cond.root_operand = $1;
+				parser_result.root_operand = $1;
 				$$ = $1;
 				$$->value_type = VALUE_BOOLEAN;
 				$$->o.expr.operand1 = $2;
 				$$->o.expr.exec_func = expr_logical_not;
 			}
 			| LPAREN logi_expr RPAREN { $$ = $2; }
-			| cmp_expr { general_cond.root_operand = $1; $$ = $1; }
+			| cmp_expr { parser_result.root_operand = $1; $$ = $1; }
 			;
 
 cmp_expr: calc_expr EQ calc_expr {

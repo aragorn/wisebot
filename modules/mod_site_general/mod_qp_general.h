@@ -13,7 +13,7 @@ extern void __yy_scan_string(const char* str);
 
 #define MAX_OPERAND_NUM 100
 
-extern general_cond_t general_cond;
+extern general_at_t parser_result;
 extern void init_operands();
 extern docattr_operand_t* get_new_operand();
 extern void add_field_to_cond(docattr_field_t* field);

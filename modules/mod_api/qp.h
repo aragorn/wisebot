@@ -17,7 +17,9 @@ SB_DECLARE_HOOK(int, qp_abstract_info, (request_t *r))
 SB_DECLARE_HOOK(int, qp_full_info, (request_t *r))
 SB_DECLARE_HOOK(int, qp_finalize_search, (request_t *r))
 
-SB_DECLARE_HOOK(int, qp_docattr_query_process, (docattr_cond_t *cond, char *querystring))
+SB_DECLARE_HOOK(int, qp_docattr_query_process, (docattr_cond_t *cond, char *querystring)) // AT
+SB_DECLARE_HOOK(int, qp_docattr_query2_process, (docattr_cond_t *cond, char *querystring)) // AT2
+SB_DECLARE_HOOK(int, qp_docattr_group_query_process, (docattr_cond_t *cond, char *querystring)) // GR
 
 #if 0
 SB_DECLARE_HOOK(int, qp_filter,\

@@ -1,18 +1,27 @@
 #include "mod_qp_general.h"
 #include "mod_api/qp.h"
+#include "mod_qp/mod_qp.h"
 #include <ctype.h>
 #include <stdio_ext.h>
 
 static docattr_operand_t operands[MAX_OPERAND_NUM];
 static int current_operand_index = 0;
 
-// 계산식 tree의 가장 윗부분 node
-general_cond_t general_cond;
+general_at_t parser_result; // yacc의 결과는 여기에 들어간다.
+
+// 원래는 docattr_cont_t 를 사용해야 하지만 용량이 모자라서 ...
+#define MAX_GROUP_FIELD 3 // 통합검색 가능한 최대 field수
+#define MAX_GROUP_FIELD_VALUE 30
+general_at_t at; // AT=
+general_at_t at2; // AT2=
+docattr_field_t* group_field_list[MAX_GROUP_FIELD]; // GR=
+docattr_integer group_field_limit[MAX_GROUP_FIELD];
+docattr_integer group_field_count[MAX_GROUP_FIELD][MAX_GROUP_FIELD_VALUE]; // 통합검색 결과저장
 
 void init_operands()
 {
 	current_operand_index = 0;
-	memset( &general_cond, 0, sizeof(general_cond) );
+	memset( &parser_result, 0, sizeof(general_at_t) );
 	memset( operands, 0, sizeof(operands) );
 }
 
@@ -64,20 +73,20 @@ void print_operand(docattr_operand_t* operand)
 	}
 }
 
-// general_cond 에 query에 나타난 field list를 저장해둔다
+// parser_result 에 query에 나타난 field list를 저장해둔다
 void add_field_to_cond(docattr_field_t* field)
 {
 	int i;
 
-	for ( i = 0; i < general_cond.field_list_count; i++ ) {
-		if ( field == general_cond.field_list[i] ) return;
+	for ( i = 0; i < parser_result.field_list_count; i++ ) {
+		if ( field == parser_result.field_list[i] ) return;
 	}
 
-	general_cond.field_list[i] = field;
-	general_cond.field_list_count++;
+	parser_result.field_list[i] = field;
+	parser_result.field_list_count++;
 }
 
-// general_cond 에서 field를 찾아보고 없으면 NULL
+// parser_result 에서 field를 찾아보고 없으면 NULL
 docattr_field_t* find_field_from_cond(const char* name)
 {
 	docattr_field_t* field;
@@ -86,8 +95,8 @@ docattr_field_t* find_field_from_cond(const char* name)
 	return_docattr_field( name, &field );
 	if ( field == NULL ) return NULL;
 
-	for ( i = 0; i < general_cond.field_list_count; i++ ) {
-		if ( field == general_cond.field_list[i] ) return field;
+	for ( i = 0; i < parser_result.field_list_count; i++ ) {
+		if ( field == parser_result.field_list[i] ) return field;
 	}
 
 	return NULL;
@@ -503,14 +512,14 @@ void print_tree(docattr_operand_t* operand)
 	print_operand( operand );
 }
 
-// general_cond 의 field 에 있는 값들을 미리 가져온다.
-void fetch_docattr_field(docattr_t* docattr, general_cond_t* cond)
+// parser_result 의 field 에 있는 값들을 미리 가져온다.
+void fetch_docattr_field(docattr_t* docattr, general_at_t* at)
 {
 	int i;
 	docattr_field_t* field;
 
-	for ( i = 0; i < cond->field_list_count; i++ ) {
-		field = cond->field_list[i];
+	for ( i = 0; i < at->field_list_count; i++ ) {
+		field = at->field_list[i];
 		field->get_func( docattr, field, &field->value );
 	}
 }
@@ -521,11 +530,11 @@ void fetch_docattr_field(docattr_t* docattr, general_cond_t* cond)
 
 static int init()
 {
-	if ( sizeof(general_cond_t) > sizeof(docattr_cond_t) ) {
+/*	if ( sizeof(general_cond_t) > sizeof(docattr_cond_t) ) {
 		error("sizeof(general_cond_t): %d, sizeof(docattr_cond_t): %d",
 				(int) sizeof(general_cond_t), (int) sizeof(docattr_cond_t));
 		return FAIL;
-	}
+	}*/
 
 	return SUCCESS;
 }
@@ -533,31 +542,156 @@ static int init()
 static int compare_function(void* dest, void* cond, uint32_t docid)
 {
 	docattr_t* docattr = (docattr_t*) dest;
-	general_cond_t* doccond = (general_cond_t*) cond;
+	// cond는 무시한다
 
-	fetch_docattr_field( docattr, doccond );
+	fetch_docattr_field( docattr, &at );
 
-	if ( doccond->root_operand->operand_type == OPERAND_EXPR )
-		doccond->root_operand->o.expr.exec_func( &doccond->root_operand->o.expr );
+	if ( at.root_operand->operand_type == OPERAND_EXPR )
+		at.root_operand->o.expr.exec_func( &at.root_operand->o.expr );
 
-	return (int) doccond->root_operand->result->v.boolean;
+	return (int) at.root_operand->result->v.boolean;
 }
 
-/*
 static int compare2_function(void* dest, void* cond, uint32_t docid)
 {
-	return 1;
-}
-*/
+	docattr_t* docattr = (docattr_t*) dest;
+	// cond는 무시한다.
+	int i;
 
+	if ( at2.root_operand == NULL
+			&& group_field_list[0] == NULL )
+		return MINUS_DECLINE;
+
+	// group field는 항상 integer이다.
+	if ( group_field_list[0] == NULL ) {}
+	else if ( group_field_list[1] == NULL ) { // group_field 가 하나라면 좀 더 빨리 하자.
+		for ( i = 0; i < MAX_GROUP_FIELD && group_field_list[i]; i++ ) {
+			docattr_field_t* field = group_field_list[i];
+			docattr_integer field_value;
+
+			field->get_func( docattr, field, &field->value );
+			field_value = field->value.v.integer;
+
+			if ( field_value <= 0 || field_value > MAX_GROUP_FIELD_VALUE ) {
+				warn("invalid group field[%s] value[%ld]", field->name, field_value);
+				continue;
+			}
+
+			group_field_count[i][0]++;
+			group_field_count[i][field_value]++;
+			if ( group_field_limit[i] > 0
+					&& group_field_count[i][field_value] > group_field_limit[i] )
+				return 0;
+		}
+	}
+	else { // group_field가 두 개 이상이면 for loop를 두 번 돌아야 한다.
+		for ( i = 0; i < MAX_GROUP_FIELD && group_field_list[i]; i++ ) {
+			docattr_field_t* field = group_field_list[i];
+			docattr_integer field_value;
+
+			field->get_func( docattr, field, &field->value );
+			field_value = field->value.v.integer;
+
+			if ( field_value <= 0 || field_value > MAX_GROUP_FIELD_VALUE ) {
+				warn("invalid group field[%s] value[%ld]", field->name, field_value);
+				continue;
+			}
+
+			group_field_count[i][0]++;
+			group_field_count[i][field_value]++;
+		}
+
+		for ( i = 0; i < MAX_GROUP_FIELD && group_field_list[i]; i++ ) {
+			docattr_field_t* field = group_field_list[i];
+			docattr_integer field_value;
+
+			field->get_func( docattr, field, &field->value );
+			field_value = field->value.v.integer;
+
+			if ( field_value <= 0 || field_value > MAX_GROUP_FIELD_VALUE ) {
+				warn("invalid group field[%s] value[%ld]", field->name, field_value);
+				continue;
+			}
+
+			if ( group_field_limit[i] > 0
+					&& group_field_count[i][field_value] > group_field_limit[i] )
+				return 0;
+		}
+	}
+
+	if ( at2.root_operand ) {
+		fetch_docattr_field( docattr, &at2 );
+
+		if ( at2.root_operand->operand_type == OPERAND_EXPR )
+			at2.root_operand->o.expr.exec_func( &at2.root_operand->o.expr );
+
+		return (int) at2.root_operand->result->v.boolean;
+	}
+	else return 1;
+}
+
+static int set_group_result_function(void* cond, group_result_t* group_result, int* size)
+{
+	// cond는 무시한다.
+	int i, j, curr = 0;
+	char number[20], *enum_name;
+
+	for ( i = 0; i < MAX_GROUP_FIELD && group_field_list[i]; i++ ) {
+		docattr_field_t* field = group_field_list[i];
+
+		for ( j = 1; j < MAX_GROUP_FIELD_VALUE && curr < *size; j++ ) {
+			if ( group_field_count[i][j] == 0 ) continue;
+
+			strcpy( group_result[curr].field, field->name );
+			if ( field->field_type == FIELD_ENUM || field->field_type == FIELD_ENUM8
+					|| field->field_type == FIELD_ENUMBIT ) {
+				enum_name = return_enum_name(j);
+				if ( enum_name != NULL ) strcpy( group_result[curr].value, enum_name );
+				else {
+					warn("unknown enum value: %d", j);
+					snprintf( number, sizeof(number), "%d", j );
+					strcpy( group_result[curr].value, number );
+				}
+			}
+			else {
+				snprintf( number, sizeof(number), "%d", j );
+				strcpy( group_result[curr].value, number );
+			}
+			group_result[curr++].count = group_field_count[i][j];
+		}
+
+		if ( curr < *size ) {
+			strcpy( group_result[curr].field, field->name );
+			strcpy( group_result[curr].value, "#" );
+			group_result[curr++].count = group_field_count[i][0];
+		}
+	}
+
+	if ( curr >= *size ) {
+		error("not enough group_result size[%d]", *size);
+		return FAIL;
+	}
+
+	*size = curr;
+
+	return SUCCESS;
+}
+
+static int string_trim(char* string)
+{
+	int len = strlen( string );
+	while ( len > 0 && isspace((int) string[len-1]) )
+		string[--len] = '\0';
+
+	return len;
+}
+
+// AT=
 static int docattr_qpp(docattr_cond_t *cond, char* attrquery)
 {
 	int ret, len;
 
-	len = strlen( attrquery );
-	while ( len > 0 && isspace((int) attrquery[len-1]) )
-		attrquery[--len] = '\0';
-
+	len = string_trim( attrquery );
 	info("docattr query: [%s]", attrquery);
 	if ( len == 0 ) attrquery = "Delete=0";
 
@@ -588,8 +722,82 @@ retry:
 		goto retry;
 	}
 
-	*((general_cond_t*) cond) = general_cond;
-	print_tree( general_cond.root_operand );
+	at = parser_result;
+	print_tree( parser_result.root_operand );
+
+	return SUCCESS;
+}
+
+// AT2=
+static int docattr_qpp2(docattr_cond_t *cond, char* attr2query)
+{
+	int ret, len;
+
+	len = string_trim( attr2query );
+	if ( len == 0 ) {
+		at2.root_operand = NULL;
+		return SUCCESS;
+	}
+
+	info("docattr2 query: [%s]", attr2query);
+
+	__yy_scan_string( attr2query );
+
+	ret = __yyparse();
+	if ( ret != 0 ) {
+		error("yyparse: %d", ret );
+		return FAIL;
+	}
+
+	at2 = parser_result;
+	print_tree( parser_result.root_operand );
+
+	return SUCCESS;
+}
+
+// GR=
+static int docattr_qpp_group(docattr_cond_t *cond, char* groupquery)
+{
+	int len, i;
+	char *group_field, *group_count;
+
+	len = string_trim( groupquery );
+	if ( len == 0 ) {
+		group_field_list[0] = NULL;
+		return SUCCESS;
+	}
+
+	memset( group_field_count, 0, sizeof(group_field_count) );
+	memset( group_field_limit, 0, sizeof(group_field_limit) );
+
+	i = 0;
+	group_field = strtok( groupquery, "," );
+	while ( group_field != NULL && i < MAX_GROUP_FIELD ) {
+		group_count = group_field;
+		while ( *group_count != ':' ) group_count++;
+
+		*group_count = '\0';
+		group_count++;
+
+		if ( isNumber( group_count, &group_field_limit[i] ) != SUCCESS ) {
+			error("invalid group_count[%s] of group_field[%s]", group_count, group_field);
+			return FAIL;
+		}
+
+		return_docattr_field( group_field, &group_field_list[i] );
+		if ( group_field_list[i] == NULL ) {
+			error("invalid group_field[%s]", group_field);
+			return FAIL;
+		}
+
+		group_field = strtok( NULL, "," );
+		i++;
+	}
+
+	if ( group_field != NULL ) {
+		error("too many group_fields...");
+		return FAIL;
+	}
 
 	return SUCCESS;
 }
@@ -597,8 +805,11 @@ retry:
 static void register_hooks(void)
 {
 	sb_hook_docattr_compare_function(compare_function,NULL,NULL,HOOK_MIDDLE);
-//	sb_hook_docattr_compare2_function(compare2_function,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_docattr_compare2_function(compare2_function,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_docattr_set_group_result_function(set_group_result_function,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_docattr_query_process(docattr_qpp,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_docattr_query2_process(docattr_qpp2,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_docattr_group_query_process(docattr_qpp_group,NULL,NULL,HOOK_MIDDLE);
 }
 
 module qp_general_module = {

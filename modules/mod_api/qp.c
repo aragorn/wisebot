@@ -11,6 +11,8 @@ HOOK_STRUCT(
 	HOOK_LINK(qp_finalize_search)
 
 	HOOK_LINK(qp_docattr_query_process)
+	HOOK_LINK(qp_docattr_query2_process)
+	HOOK_LINK(qp_docattr_group_query_process)
 
 	// XXX: qp 내에서 쓰임. 여기서 선언??.. --jiwon
 	HOOK_LINK(qp_filter)
@@ -24,6 +26,10 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_full_info, (request_t *r), (r), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_finalize_search, (request_t *r), (r), DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_docattr_query_process, \
+	(docattr_cond_t *cond, char *querystring), (cond, querystring), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_docattr_query2_process, \
+	(docattr_cond_t *cond, char *querystring), (cond, querystring), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_docattr_group_query_process, \
 	(docattr_cond_t *cond, char *querystring), (cond, querystring), DECLINE)
 
 #if 0

@@ -37,10 +37,10 @@ int return_docattr_field(const char* name, docattr_field_t** field)
 }
 
 static char *enum_names[MAX_ENUM_NUM] = { NULL };
-static int64_t enum_values[MAX_ENUM_NUM];
+static docattr_integer enum_values[MAX_ENUM_NUM];
 
 // Enum값 찾지 못하면 0이다.
-int64_t return_enum_value(const char* value)
+docattr_integer return_enum_value(const char* value)
 {
 	int i;
 
@@ -55,7 +55,7 @@ int64_t return_enum_value(const char* value)
 	return enum_values[i];
 }
 
-char* return_enum_name(int64_t value)
+char* return_enum_name(docattr_integer value)
 {
 	int i;
 
@@ -1135,7 +1135,7 @@ static void get_enum(configValue v)
 	enum_names[i] = enums[i];
 
 	enum_values[i] = atoi( v.argument[1] );
-	info("Enum[%s]: %" PRId64, enum_names[i], enum_values[i]);
+	info("Enum[%s]: %ld", enum_names[i], enum_values[i]);
 }
 
 static void get_field_sorting_order(configValue v)

@@ -8,6 +8,7 @@
 
 #define MAX_QUERY_STRING_SIZE	LONG_LONG_STRING_SIZE //LONG_STRING_SIZE	
 #define MAX_ATTR_STRING_SIZE	LONG_STRING_SIZE
+#define MAX_GROUP_STRING_SIZE   STRING_SIZE
 #define MAX_SORT_STRING_SIZE	STRING_SIZE
 
 /* MAX_INDEX_LIST_POOL: should be larger than max nodes of qpp */
@@ -66,6 +67,8 @@ struct request_t{
 	enum requesttype type;
 	char query_string[MAX_QUERY_STRING_SIZE];
 	char attr_string[MAX_ATTR_STRING_SIZE];
+	char attr2_string[MAX_ATTR_STRING_SIZE];
+	char group_string[MAX_GROUP_STRING_SIZE];
 	char sort_string[MAX_SORT_STRING_SIZE];
 	uint32_t first_result; /* first_result = result page number*list_size + 1*/
 	int  list_size;    /* size of result list */

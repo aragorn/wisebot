@@ -70,6 +70,8 @@ typedef struct _docattr_field_t {
 extern docattr_field_t docattr_field[MAX_DOCATTR_FIELD];
 extern int docattr_field_count;
 extern int return_docattr_field(const char* name, docattr_field_t** field);
+extern docattr_integer return_enum_value(const char* value);
+extern char* return_enum_name(docattr_integer value);
 
 /**************************************************************
  * docattr query processing & filtering에 필요한 기능
@@ -113,7 +115,7 @@ typedef struct {
 	docattr_operand_t* root_operand;
 	docattr_field_t *field_list[MAX_DOCATTR_FIELD]; // 미리 계산해야 하는 field들
 	int field_list_count;
-} general_cond_t;
+} general_at_t;
 
 extern int isNumber(const char* string, docattr_integer* number);
 

@@ -1045,7 +1045,7 @@ yyreduce:
         case 2:
 #line 22 "mod_qp_general_yacc.y"
     {
-				general_cond.root_operand = yyvsp[-1];
+				parser_result.root_operand = yyvsp[-1];
 				yyval = yyvsp[-1];
 				yyval->value_type = VALUE_BOOLEAN;
 				yyval->o.expr.operand1 = yyvsp[-2];
@@ -1057,7 +1057,7 @@ yyreduce:
   case 3:
 #line 30 "mod_qp_general_yacc.y"
     {
-				general_cond.root_operand = yyvsp[-1];
+				parser_result.root_operand = yyvsp[-1];
 				yyval = yyvsp[-1];
 				yyval->value_type = VALUE_BOOLEAN;
 				yyval->o.expr.operand1 = yyvsp[-2];
@@ -1069,7 +1069,7 @@ yyreduce:
   case 4:
 #line 38 "mod_qp_general_yacc.y"
     {
-				general_cond.root_operand = yyvsp[-1];
+				parser_result.root_operand = yyvsp[-1];
 				yyval = yyvsp[-1];
 				yyval->value_type = VALUE_BOOLEAN;
 				yyval->o.expr.operand1 = yyvsp[0];
@@ -1084,7 +1084,7 @@ yyreduce:
 
   case 6:
 #line 46 "mod_qp_general_yacc.y"
-    { general_cond.root_operand = yyvsp[0]; yyval = yyvsp[0]; }
+    { parser_result.root_operand = yyvsp[0]; yyval = yyvsp[0]; }
     break;
 
   case 7:
