@@ -38,11 +38,27 @@ static int bdb_hash_count(api_hash_t* hash, int* count);
 
 static int bdb_hash_init()
 {
+	int i, ret;
+	DB_ENV* dbenv;
+
 	info("%s", DB_VERSION_STRING);
 
 	if ( DB_VERSION_MAJOR < 4 ) {
 		error("Berkeley DB version is too low. At least 4.x.x is needed.");
 		return FAIL;
+	}
+
+	for ( i = 0; i < MAX_HASH_SET; i++ ) {
+		if ( !hash_set[i].set ) continue;
+
+		if ( !hash_set[i].set_path ) {
+			warn("hash path is not defined. [HashSet:%d]", i);
+			continue;
+		}
+
+		// config 초기화 때문에..
+		db_env_create( &dbenv, 0 );
+		ret = dbenv->remove( dbenv, hash_set[i].path, 0 );
 	}
 
 	return SUCCESS;
@@ -106,7 +122,7 @@ static int bdb_hash_open(api_hash_t** hash, int opt)
 	// no fail
 	db_env_create( &bdb_hash->dbenvp, 0 );
 
-	if ( hash_set[opt].set_cache_size ) {
+	if ( hash_set[opt].set_cache_size && hash_set[opt].cache_size > 0 ) {
 		int gbytes = hash_set[opt].cache_size / (1*1024*1024*1024);
 		int bytes = hash_set[opt].cache_size % (1*1024*1024*1024);
 
@@ -115,10 +131,11 @@ static int bdb_hash_open(api_hash_t** hash, int opt)
 			warn("DB_ENV->set_cachesize() failed. it will be ignored: cache_size[%d], %d, %s",
 					hash_set[opt].cache_size, ret, strerror(ret));
 		}
+		else info("cache set : %d G + %d bytes [opt:%d]", gbytes, bytes, opt);
 	}
 
 	ret = bdb_hash->dbenvp->open( bdb_hash->dbenvp, abs_path,
-			DB_INIT_LOCK|DB_INIT_MPOOL|DB_CREATE, 0 );
+			DB_INIT_CDB|DB_INIT_MPOOL|DB_CREATE, 0 );
 	if ( ret != 0 ) {
 		error("DB_ENV->open() failed: DB[%s], %d, %s",
 				abs_path, ret, strerror(ret));
