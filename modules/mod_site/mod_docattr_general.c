@@ -617,6 +617,9 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 
 	if ( general_sort == NULL ) return 1;
 
+	sort = &general_sort[((docattr_sort_t*) userdata)->index];
+	if ( !sort->set ) return 1;
+
 	if ( sb_run_docattr_get(((doc_hit_t*) dest)->id, &attr1) != SUCCESS ) {
 		error("cannot get docattr element");
 		return 0;
@@ -625,9 +628,6 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 		error("cannot get docattr element");
 		return 0;
 	}
-
-	sort = &general_sort[((docattr_sort_t*) userdata)->index];
-	if ( !sort->set ) return 1;
 
 	for ( i = 0; i < sort->condition_count; i++ ) {
 		field = sort->condition[i].field;
