@@ -38,6 +38,7 @@ typedef struct _docattr_mask_t {
  * order is minus if descent, plus if ascent */
 #define MAX_SORTING_CRITERION		8
 typedef struct _docattr_sort_t {
+	int index;
 	struct _keys {
 		char key[STRING_SIZE];
 		int order;

@@ -2585,6 +2585,7 @@ static int docattr_sorting(index_list_t *list, char *sortquery)
 	if ( n == 0 ) //°ü·Ã¼º sorting
 	{
 		DOCSORT_SET_ZERO(&sc);
+		sc.index = 0;
 		strncpy(sc.keys[0].key, "0", MAX_SORT_STRING_SIZE);
 		sc.keys[0].key[MAX_SORT_STRING_SIZE-1] = '\0';
 		
@@ -2599,6 +2600,7 @@ static int docattr_sorting(index_list_t *list, char *sortquery)
 	else
 	{
 		if (sortingorder[n] == NULL || sortingorder[n][0] == '\0') {
+			warn("no sorting condition");
 			return SUCCESS;
 		}
 		strcpy(sortingquerydup, sortingorder[n]);
@@ -2606,6 +2608,7 @@ static int docattr_sorting(index_list_t *list, char *sortquery)
 		CRIT("sortquery:%s",sortquery);
 	
 		DOCSORT_SET_ZERO(&sc);
+		sc.index = n;
 		cur = sortquery; i = 0;
 		while ((d1 = strchr(cur, ':')) != NULL) {
 			*d1 = '\0';
