@@ -520,13 +520,11 @@ int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuff
 
 		if (ditNo == dwMaxDBFileNum) {
 			error("database is full! (dit file number needs to modified)");
-			un_lock(fdDBFile[ditNo], SEEK_SET, 0, 0);
 		    goto return_fail;
 		}
 
 		if (wr_lock(fdDBFile[ditNo], SEEK_SET, 0, 0) == -1) {
 			error("cannot flock[%d]: %s", fdDBFile[ditNo], strerror(errno));
-			un_lock(fdDBFile[ditNo], SEEK_SET, 0, 0);
 		    goto return_fail;
 		}
 
