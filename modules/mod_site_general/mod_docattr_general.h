@@ -66,8 +66,10 @@ typedef struct _docattr_field_t {
 	docattr_value_t value;
 } docattr_field_t;
 
+#define is_bit_field(field_type) ( field_type == FIELD_BIT || field_type == FIELD_ENUMBIT )
+#define is_enum_field(field_type) ( field_type == FIELD_ENUM || field_type == FIELD_ENUMBIT )
+
 extern int return_docattr_field(const char* name, docattr_field_t** field);
-extern int is_bit_field(const docattr_field_t* field);
 extern docattr_integer return_enum_value(const char* value);
 extern char* return_enum_name(docattr_integer value);
 

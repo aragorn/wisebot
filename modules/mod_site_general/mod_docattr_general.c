@@ -36,11 +36,6 @@ int return_docattr_field(const char* name, docattr_field_t** field)
 	return i;
 }
 
-int is_bit_field(const docattr_field_t* field)
-{
-	return ( field->field_type == FIELD_BIT || field->field_type == FIELD_ENUMBIT );
-}
-
 char* get_field_type(docattr_field_type_t field_type)
 {
 	static char* field_types[] =
@@ -54,7 +49,7 @@ void print_docattr_field(const docattr_field_t* field)
 {
 	char* field_type = get_field_type( field->field_type );
 
-	if ( is_bit_field( field ) ) {
+	if ( is_bit_field( field->field_type ) ) {
 		info("field [%s]: type - %s, offset - %d, size - %d, bitoff - %d, bitsize - %d",
 				field->name, field_type, field->offset, field->size, field->bit_offset, field->bit_size);
 	}
@@ -948,7 +943,7 @@ static int build_field_offset()
 			if ( size == 1 && offset%sizeof(long) == 0 ) break;
 
 			field = &docattr_field[i];
-			if ( assigned_field[i] || field->size != size || is_bit_field( field ) ) continue;
+			if ( assigned_field[i] || field->size != size || is_bit_field( field->field_type ) ) continue;
 
 			field->offset = offset;
 			offset += size;
@@ -968,7 +963,7 @@ static int build_field_offset()
 
 	for ( i = 0; i < docattr_field_count; i++ ) {
 		field = &docattr_field[i];
-		if ( !is_bit_field( field ) ) continue;
+		if ( !is_bit_field( field->field_type ) ) continue;
 
 		if ( bit_offset + field->bit_size > sizeof(long)*BIT_PER_BYTE ) {
 			bit_offset = 0;

@@ -643,7 +643,7 @@ static int set_group_result_function(void* cond, group_result_t* group_result, i
 			if ( group_field_count[i][j] == 0 ) continue;
 
 			strcpy( group_result[curr].field, field->name );
-			if ( is_bit_field( field ) ) {
+			if ( is_enum_field( field->field_type ) ) {
 				enum_name = return_enum_name(j);
 				if ( enum_name != NULL ) strcpy( group_result[curr].value, enum_name );
 				else {
