@@ -180,7 +180,7 @@ static void init_readline()
 	sb_server_root_relative(history_file, HISTORY_FILE);
 
     if (read_history(history_file) != 0) { 
-        FILE* fp=sb_fopen(history_file,"a+"); 
+        FILE* fp=sb_fopen(HISTORY_FILE,"a+"); 
         fclose(fp); 
     } 
     
