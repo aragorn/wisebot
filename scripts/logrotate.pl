@@ -13,18 +13,24 @@ sub BEGIN {
 
 sub HELP_MESSAGE {
 	print <<END;
-Usage $0 [-s size[k|M|G]] file
-    log_file - lotate target file
+Usage $0 [-s size[k|M|G]] [-n count] [-h] file
+    file     - lotate target file
 Options:
-	-n count - lotate count. default is $count
+    -n count - lotate count. default is $count
     -s size  - execute lotate when file size is larger then size.
-	           k: kilo, M: mega, G: giga bytes
+               k: kilo, M: mega, G: giga bytes
+	-h       - print this help message
 END
 	exit;
 }
 
-HELP_MESSAGE unless( getopts( "n:s:" ) );
-our ( $opt_n, $opt_s );
+HELP_MESSAGE unless( getopts( "hn:s:" ) );
+our ( $opt_h, $opt_n, $opt_s );
+
+if ( $opt_h ) {
+	HELP_MESSAGE;
+	die "\n";
+}
 
 $count = $opt_n if $opt_n;
 die "invalid count: $count\n" unless ( $count =~ /\d+/);
