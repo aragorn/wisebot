@@ -1,0 +1,12 @@
+/* $Id$ */
+#ifndef AUTO_DEFINE_H
+#define AUTO_DEFINE_H 1
+
+/*
+#define SERVER_ROOT "@TOP_BUILDDIR@"
+ */
+/* XXX 사용하기 불편하여 바꿈. --aragorn, 2004/03/31 */
+#define SERVER_ROOT "."
+#define CANONICAL_HOST "@CANONICAL_HOST@"
+
+#endif

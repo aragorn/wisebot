@@ -1,0 +1,17 @@
+Make.defs
+ChangeLog
+aclocal.m4
+config.cache
+config.log
+config.status
+config.guess
+config.sub
+configure
+libtool
+ltmain.sh
+acconfig.h
+autom4te.cache
+man
+share
+tags
+.history
