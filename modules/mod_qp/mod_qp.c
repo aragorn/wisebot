@@ -2097,8 +2097,10 @@ static void fill_title_and_comment(request_t *req)
 			sizeleft = (sizeleft < 0) ? 0:sizeleft;
 
 			if (sizeleft <= 0) {
-				error("req->comments size lack while pushing comment(field:%s)",
-															mCommentField[k]);
+				error("req->comments size lack while pushing comment(field:%s, doc:%u)",
+															mCommentField[k], docid);
+				req->comments[j][LONG_LONG_STRING_SIZE-1] = '\0';
+				error("%s", req->comments[j]);
 				break;
 			}
 		}
