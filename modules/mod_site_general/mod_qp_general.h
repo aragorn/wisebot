@@ -18,11 +18,6 @@ extern void init_operands();
 extern docattr_operand_t* get_new_operand();
 extern void add_field_to_cond(docattr_field_t* field);
 
-// operand->exec_func 3가지...
-#define operand_value_exec_func NULL
-#define operand_field_exec_func NULL
-extern int operand_expr_exec_func(docattr_operand_t* operand);
-
 // expr->exec_func 와 관련있는 것들...
 extern int expr_eq_set(docattr_operand_t* operand);
 extern int expr_neq_set(docattr_operand_t* operand);

@@ -525,12 +525,11 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 
 #define SET_EXPR \
 	yylval->operand_type = OPERAND_EXPR; \
-	yylval->exec_func = operand_expr_exec_func; \
 	yylval->result = &yylval->o.expr.result; \
 	strncpy( yylval->o.expr.operator_string, yytext, sizeof(yylval->o.expr.operator_string) );
 
 
-#line 534 "mod_qp_general_lex.c"
+#line 533 "mod_qp_general_lex.c"
 
 #define INITIAL 0
 #define ESC 1
@@ -680,10 +679,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 32 "mod_qp_general_lex.l"
+#line 31 "mod_qp_general_lex.l"
 
 
-#line 687 "mod_qp_general_lex.c"
+#line 686 "mod_qp_general_lex.c"
 
 	if ( (yy_init) )
 		{
@@ -775,83 +774,83 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 34 "mod_qp_general_lex.l"
+#line 33 "mod_qp_general_lex.l"
 ;
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 35 "mod_qp_general_lex.l"
+#line 34 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return EQ; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 36 "mod_qp_general_lex.l"
+#line 35 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return NEQ; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 37 "mod_qp_general_lex.l"
+#line 36 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return GT; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 38 "mod_qp_general_lex.l"
+#line 37 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return GT_EQ; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 39 "mod_qp_general_lex.l"
+#line 38 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return LT; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 40 "mod_qp_general_lex.l"
+#line 39 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return LT_EQ; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 41 "mod_qp_general_lex.l"
+#line 40 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return BIT_AND; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 42 "mod_qp_general_lex.l"
+#line 41 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return BIT_OR; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 43 "mod_qp_general_lex.l"
+#line 42 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return BIT_NOT; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 44 "mod_qp_general_lex.l"
+#line 43 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return LOGICAL_AND; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 45 "mod_qp_general_lex.l"
+#line 44 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return LOGICAL_OR; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 46 "mod_qp_general_lex.l"
+#line 45 "mod_qp_general_lex.l"
 { SET_YYLVAL; SET_EXPR; return LOGICAL_NOT; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 47 "mod_qp_general_lex.l"
+#line 46 "mod_qp_general_lex.l"
 { return LPAREN; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 48 "mod_qp_general_lex.l"
+#line 47 "mod_qp_general_lex.l"
 { return RPAREN; }
 	YY_BREAK
 case 16:
 /* rule 16 can match eol */
 YY_RULE_SETUP
-#line 49 "mod_qp_general_lex.l"
+#line 48 "mod_qp_general_lex.l"
 {
 	SET_YYLVAL;
 
@@ -862,19 +861,19 @@ YY_RULE_SETUP
 case 17:
 /* rule 17 can match eol */
 YY_RULE_SETUP
-#line 56 "mod_qp_general_lex.l"
+#line 55 "mod_qp_general_lex.l"
 { BEGIN ESC; yymore(); }
 	YY_BREAK
 case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
-#line 57 "mod_qp_general_lex.l"
+#line 56 "mod_qp_general_lex.l"
 { yymore(); }
 	YY_BREAK
 case 19:
 /* rule 19 can match eol */
 YY_RULE_SETUP
-#line 58 "mod_qp_general_lex.l"
+#line 57 "mod_qp_general_lex.l"
 { BEGIN 0;
 	SET_YYLVAL;
 
@@ -884,7 +883,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 65 "mod_qp_general_lex.l"
+#line 64 "mod_qp_general_lex.l"
 {
 	SET_YYLVAL;
 
@@ -902,10 +901,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 79 "mod_qp_general_lex.l"
+#line 78 "mod_qp_general_lex.l"
 ECHO;
 	YY_BREAK
-#line 909 "mod_qp_general_lex.c"
+#line 908 "mod_qp_general_lex.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(ESC):
 	yyterminate();
@@ -1835,7 +1834,7 @@ void yyfree (void * ptr )
 #undef YY_DECL_IS_OURS
 #undef YY_DECL
 #endif
-#line 79 "mod_qp_general_lex.l"
+#line 78 "mod_qp_general_lex.l"
 
 
 
@@ -1854,7 +1853,6 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 {
 	operand->operand_type = OPERAND_VALUE;
 	operand->result = &operand->o.value;
-	operand->exec_func = operand_value_exec_func;
 
 	if ( len >= sizeof(operand->o.value.my_string) ) {
 		error("string[%s] is too long. max is %d", text, (int) sizeof(operand->o.value.my_string));

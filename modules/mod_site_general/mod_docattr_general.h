@@ -99,13 +99,6 @@ struct _docattr_operand_t {
 	docattr_operand_type_t operand_type;
 	docattr_value_type_t value_type;
 
-	int (*exec_func)(struct _docattr_operand_t* operand);
-	/*****************************************
-	 * exec_func는 2가지로 동작해야 한다.
-	 *  value, field 라면 그냥 놔두면 된다.
-	 *  expr 이라면 expr->exec_func() 호출.
-	 *****************************************/
-
 	union {
 		docattr_value_t value;
 		docattr_field_t* field;

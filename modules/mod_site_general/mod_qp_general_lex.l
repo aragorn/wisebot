@@ -15,7 +15,6 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 
 #define SET_EXPR \
 	yylval->operand_type = OPERAND_EXPR; \
-	yylval->exec_func = operand_expr_exec_func; \
 	yylval->result = &yylval->o.expr.result; \
 	strncpy( yylval->o.expr.operator_string, yytext, sizeof(yylval->o.expr.operator_string) );
 
@@ -93,7 +92,6 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 {
 	operand->operand_type = OPERAND_VALUE;
 	operand->result = &operand->o.value;
-	operand->exec_func = operand_value_exec_func;
 
 	if ( len >= sizeof(operand->o.value.my_string) ) {
 		error("string[%s] is too long. max is %d", text, (int) sizeof(operand->o.value.my_string));
