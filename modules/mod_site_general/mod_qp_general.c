@@ -793,6 +793,11 @@ static int docattr_qpp_group(docattr_cond_t *cond, char* groupquery)
 			return FAIL;
 		}
 
+		if ( group_field_list[i]->value_type != VALUE_INTEGER ) {
+			error("group field[%s]'s value type is not integer", group_field);
+			return FAIL;
+		}
+
 		group_field = strtok( NULL, "," );
 		i++;
 	}
