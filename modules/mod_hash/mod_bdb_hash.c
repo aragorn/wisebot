@@ -503,7 +503,7 @@ static void _graceful_shutdown(int sig)
 	sigaction(SIGHUP, &act, NULL);
 	sigaction(SIGINT, &act, NULL);
 
-	scoreboard->shutdown++;
+	scoreboard->graceful_shutdown++;
 }
 
 static int test_main(slot_t *slot)
