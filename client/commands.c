@@ -800,6 +800,26 @@ END:
 	return SUCCESS;
 }
 
+int com_strcmp(char *arg)
+{
+	char *usage = "Usage: strcmp str1 str2";
+	char *space;
+
+	space = strstr( arg, " " );
+
+	if ( strlen( arg ) == 0 || space == NULL ) {
+		warn( usage );
+		return FAIL;
+	}
+
+	*space = '\0';
+	space++;
+	while ( isspace(*space) && *space != '\0' ) space++;
+
+	info("hangul_strncmp result: %d", hangul_strncmp( arg, space, STRING_SIZE ));
+	return SUCCESS;
+}
+
 int com_client_memstat (char *arg)
 {
 	registry_t *reg=NULL;
@@ -1385,7 +1405,8 @@ int com_undelete (char *arg)
 		docattr_mask_t docmask;
 
 		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Undelete", NULL);
+		if ( sb_run_docattr_set_docmask_function(&docmask, "Undelete", "1") == FAIL )
+			sb_run_docattr_set_docmask_function(&docmask, "Delete", "0");
 		sb_run_docattr_set_array(docid, j, SC_MASK, &docmask);
 	}
 	return SUCCESS;
@@ -1451,7 +1472,7 @@ int com_delete (char *arg)
 		docattr_mask_t docmask;
 
 		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 		sb_run_docattr_set_array(docid, j, SC_MASK, &docmask);
 	}
 	return SUCCESS;
@@ -2016,7 +2037,7 @@ int com_rebuild_rid(char *arg)
             info("delete %d", i);
 
             DOCMASK_SET_ZERO(&docmask);
-            sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
+            sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
             sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
 
             goto done;

@@ -107,6 +107,7 @@ COMMAND commands[] = {
 	
 	{ RESET GREEN"Test related stuffs"HIDE, NULL, RESET},
 	{ "test_tokenizer", com_test_tokenizer, "tests tokenizer module"},
+	{ "strcmp", com_strcmp, "hangul compare function"},
 	{ BLANKLINE, NULL, ""},
 
 	{ RESET GREEN"benchmark"HIDE, NULL, RESET},
@@ -548,7 +549,7 @@ main(int argc, char *argv[], char *envp[])
 		printf("          Release Date: %s\n", RELEASE_DATE);
 		printf("   Module Magic Number: %d:%d\n",
 			MODULE_MAGIC_NUMBER_MAJOR, MODULE_MAGIC_NUMBER_MINOR);
-		printf("          Architecture: %d-bit\n", 8*(long)sizeof(void *));
+		printf("          Architecture: %ld-bit\n", 8*(long)sizeof(void *));
 
 		exit(0);
 	}

@@ -62,6 +62,7 @@ int com_forward_index(char *);
 int com_log_level(char *);
 
 int com_test_tokenizer(char *);
+int com_strcmp(char *);
 int com_connectdb(char *);
 int com_selectdoc(char *);
 
