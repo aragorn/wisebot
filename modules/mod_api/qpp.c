@@ -11,7 +11,7 @@ HOOK_STRUCT(
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,preprocess, \
 		(void* word_db, char infix[],int max_infix_size,QueryNode postfix[],int max_postfix_size), \
-		(word_db, infix, max_infix_size, postfix, max_postfix_size), DECLINE)
+		(word_db, infix, max_infix_size, postfix, max_postfix_size), MINUS_DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,print_querynode, \
 		(FILE *fp, QueryNode aPostfixQuery[],int numNode), \
 		(fp,aPostfixQuery,numNode),DECLINE)
