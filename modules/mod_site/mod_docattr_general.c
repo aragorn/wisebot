@@ -618,7 +618,7 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 	if ( general_sort == NULL ) return 1;
 
 	sort = &general_sort[((docattr_sort_t*) userdata)->index];
-	if ( !sort->set ) return 1;
+	if ( !sort->set ) return 0;
 
 	if ( sb_run_docattr_get(((doc_hit_t*) dest)->id, &attr1) != SUCCESS ) {
 		error("cannot get docattr element");
