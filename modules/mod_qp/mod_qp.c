@@ -2057,7 +2057,8 @@ static void fill_title_and_comment(request_t *req)
 		sizeleft = LONG_LONG_STRING_SIZE-1;
 
 		for (k=0; k<mCommentFieldNum; k++) {
-			//int max_comment_bytes=500;
+			#define max_comment_bytes 1024
+			char* last_position;
 			tmpstr = NULL;
 
 			ret = sb_run_doc_get_field(doc[j], NULL, mCommentField[k], &tmpstr);
@@ -2075,8 +2076,14 @@ static void fill_title_and_comment(request_t *req)
 			sizeleft -= 1;
 			sizeleft = (sizeleft < 0) ? 0:sizeleft;
 
-			//if (strlen(tmpstr) > max_comment_bytes) 
-			//	tmpstr[max_comment_bytes-1] = '\0';
+			// 길이가 너무 길면 좀 자른다. 한글 안다치게...
+			if (strlen(tmpstr) > max_comment_bytes) {
+				for ( last_position = tmpstr+max_comment_bytes;
+						last_position > tmpstr || (int)(*last_position) < 127;
+						last_position-- ) {
+				}
+				*last_position = '\0';
+			}
 			strncat(req->comments[j],tmpstr,sizeleft);
 			sizeleft -= strlen(tmpstr);
 			sizeleft = (sizeleft < 0) ? 0:sizeleft;
