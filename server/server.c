@@ -86,6 +86,12 @@ static void _graceful_shutdown(int sig)
 //	list_scoreboard(stdout, NULL); /* XXX : for debugging, delete soon */
 }
 
+static void _reopen_log_error(int sig)
+{
+	reopen_error_log(gErrorLogFile);
+	return;
+}
+
 static void set_signal_handlers()
 {
     struct sigaction act;
@@ -103,8 +109,10 @@ static void set_signal_handlers()
     sigaction(SIGTERM, &act, NULL);
     
     act.sa_handler = _graceful_shutdown;
-    sigaction(SIGHUP, &act, NULL);
     sigaction(SIGINT, &act, NULL);
+
+	act.sa_handler = _reopen_log_error;
+	sigaction(SIGHUP, &act, NULL);
 }
 
 
