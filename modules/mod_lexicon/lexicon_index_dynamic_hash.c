@@ -213,7 +213,7 @@ int lexicon_index_open( lexicon_t *word_db )
 		return FAIL;
 	}
 
-    DEBUG("hash->parent->shared [%d]", (int)(((lexicon_t *)(hash->parent))->shared));
+    DEBUG("hash->parent->shared [%p]", ((lexicon_t *)(hash->parent))->shared);
 	return SUCCESS;
 }
 

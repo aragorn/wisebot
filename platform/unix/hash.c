@@ -402,8 +402,8 @@ static bucket_t *getBucket(hash_t *hash, uint32_t block_idx)
 	}
 
 	offset = block_idx % HASH_BUCKET_PER_BLOCK;
-	debug("hash->shared[%d], offset[%d], mem_block[block %d] = %p, ",
-			(int)(hash->shared), offset, block, hash->mem_block[block]);
+	debug("hash->shared[%p], offset[%d], mem_block[block %d] = %p, ",
+			hash->shared, offset, block, hash->mem_block[block]);
 
 	if (hash->mem_block[block] == NULL) {
 		hash->mem_block[block] = ((hash->alloc_data_func))(hash, block, HASH_MEM_BLOCK_SIZE);
