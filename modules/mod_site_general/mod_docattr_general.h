@@ -20,7 +20,6 @@ typedef enum {
 	FIELD_INTEGER = 1,
 	FIELD_BIT,
 	FIELD_ENUM,
-	FIELD_ENUM8,
 	FIELD_ENUMBIT,
 	FIELD_MD5,
 	FIELD_STRING
@@ -67,9 +66,8 @@ typedef struct _docattr_field_t {
 	docattr_value_t value;
 } docattr_field_t;
 
-extern docattr_field_t docattr_field[MAX_DOCATTR_FIELD];
-extern int docattr_field_count;
 extern int return_docattr_field(const char* name, docattr_field_t** field);
+extern int is_bit_field(const docattr_field_t* field);
 extern docattr_integer return_enum_value(const char* value);
 extern char* return_enum_name(docattr_integer value);
 

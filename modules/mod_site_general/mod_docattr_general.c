@@ -9,11 +9,11 @@
 #define BIT_PER_BYTE		8
 #define MAX_BIT_SIZE		((int)(sizeof(docattr_integer)*BIT_PER_BYTE-2))
 
-docattr_field_t docattr_field[MAX_DOCATTR_FIELD];
-int docattr_field_count = 0;
+static docattr_field_t docattr_field[MAX_DOCATTR_FIELD];
+static int docattr_field_count = 0;
 
-docattr_field_t* rid_field = NULL;
-char rid_field_name[SHORT_STRING_SIZE] = "";
+static docattr_field_t* rid_field = NULL;
+static char rid_field_name[SHORT_STRING_SIZE] = "";
 
 // zero 를 대표하는 값. 하나 만들어 놓고 두고두고 쓴다...
 docattr_value_t value_zero;
@@ -34,6 +34,34 @@ int return_docattr_field(const char* name, docattr_field_t** field)
 
 	*field = NULL;
 	return i;
+}
+
+int is_bit_field(const docattr_field_t* field)
+{
+	return ( field->field_type == FIELD_BIT || field->field_type == FIELD_ENUMBIT );
+}
+
+char* get_field_type(docattr_field_type_t field_type)
+{
+	static char* field_types[] =
+		{ "INVALID", "Integer", "Bit", "Enum", "EnumBit", "MD5", "String" };
+
+	if ( field_type <= 0 || field_type > FIELD_STRING ) return field_types[0];
+	else return field_types[(int) field_type];
+}
+
+void print_docattr_field(const docattr_field_t* field)
+{
+	char* field_type = get_field_type( field->field_type );
+
+	if ( is_bit_field( field ) ) {
+		info("field [%s]: type - %s, offset - %d, size - %d, bitoff - %d, bitsize - %d",
+				field->name, field_type, field->offset, field->size, field->bit_offset, field->bit_size);
+	}
+	else {
+		info("field [%s]: type - %s, offset - %d, size - %d",
+				field->name, field_type, field->offset, field->size);
+	}
 }
 
 static char *enum_names[MAX_ENUM_NUM] = { NULL };
@@ -651,9 +679,13 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 	return 0;
 }
 
+/**********************************************************************
+ *          여기서 부터 module 초기화 관련 함수 & 코드들..
+ **********************************************************************/
+
 /****************************************************
  * INPUT
- *  field_type : Integer(4), Integer, Integer()
+ *  field_type : Integer(4), Integer, Integer() 이런 모양
  *
  * OUTPUT
  *  type : Integer, 버퍼크기는 충분하다고 본다.
@@ -916,8 +948,7 @@ static int build_field_offset()
 			if ( size == 1 && offset%sizeof(long) == 0 ) break;
 
 			field = &docattr_field[i];
-			if ( assigned_field[i] || field->size != size
-					|| field->field_type == FIELD_BIT || field->field_type == FIELD_ENUMBIT ) continue;
+			if ( assigned_field[i] || field->size != size || is_bit_field( field ) ) continue;
 
 			field->offset = offset;
 			offset += size;
@@ -937,7 +968,7 @@ static int build_field_offset()
 
 	for ( i = 0; i < docattr_field_count; i++ ) {
 		field = &docattr_field[i];
-		if ( field->field_type != FIELD_BIT && field->field_type != FIELD_ENUMBIT ) continue;
+		if ( !is_bit_field( field ) ) continue;
 
 		if ( bit_offset + field->bit_size > sizeof(long)*BIT_PER_BYTE ) {
 			bit_offset = 0;
@@ -984,6 +1015,47 @@ static int build_field_offset()
 	return SUCCESS;
 }
 
+/********************************************************
+ * docattr db 가 처음 만들어진 거면 db scheme을 저장하고
+ * 이미 만들어져 있으면 예전 설정을 불러온다
+ ********************************************************/
+static int prepare_db_scheme()
+{
+	FILE* fp;
+	int i;
+	char field_name[32], field_type[20];
+	
+	fp = sb_fopen( "dat/cdm/docattr.scheme", "r+" );
+	if ( fp == NULL ) {
+		fp = sb_fopen( "dat/cdm/docattr.scheme", "w+" );
+		if ( fp == NULL ) {
+			error("docattr scheme file create failed");
+			return FAIL;
+		}
+
+		// scheme 파일 새로 생성
+		info("save docattr scheme");
+		for ( i = 0; i < docattr_field_count; i++ ) {
+			fprintf( fp, "%s %s(%d)\n", docattr_field[i].name,
+					get_field_type( docattr_field[i].field_type ), docattr_field[i].size );
+		}
+
+		fclose( fp );
+		return SUCCESS;
+	}
+
+	info("load docattr scheme");
+	// 초기화
+	docattr_field_count = 0;
+	while ( fscanf( fp, "%s %s\n", field_name, field_type ) != EOF ) {
+		add_docattr_field( field_name, field_type );
+	}
+
+	fclose( fp );
+	return SUCCESS;
+}
+
+// FieldSortingOrder config 처리
 // 왠만한 에러로는 FAIL을 리턴하면 안된다... init() 의 성공여부가 달려있어서..
 static int build_sort_field()
 {
@@ -1061,6 +1133,11 @@ static int init()
 	return_docattr_field( "Delete", &delete_field );
 	if ( delete_field == NULL || delete_field->value_type != VALUE_INTEGER ) {
 		add_docattr_field( "Delete", "Bit(1)" );
+	}
+
+	if ( prepare_db_scheme() != SUCCESS ) {
+		error("docattr db scheme check failed");
+		return FAIL;
 	}
 
 	if ( build_field_offset() != SUCCESS ) {
