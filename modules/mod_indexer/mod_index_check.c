@@ -1,9 +1,9 @@
 #include "softbot.h"
 #include "mod_mp/mod_mp.h"
 #include "mod_vrfi/mod_vrfi.h"
-#include "mod_lexicon/mod_lexicon.h"
 #include "mod_qp/mod_qp.h"
 #include "mod_api/indexdb.h"
+#include "mod_api/lexicon.h"
 #include "hit.h"
 
 #define MAX_PROCESSES         10
@@ -13,8 +13,9 @@
 #define TYPE_INDEXDB          2
 
 static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(MAX_PROCESSES+1) };
-static int m_processes = 1;
-static int m_type      = TYPE_INDEXDB;
+static int m_processes   = 1;
+static int m_type        = TYPE_INDEXDB;
+static int m_word_db_set = -1;
 
 /******************************************************
  * signal handler
@@ -88,6 +89,7 @@ static int init()
 static int vrfi_child_main(slot_t* slot)
 {
 	uint32_t start, end, current, expected_count, vrfi_count;
+	word_db_t* word_db;
 	VariableRecordFile *vrfi;
 	word_t word;
 	doc_hit_t *doc_hits;
@@ -96,6 +98,10 @@ static int vrfi_child_main(slot_t* slot)
 	uint32_t old_current;
 
 	slot->state = SLOT_PROCESS;
+
+	if ( sb_run_open_word_db( &word_db, m_word_db_set ) != SUCCESS ) {
+		RETURN_ERROR( "word db[set:%d] open failed", m_word_db_set );
+	}
 
 	if ( sb_run_vrfi_alloc( &vrfi ) != SUCCESS ) {
 		RETURN_ERROR( "vrfi alloc failed: %s", strerror(errno) );
@@ -106,7 +112,7 @@ static int vrfi_child_main(slot_t* slot)
 		RETURN_ERROR( "vrfi open failed: %s", strerror(errno) );
 	}
 
-	if ( sb_run_get_num_of_word( &gWordDB, &end ) != SUCCESS ) {
+	if ( sb_run_get_num_of_word( word_db, &end ) != SUCCESS ) {
 		RETURN_ERROR( "get_num_of_wordid failed: %s", strerror(errno) );
 	}
 
@@ -145,7 +151,7 @@ static int vrfi_child_main(slot_t* slot)
 
 		word.id = current;
 
-		if ( sb_run_get_word_by_wordid( &gWordDB, &word ) != SUCCESS ) {
+		if ( sb_run_get_word_by_wordid( word_db, &word ) != SUCCESS ) {
 			error("lexicon failed to get word");
 			continue;
 		}
@@ -154,11 +160,6 @@ static int vrfi_child_main(slot_t* slot)
 			error("word[%u, %s]: vrfi_get_num_of_data failed", current, word.string);
 			continue;
 		}
-
-/*		if ( expected_count != word.word_attr.df ) {
-			warn("word[%u, %s]: expected_count[%u] != word.word_attr.df[%d]",
-					current, word.string, expected_count, word.word_attr.df);
-		}*/
 
 		if ( expected_count > MAX_DOC_HITS_SIZE ) {
 			warn("word[%u, %s]: expected_count[%u] > MAX_DOC_HITS_SIZE[%u]",
@@ -188,6 +189,7 @@ static int vrfi_child_main(slot_t* slot)
 	else crit("[%u~%u] check aborted[%u]", start, end, current);
 
 	sb_run_vrfi_close( vrfi );
+	sb_run_close_word_db( word_db );
 
 	slot->state = SLOT_FINISH;
 	return EXIT_SUCCESS;
@@ -197,7 +199,8 @@ static int indexdb_child_main(slot_t* slot)
 {
 	uint32_t start, end, current, expected_count;
 	int indexdb_count, indexdb_size;
-	void* indexdb;
+	word_db_t* word_db;
+	index_db_t* indexdb;
 	word_t word;
 	doc_hit_t *doc_hits;
 
@@ -206,16 +209,15 @@ static int indexdb_child_main(slot_t* slot)
 
 	slot->state = SLOT_PROCESS;
 
-	indexdb = sb_run_indexdb_create();
-	if ( indexdb == NULL || indexdb == DECLINE ) {
-		RETURN_ERROR( "indexdb create failed: %s", strerror(errno) );
+	if ( sb_run_open_word_db( &word_db, m_word_db_set ) != SUCCESS ) {
+		RETURN_ERROR( "word db[set:%d] open failed", m_word_db_set );
 	}
 
-	if ( sb_run_indexdb_open( indexdb, m_indexdb_set ) != SUCCESS ) {
+	if ( sb_run_indexdb_open( &indexdb, m_indexdb_set ) != SUCCESS ) {
 		RETURN_ERROR( "indexdb load failed: %s", strerror(errno) );
 	}
 
-	if ( sb_run_get_num_of_word( &gWordDB, &end ) != SUCCESS ) {
+	if ( sb_run_get_num_of_word( word_db, &end ) != SUCCESS ) {
 		RETURN_ERROR( "get_num_of_wordid failed: %s", strerror(errno) );
 	}
 
@@ -254,7 +256,7 @@ static int indexdb_child_main(slot_t* slot)
 
 		word.id = current;
 
-		if ( sb_run_get_word_by_wordid( &gWordDB, &word ) != SUCCESS ) {
+		if ( sb_run_get_word_by_wordid( word_db, &word ) != SUCCESS ) {
 			error("lexicon failed to get word");
 			continue;
 		}
@@ -270,11 +272,6 @@ static int indexdb_child_main(slot_t* slot)
 		if ( indexdb_size % sizeof(doc_hit_t) != 0 ) {
 			error("word[%u, %s]: invalid size[%d]", current, word.string, indexdb_size);
 		}
-
-/*		if ( expected_count != word.word_attr.df ) {
-			warn("word[%u ,%s]: expected_count[%u] != word.word_attr.df[%d]",
-					current, word.string, expected_count, word.word_attr.df);
-		}*/
 
 		if ( expected_count > MAX_DOC_HITS_SIZE ) {
 			warn("word[%u, %s]: expected_count[%u] > MAX_DOC_HITS_SIZE[%u]",
@@ -306,7 +303,7 @@ static int indexdb_child_main(slot_t* slot)
 	else crit("[%u~%u] check aborted[%u]", start, end, current);
 
 	sb_run_indexdb_close( indexdb );
-	sb_run_indexdb_destroy( indexdb );
+	sb_run_close_word_db( word_db );
 
 	slot->state = SLOT_FINISH;
 	return EXIT_SUCCESS;
@@ -314,17 +311,7 @@ static int indexdb_child_main(slot_t* slot)
 
 static int module_main(slot_t* slot)
 {
-	uint32_t count;
-
 	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);
-
-	if ( sb_run_get_num_of_word( &gWordDB, &count ) != SUCCESS ) {
-		RETURN_ERROR( "get_num_of_wordid failed: %s", strerror(errno) );
-	}
-	if ( count == 0 ) {
-		crit("there is no word in worddb. check stopped");
-		return 0;
-	}
 
 	scoreboard->size = m_processes;
 	sb_init_scoreboard(scoreboard);
@@ -369,6 +356,11 @@ static void set_type(configValue v)
 	else error( "unknown Type value (must be \"vrfi\" or \"indexdb\")" );
 }
 
+static void set_word_db_set(configValue v)
+{
+	m_word_db_set = atoi( v.argument[0] );
+}
+
 static void set_index_db_path(configValue v)
 {
 	strncpy(m_index_db_path, v.argument[0], sizeof(m_index_db_path));
@@ -383,6 +375,7 @@ static void set_indexdb_set(configValue v)
 static config_t config[] = {
 	CONFIG_GET("Processes", set_processes, 1, "Number of Check Process"),
 	CONFIG_GET("Type", set_type, 1, "vrfi or indexdb"),
+	CONFIG_GET("WordDbSet", set_word_db_set, 1, "WordDbSet {number}"),
 
 	CONFIG_GET("IndexDbPath", set_index_db_path, 1,
 			"inv indexer db path (e.g: IndexDbPath dat/indexer/index)"),

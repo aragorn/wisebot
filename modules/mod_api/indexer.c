@@ -14,19 +14,13 @@ HOOK_STRUCT(
 	HOOK_LINK(get_position)
 	HOOK_LINK(cmp_field)
 	HOOK_LINK(get_field)
-//	HOOK_LINK(get_indexer_port)
 	HOOK_LINK(get_indexer_socket_file)
 )
 
-SB_IMPLEMENT_HOOK_RUN_FIRST(int,index_each_spooled_doc,\
-		(uint32_t did, word_hit_t *wordhit, uint32_t hitsize,\
-		 uint32_t *hitidx),\
-		(did,wordhit,hitsize,hitidx),DECLINE )
-
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,index_each_doc,\
-		(uint32_t did, word_hit_t *wordhit, uint32_t hitsize,\
+		(void* word_db, uint32_t did, word_hit_t *wordhit, uint32_t hitsize,\
 		 uint32_t *hitidx, void *data, int size),\
-		(did,wordhit,hitsize,hitidx,data,size),DECLINE )
+		(word_db,did,wordhit,hitsize,hitidx,data,size),DECLINE )
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,index_one_doc,\
 		(uint32_t did,word_hit_t *wordhit,uint32_t hitsize,uint32_t *hitidx),\

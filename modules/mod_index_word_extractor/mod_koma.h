@@ -2,9 +2,9 @@
 #ifndef MOD_KOMA_H
 #define MOD_KOMA_H 1
 
-#include "KomaAPI.h"
-#include "HanTagAPI.h"
-#include "koma_global.h"
+#include "koma/KomaAPI.h"
+#include "koma/HanTagAPI.h"
+#include "koma/koma_global.h"
 
 #define MAX_NUM_OF_MORPHEMES	(MaxNumWrd)
 #define MAX_RESULT_NUM			(MaxNumAmb)

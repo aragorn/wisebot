@@ -43,7 +43,6 @@
 #define SB4_OP_CONFIG			"916"    	// config
 #define SB4_OP_GET_WORDID		"917"    	// get_wordid
 #define SB4_OP_GET_NEW_WORDID		"918"    	// get_new_wordid
-#define SB4_OP_PRINT_HASH_BUCKET 	"919"    	// print_hash_bucket
 #define SB4_OP_GET_DOCID		"920"    	// getdocid
 #define SB4_OP_STATUS_STR		"921"		// string send recv status
 #define SB4_OP_INDEX_LIST		"922"		// index list send
@@ -118,6 +117,9 @@ typedef struct {
 	int allocated_size;
 } sb4_merge_buffer_t;
 
+SB_DECLARE_HOOK(int,protocol_open,())
+SB_DECLARE_HOOK(int,protocol_close,())
+
 SB_DECLARE_HOOK(int,sb4c_register_doc,(int sockfd, char *dit, char *body, int body_size))
 SB_DECLARE_HOOK(int,sb4c_get_doc,(int sockfd, uint32_t docid, char *buf, int bufsize))
 SB_DECLARE_HOOK(int,sb4c_set_docattr,(int sockfd, char *dit))
@@ -160,7 +162,6 @@ SB_DECLARE_HOOK(int,sb4s_undel_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_config,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_get_wordid,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_get_new_wordid,(int sockfd))
-SB_DECLARE_HOOK(int,sb4s_print_hash_bucket,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_get_docid,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_index_list,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_word_list,(int sockfd))

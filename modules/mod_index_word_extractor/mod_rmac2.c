@@ -2,7 +2,10 @@
 #include "softbot.h"
 
 #include "mod_mp/mod_mp.h"
-#include "mod_api/mod_api.h"
+#include "mod_api/cdm.h"
+#include "mod_api/indexer.h"
+#include "mod_api/tcp.h"
+#include "mod_api/protocol4.h"
 
 #define MAX_SERVERS			16
 #define MAX_PROCESSES		64
@@ -40,9 +43,9 @@ static int      rmas_retry=10; // 0이면 무조건 계속 시도
 
 /////////////////////////////////////////////////
 // registry를 통해 공유된다.
-static uint32_t     *last_fetched_docid;
-static rmas_state_t *rmas_state_table;
-static int          *last_used_rmas;
+REGISTRY uint32_t     *last_fetched_docid;
+REGISTRY rmas_state_t *rmas_state_table;
+REGISTRY int          *last_used_rmas;
 
 /************************************************
  * rmac2에서 사용할 semaphore

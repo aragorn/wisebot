@@ -1,12 +1,6 @@
 #include "mod_ifs.h"
 #include "mod_ifs_defrag.h"
-
-#ifndef WIN32
-#include "softbot.h"
 #include "mod_mp/mod_mp.h"
-#else
-#include "wisebot.h"
-#endif
 
 // 2개의 segment를 defrag 했더니 이만큼까지 segment가 늘어날 수 있다.
 #define MAX_PSEG_LIST 256
@@ -16,10 +10,8 @@ static int buffer_size = 0;
 
 /** module stuff **/
 int defrag_group_size = 5;
-#ifndef WIN32
 static int defrag_delay = 3600;
 static int indexdb_set = -1;
-#endif
 defrag_mode_t defrag_mode = DEFRAG_MODE_BUBBLE;
 
 #define OPTION (O_HASH_ROOT_DIR)
@@ -676,7 +668,6 @@ int ifs_defrag(ifs_t* ifs, scoreboard_t* scoreboard)
 	return SUCCESS;
 }
 
-#ifndef WIN32
 /***********************************************************************
                                module stuff
  ***********************************************************************/
@@ -727,7 +718,7 @@ static void _graceful_shutdown(int sig)
 
 static int child_main(slot_t *slot)
 {
-	ifs_t* ifs;
+	index_db_t* ifs;
 	int delay;
 	time_t before, after;
 	char* defrag_mode_string;
@@ -736,13 +727,7 @@ static int child_main(slot_t *slot)
 	else if ( defrag_mode == DEFRAG_MODE_COPY ) defrag_mode_string = "copy";
 	else defrag_mode_string = "unknown";
 
-	ifs = ifs_create();
-	if ( ifs == NULL ) {
-		error("ifs_create failed");
-		return -1;
-	}
-
-	if ( ifs_open( ifs, indexdb_set ) != SUCCESS ) {
+	if ( ifs_open( &ifs, indexdb_set ) != SUCCESS ) {
 		error("ifs_open failed.");
 		return -1;
 	}
@@ -753,7 +738,7 @@ static int child_main(slot_t *slot)
 		notice("defrag start...");
 		setproctitle("softbotd: ifs %s defrag start", defrag_mode_string);
 
-		ifs_defrag(ifs, scoreboard);
+		ifs_defrag((ifs_t*)ifs->db, scoreboard);
 		notice("defrag end.");
 		
 		delay = defrag_delay;
@@ -768,6 +753,8 @@ static int child_main(slot_t *slot)
 			delay -= ( after - before );
 		}
 	}
+
+	ifs_close( ifs );
 
 	return EXIT_SUCCESS;
 }
@@ -835,6 +822,4 @@ module ifs_defrag_module = {
 	scoreboard,              /* scoreboard */
 	NULL,                    /* register hook api */
 };
-
-#endif // WIN32
 

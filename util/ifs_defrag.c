@@ -34,9 +34,9 @@ static void show_usage(char* exec_name)
 {
 	struct option_help *h;
 
-	printf("----------------------------------------------------\n");
-	printf("usage: %s [options] [path]\n", exec_name);
-	printf("----------------------------------------------------\n");
+	printf("----------------------------------------------------------------------------\n");
+	printf(" usage: %s [options] [path]\n", exec_name);
+	printf("----------------------------------------------------------------------------\n");
 	printf(" path : ifs path. default is \"%s\"\n", DEFAULT_PATH);
 	for ( h = opts_help; h->long_opt; h++ ) {
 #ifdef HAVE_GETOPT_LONG
@@ -45,7 +45,7 @@ static void show_usage(char* exec_name)
 		printf(" %s:  %s\n", h->short_opt, h->desc);
 #endif
 	}
-	printf("----------------------------------------------------\n");
+	printf("----------------------------------------------------------------------------\n");
 }
 
 char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
@@ -54,14 +54,16 @@ module *static_modules;
 
 int main(int argc, char* argv[], char* envp[])
 {
-	ifs_t *ifs;
+	index_db_t* indexdb;
+	ifs_t* ifs;
 	int arg;
 	int exit_value = 0;
 	char* defrag_mode_str[] = { "BUBBLE", "COPY" };
 	int pause = 0, show_state = 0;
-  
-    init_set_proc_title(argc, argv, envp);
-    log_setlevelstr("debug");
+    ifs_set_t local_ifs_set[MAX_INDEXDB_SET];
+
+	init_set_proc_title(argc, argv, envp);
+	log_setlevelstr("debug");
 
 	opterr = 0;
 	while ( ( arg =
@@ -157,19 +159,24 @@ int main(int argc, char* argv[], char* envp[])
 		getchar();
 	}
 
-	ifs_init();
-	ifs = ifs_create();
-	if ( ifs == NULL ) {
-		warn("ifs_create failed");
-		free_ipcs();
-		return -1;
-	}
+	// make ifs_set
+	memset(local_ifs_set, 0x00, sizeof(local_ifs_set));
+	ifs_set = local_ifs_set;
+	ifs_set[0].set = 1;
+	ifs_set[0].set_ifs_path = 1;
+	strncpy( ifs_set[0].ifs_path, path, MAX_PATH_LEN-1 );
+	ifs_set[0].set_segment_size = 1;
+	ifs_set[0].segment_size = 0;
+	ifs_set[0].set_block_size = 1;
+	ifs_set[0].block_size = 0;
 
-	if ( _ifs_open(ifs, path, 0, 0) != SUCCESS ) {
+	ifs_init();
+	if ( ifs_open(&indexdb, 0) != SUCCESS ) {
 		error("ifs_open failed");
 		exit_value = -1;
 		goto end;
 	}
+	ifs = (ifs_t*) indexdb->db;
 
 	table_print( &ifs->shared->mapping_table );
 
@@ -179,8 +186,7 @@ int main(int argc, char* argv[], char* envp[])
 	}
 
 end:
-	ifs_close(ifs);
-	ifs_destroy(ifs);
+	ifs_close(indexdb);
 	free_ipcs();
 
 	return exit_value; 

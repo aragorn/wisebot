@@ -16,7 +16,6 @@ typedef struct {
 	int lastBlockUsedBytes;
 } VariableBuffer;
 
-SB_DECLARE_HOOK(int,buffer_initmodule,(void))
 SB_DECLARE_HOOK(int,buffer_initbuf,(VariableBuffer *pVarBuf))
 SB_DECLARE_HOOK(void,buffer_freebuf,(VariableBuffer *pVarBuf))
 SB_DECLARE_HOOK(int,buffer_getsize,(VariableBuffer *pVarBuf))

@@ -7,7 +7,6 @@
 #include "softbot.h"
 #include "mod_api/vbm.h"
 #include "mod_api/cdm.h"
-#include "mod_api/did_client.h"
 
 /* followings are definitions that's 
  * shared by mod_cdm, mod_cdmclt

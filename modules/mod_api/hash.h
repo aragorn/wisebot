@@ -4,7 +4,14 @@
 // _HASH_H_ 는 platform/unix/hash.h 에서 이미 쓰고 있다.
 // hash_t 도 마찬가지다.
 
-#include "softbot.h"
+#include "hook.h"
+
+#define MAX_HASH_SET (10)
+
+typedef struct _api_hash_t {
+	int set;
+	void* db;
+} api_hash_t;
 
 typedef struct _hash_data_t {
 	void *data;
@@ -20,12 +27,10 @@ typedef struct _hash_data_t {
 #define HASH_KEY_NOTEXISTS (-22)
 #define HASH_BUFFER_SMALL (-23)
 
-SB_DECLARE_HOOK(int, hash_create, (void** hash))
-SB_DECLARE_HOOK(int, hash_destroy, (void* hash))
 // opt는 config의 option set을 가리킨다 (wiki 참고하자)
-SB_DECLARE_HOOK(int, hash_open, (void* hash, int opt))
-SB_DECLARE_HOOK(int, hash_sync, (void* hash))
-SB_DECLARE_HOOK(int, hash_close, (void* hash))
+SB_DECLARE_HOOK(int, hash_open, (api_hash_t** hash, int opt))
+SB_DECLARE_HOOK(int, hash_sync, (api_hash_t* hash))
+SB_DECLARE_HOOK(int, hash_close, (api_hash_t* hash))
 
 /***********************************************************
  * hash_put
@@ -41,7 +46,7 @@ SB_DECLARE_HOOK(int, hash_close, (void* hash))
  ***********************************************************/
 #define HASH_OVERWRITE (1)
 SB_DECLARE_HOOK(int, hash_put,
-		(void* hash, hash_data_t* key, hash_data_t* value, int opt, hash_data_t* old_value))
+		(api_hash_t* hash, hash_data_t* key, hash_data_t* value, int opt, hash_data_t* old_value))
 
 /***********************************************************
  * hash_get
@@ -50,9 +55,9 @@ SB_DECLARE_HOOK(int, hash_put,
  *  SUCCESS, FAIL, HASH_KEY_NOTEXISTS
  *  SUCCESS가 아닌경우 value.size == 0 이 된다.
  ***********************************************************/
-SB_DECLARE_HOOK(int, hash_get, (void* hash, hash_data_t* key, hash_data_t* value))
+SB_DECLARE_HOOK(int, hash_get, (api_hash_t* hash, hash_data_t* key, hash_data_t* value))
 
-SB_DECLARE_HOOK(int, hash_count, (void* hash, int* count))
+SB_DECLARE_HOOK(int, hash_count, (api_hash_t* hash, int* count))
 
 #endif
 

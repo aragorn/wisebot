@@ -40,7 +40,7 @@ typedef struct _QueryNode{
 } QueryNode;
 
 SB_DECLARE_HOOK(int,preprocess,\
-		(char infix[],int max_infix_size,QueryNode postfix[], int max_postfix_size))
+		(void* word_db, char infix[],int max_infix_size,QueryNode postfix[], int max_postfix_size))
 SB_DECLARE_HOOK(int,print_querynode,\
 		(FILE *fp, QueryNode aPostfixQuery[], int numNode))
 SB_DECLARE_HOOK(int,buffer_querynode,\

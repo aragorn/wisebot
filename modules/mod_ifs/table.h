@@ -2,11 +2,7 @@
 #ifndef __TABLE_H__
 #define __TABLE_H__
 
-#ifndef WIN32
 #include "softbot.h"
-#else
-#include "../mod_sfs/wisebot.h"
-#endif
 
 /*************************************************************
  * logical table : EMPTY, NOT_USE, or physical segment number
@@ -30,11 +26,7 @@
 typedef struct {
     uint32_t sector    : SECTOR_MAX_BIT;
     uint32_t segment   : SEGMENT_MAX_BIT;
-#ifdef WIN32
-} segment_info_t;
-#else
 } __attribute__((packed)) segment_info_t;
-#endif
 
 typedef struct {
 	int segment[MAX_SEGMENT_COUNT];

@@ -7,52 +7,69 @@
  */
 #include "mod_lexicon.h"
 #include "lexicon_index.h"
-#include "truncation.h"
 
-word_db_t gWordDB;	/* lexicon database instance */
-static int  lexicon_lock = -1;
-static int  lock_ref_count = 0;
-static char mLexiconDataPath[MAX_FILE_LEN] = "dat/lexicon/lexicon";
-static int  m_lexicon_truncation_support   = TRUNCATION_NO; 
+typedef struct _word_db_set_t {
+	int set;
+
+	int set_lexicon_file;
+	char lexicon_file[MAX_PATH_LEN];
+
+	int set_lock_id;
+	int lock_id;
+} word_db_set_t;
+
+static word_db_set_t* word_db_set = NULL;
+static int current_word_db_set = -1;
+
 char type_string[3][10]={"error","FIXED","VARIABLE"}; 
 
-static int init_word_db(word_db_t *word_db);
-static int load_block(word_db_t *word_db, int flag, int type, int block_idx);
-static int alloc_word_db(word_db_t *word_db, int *mmap_attr);
-static int open_word_db(word_db_t *word_db, char *path, int flag);
-static int close_word_db(word_db_t *word_db);
+static int init_word_db(lexicon_t *word_db);
+static int load_block(lexicon_t *word_db, int flag, int type, int block_idx);
+static int alloc_word_db(lexicon_t *word_db, int *mmap_attr);
 
-static int get_new_wordid(word_db_t *word_db, word_t *word, uint32_t did);
+static int open_word_db(word_db_t** word_db, int opt);
+static int close_word_db(word_db_t *word_db);
+static int get_new_wordid(word_db_t *word_db, word_t *word);
 static int get_wordid(word_db_t *word_db, word_t *word );
 int get_word_by_wordid(word_db_t *word_db, word_t *word);
 
 #define ACQUIRE_LOCK() \
-	if ( lock_ref_count == 0 && acquire_lock( lexicon_lock ) != SUCCESS ) return FAIL; \
-	else lock_ref_count++;
+	if ( db->lock_ref_count == 0 && acquire_lock( db->lock_id ) != SUCCESS ) return FAIL; \
+	else db->lock_ref_count++;
 #define RELEASE_LOCK() \
-	if ( lock_ref_count <= 0 ) warn( "invalid lock_ref_count[%d]", lock_ref_count ); \
-	else if ( lock_ref_count == 1 && release_lock( lexicon_lock ) != SUCCESS ) return FAIL; \
-	else lock_ref_count--;
+	if ( db->lock_ref_count <= 0 ) warn( "invalid lock_ref_count[%d]", db->lock_ref_count ); \
+	else if ( db->lock_ref_count == 1 && release_lock( db->lock_id ) != SUCCESS ) return FAIL; \
+	else db->lock_ref_count--;
 
 
 /***********************************************************************/
 
 static int init() {
 	ipc_t lock;
-	int ret;
+	int i, ret;
 
-	// 이거는 왜 리턴값 검사 안하냐?
-	sb_run_open_word_db(&gWordDB, mLexiconDataPath, O_RDWR|O_CREAT);
+	if ( word_db_set == NULL ) return SUCCESS;
 
 	lock.type = IPC_TYPE_SEM;
 	lock.pid  = SYS5_LEXICON;
-	/* lock.pathname should not be a directory, but a normal file. */
-	lock.pathname = mLexiconDataPath;
 
-	ret = get_sem(&lock);
-	if ( ret != SUCCESS ) return FAIL;
+	for ( i =0; i < MAX_WORD_DB_SET; i++ ) {
+		if ( !word_db_set[i].set ) continue;
 
-	lexicon_lock = lock.id;
+		if ( !word_db_set[i].set_lexicon_file ) {
+			warn("LexiconFile [WordDbSet:%d] is not set", i);
+			continue;
+		}
+
+		/* lock.pathname should not be a directory, but a normal file. */
+		lock.pathname = word_db_set[i].lexicon_file;
+
+		ret = get_sem(&lock);
+		if ( ret != SUCCESS ) return FAIL;
+
+		word_db_set[i].lock_id = lock.id;
+		word_db_set[i].set_lock_id = 1;
+	}
 
 	return SUCCESS;
 }
@@ -61,13 +78,13 @@ static int init() {
  * lexicon database functions (sync & load )
  * ########################################################################## */
 
-static int get_block_path(char *dest, word_db_t *word_db, int type, int block_idx)
+static int get_block_path(char *dest, lexicon_t *word_db, int type, int block_idx)
 {
 	return sprintf(dest, "%s.%c%03d",
 				word_db->path, (type == BLOCK_TYPE_FIXED) ? 'f' : 'v', block_idx);
 }
 
-static int load_block(word_db_t *word_db, int flag, int type, int block_idx)
+static int load_block(lexicon_t *word_db, int flag, int type, int block_idx)
 {
 	ipc_t mmap;
 	char block_path[MAX_PATH_LEN];
@@ -114,7 +131,7 @@ static int load_block(word_db_t *word_db, int flag, int type, int block_idx)
 	return SUCCESS;
 }
 
-static int unload_block(word_db_t *word_db, int type, int block_idx)
+static int unload_block(lexicon_t *word_db, int type, int block_idx)
 {
 	int ret;
 	char block_path[MAX_PATH_LEN];
@@ -137,7 +154,7 @@ static int unload_block(word_db_t *word_db, int type, int block_idx)
 	return ret;
 }
 
-static int save_block(word_db_t *word_db, int type, int block_idx)
+static int save_block(lexicon_t *word_db, int type, int block_idx)
 {
 	char block_path[MAX_PATH_LEN];
 	word_block_t *block;
@@ -150,7 +167,8 @@ static int save_block(word_db_t *word_db, int type, int block_idx)
 		 block = word_db->fixed_block[block_idx];
 	else block = word_db->variable_block[block_idx];
 
-	if ( sync_mmap( block, sizeof(word_block_t) ) != SUCCESS ) {
+	// block == NULL 일 수 있다... 그냥 넘어갈까.. 아차피 mmap...
+	if ( block && sync_mmap( block, sizeof(word_block_t) ) != SUCCESS ) {
 		error("error while writing block[%s, %d]: %s",
 				block_path, block_idx, strerror(errno));
 		return FAIL;
@@ -166,7 +184,7 @@ static int save_block(word_db_t *word_db, int type, int block_idx)
  * lexicon database functions (alloc)
  * ########################################################################## */
 
-static int init_word_db(word_db_t *word_db)
+static int init_word_db(lexicon_t *word_db)
 {
 	int r;
 
@@ -182,13 +200,13 @@ static int init_word_db(word_db_t *word_db)
 	return SUCCESS;
 }
 
-static int alloc_word_db(word_db_t *word_db, int *mmap_attr)
+static int alloc_word_db(lexicon_t *word_db, int *mmap_attr)
 {
 	ipc_t mmap;
 
 	mmap.type		= IPC_TYPE_MMAP;
 	mmap.pathname	= word_db->path;
-	mmap.size		= sizeof(word_db_shared_t);
+	mmap.size		= sizeof(lexicon_shared_t);
 
 
 	if ( alloc_mmap(&mmap, 0) != SUCCESS ) {
@@ -204,11 +222,11 @@ static int alloc_word_db(word_db_t *word_db, int *mmap_attr)
 	return SUCCESS;
 }
 
-static int free_word_db(word_db_t *word_db)
+static int free_word_db(lexicon_t *word_db)
 {
 	int ret;
 
-	ret = free_mmap(word_db->shared, sizeof(word_db_shared_t));
+	ret = free_mmap(word_db->shared, sizeof(lexicon_shared_t));
 	if ( ret == SUCCESS ) word_db->shared = NULL;
 
 	return ret;
@@ -274,7 +292,7 @@ int variable_block_set_string(char string[], internal_word_t *internal_word)
 }
 */
 
-int block_write(word_db_t *word_db, word_offset_t *word_offset, int type,
+int block_write(lexicon_t *word_db, word_offset_t *word_offset, int type,
 						void *data, int size)
 {
 	word_block_t *block;
@@ -299,7 +317,7 @@ int block_write(word_db_t *word_db, word_offset_t *word_offset, int type,
 	return size;
 }
 
-int new_vb_offset(word_db_t *word_db, word_offset_t *word_offset)
+int new_vb_offset(lexicon_t *word_db, word_offset_t *word_offset)
 {
 	int r;
 	int block_idx, offset;
@@ -311,7 +329,7 @@ int new_vb_offset(word_db_t *word_db, word_offset_t *word_offset)
 	}
 	offset = word_db->variable_block[block_idx]->used_bytes;
 
-	if (offset + MAX_WORD_LENGTH >= BLOCK_DATA_SIZE - 1) {
+	if (offset + MAX_WORD_LEN >= BLOCK_DATA_SIZE - 1) {
 		offset = 0;
 		r = load_block(word_db, O_WRONLY|O_CREAT, BLOCK_TYPE_VARIABLE, block_idx+1);
 		if ( r != SUCCESS ) return FAIL;
@@ -327,7 +345,7 @@ int new_vb_offset(word_db_t *word_db, word_offset_t *word_offset)
 	return SUCCESS;
 }
 
-static int new_fb_offset(word_db_t *word_db, uint32_t wordid , word_offset_t *word_offset)
+static int new_fb_offset(lexicon_t *word_db, uint32_t wordid , word_offset_t *word_offset)
 {
 	int r;
 	int block_idx, offset;
@@ -350,7 +368,7 @@ static int new_fb_offset(word_db_t *word_db, uint32_t wordid , word_offset_t *wo
 	return SUCCESS;
 }
 
-void *offset2ptr(word_db_t *word_db, word_offset_t *word_offset, int type)
+void *offset2ptr(lexicon_t *word_db, word_offset_t *word_offset, int type)
 {
 	int r;
 	word_block_t *block;
@@ -394,7 +412,7 @@ void *offset2ptr(word_db_t *word_db, word_offset_t *word_offset, int type)
 	return (void *)(((char *)(block->data)) + word_offset->offset);
 }
 
-static internal_word_t *get_internal_word_ptr_in_fb(word_db_t *word_db, uint32_t wordid)
+static internal_word_t *get_internal_word_ptr_in_fb(lexicon_t *word_db, uint32_t wordid)
 {
 	word_offset_t word_offset;
 	internal_word_t *internal_word;
@@ -414,7 +432,7 @@ static internal_word_t *get_internal_word_ptr_in_fb(word_db_t *word_db, uint32_t
 }
 
 
-int increase_block_offset(word_db_t *word_db, int len, int type)
+int increase_block_offset(lexicon_t *word_db, int len, int type)
 {
 	int block_idx, ret;
 	word_block_t *block;
@@ -449,19 +467,19 @@ int increase_block_offset(word_db_t *word_db, int len, int type)
 }
 
 
-static int check_db_not_full(word_db_t *word_db)
+static int check_db_not_full(lexicon_t *word_db)
 {
 	/* check if fixed/variable blocks are full */
 	/* sizeof(internal_word_t) * [3] : just for a little room */
 	if ( word_db->shared->alloc_fixed_block_num == MAX_BLOCK_NUM
 			&& word_db->fixed_block[MAX_BLOCK_NUM-1]->used_bytes
 					> BLOCK_DATA_SIZE - sizeof(internal_word_t)*3 )
-		return WORD_ID_OVERFLOW;
+		return FAIL;
 	
 	if ( word_db->shared->alloc_variable_block_num == MAX_BLOCK_NUM
 			&& word_db->variable_block[MAX_BLOCK_NUM-1]->used_bytes
-					> BLOCK_DATA_SIZE - MAX_WORD_LENGTH*3 )
-		return WORD_ID_OVERFLOW;
+					> BLOCK_DATA_SIZE - MAX_WORD_LEN*3 )
+		return FAIL;
 
 	return SUCCESS;
 }
@@ -472,42 +490,73 @@ static int check_db_not_full(word_db_t *word_db)
  * api functions
  * ########################################################################## */
 
-static word_db_t* get_global_word_db()
+static int open_word_db(word_db_t** word_db, int opt)
 {
-	return &gWordDB;
-}
-
-static int open_word_db(word_db_t *word_db, char *path, int flag)
-{
+	lexicon_t* db = NULL;
 	int i, r;
 	int mmap_attr;
-	
-	memset(word_db, 0x00, sizeof(word_db_t));
-		
-	strncpy(word_db->path, path, MAX_PATH_LEN-1);
-	if ( alloc_word_db(word_db, &mmap_attr) != SUCCESS ) return FAIL;
 
-/* TODO magic number check */
+	if ( word_db_set == NULL ) {
+		warn("word_db_set is NULL. you must set WordDbSet in config file");
+		return DECLINE;
+	}
+
+    if ( opt >= MAX_WORD_DB_SET || opt < 0 ) {
+        error("opt[%d] is invalid. MAX_WORD_DB_SET[%d]", opt, MAX_WORD_DB_SET);
+        return FAIL;
+    }
+
+    if ( !word_db_set[opt].set ) {
+        warn("WordDbSet[opt:%d] is not defined", opt);
+        return DECLINE;
+    }
+
+	if ( !word_db_set[opt].set_lexicon_file ) {
+		error("LexiconFile is not set [WordDbSet:%d]. see config", opt);
+		return FAIL;
+	}
+
+	if ( !word_db_set[opt].set_lock_id ) {
+		error("invalid lock_id, maybe failed from init()");
+		return FAIL;
+	}
+
+	*word_db = (word_db_t*) sb_calloc(1, sizeof(word_db_t));
+    if ( *word_db == NULL ) {
+        error("sb_calloc failed: %s", strerror(errno));
+		goto error;
+    }
+
+    db = (lexicon_t*) sb_calloc(1, sizeof(lexicon_t));
+    if ( db == NULL ) {
+        error("sb_calloc failed: %s", strerror(errno));
+		goto error;
+    }
+	
+	strncpy(db->path, word_db_set[opt].lexicon_file, MAX_PATH_LEN-1);
+	if ( alloc_word_db(db, &mmap_attr) != SUCCESS ) goto error;
+
+	/* TODO magic number check */
 	if ( mmap_attr == MMAP_CREATED) {
-		r  = init_word_db(word_db);
+		r  = init_word_db(db);
 		if ( r != SUCCESS ) {
 			error("word_db init failed");
-			return FAIL;
+			goto error;
 		}
 	} 
 	else if(mmap_attr == MMAP_ATTACHED) {
 		INFO("word_db->shared exist attach wordid[%u], fixed_block_num[%d], variable_block_num[%d]",
-				word_db->shared->last_wordid, 
-				word_db->shared->alloc_fixed_block_num,
-				word_db->shared->alloc_variable_block_num);
+				db->shared->last_wordid, 
+				db->shared->alloc_fixed_block_num,
+				db->shared->alloc_variable_block_num);
 
-		for (i = 0; i < word_db->shared->alloc_fixed_block_num; i++) {
-			r = load_block(word_db, flag, BLOCK_TYPE_FIXED, i);
-			if ( r != SUCCESS ) return FAIL;
+		for (i = 0; i < db->shared->alloc_fixed_block_num; i++) {
+			r = load_block(db, (O_RDWR|O_CREAT), BLOCK_TYPE_FIXED, i);
+			if ( r != SUCCESS ) goto error;
 		}
-		for (i = 0; i < word_db->shared->alloc_variable_block_num; i++) {
-			r = load_block(word_db, flag, BLOCK_TYPE_VARIABLE, i);
-			if ( r != SUCCESS ) return FAIL;
+		for (i = 0; i < db->shared->alloc_variable_block_num; i++) {
+			r = load_block(db, (O_RDWR|O_CREAT), BLOCK_TYPE_VARIABLE, i);
+			if ( r != SUCCESS ) goto error;
 		}
 	} 
 	else {
@@ -516,191 +565,171 @@ static int open_word_db(word_db_t *word_db, char *path, int flag)
 	}
 
 	/* open word db index */
-	r = lexicon_index_open(word_db);
-	if (r != SUCCESS) return FAIL;
+	r = lexicon_index_open(db);
+	if (r != SUCCESS) goto error;
+
+	db->lock_id = word_db_set[opt].lock_id;
+	db->lock_ref_count = 0;
+
+	(*word_db)->set = opt;
+	(*word_db)->db = (void*) db;
 		
-	if (m_lexicon_truncation_support == TRUNCATION_YES) {
-		r = truncation_open(word_db);
-		if (r != SUCCESS) return FAIL;
-	}
-	
 	return SUCCESS;
+
+error:
+	if ( db ) {
+		if ( db->shared ) free_word_db( db );
+		sb_free( db );
+	}
+	if ( *word_db ) {
+		sb_free( *word_db );
+		*word_db = NULL;
+	}
+
+	return FAIL;
 }
 
 
-static int sync_word_db(word_db_t *word_db)
+static int sync_word_db(word_db_t* word_db)
 {
+	lexicon_t* db;
 	int i, r;
 
-	INFO("last wordid (%u)", word_db->shared->last_wordid);
+	if ( word_db_set == NULL || !word_db_set[word_db->set].set )
+		return DECLINE;
+	db = (lexicon_t*) word_db->db;
+
+	INFO("last wordid (%u)", db->shared->last_wordid);
 	DEBUG("alloc fixed block (%d) alloc variable block (%d)",
-		  word_db->shared->alloc_fixed_block_num, 
-		  word_db->shared->alloc_variable_block_num);
+		  db->shared->alloc_fixed_block_num, 
+		  db->shared->alloc_variable_block_num);
 
-	info("saving word db[%s]...", word_db->path);
+	info("saving word db[%s]...", db->path);
 
-	for (i = 0; i < word_db->shared->alloc_fixed_block_num; i++) {
-		r = save_block(word_db, BLOCK_TYPE_FIXED, i);
+	for (i = 0; i < db->shared->alloc_fixed_block_num; i++) {
+		r = save_block(db, BLOCK_TYPE_FIXED, i);
 		if ( r != SUCCESS ) return FAIL;
 	}
 
-	for (i = 0; i < word_db->shared->alloc_variable_block_num; i++) {
-		r = save_block(word_db, BLOCK_TYPE_VARIABLE, i);
+	for (i = 0; i < db->shared->alloc_variable_block_num; i++) {
+		r = save_block(db, BLOCK_TYPE_VARIABLE, i);
 		if ( r != SUCCESS ) return FAIL;
 	}
 
 	/* TODO magic number check */
-	if ( sync_mmap( word_db->shared, sizeof(word_db_shared_t) ) != SUCCESS ) {
-		error("cannot write word_db[%s], so create a new word db: %s",
-				word_db->path, strerror(errno));
+	if ( sync_mmap( db->shared, sizeof(lexicon_shared_t) ) != SUCCESS ) {
+		error("cannot write word db[%s], so create a new word db: %s",
+				db->path, strerror(errno));
 		return FAIL;
 	}
 	
-	r = lexicon_index_sync(word_db);
+	r = lexicon_index_sync(db);
 	if ( r != SUCCESS ) return FAIL; 
 
-	if (m_lexicon_truncation_support == TRUNCATION_YES) {
-		r = truncation_sync(word_db);
-		if (r != SUCCESS) return FAIL;
-	}
-	
-	info("word db[%s] saved", word_db->path);
+	info("word db[%s] saved", db->path);
 	return SUCCESS;
 }
 
-static int close_word_db(word_db_t *word_db)
+static int close_word_db(word_db_t* word_db)
 {	
+	lexicon_t* db;
 	int i, ret;
 
-	info("word db[%s] closing...", word_db->path);
+	if ( word_db_set == NULL || !word_db_set[word_db->set].set )
+		return DECLINE;
+	db = (lexicon_t*) word_db->db;
 
-	// sync word_db
+	info("word db[%s] closing...", db->path);
+
+	// sync db
 	if (sync_word_db( word_db ) != SUCCESS) return FAIL;
 
-	// close truncation database if needed
-	if (m_lexicon_truncation_support == TRUNCATION_YES) {
-		truncation_close(word_db);
-	}
-	
 	// lexicon index (dynamic hash , berkeley db ..) close
-	ret = lexicon_index_close(word_db);
+	ret = lexicon_index_close(db);
 	if ( ret != SUCCESS ) error("lexicon index close failed");
 
-	// free word_db
-	for (i = 0; i < word_db->shared->alloc_fixed_block_num; i++) {
-		unload_block(word_db, BLOCK_TYPE_FIXED, i);
+	// free db
+	for (i = 0; i < db->shared->alloc_fixed_block_num; i++) {
+		unload_block(db, BLOCK_TYPE_FIXED, i);
 	}
 
-	for (i = 0; i < word_db->shared->alloc_variable_block_num; i++) {
-		unload_block(word_db, BLOCK_TYPE_VARIABLE, i);
+	for (i = 0; i < db->shared->alloc_variable_block_num; i++) {
+		unload_block(db, BLOCK_TYPE_VARIABLE, i);
 	}
 
-	ret = free_word_db(word_db);
+	ret = free_word_db(db);
 
-	info("word db[%s] closed", word_db->path);
+	info("word db[%s] closed", db->path);
+
+	sb_free( word_db->db );
+	sb_free( word_db );
+
 	return ret;
 }
 
-static int get_new_wordid( word_db_t *word_db, word_t *word, uint32_t did )
+static int get_new_wordid( word_db_t* word_db, word_t *word )
 {
+	lexicon_t* db;
 	int len=0, r;
 	uint32_t wordid;
 	internal_word_t internal_word;
 	word_offset_t fb_offset;	
 	
+	if ( word_db_set == NULL || !word_db_set[word_db->set].set )
+		return DECLINE;
+	db = (lexicon_t*) word_db->db;
+
 	len = strlen(word->string);
-	if ( len <=0 )  return WORD_NOT_EXIST;
-	if ( len >= MAX_WORD_LENGTH ) {
-		warn("length of word[%s] exceeds MAX_WORD_LENGTH[%d]", 
-								word->string, MAX_WORD_LENGTH);
-		len = MAX_WORD_LENGTH-1;
+	if ( len <=0 )  return WORD_NOT_REGISTERED;
+	if ( len >= MAX_WORD_LEN ) {
+		warn("length of word[%s] exceeds MAX_WORD_LEN[%d]", 
+								word->string, MAX_WORD_LEN);
+		len = MAX_WORD_LEN-1;
 	}
 
 	word->string[len] = '\0';
 	//DEBUG("input word [%s]",word->string);	
 
-/*	internal_word.word_attr.id = word_db->shared->last_wordid + 1;*/
-/*	internal_word.word_attr.length = len;*/
 	ACQUIRE_LOCK();
-	wordid = word_db->shared->last_wordid + 1;
+	wordid = db->shared->last_wordid + 1;
 
 	// LEXICON INDEX PUT
-	r = lexicon_index_put( word_db, word->string, &wordid , 
+	r = lexicon_index_put( db, word->string, &wordid , 
 								&(internal_word.word_offset));
-	if (r == LEXICON_INDEX_EXIST_WORD) {
-		internal_word_t *word_ptr;
-
-		//DEBUG("hash key exist  [%s]'s id [%u]", word->string, wordid);
-		word_ptr = get_internal_word_ptr_in_fb(word_db, wordid);
-		if ( word_ptr == NULL ) {
-			RELEASE_LOCK();
-			return FAIL;
-		}
-
-		if (did > word_ptr->did) {
-			word_ptr->did = did;
-			word_ptr->word_attr.df++;
-		} else if (did < word_ptr->did) {
-			RELEASE_LOCK();
-			error("did decrease input did[%u] < last did[%u]; \
-				   maybe, data from Indexer is wrong.", did, word_ptr->did);
-			return FAIL;
-		}
-		
-		word->word_attr = word_ptr->word_attr;
+	if (r == WORD_OLD_REGISTERED) {
 		word->id = wordid;
 		RELEASE_LOCK();
 		return WORD_OLD_REGISTERED;
-		
-	} else if (r == LEXICON_INDEX_NEW_WORD) {
+	} else if (r == WORD_NEW_REGISTERED) {
 
-		if (check_db_not_full(word_db) != SUCCESS) {
+		if (check_db_not_full(db) != SUCCESS) {
 			RELEASE_LOCK();
 			return FAIL;
 		}
 		
-		word_db->shared->last_wordid++;
-		if (word_db->shared->last_wordid != wordid)
-				warn("word_db->shared->last_wordid[%u] != wordid[%u]",
-								word_db->shared->last_wordid, wordid);
+		db->shared->last_wordid++;
+		if (db->shared->last_wordid != wordid)
+			warn("word_db->shared->last_wordid[%u] != wordid[%u]",
+					db->shared->last_wordid, wordid);
 		
-		wordid = word_db->shared->last_wordid;
+		wordid = db->shared->last_wordid;
 		
-		// fill internal_word_attribute (id and length fill before put)
-		internal_word.did = did;
-		internal_word.word_attr.df = 1;
-
         /* write fixed block */
-        r = new_fb_offset(word_db,wordid, &fb_offset);
+        r = new_fb_offset(db,wordid, &fb_offset);
         if ( r != SUCCESS) {
 			RELEASE_LOCK();
 			return r;
 		}
 
-        r = block_write(word_db, &fb_offset, BLOCK_TYPE_FIXED,
+        r = block_write(db, &fb_offset, BLOCK_TYPE_FIXED,
                         &internal_word, sizeof(internal_word_t));
         if (r != sizeof(internal_word_t)) {
 			RELEASE_LOCK();
 			return r;
 		}
 
-//        r = increase_block_offset(word_db, sizeof(internal_word_t), BLOCK_TYPE_FIXED);
-//        if (r != SUCCESS) return r;
-
-		word->word_attr = internal_word.word_attr;
 		word->id = wordid;
 
-		if ( word->id <= 0 ) // XXX:obsolete
-		{
-				error("word id <= 0! %d",word->id);
-				RELEASE_LOCK();
-				abort();
-		}
-		
-		if (m_lexicon_truncation_support == TRUNCATION_YES) {
-			put_truncation_word( word_db, *word );
-		}
-		
 		RELEASE_LOCK();
 		return WORD_NEW_REGISTERED; 
 	} else {
@@ -711,80 +740,72 @@ static int get_new_wordid( word_db_t *word_db, word_t *word, uint32_t did )
 }
 
 
-static int get_wordid(word_db_t *word_db, word_t *word )
+static int get_wordid(word_db_t* word_db, word_t *word )
 {
+	lexicon_t* db;
 	int len=0, ret;
 	uint32_t wordid;
 	
+	if ( word_db_set == NULL || !word_db_set[word_db->set].set )
+		return DECLINE;
+	db = (lexicon_t*) word_db->db;
+
 	len = strlen(word->string);
-	if ( len <= 0 )  return WORD_NOT_EXIST;
-	if ( len >= MAX_WORD_LENGTH ) {
-		warn("length of word[%s] exceeds MAX_WORD_LENGTH[%d]", word->string, MAX_WORD_LENGTH);
-		len = MAX_WORD_LENGTH-1;
+	if ( len <= 0 )  return WORD_NOT_REGISTERED;
+	if ( len >= MAX_WORD_LEN ) {
+		warn("length of word[%s] exceeds MAX_WORD_LEN[%d]", word->string, MAX_WORD_LEN);
+		len = MAX_WORD_LEN-1;
 	}
 	word->string[len] = '\0';
 	//DEBUG("input word [%s]",word->string);	
 
 	ACQUIRE_LOCK();
-	ret = lexicon_index_get( word_db, word->string, &wordid );	
+	ret = lexicon_index_get( db, word->string, &wordid );	
+	RELEASE_LOCK();
 
 	debug("ret:%d\n", ret);
-	if (ret == LEXICON_INDEX_EXIST_WORD) {
-        	internal_word_t *word_ptr;
-        	//DEBUG("search success  [%s]'s id [%u]", word->string, wordid);
-       		word_ptr = get_internal_word_ptr_in_fb(word_db, wordid);
-        	if ( word_ptr == NULL ) {
-				RELEASE_LOCK();
-				return FAIL;
-			}
-       		memcpy(&(word->word_attr), &(word_ptr->word_attr), sizeof(word_attr_t));
-			RELEASE_LOCK();
-
-			word->id = wordid;
-        	return WORD_OLD_REGISTERED;
-	
-	} else if (ret == LEXICON_INDEX_NOT_EXIST_WORD) {
-		RELEASE_LOCK();
+	if (ret == WORD_OLD_REGISTERED) {
+		word->id = wordid;
+       	return WORD_OLD_REGISTERED;
+	} else if (ret == WORD_NOT_REGISTERED) {
 		word->id = 0;
 		return WORD_NOT_REGISTERED;
 	} else {
-		RELEASE_LOCK();
 		error("lexicon index get return %d",ret);
 		return FAIL;
 	}
 }
 
 // use this function at truncation api 
-int get_word_by_wordid(word_db_t *word_db, word_t *word )
+int get_word_by_wordid(word_db_t* word_db, word_t *word )
 {
+	lexicon_t* db;
 	internal_word_t *internal_word;
 	char *str;
 	
+	if ( word_db_set == NULL || !word_db_set[word_db->set].set )
+		return DECLINE;
+	db = (lexicon_t*) word_db->db;
+
 	// id check
-	if ( word->id <= 0 || word_db->shared->last_wordid < word->id ) {
+	if ( word->id <= 0 || db->shared->last_wordid < word->id ) {
 		warn("not proper wordid [%u]", word->id);
-		return WORD_ID_NOT_EXIST;	
+		return WORD_NOT_REGISTERED;
 	}
 
 	ACQUIRE_LOCK();
 	// get fixed data
-	internal_word = get_internal_word_ptr_in_fb(word_db, word->id);
+	internal_word = get_internal_word_ptr_in_fb(db, word->id);
 	if ( internal_word == NULL ) {
 		RELEASE_LOCK();
-		return WORD_FIXED_DB_FAIL;
+		return FAIL;
 	}
-	//DEBUG("word id[%d], df[%d], vb block[%d], offset[%d]",
-	//		word->id,
-	//		internal_word->word_attr.df,
-	//		internal_word->word_offset.block_idx,
-	//		internal_word->word_offset.offset);
-	memcpy(&(word->word_attr), &(internal_word->word_attr), sizeof(word_attr_t));
 
 	// get word string from variable block
-	str = offset2ptr(word_db, &(internal_word->word_offset), BLOCK_TYPE_VARIABLE);
+	str = offset2ptr(db, &(internal_word->word_offset), BLOCK_TYPE_VARIABLE);
 	if ( str == NULL ) {
 		RELEASE_LOCK();
-		return WORD_VARIABLE_DB_FAIL;
+		return FAIL;
 	}
 	//DEBUG("string [%s] len [%d]",str , strlen(str));
 	memcpy(&(word->string), str, strlen(str)+1);
@@ -794,59 +815,12 @@ int get_word_by_wordid(word_db_t *word_db, word_t *word )
 	return SUCCESS;
 }
 
-static int get_num_of_wordid(word_db_t *word_db, uint32_t *num_of_word )
+static int get_num_of_wordid(word_db_t* word_db, uint32_t *num_of_word )
 {
-	*num_of_word = word_db->shared->last_wordid;
-	return SUCCESS;
-}
+	if ( word_db_set == NULL || !word_db_set[word_db->set].set )
+		return DECLINE;
 
-
-static int get_right_truncation( word_db_t *word_db, char *word, 
-								 word_t ret_word[], int max_search_num)
-{
-	int ret;
-
-	if (m_lexicon_truncation_support == TRUNCATION_NO) {
-		warn("truncation search not support");
-		return 0; 
-	}
-
-	ACQUIRE_LOCK();
-	ret = truncation_search(word_db, word, ret_word, 
-							  max_search_num, TYPE_RIGHT_TRUNCATION);	
-	RELEASE_LOCK();
-
-	return ret;
-}
-
-static int get_left_truncation( word_db_t *word_db, char *word, 
-								word_t ret_word[], int max_search_num)
-{
-	int ret;
-
-	if (m_lexicon_truncation_support == TRUNCATION_NO) {
-		return 0;
-		warn("truncation search not support");
-	}
-
-	ACQUIRE_LOCK();
-	ret = truncation_search(word_db, word, ret_word, 
-							 max_search_num, TYPE_LEFT_TRUNCATION);	
-	RELEASE_LOCK();
-
-	return ret;
-}
-
-
-static int print_hash_bucket(word_db_t *word_db, int bucket_idx)
-{
-	print_bucket((hash_t *)word_db->hash, bucket_idx);
-	return SUCCESS;
-}
-
-static int print_hash_status(word_db_t *word_db)
-{
-	print_hashstatus((hash_t*)word_db->hash);
+	*num_of_word = ((lexicon_t*) word_db)->shared->last_wordid;
 	return SUCCESS;
 }
 
@@ -855,62 +829,54 @@ static int print_hash_status(word_db_t *word_db)
  * frame & configuration stuff here
  * ########################################################################## */
 
-static void get_lexicon_data_path(configValue v)
+static void get_word_db_set(configValue v)
 {
-	strncpy(mLexiconDataPath,v.argument[0],MAX_FILE_LEN);
-	mLexiconDataPath[MAX_FILE_LEN-1] = '\0';
+	static word_db_set_t local_word_db_set[MAX_WORD_DB_SET];
+	int value = atoi( v.argument[0] );
+
+	if ( value < 0 || value >= MAX_WORD_DB_SET ) {
+		error("Invalid WordDbSet value[%s], MAX_WORD_DB_SET[%d]",
+				v.argument[0], MAX_WORD_DB_SET);
+		return;
+	}
+
+	if ( word_db_set == NULL ) {
+		memset( local_word_db_set, 0, sizeof(local_word_db_set) );
+		word_db_set = local_word_db_set;
+	}
+
+	current_word_db_set = value;
+	word_db_set[value].set = 1;
 }
 
-static void get_lexicon_truncation_support(configValue v)
+static void get_lexicon_file(configValue v)
 {
-	INFO("call this function!");
-	if (strncmp("YES", v.argument[0], 3) == 0) {
-		m_lexicon_truncation_support = TRUNCATION_YES; 
-	} 
-	else if (strncmp("NO", v.argument[0], 2) == 0) {
-		m_lexicon_truncation_support = TRUNCATION_NO;
+	if ( word_db_set == NULL || current_word_db_set < 0 ) {
+		error("first, set WordDbSet");
+		return;
 	}
-	else {
-		m_lexicon_truncation_support = TRUNCATION_NO;
-		error("config value [%s] must YES/NO", v.argument[0]);
-	}
-}
 
+	strncpy( word_db_set[current_word_db_set].lexicon_file, v.argument[0], MAX_PATH_LEN );
+	word_db_set[current_word_db_set].set_lexicon_file = 1;
+}
 
 static config_t config[] = {
-	CONFIG_GET("LexiconData",get_lexicon_data_path,1,\
-				"path of lexicon database file. ex) dat/lexicon/lexicon"),
-	CONFIG_GET("TRUNCATION", get_lexicon_truncation_support,1,\
-				"YES/NO truncation search support"),
+	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDbSet {number}"),
+	CONFIG_GET("LexiconFile",get_lexicon_file,1,\
+				"file name of mmap file. ex) LexiconFile dat/lexicon/lexicon"),
 	{NULL}
 };
 
 static void register_hooks(void)
 {
-	sb_hook_get_global_word_db  (get_global_word_db,NULL, NULL, HOOK_MIDDLE);
 	sb_hook_open_word_db		(open_word_db,		NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sync_word_db		(sync_word_db 	   ,NULL, NULL, HOOK_MIDDLE);
 	sb_hook_close_word_db		(close_word_db,		NULL, NULL, HOOK_MIDDLE);
 
-	sb_hook_get_new_word 		(get_new_wordid, 	NULL, NULL, HOOK_MIDDLE);
+	sb_hook_get_new_wordid 		(get_new_wordid, 	NULL, NULL, HOOK_MIDDLE);
 	sb_hook_get_word 			(get_wordid, 		NULL, NULL, HOOK_MIDDLE);
 	sb_hook_get_word_by_wordid 	(get_word_by_wordid,NULL, NULL, HOOK_MIDDLE);
 	sb_hook_get_num_of_word		(get_num_of_wordid ,NULL, NULL, HOOK_MIDDLE);
-
-	sb_hook_get_right_truncation_words (get_right_truncation,NULL, NULL, HOOK_MIDDLE);
-	sb_hook_get_left_truncation_words (get_left_truncation,NULL, NULL, HOOK_MIDDLE);
-
-	
-	sb_hook_print_hash_bucket	(print_hash_bucket ,NULL, NULL, HOOK_MIDDLE);
-	sb_hook_print_hash_status	(print_hash_status ,NULL, NULL, HOOK_MIDDLE);
-	sb_hook_print_truncation_bucket	(print_truncation_bucket ,NULL, NULL, HOOK_MIDDLE);
-
-//	sb_hook_clear_wordids 		(clean_lexicon	   ,NULL, NULL, HOOK_MIDDLE);
-//	sb_hook_destroy_shared_memory(destroy_lexicon  ,NULL, NULL, HOOK_MIDDLE); 
-//	sb_hook_print_hash_bucket   (print_hash_bucket ,NULL, NULL, HOOK_MIDDLE);
-/*	sb_hook_synchronize_wordids (synchronize_wordids,NULL, NULL, HOOK_MIDDLE);*/
-/*	sb_hook_synchronize_wordids (sync_word_db 	   ,NULL, NULL, HOOK_MIDDLE);*/
-/*	sb_hook_synchronize_wordids (sync_lexicon_index,NULL, NULL, HOOK_MIDDLE);*/
 }
 
 module lexicon_module=

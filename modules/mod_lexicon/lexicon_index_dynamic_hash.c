@@ -28,7 +28,7 @@ static void hash_func(hash_t *hash, void *key, uint8_t *hashkey) {
     char *str;
     MD5_CTX context;
     unsigned char digest[16];
-    word_db_t *word_db = (word_db_t *)(hash->parent);
+    lexicon_t *word_db = (lexicon_t *)(hash->parent);
 
     str = offset2ptr(word_db, (word_offset_t *)key, BLOCK_TYPE_VARIABLE);
     len = strlen(str);
@@ -52,7 +52,7 @@ static int hash_keycmp_func(hash_t *hash, void *key1, void *key2)
 {
     int n;
     char *str1, *str2;
-    word_db_t *word_db = (word_db_t *)(hash->parent);
+    lexicon_t *word_db = (lexicon_t *)(hash->parent);
 
     if (key1 == NULL && key2 == NULL) {
         warn("key1 == key2 == NULL");
@@ -127,7 +127,7 @@ static int alloc_word_db_hash(hash_t *hash, int *mmap_attr)
 {
     ipc_t mmap;
     char hash_path[MAX_PATH_LEN];
-    word_db_t *word_db = (word_db_t *)hash->parent;
+    lexicon_t *word_db = (lexicon_t *)hash->parent;
 
     /* allocate memory for hash index data  */
     sprintf(hash_path, "%s.hash", word_db->path);
@@ -168,7 +168,7 @@ static int free_word_db_hash(hash_t *hash)
  * lexicon index api
  * ***********************************************************************/
 
-int lexicon_index_open( word_db_t *word_db )
+int lexicon_index_open( lexicon_t *word_db )
 {
     hash_t *hash;
     char hash_path[MAX_PATH_LEN];
@@ -213,11 +213,11 @@ int lexicon_index_open( word_db_t *word_db )
 		return FAIL;
 	}
 
-    DEBUG("hash->parent->shared [%d]", (int)(((word_db_t *)(hash->parent))->shared));
+    DEBUG("hash->parent->shared [%d]", (int)(((lexicon_t *)(hash->parent))->shared));
 	return SUCCESS;
 }
 
-int lexicon_index_sync  ( word_db_t *word_db )
+int lexicon_index_sync  ( lexicon_t *word_db )
 {
     char hash_path[MAX_PATH_LEN];
     int ret;
@@ -237,7 +237,7 @@ int lexicon_index_sync  ( word_db_t *word_db )
 	return SUCCESS;
 }
 
-int lexicon_index_close ( word_db_t *word_db )
+int lexicon_index_close ( lexicon_t *word_db )
 {
 	int ret;
 
@@ -260,7 +260,7 @@ int lexicon_index_close ( word_db_t *word_db )
 	return ret;
 }
 
-int lexicon_index_put   ( word_db_t *word_db, char* string, uint32_t* wordid, word_offset_t *offset)
+int lexicon_index_put   ( lexicon_t *word_db, char* string, uint32_t* wordid, word_offset_t *offset)
 {
 	int len, ret;
 
@@ -280,16 +280,16 @@ int lexicon_index_put   ( word_db_t *word_db, char* string, uint32_t* wordid, wo
 	case SUCCESS:  /* if hash add success. increase variable block offset*/
 		ret = increase_block_offset(word_db, len+1, BLOCK_TYPE_VARIABLE);
 		if (ret != SUCCESS) return ret;
-		return LEXICON_INDEX_NEW_WORD;	
+		return WORD_NEW_REGISTERED;	
 	case HASH_COLLISION:
-		return LEXICON_INDEX_EXIST_WORD;
+		return WORD_OLD_REGISTERED;
 	default:
 		error("hash add return [%d]",ret);
 		return FAIL;
 	}
 }
 
-int lexicon_index_get   ( word_db_t *word_db, char* string, uint32_t* wordid)
+int lexicon_index_get   ( lexicon_t *word_db, char* string, uint32_t* wordid)
 {
 	int len, ret;
 	word_offset_t offset;
@@ -304,13 +304,13 @@ printf("1ret:%d\n", ret);
 printf("2ret:%d\n", ret);	
 	if (hash_search(word_db->hash, &(offset), (uint8_t*)(wordid)) == SUCCESS) {
 		CRIT("search wordid %u", *wordid);
-		return LEXICON_INDEX_EXIST_WORD;
+		return WORD_OLD_REGISTERED;
 	}else{
-		return LEXICON_INDEX_NOT_EXIST_WORD;	
+		return WORD_NOT_REGISTERED;	
 	}
 }
 
-int lexicon_index_del   ( word_db_t *word_db, char* string)
+int lexicon_index_del   ( lexicon_t *word_db, char* string)
 {
 	warn("lexicon index del need fill");
 	return SUCCESS;

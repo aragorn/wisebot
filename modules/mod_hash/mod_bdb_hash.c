@@ -1,5 +1,5 @@
 #include "mod_api/hash.h"
-#include <db.h>
+#include "db/db.h"
 #include <errno.h>
 
 /*************************************************************
@@ -7,35 +7,34 @@
  *************************************************************/
 
 typedef struct _bdb_hash_t {
-	int opened; // open이후 ~ close이전 1. 아니면 0
 	DB_ENV* dbenvp;
 	DB* dbp;
 	DBTYPE type;
 } bdb_hash_t;
 
 typedef struct _bdb_hash_set_t {
-	int set;
+	int set; // 1 or 0
 
 	int set_path;
 	char path[MAX_PATH_LEN];
 
 	int set_filename;
 	char filename[MAX_PATH_LEN];
+
+	int set_cache_size;
+	uint32_t cache_size;
 } bdb_hash_set_t;
 
-#define MAX_HASH_SET (10)
-bdb_hash_set_t* hash_set = NULL;
-int current_hash_set = -1;
+static bdb_hash_set_t* hash_set = NULL;
+static int current_hash_set = -1;
 
-static int bdb_hash_create(void** hash);
-static int bdb_hash_destroy(void* hash);
-static int bdb_hash_open(void* hash, int opt);
-static int bdb_hash_sync(void* hash);
-static int bdb_hash_close(void* hash);
-static int bdb_hash_put(void* hash, hash_data_t* key, hash_data_t* value,
+static int bdb_hash_open(api_hash_t** hash, int opt);
+static int bdb_hash_sync(api_hash_t* hash);
+static int bdb_hash_close(api_hash_t* hash);
+static int bdb_hash_put(api_hash_t* hash, hash_data_t* key, hash_data_t* value,
 		int opt, hash_data_t* old_value);
-static int bdb_hash_get(void* hash, hash_data_t* key, hash_data_t* value);
-static int bdb_hash_count(void* hash, int* count);
+static int bdb_hash_get(api_hash_t* hash, hash_data_t* key, hash_data_t* value);
+static int bdb_hash_count(api_hash_t* hash, int* count);
 
 static int bdb_hash_init()
 {
@@ -49,40 +48,16 @@ static int bdb_hash_init()
 	return SUCCESS;
 }
 
-static int bdb_hash_create(void** hash)
-{
-	bdb_hash_t* bdb_hash = sb_malloc( sizeof(bdb_hash_t) );
-
-	*hash = NULL;
-
-	if ( bdb_hash == NULL ) {
-		error("hash create (malloc) failed: %s", strerror(errno));
-		return FAIL;
-	}
-	*hash = (void*) bdb_hash;
-	return SUCCESS;
-}
-
-static int bdb_hash_destroy(void* hash)
-{
-	bdb_hash_t* bdb_hash = (bdb_hash_t*) hash;
-
-	if ( bdb_hash->opened ) bdb_hash_close( hash );
-	sb_free( bdb_hash );
-
-	return SUCCESS;
-}
-
-static int bdb_hash_open(void* hash, int opt)
+static int bdb_hash_open(api_hash_t** hash, int opt)
 {
 	int ret;
-	bdb_hash_t* bdb_hash = (bdb_hash_t*) hash;
+	bdb_hash_t* bdb_hash = NULL;
 	char abs_path[MAX_PATH_LEN], abs_file[MAX_PATH_LEN];
 	char* path, *filename;
 
 	if ( hash_set == NULL ) {
-		error("hash_set is NULL. you must set HashSet in config file");
-		return FAIL;
+		warn("hash_set is NULL. you must set HashSet in config file");
+		return DECLINE;
 	}
 
 	if ( opt >= MAX_HASH_SET || opt < 0 ) {
@@ -92,7 +67,7 @@ static int bdb_hash_open(void* hash, int opt)
 
 	if ( !hash_set[opt].set ) {
 		error("HashSet[opt:%d] is not defined", opt);
-		return FAIL;
+		return DECLINE;
 	}
 
 	if ( !hash_set[opt].set_path ) {
@@ -105,11 +80,20 @@ static int bdb_hash_open(void* hash, int opt)
 		return FAIL;
 	}
 
+	*hash = (api_hash_t*) sb_malloc( sizeof(api_hash_t) );
+	if ( *hash == NULL ) {
+		error("api_hash create (malloc) failed: %s", strerror(errno));
+		goto fail;
+	}
+
+	bdb_hash = (bdb_hash_t*) sb_malloc( sizeof(bdb_hash_t) );
+	if ( bdb_hash == NULL ) {
+		error("hash create (malloc) failed: %s", strerror(errno));
+		goto fail;
+	}
+
 	path = hash_set[opt].path;
 	filename = hash_set[opt].filename;
-
-	if ( bdb_hash->opened )
-		warn("already opened? - dbenvp[%p], dbp[%p]", bdb_hash->dbenvp, bdb_hash->dbp);
 
 	// 절대경로 만들어내기
 	if ( path[0] == '/' ) strncpy( abs_path, path, sizeof(abs_path) );
@@ -136,6 +120,17 @@ static int bdb_hash_open(void* hash, int opt)
 		goto fail;
 	}
 
+	if ( hash_set[opt].set_cache_size ) {
+		int gbytes = hash_set[opt].cache_size / (1*1024*1024*1024);
+		int bytes = hash_set[opt].cache_size % (1*1024*1024*1024);
+
+		ret = bdb_hash->dbp->set_cachesize( bdb_hash->dbp, gbytes, bytes, 1 );
+		if ( ret != 0 ) {
+			warn("DB->set_cachesize() failed. it will be ignored: cache_size[%d], %d, %s",
+					hash_set[opt].cache_size, ret, strerror(ret));
+		}
+	}
+
 	ret = bdb_hash->dbp->open( bdb_hash->dbp, NULL, abs_file, NULL, DB_HASH, DB_CREATE, 0 );
 	if ( ret != 0 ) {
 		error("DB->open() failed: file[%s], %d, %s", abs_file, ret, strerror(ret));
@@ -148,27 +143,41 @@ static int bdb_hash_open(void* hash, int opt)
 		goto fail;
 	}
 
-	bdb_hash->opened = 1;
+	(*hash)->set = opt;
+	(*hash)->db = (void*) bdb_hash;
 	return SUCCESS;
 
 fail:
-	if ( bdb_hash->dbp ) {
-		bdb_hash->dbp->close( bdb_hash->dbp, 0 );
-		bdb_hash->dbp = NULL;
+	if ( bdb_hash ) {
+		if ( bdb_hash->dbp ) {
+			bdb_hash->dbp->close( bdb_hash->dbp, 0 );
+			bdb_hash->dbp = NULL;
+		}
+
+		if ( bdb_hash->dbenvp ) {
+			bdb_hash->dbenvp->close( bdb_hash->dbenvp, 0 );
+			bdb_hash->dbenvp = NULL;
+		}
+
+		sb_free( bdb_hash );
 	}
 
-	if ( bdb_hash->dbenvp ) {
-		bdb_hash->dbenvp->close( bdb_hash->dbenvp, 0 );
-		bdb_hash->dbenvp = NULL;
+	if ( *hash ) {
+		sb_free( *hash );
+		*hash = NULL;
 	}
 
 	return FAIL;
 }
 
-static int bdb_hash_sync(void* hash)
+static int bdb_hash_sync(api_hash_t* hash)
 {
-	bdb_hash_t* bdb_hash = (bdb_hash_t*) hash;
+	bdb_hash_t* bdb_hash;
 	int ret;
+
+	if ( hash_set == NULL || !hash_set[hash->set].set )
+		return DECLINE;
+	bdb_hash = (bdb_hash_t*) hash->db;
 
 	ret = bdb_hash->dbp->sync( bdb_hash->dbp, 0 );
 	if ( ret != 0 ) {
@@ -179,30 +188,36 @@ static int bdb_hash_sync(void* hash)
 	return SUCCESS;
 }
 
-static int bdb_hash_close(void* hash)
+static int bdb_hash_close(api_hash_t* hash)
 {
-	bdb_hash_t* bdb_hash = (bdb_hash_t*) hash;
+	bdb_hash_t* bdb_hash;
 
-	if ( !bdb_hash->opened ) {
-		warn("hash is not opened");
-		return SUCCESS;
-	}
+	if ( hash_set == NULL || !hash_set[hash->set].set )
+		return DECLINE;
+	bdb_hash = (bdb_hash_t*) hash->db;
 
 	bdb_hash->dbp->close( bdb_hash->dbp, 0 );
 	bdb_hash->dbenvp->close( bdb_hash->dbenvp, 0 );
+	memset( bdb_hash, 0, sizeof(bdb_hash_t));
 
-	memset( bdb_hash, 0, sizeof(bdb_hash_t) );
+	sb_free( hash->db );
+	memset( hash, 0, sizeof(bdb_hash_t));
+	sb_free( hash );
 
 	return SUCCESS;
 }
 
-// db 에는 NULL 문자 저장하지 않음. 하지만 key, value에는 꼭 있어야 함
-static int bdb_hash_put(void* hash, hash_data_t* key, hash_data_t* value,
+// key가 새로 등록한 값일 경우 old_value->size = 0이 되는 것을 보장해야 한다.
+static int bdb_hash_put(api_hash_t* hash, hash_data_t* key, hash_data_t* value,
 		int opt, hash_data_t* old_value)
 {
-	bdb_hash_t* bdb_hash = (bdb_hash_t*) hash;
+	bdb_hash_t* bdb_hash;
 	DBT key_dbt, value_dbt;
 	int ret;
+
+	if ( hash_set == NULL || !hash_set[hash->set].set )
+		return DECLINE;
+	bdb_hash = (bdb_hash_t*) hash->db;
 
 	key_dbt.data = key->data;
 	key_dbt.size = key->size;
@@ -224,7 +239,10 @@ static int bdb_hash_put(void* hash, hash_data_t* key, hash_data_t* value,
 	if ( (opt & HASH_OVERWRITE) && !old_value ) goto overwrite;
 
 	ret = bdb_hash->dbp->put( bdb_hash->dbp, NULL, &key_dbt, &value_dbt, DB_NOOVERWRITE );
-	if ( ret == 0 ) return SUCCESS;
+	if ( ret == 0 ) {
+		if ( old_value ) old_value->size = 0;
+		return SUCCESS;
+	}
 	else if ( ret != DB_KEYEXIST ) {
 		error("DB->put() failed: %d, %s", ret, strerror(ret));
 		return FAIL;
@@ -254,11 +272,15 @@ overwrite:
 }
 
 // db 에는 NULL문자가 없으므로 붙여서 return
-static int bdb_hash_get(void* hash, hash_data_t* key, hash_data_t* value)
+static int bdb_hash_get(api_hash_t* hash, hash_data_t* key, hash_data_t* value)
 {
-	bdb_hash_t* bdb_hash = (bdb_hash_t*) hash;
+	bdb_hash_t* bdb_hash;
 	DBT key_dbt, value_dbt;
 	int ret;
+
+	if ( hash_set == NULL || !hash_set[hash->set].set )
+		return DECLINE;
+	bdb_hash = (bdb_hash_t*) hash->db;
 
 	key_dbt.data = key->data;
 	key_dbt.size = key->size;
@@ -296,11 +318,15 @@ static int bdb_hash_get(void* hash, hash_data_t* key, hash_data_t* value)
 	return SUCCESS;
 }
 
-static int bdb_hash_count(void* hash, int* count)
+static int bdb_hash_count(api_hash_t* hash, int* count)
 {
-	bdb_hash_t* bdb_hash = (bdb_hash_t*) hash;
+	bdb_hash_t* bdb_hash;
 	void* sp;
 	int ret;
+
+	if ( hash_set == NULL || !hash_set[hash->set].set )
+		return DECLINE;
+	bdb_hash = (bdb_hash_t*) hash->db;
 
 	// dbp->stat() 이 multi process인 상황에서도 믿을 수 있는지 확인해야 한다.
 	ret = bdb_hash->dbp->stat( bdb_hash->dbp, NULL, &sp, 0 );
@@ -376,17 +402,27 @@ static void get_hash_file(configValue v)
 	hash_set[current_hash_set].set_filename = 1;
 }
 
+static void get_cache_size(configValue v)
+{
+	if ( hash_set == NULL || current_hash_set < 0 ) {
+		error("first, set HashSet");
+		return;
+	}
+
+	hash_set[current_hash_set].cache_size = atoi( v.argument[0] ) * 1024 * 1024;
+	hash_set[current_hash_set].set_cache_size = 1;
+}
+
 static config_t config[] = {
 	CONFIG_GET("HashSet", get_hash_set, 1, "Hash Set 0~..."),
 	CONFIG_GET("HashPath", get_hash_path, 1, "Hash DB path. ex> HashPath dat/lexicon"),
 	CONFIG_GET("HashFile", get_hash_file, 1, "Hash DB filename. ex> HashFile word.db"),
+	CONFIG_GET("CacheSize", get_cache_size, 1, "Hash cache size(MB). ex> CacheSize 128"),
 	{NULL}
 };
 
 static void register_hooks(void)
 {
-	sb_hook_hash_create(bdb_hash_create, NULL, NULL, HOOK_MIDDLE);
-	sb_hook_hash_destroy(bdb_hash_destroy, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_hash_open(bdb_hash_open, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_hash_sync(bdb_hash_sync, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_hash_close(bdb_hash_close, NULL, NULL, HOOK_MIDDLE);
@@ -454,19 +490,14 @@ static void _graceful_shutdown(int sig)
 
 static int test_main(slot_t *slot)
 {
-	void *hash;
+	api_hash_t *hash;
 	char key_string[100], value_string[100], old_value_string[100];
 	hash_data_t key, value, old_value;
 	int i, ret;
 
 	slot->state = SLOT_PROCESS;
 
-	if ( sb_run_hash_create( &hash ) != SUCCESS ) {
-		error("hash_create failed");
-		goto error;
-	}
-
-	if ( sb_run_hash_open( hash, 0 ) != SUCCESS ) {
+	if ( sb_run_hash_open( &hash, 0 ) != SUCCESS ) {
 		error("hash_open failed");
 		goto error;
 	}
@@ -529,11 +560,6 @@ static int test_main(slot_t *slot)
 
 	if ( sb_run_hash_close( hash ) != SUCCESS ) {
 		error("hash_close failed");
-		goto error;
-	}
-
-	if ( sb_run_hash_destroy( hash ) != SUCCESS ) {
-		error("hash_destroy failed");
 		goto error;
 	}
 

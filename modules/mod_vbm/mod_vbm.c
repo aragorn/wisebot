@@ -25,12 +25,8 @@ static void fbm_init(BlockInfo* theRoot);
 static void fbm_pushOneBlock(BlockInfo* blockInfo);
 static void* fbm_popOneBlock();
 
-pthread_mutex_t vbm_mutex;
-
 static int init()
 {
-    pthread_mutex_init( &vbm_mutex , NULL );
-
 	return SUCCESS;
 }
 
@@ -71,8 +67,10 @@ int VBM_initModule() {
 
 int VBM_initBuf(VariableBuffer *pVarBuf) {
 	if ( m_freeBlockRoot == NULL ) {
-		error( "call sb_run_buffer_initmodule() for using vbm module" );
-		return FAIL;
+		if ( VBM_initModule() != SUCCESS ) {
+			error("VBM_initModule() failed");
+			return FAIL;
+		}
 	}
 
 	pVarBuf->size = 0;
@@ -106,7 +104,7 @@ int VBM_append(VariableBuffer *pVarBuf,int size,void* pBuf) {
 	int tmpLastBlockUsedBytes = 0;
 
 	if ( m_freeBlockRoot == NULL ) {
-		error( "call sb_run_buffer_initmodule() for using vbm module" );
+		error( "call VBM_initModule() for using vbm module" );
 		return FAIL;
 	}
 
@@ -169,7 +167,7 @@ int VBM_get(VariableBuffer *pVarBuf, int offset, int size, void* pBuf) {
 	int i = 0;
 
 	if ( m_freeBlockRoot == NULL ) {
-		error( "call sb_run_buffer_initmodule() for using vbm module" );
+		error( "call VBM_initModule() for using vbm module" );
 		return FAIL;
 	}
 
@@ -228,7 +226,7 @@ int VBM_get(VariableBuffer *pVarBuf, int offset, int size, void* pBuf) {
 
 int VBM_getSize(VariableBuffer *pVarBuf) {
 	if ( m_freeBlockRoot == NULL ) {
-		error( "call sb_run_buffer_initmodule() for using vbm module" );
+		error( "call VBM_initModule() for using vbm module" );
 		return FAIL;
 	}
 
@@ -239,7 +237,7 @@ void VBM_freeBuf(VariableBuffer *pVarBuf) {
 	void* tmp=NULL;
 
 	if ( m_freeBlockRoot == NULL ) {
-		error( "call sb_run_buffer_initmodule() for using vbm module" );
+		error( "call VBM_initModule() for using vbm module" );
 		return;
 	}
 
@@ -259,7 +257,7 @@ int VBM_appendBuf(VariableBuffer *pVarBufDest,
 	int nRet=0;
 
 	if ( m_freeBlockRoot == NULL ) {
-		error( "call sb_run_buffer_initmodule() for using vbm module" );
+		error( "call VBM_initModule() for using vbm module" );
 		return FAIL;
 	}
 
@@ -290,7 +288,7 @@ int VBM_print(FILE *fp, VariableBuffer *pVarBuf) {
 	int iResult, iLeft, iOffset, iSize;
 
 	if ( m_freeBlockRoot == NULL ) {
-		error( "call sb_run_buffer_initmodule() for using vbm module" );
+		error( "call VBM_initModule() for using vbm module" );
 		return FAIL;
 	}
 
@@ -318,7 +316,7 @@ int VBM_buffer(char *result, VariableBuffer *pVarBuf) {
 	char szTmp[1024];
 
 	if ( m_freeBlockRoot == NULL ) {
-		error( "call sb_run_buffer_initmodule() for using vbm module" );
+		error( "call VBM_initModule() for using vbm module" );
 		return FAIL;
 	}
 
@@ -397,13 +395,9 @@ static void fbm_init(BlockInfo* theRoot) {
 static void fbm_pushOneBlock(BlockInfo* blockInfo) {
 	BlockInfo *tmp = NULL;
 
-	pthread_mutex_lock(&vbm_mutex);
-
 	tmp = m_freeBlockRoot;
 	m_freeBlockRoot = blockInfo;
 	m_freeBlockRoot->nextInfo = tmp;
-
-	pthread_mutex_unlock(&vbm_mutex);
 }
 static void* fbm_popOneBlock() {
 	BlockInfo *tmp = NULL;
@@ -411,13 +405,9 @@ static void* fbm_popOneBlock() {
 	if (m_freeBlockRoot == NULL)
 		return NULL;
 
-	pthread_mutex_lock(&vbm_mutex);
-
 	tmp = m_freeBlockRoot;
 	m_freeBlockRoot = m_freeBlockRoot->nextInfo;
 	tmp->nextInfo = NULL;
-
-	pthread_mutex_unlock(&vbm_mutex);
 
 	return tmp;
 }
@@ -443,7 +433,6 @@ static config_t config[] = {
 
 static void register_hooks(void)
 {
-	sb_hook_buffer_initmodule(VBM_initModule,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_buffer_initbuf(VBM_initBuf,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_buffer_freebuf(VBM_freeBuf,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_buffer_get(VBM_get,NULL,NULL,HOOK_MIDDLE);
@@ -452,7 +441,6 @@ static void register_hooks(void)
 	sb_hook_buffer_appendbuf(VBM_appendBuf,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_buffer_print(VBM_print,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_buffer_str(VBM_buffer,NULL,NULL,HOOK_MIDDLE);
-	
 }
 
 module vbm_module = {

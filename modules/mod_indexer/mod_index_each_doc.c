@@ -6,6 +6,7 @@
 #include "mod_api/indexer.h"
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/vrfi.h"
+#include "mod_api/lexicon.h"
 
 static int mNumOfField = 0;
 static char mFieldName[MAX_EXT_FIELD][MAX_FIELD_STRING];
@@ -178,7 +179,7 @@ uint32_t get_position(hit_t *hit)
 	return -1; /* never reaches here */
 }
 
-int index_each_doc(uint32_t docid, word_hit_t *wordhit,
+int index_each_doc(void* word_db, uint32_t docid, word_hit_t *wordhit,
 							uint32_t wordhit_size, uint32_t *idx, void *data, int size)
 {
 	index_word_t *indexwords=NULL;
@@ -212,7 +213,7 @@ int index_each_doc(uint32_t docid, word_hit_t *wordhit,
 
 		strncpy(lexicon.string, indexwords[i].word, MAX_WORD_LEN);
 		lexicon.string[MAX_WORD_LEN-1]='\0';
-		rv = sb_run_get_new_word(&gWordDB, &lexicon, docid );
+		rv = sb_run_get_new_wordid(word_db, &lexicon );
 		if (rv < 0) {
 			error("cannot make new wordid with word[%s], ret[%d], docid[%u]",
 											lexicon.string, rv, docid);

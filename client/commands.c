@@ -1,4 +1,18 @@
 /* $Id$ */
+
+#include "mod_api/tcp.h"
+#include "mod_api/protocol4.h"
+#include "mod_api/cdm.h"
+#include "mod_api/docapi.h"
+#include "mod_api/tokenizer.h"
+#include "mod_api/qp.h"
+#include "mod_api/qpp.h"
+#include "mod_api/index_word_extractor.h"
+#include "mod_api/morpheme.h"
+#include "mod_api/rmas.h"
+#include "mod_api/xmlparser.h"
+#include "mod_api/did.h"
+
 #include "client.h"
 #include "mod_indexer/hit.h"
 #include "benchmark.h"
@@ -481,7 +495,7 @@ int com_get_doc(char *arg)
 		return FAIL;
 	}
 
-	info("you want document[%ld]",docid);
+	info("you want document[%u]",docid);
 	info("connect to %s:%s...",mServerAddr,mServerPort);
 
 	result = sb_run_tcp_connect(&sockfd, mServerAddr, mServerPort);
@@ -531,7 +545,7 @@ int com_get_doc_size(char *arg)
 		return FAIL;
 	}
 
-	info("size of document[%ld]: %d", docid, result);
+	info("size of document[%u]: %d", docid, result);
 
 	return SUCCESS;
 }
@@ -543,13 +557,13 @@ int com_get_abstracted_doc(char *arg)
 	RetrievedDoc rdoc;
 	DocId docid = 0;
 
-	result = sscanf(arg, "%ld %s %d %d", &docid, field, &offset, &size);
+	result = sscanf(arg, "%u %s %d %d", &docid, field, &offset, &size);
 	if (result != 4) {
 		printf("usage: getabstract [docid] [fieldno] [offset] [size]\n");
 		return FAIL;
 	}
 
-	printf("you want document[%ld].\n",docid);
+	printf("you want document[%u].\n",docid);
 
 	sb_run_buffer_initbuf(&var);
 
@@ -598,7 +612,7 @@ int com_last_regi(char *arg)
 
 	sb_run_tcp_close(sockfd);
 
-	printf("the last registered document id is [%ld]\n", result);
+	printf("the last registered document id is [%u]\n", result);
 	return SUCCESS;
 }
 int com_get_field(char *arg) 
@@ -609,7 +623,7 @@ int com_get_field(char *arg)
 	DocObject *doc; 
  
 	// get argument 
-	n = sscanf(arg, "%ld %s %s", &docid, fieldname, filename); 
+	n = sscanf(arg, "%u %s %s", &docid, fieldname, filename); 
 	if (n < 2) { 
 		printf("usage: getfield docid fieldname [filename]\n"); 
 		return FAIL; 
@@ -627,7 +641,7 @@ int com_get_field(char *arg)
  
 	n = sb_run_doc_get(docid, &doc); 
 	if (n < 0) { 
-		sprintf(buf, "cannot get document object of document[%ld]\n", docid);
+		sprintf(buf, "cannot get document object of document[%u]\n", docid);
 
 		if(iswrite_file) {
             write(fd, buf, strlen(buf));
@@ -654,13 +668,13 @@ int com_get_field(char *arg)
 	} 
  
 	if(iswrite_file) {
-        sprintf(buf, "Document[%ld]['%s']:", docid, fieldname);	
+        sprintf(buf, "Document[%u]['%s']:", docid, fieldname);	
 		write(fd, buf, strlen(buf));
 		write(fd, value, strlen(value));
 		write(fd, "\n", 1);
 		close(fd);
 	} else {
-	    printf("Document[%ld]['%s']: %s\n", docid, fieldname, value); 
+	    printf("Document[%u]['%s']: %s\n", docid, fieldname, value); 
 	}
 
 	free(value); 
@@ -675,13 +689,13 @@ int com_get_abstracted_field(char *arg)
 	RetrievedDoc rdoc;
 	DocId docid = 0;
 
-	result = sscanf(arg, "%ld %s %d %d", &docid, field, &offset, &size);
+	result = sscanf(arg, "%u %s %d %d", &docid, field, &offset, &size);
 	if (result != 4) {
 		printf("usage: getabstractfield [docid] [fieldname] [offset] [size]\n");
 		return FAIL;
 	}
 
-	printf("you want document[%ld].\n",docid);
+	printf("you want document[%u].\n",docid);
 
 	rdoc.docId = docid;
 	rdoc.rank = 0;
@@ -705,7 +719,7 @@ int com_get_abstracted_field(char *arg)
 		return FAIL; 
 	} 
  
-	printf("Document[%ld]['%s']: %s\n", docid, field, value); 
+	printf("Document[%u]['%s']: %s\n", docid, field, value); 
  
 	free(value); 
 	return SUCCESS; 
@@ -942,7 +956,7 @@ int com_qpp (char *arg)
 		return FAIL;
 	}
 
-	numofnodes = sb_run_preprocess(arg,1024, qnodes, 64);
+	numofnodes = sb_run_preprocess(mWordDb, arg,1024, qnodes, 64);
 	sb_run_print_querynode(stderr,qnodes,numofnodes);
 	return SUCCESS;
 }
@@ -1238,7 +1252,7 @@ int com_get_docattr(char *arg)
     char field[256];
     char buf[STRING_SIZE];
 
-    if (sscanf(arg, "%lu %s", &docid, field) != 2) {
+    if (sscanf(arg, "%u %s", &docid, field) != 2) {
         error("usage: get_docattr docid fieldname");
         return -1;
     }
@@ -1263,7 +1277,7 @@ int com_set_docattr(char *arg)
     DocId docid;
     char field[SHORT_STRING_SIZE], value[STRING_SIZE];
 
-    if (sscanf(arg, "%lu %s %s", &docid, field, value) != 3) {
+    if (sscanf(arg, "%u %s %s", &docid, field, value) != 3) {
         error("usage: set_docattr docid fieldname value");
         return -1;
     }
@@ -1362,9 +1376,9 @@ int com_undelete (char *arg)
 	debug("you can undelete upto %d document.\n",1024);
 
 	debug("you want to undelete document");
-	debug("%ld", docid[0]);
+	debug("%u", docid[0]);
 	for (i=1; i<j; i++) {
-		debug(", %ld", docid[i]);
+		debug(", %u", docid[i]);
 	}
 
 	{
@@ -1428,9 +1442,9 @@ int com_delete (char *arg)
 	debug("you can delete upto %d document.",1024);
 
 	debug("you want to delete document");
-	debug("%ld", docid[0]);
+	debug("%u", docid[0]);
 	for (i=1; i<j; i++) {
-		debug(", %ld", docid[i]);
+		debug(", %u", docid[i]);
 	}
 
 	{
@@ -1464,40 +1478,6 @@ int com_delete_doc (char *arg)
 
 	return SUCCESS;
 }
-#if 0
-int com_drop_cdm (char *arg)
-{
-	int ret;
-
-	ret = sb_run_server_canneddoc_drop();
-	if (ret < 0) {
-		printf("canneddoc_drop error.\n");
-		return FAIL;
-	}
-	printf("cdm database is dropped successfully\n");
-
-	return SUCCESS;
-}
-#endif
-
-#ifdef USE_LEXICON_MODULE /* see client.h */
-int com_drop_lexicon (char *arg)
-{
-	int ret;
-	
-	if ( gpWordDB == NULL ) {
-		warn("load lexicon module to use this command");
-		return FAIL;
-	}
-
-	ret = sb_run_clear_wordids(gpWordDB);
-	if (ret < 0) {
-		printf("lexicon DB clear error.\n");
-		return FAIL;
-	}
-
-	return SUCCESS;
-}
 
 int com_get_new_wordid(char *arg)
 {
@@ -1508,11 +1488,9 @@ int com_get_new_wordid(char *arg)
 	int count=0;
 
 	char *word;
-	DocId docid;
-/*	LWord retWord;*/
 	word_t lexicon;	
 
-	if ( gpWordDB == NULL ) {
+	if ( mWordDb == NULL ) {
 		warn("load lexicon module to use this command");
 		return FAIL;
 	}
@@ -1531,22 +1509,15 @@ int com_get_new_wordid(char *arg)
 			break;
 	}
 
-	if (count == 2) {
-		token = strtok(orig_arg," \t");
-		word = token;
-
-		token = strtok(NULL," \t");
-		docid = atoi(token);
-	} else if (count == 1) {
+	if (count == 1) {
 		word = orig_arg;
-		docid = 0; // set default docid
 	} else {
-		info("usage : get_new_wordid word [docid]");
+		info("usage : get_new_wordid word");
 		return FAIL;
 	}
 	
-	strncpy(lexicon.string, arg , MAX_WORD_LENGTH);
-	ret = sb_run_get_new_word(gpWordDB, &lexicon, docid);
+	strncpy(lexicon.string, arg , MAX_WORD_LEN);
+	ret = sb_run_get_new_wordid(mWordDb, &lexicon);
 	if (ret < 0) {
 		error("error while get new wordid for word[%s]", lexicon.string);
 		return FAIL;
@@ -1562,75 +1533,37 @@ int com_get_wordid (char *arg)
 /*	LWord retWord;*/
 	word_t lexicon;
 	
-	if ( gpWordDB == NULL ) {
+	if ( mWordDb == NULL ) {
 		warn("load lexicon module to use this command");
 		return FAIL;
 	}
 
 	debug("argument:[%s]",arg);
 	
-	strncpy(lexicon.string, arg , MAX_WORD_LENGTH);
-	ret = sb_run_get_word(gpWordDB, &lexicon);
+	strncpy(lexicon.string, arg , MAX_WORD_LEN);
+	ret = sb_run_get_word(mWordDb, &lexicon);
 
-	if (ret < 0) {
+	if ( ret == WORD_NOT_REGISTERED ) {
 		error("ret[%d] : no such word[%s]",ret ,arg);
 		return FAIL;
 	}
-
-	printf("ret[%d], word[%s]'s wordid[%d], df[%d]\n",
-			ret ,lexicon.string ,lexicon.id ,lexicon.word_attr.df );
-
-	return SUCCESS;
-}
-
-int com_get_right_truncation(char *arg)
-{
-	int i, ret;
-	word_t ret_words[100]; //XXX : 100 -> MAX_SEARCH_WORD_NUM
-
-	if ( gpWordDB == NULL ) {
-		warn("load lexicon module to use this command");
+	else if ( ret < 0 ) {
+		error("ret[%d] : error", ret);
 		return FAIL;
 	}
 
-	ret = sb_run_get_right_truncation_words(gpWordDB, arg, ret_words, 100);
-	
-	printf("args is [%s]\n", arg);
-	for(i=0 ; i< ret ; i++) {
-		 printf("[%d]:: df[%u]  wordid [%u], word [%s]\n",
-				i, ret_words[i].word_attr.df, ret_words[i].id, ret_words[i].string);
-	}
+	printf("ret[%d], word[%s]'s wordid[%d]\n",
+			ret ,lexicon.string ,lexicon.id );
+
 	return SUCCESS;
 }
-
-int com_get_left_truncation(char *arg)
-{
-	int i, ret;
-	word_t ret_words[100]; //XXX : 100 -> MAX_SEARCH_WORD_NUM
-
-	if ( gpWordDB == NULL ) {
-		warn("load lexicon module to use this command");
-		return FAIL;
-	}
-
-	ret = sb_run_get_left_truncation_words(gpWordDB, arg, ret_words, 100);
-	
-	printf("args is [%s]\n", arg);
-	for(i=0 ; i< ret ; i++) {
-		 printf("[%d]:: df[%u]  wordid [%u], word [%s]\n",
-				i, ret_words[i].word_attr.df, ret_words[i].id, ret_words[i].string);
-	}
-	return SUCCESS;
-}
-
-
 
 int com_get_word_by_wordid (char *arg)
 {
 	int ret;
 	word_t lexicon;
 
-	if ( gpWordDB == NULL ) {
+	if ( mWordDb == NULL ) {
 		warn("load lexicon module to use this command");
 		return FAIL;
 	}
@@ -1640,10 +1573,17 @@ int com_get_word_by_wordid (char *arg)
 		return FAIL;
 	}
 
+	memset( &lexicon, 0, sizeof(lexicon) );
+
 	lexicon.id = (uint32_t)atol(arg);
-	ret = sb_run_get_word_by_wordid(gpWordDB, &lexicon);
-	info("id:(%u) word[%s] df:(%u) ", 
-			lexicon.id, lexicon.string, lexicon.word_attr.df);
+	ret = sb_run_get_word_by_wordid(mWordDb, &lexicon);
+	if ( ret == WORD_NOT_REGISTERED ) {
+		info("word is not registered");
+	}
+	else if ( ret < 0 ) {
+		error("error ret:%d", ret);
+	}
+	else info("id:(%u) word[%s] ", lexicon.id, lexicon.string);
 
 	return SUCCESS;
 }
@@ -1652,14 +1592,14 @@ int com_sync_word_db (char *arg)
 {
 	int ret;
 	
-	if ( gpWordDB == NULL ) {
+	if ( mWordDb == NULL ) {
 		warn("load lexicon module to use this command");
 		return FAIL;
 	}
 
 	info("synchronize word db");
 			
-	ret = sb_run_sync_word_db(gpWordDB);
+	ret = sb_run_sync_word_db(mWordDb);
 
 	info("synchronize word db ret :%d",ret);
 	
@@ -1671,78 +1611,30 @@ int com_get_num_of_wordid (char *arg)
 	int ret;
 	uint32_t wordid;
 	
-	if ( gpWordDB == NULL ) {
+	if ( mWordDb == NULL ) {
 		warn("load lexicon module to use this command");
 		return FAIL;
 	}
 
 	info("get num of wordid");
-	ret = sb_run_get_num_of_word(gpWordDB, &wordid);
+	ret = sb_run_get_num_of_word(mWordDb, &wordid);
 	
 	info("ret[%d], last wordid is %u",ret , wordid);	
 	return SUCCESS;
 }
-
-int com_print_hash_bucket(char *arg)
-{
-	int ret;
-	int bucket_idx;
-	debug("wanted bucket idx >");
-	
-	if ( gpWordDB == NULL ) {
-		warn("load lexicon module to use this command");
-		return FAIL;
-	}
-
-	if (!strlen(arg)) {
-		printf("usage: get_word_by_wordid wordid\n");
-		return FAIL;
-	}
-
-	bucket_idx = atoi(arg);
-
-	ret = sb_run_print_hash_bucket(gpWordDB, bucket_idx);
-	printf("sb_run_print_hash_bucket ret[%d] print %d bucekt\n", ret, bucket_idx);	
-	return SUCCESS;
-}
-
-int com_print_truncation_bucket(char *arg)
-{
-	int ret;
-	int bucket_idx;
-	debug("wanted bucket idx >");
-	
-	if ( gpWordDB == NULL ) {
-		warn("load lexicon module to use this command");
-		return FAIL;
-	}
-
-	if (!strlen(arg)) {
-		printf("usage: get_word_by_wordid wordid\n");
-		return FAIL;
-	}
-
-	bucket_idx = atoi(arg);
-
-	ret = sb_run_print_truncation_bucket(gpWordDB, bucket_idx);
-	printf("sb_run_print_truncation_bucket ret[%d] print %d bucekt\n", ret, bucket_idx);	
-	return SUCCESS;
-}
-
-#endif
 
 int com_get_docid(char *arg)
 {
 	int ret;
 	DocId docid;
 
-	ret = sb_run_client_get_docid(arg, &docid);
+	ret = sb_run_get_docid(mDidDb, arg, &docid);
 	if (ret < 0) {
 		printf("cannot get document id:error[%d]\n", ret);
 		return FAIL;
 	}
 
-	printf("result:%ld\n", docid);
+	printf("result:%u\n", docid);
 	return SUCCESS;
 }
 
@@ -1751,14 +1643,16 @@ int com_get_new_docid(char *arg)
 	int ret;
 	DocId docid, olddocid;
 
-	ret = sb_run_client_get_new_docid(arg, &docid, &olddocid);
+	ret = sb_run_get_new_docid(mDidDb, arg, &docid, &olddocid);
 	if (ret < 0) {
 		printf("cannot get document id:error[%d]\n", ret);
 		return FAIL;
 	}
 
-	printf("result: %ld\n", docid);
-	printf("olddocid: %ld\n", olddocid);
+	printf("result: %u\n", docid);
+	if ( ret == DOCID_OLD_REGISTERED )
+		printf("olddocid: %u\n", olddocid);
+
 	return SUCCESS;
 }
 int com_registry (char *arg)

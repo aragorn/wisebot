@@ -116,7 +116,7 @@ static int random_number(int min, int max)
 
 static int read_main(slot_t *slot)
 {
-	ifs_t *ifs;
+	index_db_t *indexdb;
 	int file_id = 1, file_size, current_number, read_size;
 	int i, errcnt = 0, retry = 0;
 	int *buffer;
@@ -129,8 +129,7 @@ static int read_main(slot_t *slot)
 		return -1;
 	}
 
-	ifs = ifs_create();
-	if ( ifs_open( ifs, indexdb_set ) != SUCCESS ) {
+	if ( ifs_open( &indexdb, indexdb_set ) != SUCCESS ) {
 		error( "ifs_open failed." );
 		return -1;
 	}
@@ -149,7 +148,7 @@ static int read_main(slot_t *slot)
 			memset( buffer, -1, BUFFER_SIZE * sizeof(int) );
 
 			time(&start);
-			read_size = ifs_read( ifs, file_id, read_size, BUFFER_SIZE * sizeof(int), buffer );
+			read_size = ifs_read( indexdb, file_id, read_size, BUFFER_SIZE * sizeof(int), buffer );
 			time(&end);
 
 			if ( end - start > 5 ) {
@@ -182,11 +181,11 @@ static int read_main(slot_t *slot)
 
 						/** 해당 segment 정보 읽기 **/
 						physical_count = table_get_read_segments(
-								&ifs->shared->mapping_table, physical_segment_array );
-						__get_start_segment( ifs, physical_segment_array, physical_count,
+								&((ifs_t*)indexdb->db)->shared->mapping_table, physical_segment_array );
+						__get_start_segment( (ifs_t*)indexdb->db, physical_segment_array, physical_count,
 								file_id, i, &start_segment, &start_offset);
 
-						__view_sfs_info( ifs->local.sfs[physical_segment_array[start_segment]] );
+						__view_sfs_info( ((ifs_t*)indexdb->db)->local.sfs[physical_segment_array[start_segment]] );
 
 						sleep(5);
 						break;
@@ -199,14 +198,13 @@ static int read_main(slot_t *slot)
 		if ( errcnt == 0 && retry == 0 )
 			info("slot[%d] reading test ok. file[%d], size[%d]", slot->id, file_id, file_size);
 		else {
-			table_print( &ifs->shared->mapping_table );
+			table_print( &((ifs_t*)indexdb->db)->shared->mapping_table );
 		}
 
 		if ( retry > 5 ) retry = 0;
 	} // while (1)
 
-	ifs_close( ifs );
-	ifs_destroy( ifs );
+	ifs_close( indexdb );
 	sb_free( buffer );
 
 	return EXIT_SUCCESS;
@@ -266,7 +264,7 @@ static int append_init()
 
 static int append_main(slot_t *slot)
 {
-	ifs_t *ifs;
+	index_db_t *indexdb;
 	int file_id, current_size, current_number;
 	int errcnt = 0, written_size, i;
 	static int *buffer = NULL;
@@ -274,8 +272,7 @@ static int append_main(slot_t *slot)
 
 	srand( time(NULL) + slot->id );
 
-	ifs = ifs_create();
-	if ( ifs_open( ifs, indexdb_set ) != SUCCESS ) {
+	if ( ifs_open( &indexdb, indexdb_set ) != SUCCESS ) {
 		error( "ifs_open failed." );
 		return -1;
 	}
@@ -284,7 +281,7 @@ static int append_main(slot_t *slot)
 	for ( i = 1; i <= file_count; i++ ) {
 //		info("init %d", i);
 
-		written_size = ifs_append( ifs, i, sizeof(int), &i );
+		written_size = ifs_append( indexdb, i, sizeof(int), &i );
 		if ( written_size != sizeof(int) ) {
 			error("init failed. file[%d]", i);
 		}
@@ -316,7 +313,7 @@ static int append_main(slot_t *slot)
 			buffer[i] = current_number++;
 		}
 
-		written_size = ifs_append( ifs, file_id, current_size * sizeof(int), buffer );
+		written_size = ifs_append( indexdb, file_id, current_size * sizeof(int), buffer );
 		if ( written_size < 0 ) {
 			error("unable to append. file[%d], current_size[%d], current_number[%d]",
 					file_id, current_size, current_number);
@@ -336,8 +333,7 @@ static int append_main(slot_t *slot)
 		append_file_array[file_id] += written_size/sizeof(int);
 	}
 
-	ifs_close( ifs );
-	ifs_destroy( ifs );
+	ifs_close( indexdb );
 	sb_free( buffer );
 
 	return EXIT_SUCCESS;

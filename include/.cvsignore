@@ -19,3 +19,6 @@ apr-0
 KomaAPI.h
 HanTagAPI.h
 koma_global.h
+koma
+expat
+db

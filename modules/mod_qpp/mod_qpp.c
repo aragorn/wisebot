@@ -10,8 +10,8 @@
 #include "stack.h"
 #include "tokenizer.h"
 
-//#define BIGRAM_TRUNCATION_SEARCH
-#undef BIGRAM_TRUNCATION_SEARCH
+#define BIGRAM_TRUNCATION_SEARCH
+//#undef BIGRAM_TRUNCATION_SEARCH
 
 #define TURN_BINARY_OPERATOR	(1)
 #define TURN_OPERAND			(2)
@@ -53,7 +53,7 @@ static QueryNode m_defaultOperatorNode = {
 	0, /* opParam */
 	0, /* field */
 	0.0,
-	{"",0,{0}}	
+	{"",0}	
 }; // operator가 생략되었을 때 넣을 operator용
 static QueryNode m_zeroWordidNode = {
 	QPP_OP_OPERAND,
@@ -62,7 +62,7 @@ static QueryNode m_zeroWordidNode = {
 	0, 	/* opParam */ //FIXME fake operand 구별방법. 
 	0, /* field */
 	0.0,
-	{"",0,{0}}	
+	{"",0}	
 };// wordid가 0인(없는 id) 인 query node
 static QueryNode m_fakeQueryNode = {
 	QPP_OP_OPERAND,
@@ -71,7 +71,7 @@ static QueryNode m_fakeQueryNode = {
 	-10, /* opParam */ //FIXME!!!!!! fake operand 구별방법. 
 	0, /* field */
 	0.0,
-	{"",0,{0}}	
+	{"",0}	
 };// wordid가 0인(없는 id) 인 query node
 
 static void setFakeOperand();
@@ -83,14 +83,14 @@ static int pushFakeOperand(StateObj *pStObj);
 static int pushOperator(StateObj *pStObj,QueryNode *pQuNode);
 static int pushNumeric(StateObj *pStObj,QueryNode *pQuNode);
 static int pushPhrase(StateObj *pStObj);
-static int pushExtendedOperand(StateObj *pStObj,QueryNode *pQuNode);
-static int pushOperand(StateObj *pStObj,QueryNode *pQuNode);
+static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode);
+static int pushOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode);
 static int pushGenericOperator(StateObj *pStObj,QueryNode *pQuNode);
-static int pushStarredWord(StateObj *pStObj,QueryNode *pQuNode);
+static int pushStarredWord(void* word_db, StateObj *pStObj,QueryNode *pQuNode);
 
-static int pushLeftEndBigram(StateObj *state, QueryNode *input_qnode);
-static int pushRightEndBigram(StateObj *state, QueryNode *input_qnode);
-static int pushBothEndBigram(StateObj *state, QueryNode *input_qnode);
+static int pushLeftEndBigram(void* word_db, StateObj *state, QueryNode *input_qnode);
+static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_qnode);
+static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qnode);
 
 static void makeUpperLetter(QueryNode *pQuNode);
 /*static int processSyn(StateObj *pStObj,QueryNode *pQuNode);*/
@@ -105,12 +105,11 @@ int QPP_postfixPrint(FILE *fp, QueryNode postfix[],int numNode) {
 
 	for ( i=0; i<numNode; i++) {
 		if (postfix[i].type == OPERAND) {
-			fprintf(fp,"word: %s(field:%s)(wordid:%u)(opParam:%d)(word df:%u)\n",
+			fprintf(fp,"word: %s(field:%s)(wordid:%u)(opParam:%d)\n",
 						postfix[i].word_st.string,
 						sb_strbin(postfix[i].field,sizeof(postfix[i].field)),
 						postfix[i].word_st.id,
-						postfix[i].opParam,
-						postfix[i].word_st.word_attr.df);
+						postfix[i].opParam);
 		}
 		else {
 			opNum = postfix[i].operator;
@@ -134,12 +133,11 @@ int QPP_postfixBuffer(char *result, QueryNode postfix[],int numNode) {
 	
 	for ( i=0; i<numNode; i++) {
 		if (postfix[i].type == OPERAND) {
-			sprintf(tmpbuf,"word: %s(field:%s)(wordid:%u)(opParam:%d)(word df:%u)\n",
+			sprintf(tmpbuf,"word: %s(field:%s)(wordid:%u)(opParam:%d)\n",
 						postfix[i].word_st.string,
 						sb_strbin(postfix[i].field,sizeof(postfix[i].field)),
 						postfix[i].word_st.id,
-						postfix[i].opParam,
-						postfix[i].word_st.word_attr.df);
+						postfix[i].opParam);
 			strcat(result, tmpbuf);
 		}
 		else {
@@ -192,7 +190,7 @@ static int init() {
 } */
 
 static int 
-QPP_parse(char infix[],int max_infix_size, QueryNode postfix[], int maxNode)
+QPP_parse(void* word_db, char infix[],int max_infix_size, QueryNode postfix[], int maxNode)
 {
 	QueryNode quNode;
 	char tmpQueryStr[STRING_SIZE];
@@ -235,7 +233,7 @@ QPP_parse(char infix[],int max_infix_size, QueryNode postfix[], int maxNode)
 		// right token
 		switch (nRet) {
 			case TOKEN_STAR:
-					nRet = pushStarredWord(&stObj,&quNode);
+					nRet = pushStarredWord(word_db, &stObj,&quNode);
 					break;
 			case TOKEN_NUMERIC:
 					nRet = pushNumeric(&stObj,&quNode);
@@ -244,7 +242,7 @@ QPP_parse(char infix[],int max_infix_size, QueryNode postfix[], int maxNode)
 					nRet = pushOperator(&stObj,&quNode);				
 					break;
 			default:	// case nRet < 0
-					nRet = pushExtendedOperand(&stObj,&quNode);
+					nRet = pushExtendedOperand(word_db, &stObj,&quNode);
 					break;
 		}
 		
@@ -495,7 +493,7 @@ static int reduce_index_words(index_word_t indexwords[], int nelm)
 }
 
 #define ENOUGH_INDEXWORD_NUM (MAX_QPP_INDEXED_WORDS * 2)
-static int pushExtendedOperand(StateObj *pStObj,QueryNode *pQuNode) {
+static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode) {
 	QueryNode qnode;
 	int nRet = 0;
 	int nMorpheme = 0;
@@ -510,19 +508,19 @@ static int pushExtendedOperand(StateObj *pStObj,QueryNode *pQuNode) {
 		pQuNode->original_word[len-1] = '\0';
 		/* XXX: moving including NULL */
 		memmove(pQuNode->original_word, pQuNode->original_word+1, len-1);
-		return pushBothEndBigram(pStObj, pQuNode);
+		return pushBothEndBigram(word_db, pStObj, pQuNode);
 	}
 	else if (is_left_end_bigram_truncation(pQuNode->original_word) == TRUE) {
 		int len = strlen(pQuNode->original_word);
 		/* XXX: moving including NULL */
 		memmove(pQuNode->original_word, pQuNode->original_word+1, len);
-		return pushLeftEndBigram(pStObj, pQuNode);
+		return pushLeftEndBigram(word_db, pStObj, pQuNode);
 	}
 	else if (is_right_end_bigram_truncation(pQuNode->original_word) == TRUE) {
 		int len = strlen(pQuNode->original_word);
 		pQuNode->original_word[len-1] = '\0';
 		DEBUG("original_word for word> : %s", pQuNode->original_word);
-		return pushRightEndBigram(pStObj, pQuNode);
+		return pushRightEndBigram(word_db, pStObj, pQuNode);
 	}
 
 	nRet = pushDefaultOperator(pStObj);
@@ -574,7 +572,7 @@ static int pushExtendedOperand(StateObj *pStObj,QueryNode *pQuNode) {
 			qnode.word_st.string[MAX_WORD_LEN-1] = '\0';
 			INFO("qnode[%d] word:%s", i, qnode.word_st.string);
 
-			nRet = pushOperand(pStObj, &qnode);
+			nRet = pushOperand(word_db, pStObj, &qnode);
 			if (nRet < 0) {
 				error("failed to push operand for word[%s]",
 										qnode.word_st.string);
@@ -621,7 +619,7 @@ static int pushExtendedOperand(StateObj *pStObj,QueryNode *pQuNode) {
 		/* 형태소 분석 결과 단어와 입력단어가 다르면 입력단어를 OR 검색으로 추가 */
 		if ( strncmp(pQuNode->original_word, indexwords[0].word, MAX_WORD_LEN) != 0) {
 			// or with original word
-			nRet = pushOperand(pStObj, pQuNode);
+			nRet = pushOperand(word_db, pStObj, pQuNode);
 			if (nRet < 0) {
 				error("error while pushing original wordp[%s] into stack",
 													pQuNode->word_st.string);
@@ -643,7 +641,7 @@ static int pushExtendedOperand(StateObj *pStObj,QueryNode *pQuNode) {
 				(morp_id >= 10 && morp_id < 20)) {
 		/* 형태소 분석 결과 단어와 입력단어가 다르면 입력단어를 OR 검색으로 추가 */
 		// or with original word
-		nRet = pushOperand(pStObj, pQuNode);
+		nRet = pushOperand(word_db, pStObj, pQuNode);
 		if (nRet < 0) {
 			error("error while pushing original word[%s] into stack",
 												pQuNode->word_st.string);
@@ -675,7 +673,7 @@ static void makeUpperLetter(QueryNode *pQuNode) {
 	}
 }
 
-static int pushOperand(StateObj *pStObj,QueryNode *pQuNode) {
+static int pushOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode) {
 	int ret=0;
 /*	LWord retWord={"",0,-1,0};*/
 /*	word_t word={"",{0,0,0}};*/
@@ -707,37 +705,32 @@ static int pushOperand(StateObj *pStObj,QueryNode *pQuNode) {
 	pQuNode->opParam = pStObj->searchField; /* obsolete ? */
 	pQuNode->weight = 1;
 
-	ret = sb_run_get_word(&gWordDB, &(pQuNode->word_st));
+	ret = sb_run_get_word(word_db, &(pQuNode->word_st));
 	DEBUG("ret(by sb_run_get_word): %d", ret);
 
 	if (ret == WORD_NOT_REGISTERED) {
 		INFO("user entered unknown word: [%s]",pQuNode->word_st.string);
 		INFO("ret wordid is [%u]",pQuNode->word_st.id);
 		pQuNode->word_st.id = 0;
-		pQuNode->word_st.word_attr.df = 0;
 	}
 	else if (ret < 0) {
 		error("can't get wordid. error[%d]",ret);
 		pQuNode->word_st.string[0]= '\0';
 		pQuNode->word_st.id= 0;
-		pQuNode->word_st.word_attr.df = -1;
 	}else{
 /*		pQuNode->word_st = retWord;*/
 		DEBUG("su_run_get_word ret:(%d) , word[%s], wordid:(%d)",
 				ret, pQuNode->word_st.string, pQuNode->word_st.id);
 	}
 
-	if ( pStObj->natural_search == 1 && 
-			pQuNode->word_st.word_attr.df == 0) {
+	if ( pStObj->natural_search == 1
+			&& ret == WORD_NOT_REGISTERED) {
 		pQuNode->opParam = -10;
 	}
 
-/*	CRIT("pStObj->natural_search:%d, df:%d, pQuNode->opParam:%d", 
-			pStObj->natural_search, pQuNode->word_st.word_attr.df, pQuNode->opParam);*/
-	
 	return stk_push(&pStObj->postfixStack,pQuNode);
 }
-static int pushStarHackedOperand(StateObj *pStObj,QueryNode *pQuNode, char *original_word) {
+static int pushStarHackedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode, char *original_word) {
 	int ret=0;
 /*	LWord retWord={"",0,-1,0};*/
 /*	word_t word={"",{0,0,0}};*/
@@ -769,19 +762,17 @@ static int pushStarHackedOperand(StateObj *pStObj,QueryNode *pQuNode, char *orig
 	pQuNode->opParam = pStObj->searchField; /* obsolete ? */
 	pQuNode->weight = 1;
 
-	ret = sb_run_get_word(&gWordDB, &(pQuNode->word_st));
+	ret = sb_run_get_word(word_db, &(pQuNode->word_st));
 
 	if (ret == WORD_NOT_REGISTERED) {
 		INFO("user entered unknown word: [%s]",pQuNode->word_st.string);
 		INFO("ret wordid is [%u]",pQuNode->word_st.id);
 		pQuNode->word_st.id = 0;
-		pQuNode->word_st.word_attr.df = 0;
 	}
 	else if (ret < 0) {
 		error("can't get wordid. error[%d]",ret);
 		pQuNode->word_st.string[0]= '\0';
 		pQuNode->word_st.id= 0;
-		pQuNode->word_st.word_attr.df = -1;
 	}else{
 /*		pQuNode->word_st = retWord;*/
 		DEBUG("su_run_get_word ret:(%d) , word[%s], wordid:(%d)",
@@ -789,19 +780,17 @@ static int pushStarHackedOperand(StateObj *pStObj,QueryNode *pQuNode, char *orig
 	}
 
 	if ( pStObj->natural_search == 1 && 
-			pQuNode->word_st.word_attr.df == 0) {
+			ret == WORD_NOT_REGISTERED) {
 		pQuNode->opParam = -10;
 	}
 
-/*	CRIT("pStObj->natural_search:%d, df:%d, pQuNode->opParam:%d", 
-			pStObj->natural_search, pQuNode->word_st.word_attr.df, pQuNode->opParam);*/
 	strncpy(pQuNode->word_st.string, original_word, MAX_WORD_LEN);
 	pQuNode->word_st.string[MAX_WORD_LEN-1]='\0';
 	
 	return stk_push(&pStObj->postfixStack,pQuNode);
 }
 
-static int pushOperandEmptyWord(StateObj *pStObj,QueryNode *pQuNode) {
+static int pushOperandEmptyWord(void* word_db, StateObj *pStObj,QueryNode *pQuNode) {
 	int ret=0;
 /*	LWord retWord={"",0,-1,0};*/
 /*	word_t word={"",{0,0,0}};*/
@@ -833,35 +822,30 @@ static int pushOperandEmptyWord(StateObj *pStObj,QueryNode *pQuNode) {
 	pQuNode->opParam = pStObj->searchField; /* obsolete ? */
 	pQuNode->weight = 1;
 
-	ret = sb_run_get_word(&gWordDB, &(pQuNode->word_st));
+	ret = sb_run_get_word(word_db, &(pQuNode->word_st));
 
 	if (ret == WORD_NOT_REGISTERED) {
 		INFO("user entered unknown word: [%s]",pQuNode->word_st.string);
 		INFO("ret wordid is [%u]",pQuNode->word_st.id);
 		pQuNode->word_st.id = 0;
-		pQuNode->word_st.word_attr.df = 0;
 	}
 	else if (ret < 0) {
 		error("can't get wordid. error[%d]",ret);
 		pQuNode->word_st.string[0]= '\0';
 		pQuNode->word_st.id= 0;
-		pQuNode->word_st.word_attr.df = -1;
 	}else{
 /*		pQuNode->word_st = retWord;*/
 		DEBUG("su_run_get_word ret:(%d) , word[%s], wordid:(%d)",
 				ret, pQuNode->word_st.string, pQuNode->word_st.id);
 	}
 
-	if ( pStObj->natural_search == 1 && 
-			pQuNode->word_st.word_attr.df == 0) {
+	if ( pStObj->natural_search == 1 &&
+			ret == WORD_NOT_REGISTERED) {
 		pQuNode->opParam = -10;
 	}
 
 	pQuNode->word_st.string[0] = '\0';
 
-/*	CRIT("pStObj->natural_search:%d, df:%d, pQuNode->opParam:%d", 
-			pStObj->natural_search, pQuNode->word_st.word_attr.df, pQuNode->opParam);*/
-	
 	return stk_push(&pStObj->postfixStack,pQuNode);
 }
 
@@ -941,7 +925,7 @@ static void bigram_word_copy(char *dest, char *src, int max, int pos)
 	dest[max-1]='\0';
 }
 
-static int pushRightEndBigram(StateObj *state, QueryNode *input_qnode)
+static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_qnode)
 {
 	index_word_extractor_t *extractor=NULL;
 	int num_of_words=0, i=0, rv=0;
@@ -981,9 +965,9 @@ static int pushRightEndBigram(StateObj *state, QueryNode *input_qnode)
 		state->truncated = 1; // truncated is unset within pushOperand
 
 		if (i==0)
-			pushStarHackedOperand(state, &qnode, input_qnode->word_st.string);
+			pushStarHackedOperand(word_db, state, &qnode, input_qnode->word_st.string);
 		else
-			pushOperandEmptyWord(state, &qnode);
+			pushOperandEmptyWord(word_db, state, &qnode);
 	}
 
 	if (num_of_words > 1) {
@@ -1003,7 +987,7 @@ static int pushRightEndBigram(StateObj *state, QueryNode *input_qnode)
 	return SUCCESS;
 }
 
-static int pushLeftEndBigram(StateObj *state, QueryNode *input_qnode)
+static int pushLeftEndBigram(void* word_db, StateObj *state, QueryNode *input_qnode)
 {
 	index_word_extractor_t *extractor=NULL;
 	index_word_t indexwords[MAX_QPP_INDEXED_WORDS+1];/* dirty hack */
@@ -1043,9 +1027,9 @@ static int pushLeftEndBigram(StateObj *state, QueryNode *input_qnode)
 		state->truncated = 1; // truncated is unset within pushOperand
 		
 		if (i==0) 
-			pushStarHackedOperand(state, &qnode,input_qnode->word_st.string);
+			pushStarHackedOperand(word_db, state, &qnode,input_qnode->word_st.string);
 		else
-			pushOperandEmptyWord(state, &qnode);
+			pushOperandEmptyWord(word_db, state, &qnode);
 	}
 
 	if (num_of_words >= 1) { /* dirty hack, if num_of_words is larger than 1, \< added is num_of_words+1 */
@@ -1065,7 +1049,7 @@ static int pushLeftEndBigram(StateObj *state, QueryNode *input_qnode)
 	return SUCCESS;
 }
 
-static int pushBothEndBigram(StateObj *state, QueryNode *input_qnode)
+static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qnode)
 {
 	index_word_extractor_t *extractor=NULL;
 	index_word_t indexwords[MAX_QPP_INDEXED_WORDS+2];/* dirty hack */
@@ -1114,9 +1098,9 @@ static int pushBothEndBigram(StateObj *state, QueryNode *input_qnode)
 		state->truncated = 1; // truncated is unset within pushOperand
 		
 		if (i==0) 
-			pushStarHackedOperand(state, &qnode,input_qnode->word_st.string);
+			pushStarHackedOperand(word_db, state, &qnode,input_qnode->word_st.string);
 		else
-			pushOperandEmptyWord(state, &qnode);
+			pushOperandEmptyWord(word_db, state, &qnode);
 	}
 
 	if (num_of_words >= 1) { /* dirty hack, if num_of_words is larger than 1, \< added is num_of_words+1 */
@@ -1139,213 +1123,28 @@ static int pushBothEndBigram(StateObj *state, QueryNode *input_qnode)
 
 
 #ifdef BIGRAM_TRUNCATION_SEARCH
-static int pushStarredWord(StateObj *state, QueryNode *input_qnode)
+static int pushStarredWord(void* word_db, StateObj *state, QueryNode *input_qnode)
 {
 	if (input_qnode->opParam == STAR_BEGIN) {
-		return pushRightEndBigram(state, input_qnode);
+		return pushRightEndBigram(word_db, state, input_qnode);
 	}
 	else if (input_qnode->opParam == STAR_END) {
-		return pushLeftEndBigram(state, input_qnode);
+		return pushLeftEndBigram(word_db, state, input_qnode);
 	}
 	else {
-		crit("???");
+		crit("opParam[%d] is not STAR_BEGIN[%d] and not STAR_END[%d] .. then what???",
+				input_qnode->opParam, STAR_BEGIN, STAR_END);
+		return FAIL;
 	}
 }
 #else
 /* XXX: lexicon supported version */
-static int pushStarredWord(StateObj *pStObj, QueryNode *querynode)
+static int pushStarredWord(void* word_db, StateObj *pStObj, QueryNode *querynode)
 {
-	int num_of_words=0, i=0, nRet=0;
-	QueryNode qnode;
-	word_t words[STARRED_WORD_NUM];
-
-	strncpy(querynode->word_st.string, querynode->original_word, MAX_WORD_LEN);
-	if (querynode->opParam == STAR_BEGIN) {
-		num_of_words = 
-		sb_run_get_left_truncation_words( &gWordDB, querynode->word_st.string, 
-										  words, STARRED_WORD_NUM);
-	}
-	else if (querynode->opParam == STAR_END) {
-		num_of_words = 
-		sb_run_get_right_truncation_words( &gWordDB, querynode->word_st.string, 
-										   words, STARRED_WORD_NUM);
-	}
-	else {
-		crit("error, it's star operator, but neither star begin or star end");
-		return FAIL;
-	}
-
-	if (num_of_words <= 0) {
-		DEBUG("no word from get_prefix/get_suffix word");
-		pushZeroWordid(pStObj);
-		//pushFakeOperand(pStObj);
-//		return SUCCESS;
-		goto FINISH;
-	}
-
-	for (i=0 ; i<num_of_words; i++) {
-		qnode.type = OPERAND;
-		qnode.operator = QPP_OP_OPERAND;
-		qnode.opParam = pStObj->searchField;
-
-		if (pStObj->virtualfield != 0) {
-			qnode.field = pStObj->virtualfield;
-		}
-		else if (pStObj->searchField == -1) {
-			qnode.field = mDefaultSearchField;
-		}
-		else {
-			qnode.field = (1L << pStObj->searchField);
-		}
-
-		qnode.weight = 1;
-		
-		strncpy(qnode.word_st.string, words[i].string, MAX_WORD_LEN);
-		qnode.word_st.string[MAX_WORD_LEN-1]='\0';
-		/* XXX deprecated. internal data should always have honest values. */
-		/*
-		strncpy(qnode.word_st.string, querynode->word_st.string, MAX_WORD_LEN);
-		strncat(qnode.word_st.string, "*", MAX_WORD_LEN - strlen(qnode.word_st.string));
-		qnode.word_st.string[MAX_WORD_LEN-1] = '\0';
-		*/
-	
-		qnode.word_st.id = words[i].id;
-		qnode.word_st.word_attr.df = words[i].word_attr.df;
-		nRet = stk_push(&(pStObj->postfixStack),&qnode);
-		if (nRet < 0) {
-			error("error while pushing qnode to stack");
-			return nRet;
-		}
-	}
-
-	if (num_of_words > 1) {
-		INFO("num_of_words:(%d)", num_of_words);
-		qnode.type = OPERATOR;
-		qnode.operator = QPP_OP_OR;
-		qnode.num_of_operands = (int8_t)num_of_words;
-
-		nRet = stk_push(&(pStObj->postfixStack),&qnode);
-		DEBUG("stk_push operator OR ret [%d]",nRet);
-		if (nRet < 0) {
-			error("error while pushing qnode to stack");
-			return nRet;
-		}
-	}
-
-FINISH:
-	if (pStObj->nextTurn == TURN_BINARY_OPERATOR) {
-		qnode.type = OPERATOR;
-		qnode.operator = QPP_OP_AND;
-		qnode.num_of_operands = (int8_t)2;
-
-		nRet = stk_push(&(pStObj->postfixStack),&qnode);
-		DEBUG("stk_push operator OR ret [%d]",nRet);
-		if (nRet < 0) {
-			error("error while pushing qnode to stack");
-			return nRet;
-		}
-	}
-	pStObj->nextTurn = TURN_BINARY_OPERATOR;
-
-	return SUCCESS;
+	warn("truncation search is disabled from 2005/02/02");
+	return FAIL;
 }
 #endif
-
-#if 0
-static int pushStarredWord(StateObj *pStObj,QueryNode *pQuNode)
-{
-	int i = 0;
-	int nRet = 0;	
-	int nWordNum = 0;
-	QueryNode querynode[STARRED_WORD_NUM];
-	
-	if (pQuNode->opParam == STAR_BEGIN){
-		DEBUG("got *word. doing get_suffix_word");
-/*		nWordNum = sb_run_get_suffix_word(pQuNode->word_st.szWord,0,*/
-/*									STARRED_WORD_NUM,aWord_st);*/
-		nWordNum = sb_run_get_word(&gWordDB, &(pQuNode->word_st));
-		
-/*		for (i=0;i<nWordNum;i++) {*/
-/*			aWordId[i] = aWord_st[i].id;	*/
-/*		}*/
-	}
-	else if (pQuNode->opParam == STAR_END){
-		// XXX: NULL
-		DEBUG("got word*. doing get_prefix_word");
-/*      nWordNum = sb_run_get_prefix_word(pQuNode->word_st.szWord,0,*/
-/*                                       STARRED_WORD_NUM,aWord_st);*/
-	 	nWordNum = sb_run_get_word(&gWordDB, &(pQuNode->word_st) );
-/*        for (i=0;i<nWordNum;i++) {*/
-/*            aWordId[i] = aWord_st[i].id; */
-/*        }	*/
-	}
-
-	DEBUG("pre,suf fix search word[%s] result [%d]",pQuNode->word_st.string, nWordNum);
-	
-	// * 를 확장했을 때 단어가 없으면 
-	// error를 return하면 QPP_parse에서 parsing을 중단하므로..
-	if (nWordNum <= 0) {
-		DEBUG("no word from get_prefix/get_suffix word");
-		pushZeroWordid(pStObj);
-		//pushFakeOperand(pStObj);
-		return SUCCESS;
-	}
-
-	for (i=0 ; i<nWordNum ; i++) {
-		querynode[i].type = OPERAND;
-		querynode[i].operator = QPP_OP_OPERAND;
-		querynode[i].opParam = pStObj->searchField;
-		if (pStObj->searchField == -1) {
-			querynode[i].field = mDefaultSearchField;
-		}
-		else {
-			querynode[i].field = (1L << pStObj->searchField);
-		}
-		querynode[i].weight = 1;
-		
-		// 단어를 소방* 형태로 모두 넣게..
-		// XXX: 단어가 1개뿐이므로 필요없다..
-/*		nRet=sb_run_get_word_by_wordid(aWord_st[i].id,&tempWord);*/
-		
-		querynode[i].word_st.string[0] = '\0';
-		strcat(querynode[i].word_st.string, pQuNode->word_st.string);
-	
-		querynode[i].word_st.word_attr.id = pQuNode->word_st.word_attr.id;
-		querynode[i].word_st.word_attr.df = pQuNode->word_st.word_attr.df;
-		nRet = stk_push(&(pStObj->postfixStack),&(querynode[i]));
-		DEBUG("stk_push extended query ret [%d]",nRet);
-		DEBUG("wordid %u",pQuNode->word_st.word_attr.id);
-		if (nRet < 0)
-			return nRet;
-	}
-
-	if (nWordNum > 0 && pStObj->nextTurn == TURN_BINARY_OPERATOR) {
-		nRet = stk_push(&(pStObj->operatorStack),&m_defaultOperatorNode);
-		DEBUG("stk_push default operator ret [%d]",nRet);
-		if (nRet < 0)
-			return nRet;
-	}
-
-	// 소방* 의 경우 소방차 소방관으로 확장되었다면
-	// <소방차 소방관 QPP_OP_OR> 로 처리되어야 하므로..
-	if (nWordNum > 1) {
-		error(" nWordNum:(%d) ",nWordNum);
-		querynode[STARRED_WORD_NUM-1].type = OPERATOR;
-		querynode[STARRED_WORD_NUM-1].operator = QPP_OP_OR;
-		querynode[STARRED_WORD_NUM-1].num_of_operands = (Int8)nWordNum;
-
-		nRet = stk_push(&(pStObj->postfixStack),&(querynode[STARRED_WORD_NUM-1]));
-		DEBUG("stk_push operator OR ret [%d]",nRet);
-		if (nRet < 0)
-			return nRet;
-	}
-
-	pStObj->nextTurn = TURN_BINARY_OPERATOR;
-
-	return SUCCESS;
-}
-#endif
-
 
 void set_def_morp_analyzer(configValue v)
 {

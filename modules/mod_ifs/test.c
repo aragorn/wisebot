@@ -3,9 +3,6 @@
 #include "../mod_sfs/shared_memory.h"
 #include "mod_ifs_defrag.h"
 
-#ifdef WIN32
-static char path[]="./";
-#else
 static char path[]="../../dat/test/ifs";
 
 /******************************************************************************/
@@ -13,7 +10,6 @@ char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
 char gErrorLogFile[MAX_PATH_LEN] = DEFAULT_ERROR_LOG_FILE;
 module *static_modules;
 /******************************************************************************/
-#endif  
 
 static void __init_test_data(ifs_test_input_t* f);
 static void __allocate_test_input(ifs_test_input_t *t);
@@ -58,11 +54,7 @@ static void __allocate_test_input(ifs_test_input_t *t)
 	if (t->local.test_order == NULL) {
 		t->local.test_order = (int *)malloc(sizeof(int) * MAX_FILE_ID);
 		if(t->local.test_order == NULL) {
-#ifdef WIN32
-			error("test_order malloc(%d * %d) failed", sizeof(int), MAX_FILE_ID);
-#else
 			error("test_order malloc(%d * %d) failed: %s", sizeof(int), MAX_FILE_ID, strerror(errno));
-#endif
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -117,20 +109,11 @@ static int __lock_init(ifs_local_t* local, char* path)
 {
     ipc_t lock;
 
-#ifdef WIN32
-		local->fd = sb_open_win(path,
-								GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
-								NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if(local->fd == -1) {
-			return FAIL;
-		}
-#else
-		local->fd = sb_open(path, O_RDWR|O_CREAT, S_IREAD|S_IWRITE);
-		if(local->fd == -1) {
-			error("can't open file[%s] : %s", path, strerror(errno));
-			return FAIL;
-		}
-#endif
+	local->fd = sb_open(path, O_RDWR|O_CREAT, S_IREAD|S_IWRITE);
+	if(local->fd == -1) {
+		error("can't open file[%s] : %s", path, strerror(errno));
+		return FAIL;
+	}
 
     lock.type = IPC_TYPE_SEM;
     lock.pid = SYS5_IFS;
@@ -173,8 +156,8 @@ ifs_test_input_t* test_load(ifs_test* test)
     t->shared->append_count = 0;
 	test_shuffle_order(t->local.test_order, t->local.test.append_shuffle, MAX_FILE_ID);
 
-	t->local.ifs = ifs_create();
-	_ifs_open(t->local.ifs, path, segment_size, block_size);
+	ifs_open(&t->local.indexdb, 0);
+	t->local.ifs = (ifs_t*)t->local.indexdb->db;
 
 	table_print(&t->local.ifs->shared->mapping_table);
 
@@ -199,8 +182,7 @@ void test_unload(ifs_test_input_t* t)
 {
 	int size = 	sizeof(ifs_shared_t) + DATA_SIZE * 2 + sizeof(test_file_t)*MAX_FILE_ID;
 
-	ifs_close(t->local.ifs);
-	ifs_destroy(t->local.ifs);
+	ifs_close(t->local.indexdb);
 
 	unmmap_memory(t->p, size);
 }
@@ -267,7 +249,7 @@ static int read_file(ifs_test_input_t *t, test_file_t *test_file)
 
 		memset( t->local.buffer, '*', MAX_TEST_FILE_SIZE );
 
-        bytes = ifs_read(t->local.ifs, test_file->id, file_offset, size, t->local.buffer);
+        bytes = ifs_read(t->local.indexdb, test_file->id, file_offset, size, t->local.buffer);
         if (bytes != size && bytes != (written_bytes - file_offset))
         {
                 error("ifs_read returned %d. file id[%d], read_size[%d]", bytes, test_file->id, size);
@@ -331,7 +313,7 @@ static int append_file(ifs_test_input_t *t, test_file_t *test_file)
 
         memcpy(t->local.buffer, t->local.data + offset, size);
 
-		bytes = ifs_append(t->local.ifs, test_file->id, size, t->local.buffer);
+		bytes = ifs_append(t->local.indexdb, test_file->id, size, t->local.buffer);
         if (bytes != size)
         {
                 error("ifs_append returned %d. file id[%d], append size[%d]", bytes, test_file->id, size);
@@ -379,13 +361,23 @@ int main(int argc, char* argv[], char* envp[])
 	int nRet = 0;
 	ifs_test test;
 	ifs_test_input_t* t = NULL;
+	ifs_set_t local_ifs_set[MAX_INDEXDB_SET];
 
-#ifndef WIN32
 	init_set_proc_title(argc, argv, envp);
 	log_setlevelstr("info");
-#endif
 
 	temp_alive_time = 0;
+
+	// make ifs_set
+	memset(local_ifs_set, 0x00, sizeof(local_ifs_set));
+	ifs_set = local_ifs_set;
+	ifs_set[0].set = 1;
+	ifs_set[0].set_ifs_path = 1;
+	strncpy( ifs_set[0].ifs_path, path, MAX_PATH_LEN-1 );
+	ifs_set[0].set_segment_size = 1;
+	ifs_set[0].segment_size = segment_size;
+	ifs_set[0].set_block_size = 1;
+	ifs_set[0].block_size = block_size;
     
 	test.append_shuffle = SHUFFLE;
 	test.append_size.min = 1024*1023;
@@ -397,12 +389,12 @@ int main(int argc, char* argv[], char* envp[])
 	ifs_init();
 	t = test_load(&test);
 	if ( t == NULL ) return -1;
-/*	crit("append start");
+	crit("append start");
 	__append(t);
 	crit("append end");
 	crit("read start");
 	__read(t);
-	crit("read end"); */
+	crit("read end");
 	nRet = ifs_defrag(t->local.ifs, NULL);
 	if (nRet == FAIL)
 		error("defragment fail");

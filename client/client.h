@@ -5,7 +5,8 @@
 #define _SOFTBOT_CLIENT_H_ 1
 
 #include "softbot.h"
-#include "mod_api/mod_api.h"
+#include "mod_api/lexicon.h"
+#include "mod_api/did.h"
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -29,6 +30,8 @@ typedef struct {
 #define HIDE		ON_BLACK BLACK
 
 extern COMMAND commands[];
-extern word_db_t* gpWordDB;
+
+extern did_db_t* mDidDb;
+extern word_db_t* mWordDb;
 
 #endif

@@ -19,8 +19,8 @@ SUBDIRS = mod_api \
 	mod_vrm \
 	mod_frm \
 	mod_site \
-	mod_sfs mod_ifs 
-#	mod_hash
+	mod_sfs mod_ifs \
+	mod_hash
 	
 #	mod_spool \
 #	mod_vrf \

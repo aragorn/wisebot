@@ -3,7 +3,6 @@
 #include "mod_api/vbm.h"
 
 HOOK_STRUCT(
-	HOOK_LINK(buffer_initmodule)
 	HOOK_LINK(buffer_initbuf)
 	HOOK_LINK(buffer_freebuf)
 	HOOK_LINK(buffer_get)
@@ -14,7 +13,6 @@ HOOK_STRUCT(
 	HOOK_LINK(buffer_str)
 )
 
-SB_IMPLEMENT_HOOK_RUN_FIRST(int,buffer_initmodule,(void),(),0)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,buffer_initbuf,(VariableBuffer *pVarBuf),(pVarBuf),0)
 SB_IMPLEMENT_HOOK_RUN_VOID_ALL(buffer_freebuf,(VariableBuffer *pVarBuf),(pVarBuf))
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,buffer_getsize,(VariableBuffer *pVarBuf),(pVarBuf),0)

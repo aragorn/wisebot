@@ -1,7 +1,10 @@
 /* $Id$ */
 #include "softbot.h"
-#include "mod_api/mod_api.h"
 #include "mod_api/index_word_extractor.h"
+#include "mod_api/docattr.h"
+#include "mod_api/cdm.h"
+#include "mod_api/xmlparser.h"
+
 #include "mod_docattr_lgcaltex.h"
 #include "mod_qp/mod_qp.h"
 #include "mod_docattr/mod_docattr.h"
@@ -120,7 +123,8 @@ static void allocStack()
 #endif
 
 //vrm add
-static int put_doc_ac(char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc) {
+static int put_doc_ac(void* did_db, char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc)
+{
     parser_t *p;
     field_t *f;
     docattr_t docattr;
@@ -128,6 +132,7 @@ static int put_doc_ac(char *oid, DocId *registeredDocId, VariableBuffer *pCanned
     int i, ret, iSize=0, iResult=0;
     lgcaltex_vrm_t lgcaltex_vrm;
     lgcaltex_policy_t lgcaltex_policy[MAX_POLICY];
+
 	/* aCannedDoc is a "static" variable. no need to care memory leaking.
 	 * --aragorn, 2004/01/27 */
     static char aCannedDoc[DOCUMENT_SIZE];
@@ -155,7 +160,7 @@ static int put_doc_ac(char *oid, DocId *registeredDocId, VariableBuffer *pCanned
     }
 
     if (iSize >= DOCUMENT_SIZE) {
-        warn("size of document[%ld] exceed maximum limit; fail to register doc",
+        warn("size of document[%u] exceed maximum limit; fail to register doc",
                 *registeredDocId);
 		return FAIL;
     }

@@ -67,7 +67,7 @@ static int HashSearch(int fdIndexFile, DocId docId, IndexFileElement *pIndexElem
 	}
 	*/
 	
-	warn("no such document[%ld] ( != pIndexElement->docId[%ld])", docId, pIndexElement->docId);
+	warn("no such document[%u] ( != pIndexElement->docId[%u])", docId, pIndexElement->docId);
 	return FAIL;
 }
 
@@ -85,7 +85,7 @@ static int HashInsert(int fdIndexFile, IndexFileElement *pIndexElement) {
 	firstOffset = currentOffset;
 	
 	if (ele.docId !=0) {
-		warn("document[%ld] is already registered. i will overwrite",
+		warn("document[%u] is already registered. i will overwrite",
 				ele.docId);
 	}
 

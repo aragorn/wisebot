@@ -147,6 +147,8 @@ start_daemon()
 	local PID=`is_running "$ROOT" "$PID_FILE"`
 	(( PID > 0 )) && printf "[ERROR: already running($PID)] " && return
 
+	[ ! -e "$ROOT/dat/koma" ] && printf "\ndat/koma is not exists\n" && exit 1
+
 	local CMD="$ROOT/$EXEC"
 	[ -n "$CONF" ] && CMD="$CMD -c $CONF" 
 

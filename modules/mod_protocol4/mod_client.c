@@ -1,11 +1,17 @@
 /* $Id$ */
 
+#include "mod_api/rmas.h"
+#include "mod_api/lexicon.h"
+#include "mod_api/cdm.h"
+#include "mod_api/docapi.h"
+#include "mod_api/indexer.h"
+#include "mod_api/index_word_extractor.h"
+#include "mod_api/qpp.h"
+#include "mod_api/did.h"
+
 #include "mod_client.h"
 #include "mod_indexer/hit.h"
-#include "mod_api/rmas.h"
 #include "mod_site/mod_docattr_lgcaltex.h"
-
-static word_db_t *gpWordDB = NULL;
 
 typedef struct {
 	char *name;				/* user printable name of the function. */
@@ -113,12 +119,6 @@ char *command_generator(const char *text, int state)
 }
 /* end readline related stuff */
 
-void assign_word_db()
-{
-	gpWordDB = sb_run_get_global_word_db();
-	if ( gpWordDB == (word_db_t*) DECLINE ) gpWordDB = NULL;
-}
-
 int sb4_com_get_doc_size(int sockfd, char *arg)
 {
 	int result=0, len=0;
@@ -132,7 +132,7 @@ int sb4_com_get_doc_size(int sockfd, char *arg)
 		return FAIL;
 	}
 
-	info("size of document[%ld]: %d", docid, result);
+	info("size of document[%u]: %d", docid, result);
 	
 	/* 5. send ACK */
 	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, FALSE) != SUCCESS ) {
@@ -174,14 +174,14 @@ int sb4_com_get_abstracted_doc(int sockfd, char *arg)
 #endif
 
 
-	result = sscanf(arg, "%ld %s %d %d", &docid, field, &offset, &size);
+	result = sscanf(arg, "%u %s %d %d", &docid, field, &offset, &size);
 	if (result != 4) {
 		printf("usage: getabstract [docid] [fieldno] [offset] [size]\n");
 		send_nak_str(sockfd, "usage: getabstract [docid] [fieldno] [offset] [size]\n");
 		return FAIL;
 	}
 
-	printf("you want document[%ld].\n",docid);
+	printf("you want document[%u].\n",docid);
 
 	sb_run_buffer_initbuf(&var);
 
@@ -243,7 +243,7 @@ int sb4_com_get_field(int sockfd, char *arg)
 	char tmpbuf[LONG_STRING_SIZE];
  
 	// get argument 
-	n = sscanf(arg, "%ld %s", &docid, fieldname); 
+	n = sscanf(arg, "%u %s", &docid, fieldname); 
 	if (n != 2) { 
 		printf("usage: getfield docid fieldname\n"); 
 		send_nak_str(sockfd, "usage: getfield docid fieldname\n");
@@ -252,7 +252,7 @@ int sb4_com_get_field(int sockfd, char *arg)
 
 	n = sb_run_doc_get(docid, &doc); 
 	if (n < 0) { 
-		sprintf(tmpbuf,"cannot get document object of document[%ld]\n", docid); 
+		sprintf(tmpbuf,"cannot get document object of document[%u]\n", docid); 
 		send_nak_str(sockfd, tmpbuf); 
 		return FAIL; 
 	} 
@@ -447,7 +447,7 @@ int sb4_com_index_word_extractor (int sockfd, char *arg)
 }
 
 
-int sb4_com_qpp (int sockfd, char *arg)
+int sb4_com_qpp (int sockfd, char *arg, void* word_db)
 {
 	QueryNode qnodes[64];
 	int numofnodes=0, len = 0;
@@ -460,7 +460,7 @@ int sb4_com_qpp (int sockfd, char *arg)
 	
 	memset(result, 0x00, 20000);
 	
-	numofnodes = sb_run_preprocess(arg,1024, qnodes, 64);
+	numofnodes = sb_run_preprocess(word_db, arg,1024, qnodes, 64);
 	sb_run_buffer_querynode_LG(result,qnodes,numofnodes);
 	
 	/* 5. send ACK */
@@ -598,9 +598,9 @@ int sb4_com_undelete (int sockfd, char *arg)
 	debug("you can undelete upto %d document.\n",1024);
 
 	debug("you want to undelete document");
-	debug("%ld", docid[0]);
+	debug("%u", docid[0]);
 	for (i=1; i<j; i++) {
-		debug(", %ld", docid[i]);
+		debug(", %u", docid[i]);
 	}
 
 	{
@@ -685,7 +685,7 @@ int sb4_com_undelete (int sockfd, char *arg)
 }
 
 */
-int sb4_com_get_new_wordid(int sockfd, char *arg)
+int sb4_com_get_new_wordid(int sockfd, char *arg, void* word_db)
 {
 	int ret;
 	char *token=NULL;
@@ -698,7 +698,7 @@ int sb4_com_get_new_wordid(int sockfd, char *arg)
 	word_t lexicon;	
 	char tmpbuf[LONG_STRING_SIZE];
 
-	if ( gpWordDB == NULL ) {
+	if ( word_db == NULL ) {
 		warn("lexicon module is not loaded");
 		return FAIL;
 	}
@@ -732,9 +732,9 @@ int sb4_com_get_new_wordid(int sockfd, char *arg)
 		return FAIL;
 	}
 	
-	strncpy(lexicon.string, arg , MAX_WORD_LENGTH);
+	strncpy(lexicon.string, arg , MAX_WORD_LEN);
 	
-	ret = sb_run_get_new_word(gpWordDB, &lexicon, docid);
+	ret = sb_run_get_new_wordid(word_db, &lexicon);
 	if (ret < 0) {
 		sprintf(tmpbuf, "error while get new wordid for word[%s]", lexicon.string);
 		error("%s", tmpbuf);
@@ -758,21 +758,21 @@ int sb4_com_get_new_wordid(int sockfd, char *arg)
 	return SUCCESS;
 }
 
-int sb4_com_get_wordid (int sockfd, char *arg)
+int sb4_com_get_wordid (int sockfd, char *arg, void* word_db)
 {
 	int ret;
 	word_t lexicon;
 	char tmp[LONG_STRING_SIZE];
 	
-	if ( gpWordDB == NULL ) {
+	if ( word_db == NULL ) {
 		warn("lexicon module is not loaded");
 		return FAIL;
 	}
 
 	debug("argument:[%s]",arg);
 	
-	strncpy(lexicon.string, arg , MAX_WORD_LENGTH);
-	ret = sb_run_get_word(gpWordDB, &lexicon);
+	strncpy(lexicon.string, arg , MAX_WORD_LEN);
+	ret = sb_run_get_word(word_db, &lexicon);
 
 	if (ret < 0) {
 		sprintf(tmp, "ret[%d] : no such word[%s]",ret ,arg);
@@ -781,8 +781,7 @@ int sb4_com_get_wordid (int sockfd, char *arg)
 		return FAIL;
 	}
 
-	sprintf(tmp, "ret[%d], word[%s]'s wordid[%d], df[%d]\n",
-			ret ,lexicon.string ,lexicon.id ,lexicon.word_attr.df );
+	sprintf(tmp, "ret[%d], word[%s]'s wordid[%d]\n", ret ,lexicon.string ,lexicon.id );
 	
 	/* 5. send ACK */
 	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, FALSE) != SUCCESS ) {
@@ -799,67 +798,13 @@ int sb4_com_get_wordid (int sockfd, char *arg)
 	return SUCCESS;
 }
 
-
-int sb4_com_print_hash_bucket(int sockfd, char *arg)
-{
-	int ret;
-	int bucket_idx;
-	char result[1000000];
-	word_db_t *word_db;
-	char szSize[1024];
-	
-	if ( gpWordDB == NULL ) {
-		warn("lexicon module is not loaded");
-		return FAIL;
-	}
-
-	debug("wanted bucket idx >");
-	
-	if (!strlen(arg)) {
-		send_nak_str(sockfd, "usage: get_word_by_wordid wordid\n");
-		return FAIL;
-	}
-
-	bucket_idx = atoi(arg);
-
-	ret = sb_run_print_hash_bucket(gpWordDB, bucket_idx);
-	memset(result, 0x00, 1000000);
-	word_db = gpWordDB;
-	buffer_bucket((hash_t *)word_db->hash,  bucket_idx, result);
-	
-	printf("sb_run_print_hash_bucket ret[%d] print %d bucekt\n", ret, bucket_idx);	
-	
-	
-	/* 5. send ACK */
-	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, FALSE) != SUCCESS ) {
-		error("cannot send ACK");
-		return FAIL;
-	}
-	
-	sprintf(szSize, "%d", (int)strlen(result));
-	
-	/* 6. send data size*/
-	if ( TCPSendData(sockfd, szSize, strlen(szSize), FALSE) != SUCCESS ) {
-		error("cannot send ACK");
-		return FAIL;
-	}
-
-	/* 7. send hash bucket */
-	if ( TCPSendLongData(sockfd, strlen(result), result, FALSE) == FAIL ) {
-		error("cannot send help data");
-		return FAIL;
-	}
-	
-	return SUCCESS;
-}
-
-int sb4_com_get_docid(int sockfd, char *arg)
+int sb4_com_get_docid(int sockfd, char *arg, void* did_db)
 {
 	int ret;
 	DocId docid;
 	char tmpbuf[LONG_STRING_SIZE];
 
-	ret = sb_run_client_get_docid(arg, &docid);
+	ret = sb_run_get_docid(did_db, arg, &docid);
 	if (ret < 0) {
 		sprintf(tmpbuf,"cannot get document id: error[%d]\n", ret);
 		send_nak_str(sockfd, tmpbuf);
@@ -872,10 +817,10 @@ int sb4_com_get_docid(int sockfd, char *arg)
 	}
 
 	/* 6. send docid  */
-	sprintf(tmpbuf, "%ld", docid);
+	sprintf(tmpbuf, "%u", docid);
 	
 	if ( TCPSendData(sockfd, tmpbuf, strlen(tmpbuf), FALSE) == FAIL ) {
-		error("cannot send docid[%ld]", docid);
+		error("cannot send docid[%u]", docid);
 		return FAIL;
 	}
 	
@@ -1349,16 +1294,16 @@ int sb4_com_doc_count(int sockfd)
     return SUCCESS;
 }
 
-int sb4_com_get_word_by_wordid (int sockfd, char *arg)
+int sb4_com_get_word_by_wordid (int sockfd, char *arg, void* word_db)
 {
 	int ret, i, lc=0, pg=0, word_tot_num=0;
-	int lSrt, lEnd, nRecvCnt, j, inc=0;
+	int lSrt, lEnd, nRecvCnt, j;
 	char **list;
 	word_t lexicon;
 	char szResult[LONG_LONG_STRING_SIZE];
 	char tmp[STRING_SIZE];
 
-	if ( gpWordDB == NULL ) {
+	if ( word_db == NULL ) {
 		warn("lexicon module is not loaded");
 		return FAIL;
 	}
@@ -1380,72 +1325,59 @@ int sb4_com_get_word_by_wordid (int sockfd, char *arg)
 		return FAIL;
 	}
 	pg = atoi(tmp);
-	
 
-	word_tot_num = gpWordDB->shared->last_wordid;
-	
-	if ( word_tot_num == 0 )
-	{
-		error("Index Word Count Zero!! \n");
-		send_nak_str(sockfd, "Index Word Count Zero!! \n");
+	if ( sb_run_get_num_of_word( word_db, &word_tot_num ) != SUCCESS ) {
+		error("get_num_of_word failed");
+		send_nak_str(sockfd, "get_num_of_word failed \n");
 		return FAIL;
 	}
 	
 	lSrt = lc * pg;
 	lEnd = lSrt + lc;
 			
-	if ( lSrt >= word_tot_num )
-	{
-		lSrt = word_tot_num - lc;
-		if ( lSrt < 0 )
-			lSrt = 0;
-		lEnd = lSrt + lc;
-	}
-
-	if ( lEnd > word_tot_num )
-		lEnd = word_tot_num;
-
 	nRecvCnt = lEnd - lSrt;
 
 	list = (char**)sb_calloc(nRecvCnt, sizeof(char*));
-	for(j=0; j< nRecvCnt; j++)
+	for(j=0; j<lc; j++)
 	{
 		list[j] = (char*)sb_calloc(LONG_LONG_STRING_SIZE, sizeof(char));
-	}	
+	}
 	
-	for(i=lSrt, inc=0; i < lEnd; i++)
+	for(i=lSrt, nRecvCnt=0; i < lEnd; i++)
 	{
 		lexicon.id = (uint32_t)i+1;
 		
-		ret = sb_run_get_word_by_wordid(gpWordDB, &lexicon);
+		ret = sb_run_get_word_by_wordid(word_db, &lexicon);
+		if ( ret == WORD_NOT_REGISTERED ) break;
+		else if ( ret != WORD_OLD_REGISTERED ) goto error;
 		
 		memset(szResult, 0x00, LONG_LONG_STRING_SIZE);
 		
-		sprintf(szResult, "WID=%u^WORD=%s^DF=%u^", lexicon.id, lexicon.string, lexicon.word_attr.df);
+		sprintf(szResult, "WID=%u^WORD=%s^", lexicon.id, lexicon.string);
 
-		strcpy(list[inc], szResult);
-		list[strlen(list[inc])] = 0x00;
-		inc++;
+		strcpy(list[nRecvCnt], szResult);
+		list[strlen(list[nRecvCnt])] = 0x00;
+		nRecvCnt++;
 	}
 
 	/* Send ACK */
 	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, FALSE) != SUCCESS ) {
 		error("cannot send ACK");
-		return FAIL;
+		goto error;
 	}
 
 	/* Send Tot Cnt */
 	sprintf(tmp, "%d", word_tot_num);
 	if ( TCPSendData(sockfd, tmp, strlen(tmp), FALSE) == FAIL ) {
 		error("cannot send Tot Cnt ");
-		return FAIL;
+		goto error;
 	}
 	
 	/* Send Recv Cnt */
 	sprintf(tmp, "%d", nRecvCnt);
 	if ( TCPSendData(sockfd, tmp, strlen(tmp), FALSE) == FAIL ) {
 		error("cannot send recv Cnt ");
-		return FAIL;
+		goto error;
 	}
 	
 	/* Send List */
@@ -1453,11 +1385,17 @@ int sb4_com_get_word_by_wordid (int sockfd, char *arg)
 	{
 		if ( TCPSendData(sockfd, list[i], strlen(list[i]), FALSE) == FAIL ) {
 			error("cannot send recv data ");
-			return FAIL;
+			goto error;
 		}
 	}
 	
 	return SUCCESS;
+
+error:
+	for(i=0; i<lc; i++) sb_free(list[i]);
+	sb_free(list);
+
+	return FAIL;
 }
 
 int sb4_com_del_system_doc (int sockfd, char *arg)

@@ -7,6 +7,7 @@
 #include "mod_api/morpheme.h"
 #include "mod_api/xmlparser.h"
 #include "mod_api/docattr.h"
+#include "mod_api/did.h"
 
 #include "expat.h"
 
@@ -249,7 +250,7 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 	}
 
 	if (iSize >= DOCUMENT_SIZE) {
-		warn("size of document[%ld] exceed maximum limit; fail to register doc",
+		warn("size of document[%u] exceed maximum limit; fail to register doc",
 				docId);
 		return FAIL;
 	}
@@ -283,7 +284,7 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 	/* parse cdm */
 	p = sb_run_xmlparser_parselen("CP949", aCannedDoc, iSize);
 	if (p == NULL) {
-		error("1. cannot parse document[%ld]", docId);
+		error("1. cannot parse document[%u]", docId);
 		return FAIL;
 	}
 
@@ -301,7 +302,7 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 
 			f = sb_run_xmlparser_retrieve_field(p, path);
 			if (f == NULL) {
-				warn("cannot get field[/%s/%s] of ducument[%ld] (path:%s)", 
+				warn("cannot get field[/%s/%s] of ducument[%u] (path:%s)", 
 						fieldRootName, 
 						docattrFields[i], docId, path);
 				continue;
@@ -319,7 +320,7 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 
 			if(sb_run_docattr_set_docattr_function(&docattr, docattrFields[i],
 						value) == -1) {
-				warn("wrong type of value of field[/%s/%s] of ducument[%ld]", 
+				warn("wrong type of value of field[/%s/%s] of ducument[%u]", 
 						fieldRootName, 
 						docattrFields[i], docId);
 			}
@@ -406,7 +407,7 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 	return iResult;
 }
 
-int CDM_putWithOid(char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc) {
+int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc) {
 	int iResult, ditNo;
 	long iSize, dwCurrentDBOffset;
 	IndexFileElement indexElement;
@@ -587,7 +588,7 @@ int CDM_putWithOid(char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc
 		DocId docid=0, olddocid=0;
 		docattr_mask_t docmask;
 
-		iResult = sb_run_client_get_new_docid(oid, &docid, &olddocid); 
+		iResult = sb_run_get_new_docid(did_db, oid, &docid, &olddocid); 
 		if ( iResult < 0 ) {
 			error ("cannot get new document id of oid[%s]:error(%d)", 
 					oid, iResult);
@@ -595,15 +596,15 @@ int CDM_putWithOid(char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc
 	        goto return_fail;
 		}
 
-		if (iResult == DI_OLD_REGISTERED) {
-			info("old docid[%ld] of OID[%s] is deleted. new docid is %ld", 
+		if (iResult == DOCID_OLD_REGISTERED) {
+			info("old docid[%u] of OID[%s] is deleted. new docid is %u", 
 					olddocid, oid, docid);
 			DOCMASK_SET_ZERO(&docmask);
 			sb_run_docattr_set_docmask_function(&docmask, "Delete", NULL);
 			sb_run_docattr_set_array(&olddocid, 1, SC_MASK, &docmask);
 		}
 		else {
-			info("OID[%s] is registered by docid[%ld]", oid, docid);
+			info("OID[%s] is registered by docid[%u]", oid, docid);
 		}
 
 		*registeredDocId = docid;
@@ -674,13 +675,13 @@ int CDM_getSize(DocId docId)
 	}
 
 	if (buf[0] == '1') {
-		info("document[%ld] is deleted", docId);
+		info("document[%u] is deleted", docId);
 		return FAIL;
 	}
 
 	iResult = SelectIndexElement(fdIndexFile, docId, &indexElement);
 	if (iResult == FAIL) {
-		warn("no document retrieved by docid[%ld]", docId);
+		warn("no document retrieved by docid[%u]", docId);
 		return FAIL;
 	}
 
@@ -734,7 +735,7 @@ static int CDM_getWithIndexElement(DocId docId, VariableBuffer *pCannedDoc, Inde
 	}
 
 	if (buf[0] == '1') {
-		info("document[%ld] is deleted", docId);
+		info("document[%u] is deleted", docId);
 		return CDM_DELETED;
 	}
 #endif
@@ -754,7 +755,7 @@ static int CDM_getWithIndexElement(DocId docId, VariableBuffer *pCannedDoc, Inde
 	un_lock(fdIndexFile, SEEK_SET, 0, 0);
 
 	if (iResult == FAIL) {
-		warn("no document retrieved by docid[%ld]", docId);
+		warn("no document retrieved by docid[%u]", docId);
 		return CDM_NOT_EXIST;
 	}
 
@@ -831,7 +832,7 @@ int CDM_get_as_pointer(DocId docId, void *pCannedDoc, int size)
 	}
 
 	if (buf[0] == '1') {
-		info("document[%ld] is deleted", docId);
+		info("document[%u] is deleted", docId);
 		return CDM_DELETED;
 	}
 #endif
@@ -851,7 +852,7 @@ int CDM_get_as_pointer(DocId docId, void *pCannedDoc, int size)
 	un_lock(fdIndexFile, SEEK_SET, 0, 0);
 
 	if (iResult == FAIL) {
-		warn("no document retrieved by docid[%ld]", docId);
+		warn("no document retrieved by docid[%u]", docId);
 		return CDM_NOT_EXIST;
 	}
 
@@ -1087,7 +1088,7 @@ static int CDM_update(DocId docId, VariableBuffer *pDoc) {
 	int iResult;
 	iResult = CDM_delete(docId);
 	if (iResult != CDM_NOT_EXIST && iResult < 0) {
-		error("cannot update document[%ld] because of cdm error code[%d]", docId, iResult);
+		error("cannot update document[%u] because of cdm error code[%d]", docId, iResult);
 		return iResult;
 	}
 
@@ -1266,7 +1267,7 @@ static void init_LastRegisteredDocId(void *data)
 static char* get_LastRegisteredDocId()
 {
 	static char result[MAX_EACH_REGISTRY_RESULT_STRING_SIZE];
-	snprintf(result, MAX_EACH_REGISTRY_RESULT_STRING_SIZE, "%ld", *lastDocId);
+	snprintf(result, MAX_EACH_REGISTRY_RESULT_STRING_SIZE, "%u", *lastDocId);
 	result[MAX_EACH_REGISTRY_RESULT_STRING_SIZE-1] = '\0';
 	return (char*)result;
 }

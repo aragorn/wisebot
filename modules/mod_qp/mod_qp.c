@@ -56,7 +56,7 @@ enum DbType {
 static enum DbType        mDbType = TYPE_VRFI;
 
 static VariableRecordFile *mVRFI = NULL;
-static void               *mIfs  = NULL;
+static index_db_t         *mIfs  = NULL;
 
 static char mIdxFilePath[MAX_PATH_LEN]= "dat/indexer/index"; // used by vrfi
 static int mIdxDbSet = -1;
@@ -527,7 +527,6 @@ static int read_from_db(uint32_t wordid, char* word, doc_hit_t* doc_hits)
 static index_list_t *read_index_list(index_list_t *list)
 {
 	uint32_t wordid = list->wordid;
-	uint32_t df = list->df;
 	uint32_t field = list->field;
 
 	uint32_t ndochits=0;
@@ -553,7 +552,6 @@ static index_list_t *read_index_list(index_list_t *list)
 		list->field = field;
 		list->is_complete_list = TRUE;
 		list->list_type = list_type;
-		list->df = df;
 	}
 
 	ndochits = read_from_db( wordid, word, list->doc_hits );
@@ -599,7 +597,7 @@ printf("Title_hit:%d(%d)\n", Title_hit, field);
 				
 				tot_index_doccnt = sb_run_last_indexed_did();
 
-				list->relevancy[idx-1] = (((int)log10( (tot_index_doccnt*3) / (list->df))+1 ) * nWordHit)+Title_hit;
+				list->relevancy[idx-1] = (((int)log10( (tot_index_doccnt*3) / (ndochits))+1 ) * nWordHit)+Title_hit;
 
 										
 			}
@@ -623,17 +621,11 @@ static void set_index_list(QueryNode *qnode, index_list_t *list)
 		list->ndochits = 0;
 		list->is_complete_list = FALSE;
 		list->wordid = qnode->word_st.id;
-		/**/
-		list->df = qnode->word_st.word_attr.df;
-INFO("list->df:%d",list->df);		
 		return ;
 	}
 	list->is_complete_list = FALSE;
 	list->field = qnode->field;
 	list->wordid = qnode->word_st.id;
-	/**/
-	list->df = qnode->word_st.word_attr.df;
-INFO("list->df:%d",list->df);
 	strncpy(list->word,qnode->word_st.string, MAX_WORD_LEN);
 
 	INFO("[%s]qnode->field:%s",list->word, sb_strbin(list->field, sizeof(list->field)));
@@ -2271,7 +2263,7 @@ START:
 }
 
 
-int full_search (request_t *req)
+int full_search (void* word_db, request_t *req)
 {
 	int ret=FAIL;
 
@@ -2281,7 +2273,7 @@ int full_search (request_t *req)
 	INFO("light searching");
 	req->sb4error = 0;
 	req->result_list = NULL;
-	ret = light_search(req);
+	ret = light_search(word_db, req);
 	if (ret < 0) {
 		error("light search error");
 		if ( req->result_list != NULL ) {
@@ -2351,10 +2343,9 @@ static int do_operate(/*in*/QueryNode qnodes[], /*in*/uint16_t num_of_node,
 				new_node->list_type = NORMAL;
 			}
 
-			DEBUG("stack pushing word[%s](wordid[%u])(word.df[%u])",
+			DEBUG("stack pushing word[%s](wordid[%u]))",
 				   qnodes[i].word_st.string, 
-				   qnodes[i].word_st.id,
-				   qnodes[i].word_st.word_attr.df);
+				   qnodes[i].word_st.id);
 	
 			stack_push(&stack, new_node);
 		
@@ -2499,7 +2490,7 @@ static void reduce_dochits_to_one_per_doc(index_list_t *list)
 #endif
 
 #define MAX_QUERY_NODES 60
-int light_search (request_t *req)
+int light_search (void* word_db, request_t *req)
 {
 	int num_of_node, rv;
 	QueryNode qnodes[MAX_QUERY_NODES];
@@ -2516,7 +2507,7 @@ int light_search (request_t *req)
 	DEBUG("before preprocessing, query str: [%s]",req->query_string);
 
 	num_of_node = 
-		sb_run_preprocess(req->query_string, MAX_QUERY_STRING_SIZE,
+		sb_run_preprocess(word_db, req->query_string, MAX_QUERY_STRING_SIZE,
 									qnodes, MAX_QUERY_NODES);
 
 	INFO("postfix query");
@@ -2696,13 +2687,7 @@ static int private_init(void)
 	init_free_list();
 
 	if ( mDbType == TYPE_INDEXDB ) {
-		mIfs = sb_run_indexdb_create();
-		if ( mIfs == NULL || mIfs == (void*)DECLINE ) {
-			error("indexdb_create failed");
-			return FAIL;
-		}
-
-		ret = sb_run_indexdb_open( mIfs, mIdxDbSet );
+		ret = sb_run_indexdb_open( &mIfs, mIdxDbSet );
 		if (ret == FAIL) { 
 			crit("indexdb_open failed."); 
 			return FAIL; 

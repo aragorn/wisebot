@@ -1,6 +1,6 @@
 #include "softbot.h"
-#include "mod_api/mod_api.h"
 #include "mod_api/docattr.h"
+#include "mod_api/qp.h"
 #include "mod_qp/mod_qp.h"
 
 static int get_str_item(char *dest, char *dit, char *key, char delimiter, int len)

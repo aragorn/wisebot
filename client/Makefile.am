@@ -39,12 +39,9 @@ EXPORT_INCLUDES = -I$(top_builddir)/include -I$(top_builddir)/platform/ \
 EXPORT_FILES = ../platform/generic/*.h ../platform/$(OS_TYPE)/*.h \
                ../include/*.h \
                ../modules/mod_mp/*.h \
-               ../modules/mod_api/mod_api.h \
                ../modules/mod_api/lexicon.h \
                ../modules/mod_api/cdm.h \
                ../modules/mod_api/did.h \
-               ../modules/mod_api/did_client.h \
-               ../modules/mod_api/did_daemon.h \
                ../modules/mod_api/vbm.h \
                ../modules/mod_api/tcp.h \
                ../modules/mod_api/udp.h \

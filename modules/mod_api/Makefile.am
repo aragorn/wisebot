@@ -5,8 +5,6 @@ SOURCE_FILES = mod_api.c mod_api.h \
 			   lexicon.c lexicon.h \
 			   cdm.c cdm.h \
 			   did.c did.h \
-			   did_client.c did_client.h \
-			   did_daemon.c did_daemon.h \
 			   vbm.c vbm.h \
 			   tcp.c tcp.h \
 			   udp.c udp.h \

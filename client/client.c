@@ -3,6 +3,9 @@
 
 #include "client.h"
 #include "commands.h"
+#include "mod_api/lexicon.h"
+#include "mod_api/did.h"
+#include "mod_api/cdm.h"
 
 extern const char *current_hooking_module;
 
@@ -18,7 +21,10 @@ static int clc_log_level=0;
 static int clc_listen_port=0;
 static int clc_server_root=0;
 
-word_db_t* gpWordDB = NULL;
+int mWordDbSet = -1;
+word_db_t* mWordDb = NULL;
+int mDidSet = -1;
+did_db_t* mDidDb = NULL;
 
 COMMAND commands[] = {
 	{ "log" , com_log_level, "setting log level"},
@@ -86,20 +92,13 @@ COMMAND commands[] = {
 /*	{ "drop_cdm", com_drop_cdm, "drop all canned document db"},*/
 	{ BLANKLINE, NULL, ""},
 
-#ifdef USE_LEXICON_MODULE /* see client.h */
 	{ RESET GREEN"Lexicon"HIDE, NULL, RESET},
-	{ "drop_lexicon", com_drop_lexicon, "drop all lexicon word db"},
 	{ "get_wordid", com_get_wordid , "get wordid for given word"},
-	{ "get_right_truncation", com_get_right_truncation , "get right truncation words search"},
-	{ "get_left_truncation", com_get_left_truncation , "get left truncation words search"},
 	{ "get_word_by_wordid", com_get_word_by_wordid , "get word for given wordid"},
 	{ "get_new_wordid", com_get_new_wordid , "get new wordid for given word"},
 	{ "sync_word_db", com_sync_word_db , "synchronize word db"},
 	{ "get_num_of_wordid", com_get_num_of_wordid , "get maked wordid number"},
-	{ "print_hash_bucket" , com_print_hash_bucket, "print wordid"},
-	{ "print_truncation_bucket" , com_print_truncation_bucket, "print wordid"},
 	{ BLANKLINE, NULL, ""},
-#endif
 
 	{ RESET GREEN"Docid"HIDE, NULL, RESET},
 	{ "getdocid", com_get_docid, "retreive document id"},
@@ -318,7 +317,8 @@ int client_main()
 	}
 
 	// gWordDB 대신 이걸 쓰자
-	gpWordDB = sb_run_get_global_word_db();
+	sb_run_open_word_db( &mWordDb, mWordDbSet );
+	sb_run_open_did_db( &mDidDb, mDidSet );
 
 	init_readline();
 
@@ -345,6 +345,9 @@ int client_main()
 	printf("bye!\n");
 
 	free_ipcs();
+	if ( mDidDb ) sb_run_close_did_db( mDidDb );
+	if ( mWordDb ) sb_run_close_word_db( mWordDb );
+
 	return SUCCESS;
 }
 
@@ -432,7 +435,7 @@ main(int argc, char *argv[], char *envp[])
 
 	// set gSoftBotRoot
 	if ( realpath(argv[0], SoftBotRoot) ) {
-		tmp = strstr( SoftBotRoot, "/bin/softbotd" );
+		tmp = strstr( SoftBotRoot, "/bin/softbotcli" );
 		if ( tmp ) {
 			*tmp = '\0';
 
@@ -688,6 +691,14 @@ static void setRebuildDocAttrField(configValue v) {
     info("read RebuidDocAttrField[%s]", docattrFields[iCount]);
 }
 
+static void setDidSet(configValue v) {
+	mDidSet = atoi( v.argument[0] );
+}
+
+static void setWordDbSet(configValue v) {
+	mWordDbSet = atoi( v.argument[0] );
+}
+
 static config_t config[] = {
     CONFIG_GET("LoadModule", doLoadModule, VAR_ARG,
         "a module name and the name of a shared object file to load it from"),
@@ -706,6 +717,9 @@ static config_t config[] = {
 	
 	CONFIG_GET("RebuildDocAttrField", setRebuildDocAttrField, VAR_ARG, \
 				"fields inserted into docattr db"),
+
+	CONFIG_GET("DidSet", setDidSet, 1, "DidSet 0~..."),
+	CONFIG_GET("WordDbSet", setWordDbSet, 1, "WordDbSet 0~..."),
 	{NULL}
 };
 

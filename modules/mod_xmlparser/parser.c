@@ -18,7 +18,7 @@
 #  include <iconv.h>
 #endif
 
-#include "expat.h"
+#include "expat/expat.h"
 #include "stack.h"
 #include "dh.h"
 #include "checksum.h"

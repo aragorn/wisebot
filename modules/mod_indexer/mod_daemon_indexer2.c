@@ -1,9 +1,11 @@
 #include "softbot.h"
 #include "mod_mp/mod_mp.h"
-#include "mod_api/mod_api.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/indexer.h"
 #include "mod_api/indexdb.h"
+#include "mod_api/tcp.h"
+#include "mod_api/cdm.h"
+#include "mod_api/index_word_extractor.h"
 
 #include "mod_qp/mod_qp.h" /* XXX: STD_HITS_LEN */
 #include "mod_daemon_indexer.h"
@@ -18,7 +20,6 @@
 
 static word_hit_t *wordhits_storage = NULL; // 매번 malloc, free하기 싫으니까...
 static int max_word_hit = 400000;
-
 
 /* XXX: 일단은 child 1개 */
 static scoreboard_t scoreboard[] = {PROCESS_SCOREBOARD(1)};
@@ -49,6 +50,7 @@ static int mTestFileNumber=0;
 /* member variables  */
 static char mLogDir[STRING_SIZE]="dat/indexer";
 static char mSocketFile[SHORT_STRING_SIZE] = "dat/indexer/socket";
+static int mWordDbSet = -1;
 static int mIndexDbSet = -1;
 #define BACKLOG (3)
 
@@ -59,7 +61,8 @@ static uint32_t count_successive_wordid_same_to_first_in_wordhit
 							(word_hit_t *wordhits, uint32_t max);
 							static int cmp_word_hit(const void* var1,const void* var2);
 static int recv_from_rmac(int sockfd, void **data, uint32_t *docid, int *size);
-int save_to_indexdb(void* indexdb, int docid, word_hit_t* wordhits, int wordhit_len, void* data, int size);
+int save_to_indexdb(index_db_t* indexdb, word_db_t* word_db,
+		int docid, word_hit_t* wordhits, int wordhit_len, void* data, int size);
 
 /*** signal handler **********************************************************/
 static RETSIGTYPE _do_nothing(int sig) { return; }
@@ -280,8 +283,11 @@ static int indexer_main(slot_t *slot)
 	void *data; int size;
 	uint32_t last_registered_docid = 0, docid;
 
+	/* word db */
+	word_db_t* word_db = NULL;
+
 	/* indexdb(indexdb?) */
-	void* indexdb = NULL;
+	index_db_t* indexdb = NULL;
 
 	/* 통계 */
 	int indexed_num;
@@ -295,13 +301,12 @@ static int indexer_main(slot_t *slot)
 		goto error_return;
 	}
 
-	indexdb = sb_run_indexdb_create();
-	if ( indexdb == NULL || indexdb == (void*)DECLINE ) {
-		error("indexdb_create() failed");
+	if ( sb_run_open_word_db( &word_db, mWordDbSet ) != SUCCESS ) {
+		error("word db open failed");
 		goto error_return;
 	}
 
-	ret = sb_run_indexdb_open( indexdb, mIndexDbSet );
+	ret = sb_run_indexdb_open( &indexdb, mIndexDbSet );
 	if ( ret == FAIL ) {
 		error("indexdb load failed");
 		goto error_return;
@@ -360,7 +365,7 @@ static int indexer_main(slot_t *slot)
 		}
 							
 		// 형태소 분석된 결과를 mem_index에 저장
-		ret = save_to_indexdb( indexdb, docid, wordhits_storage, max_word_hit, data, size );
+		ret = save_to_indexdb( indexdb, word_db, docid, wordhits_storage, max_word_hit, data, size );
 
 		if (ret != SUCCESS) {
 			error("save_to_indexdb() error, docid=%d", docid);
@@ -414,10 +419,8 @@ static int indexer_main(slot_t *slot)
 		}
 	} /* endless while loop */
 
-	sb_run_sync_word_db(&gWordDB); //XXX: indexer should do this?
-
+	sb_run_close_word_db( word_db ); //XXX: indexer should do this?
 	sb_run_indexdb_close( indexdb );
-	sb_run_indexdb_destroy( indexdb );
 
 	close(mErrorFileFd);
 	close(mDocFileFd);
@@ -427,7 +430,8 @@ static int indexer_main(slot_t *slot)
 	return 0;
 
 error_return:
-	if ( indexdb ) sb_run_indexdb_destroy( indexdb );
+	if ( word_db ) sb_run_close_word_db( word_db );
+	if ( indexdb ) sb_run_indexdb_close( indexdb );
 	free_wordhits_storage();
 	slot->state = SLOT_FINISH;
 	return -1;
@@ -594,7 +598,8 @@ static int init() {
 	return SUCCESS;
 }
 
-int save_to_indexdb(void* indexdb, int docid, word_hit_t* wordhits, int wordhit_len, void* data, int size)
+int save_to_indexdb(index_db_t* indexdb, word_db_t* word_db,
+		int docid, word_hit_t* wordhits, int wordhit_len, void* data, int size)
 {
 	int ret;
 	int hit_count, count = 0, same_count;
@@ -604,7 +609,7 @@ int save_to_indexdb(void* indexdb, int docid, word_hit_t* wordhits, int wordhit_
 	int dochits_count; // fill_dochit()의 결과
 #define MAX_DOCHITS_SIZE (1024*1024)
 
-	ret = sb_run_index_each_doc(docid, wordhits, wordhit_len, &hit_count, data, size);
+	ret = sb_run_index_each_doc(word_db, docid, wordhits, wordhit_len, &hit_count, data, size);
 	if (ret != SUCCESS) return ret;
 
 	// wordid순 정렬. stable해야 한다. 
@@ -986,6 +991,11 @@ static void set_indexdb_set(configValue v)
 	mIndexDbSet = atoi( v.argument[0] );
 }
 
+static void set_word_db_set(configValue v)
+{
+	mWordDbSet = atoi( v.argument[0] );
+}
+
 /* registry related functions */
 REGISTRY void init_last_indexed_docid(void *data)
 {
@@ -1015,6 +1025,7 @@ static config_t config[] = {
 	CONFIG_GET("MaxWordHit",set_max_word_hit,1, \
 			"maximum word hit count per document (e.g: MaxWordHit 400000)"),
 	CONFIG_GET("IndexDbSet",set_indexdb_set,1,"<e.g: IndexDbSet 1>"),
+	CONFIG_GET("WordDbSet",set_word_db_set,1,"<e.g: WordDbSet 1>"),
 	{NULL}
 };
 

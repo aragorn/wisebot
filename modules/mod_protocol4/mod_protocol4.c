@@ -2,11 +2,15 @@
 #include <time.h>
 #include <sys/wait.h>
 
-#include "mod_api/mod_api.h"
+#include "mod_api/did.h"
+#include "mod_api/xmlparser.h"
+#include "mod_api/qp.h"
+#include "mod_api/tcp.h"
+#include "mod_api/rmas.h"
+
 #include "mod_vbm/mod_vbm.h"
 #include "mod_cdm/mod_cdm.h"
 #include "mod_qp/mod_qp.h"
-#include "mod_api/rmas.h"
 #include "mod_client.h"
 //#include "sn2.h"
 
@@ -14,6 +18,14 @@
 //#undef PROCESS_HANDLE
 #define BUF_SIZE 100
 
+/**********************************************
+ *    protocol4 가 작업하는데 필요한 것들
+ **********************************************/
+static int protocol_opened = 0;
+static int did_set = -1;
+static did_db_t* did_db = NULL;
+static int word_db_set = -1;
+static word_db_t* word_db = NULL;
 
 /*****************************************************************************/
 static void make_querystr(char *formatted, int size, char *query, char *docAttr, int listcount, int page, char *sh);
@@ -30,6 +42,74 @@ int TCPRecvLongData(int sockfd, long size , void *data, int server_side); // thi
 static char regifail_file_path[STRING_SIZE] = "dat/cdm/register.fail";
 static int regifailfd = 0;
 static int regifailnum = 0;
+
+int protocol_open()
+{
+	int ret;
+	static int errcnt = 0;
+
+	if ( protocol_opened ) {
+		warn("protocol is already opened [%d]", protocol_opened);
+
+		if ( errcnt ) return FAIL;
+		else return SUCCESS;
+	}
+
+	/* open file */
+	regifailfd = sb_open(regifail_file_path, O_RDWR | O_CREAT | O_APPEND, 0666);
+	if (regifailfd == -1) {
+		error("cannot open file[%s]", regifail_file_path);
+		errcnt++;
+	}
+
+	ret = sb_run_open_did_db( &did_db, did_set );
+	if ( ret != SUCCESS && ret != DECLINE ) {
+		error("did db open failed");
+		errcnt++;
+	}
+
+	ret = sb_run_open_word_db( &word_db, word_db_set );
+	if ( ret != SUCCESS && ret != DECLINE ) {
+		error("word db open failed");
+		errcnt++;
+	}
+
+	ret = sb_run_qp_init();         
+	if ( ret != SUCCESS && ret != DECLINE ) {
+		error( "qp init failed" );
+		errcnt++;
+	}
+
+	ret = sb_run_server_canneddoc_init();
+	if ( ret != SUCCESS && ret != DECLINE ) {
+		error( "cdm module init failed" );
+		errcnt++;
+	}                         
+
+	protocol_opened++;
+
+	if ( errcnt ) return FAIL;
+	else return SUCCESS;
+}
+
+int protocol_close()
+{
+	int ret;
+
+	ret = sb_run_close_did_db( did_db );
+	if ( ret != SUCCESS && ret != DECLINE )
+		error("did db close failed");
+
+	ret = sb_run_close_word_db( word_db );
+	if ( ret != SUCCESS && ret != DECLINE )
+		error("word db close failed");
+
+	ret = close(regifailfd);
+	if ( ret != 0 )
+		error("close regifailfd[%d] failed", regifailfd);
+
+	return SUCCESS;
+}
 
 int sb4c_remote_morphological_analyze_doc(int sockfd, char *meta_data , void *send_data , 
 		long send_data_size ,  void **receive_data , long *receive_data_size)
@@ -684,8 +764,8 @@ static int sb4s_set_docattr(int sockfd)
 	}
 
 	/* get docid */
-	if ((n = sb_run_client_get_docid(oid, &docid)) < 0 &&
-			n == DI_NOT_REGISTERED) {
+	if ((n = sb_run_get_docid(did_db, oid, &docid)) < 0 &&
+			n == DOCID_NOT_REGISTERED) {
 		error("cannot get new docid");
 		goto FAILURE;
 	}
@@ -1322,10 +1402,10 @@ protocol_cdm:
 
 	/************** fixed part *************************/
 	
-	n = sb_run_server_canneddoc_put_with_oid(sb4_dit.OID, &docid, &var_buf); 
+	n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &var_buf); 
 	sb_run_buffer_freebuf(&var_buf); 
 	if ( n < 0 ) {
-		error("cannot register canned document[%ld] because of error(%d)",
+		error("cannot register canned document[%u] because of error(%d)",
 				docid, n);
 		return FAIL;
 	}
@@ -1341,7 +1421,7 @@ protocol_cdm:
 	/***************************************************/
 
 	if (docid % 1000 == 0) {
-		info("%ld documents is registered.", docid);
+		info("%u documents is registered.", docid);
 	}
 
 #ifdef DEBUG_REGISTER_DOC
@@ -1424,7 +1504,7 @@ int sb4s_last_docid(int sockfd)
 		return FAIL;
 	}
 
-	sprintf(buf, "%ld", docid);
+	sprintf(buf, "%u", docid);
 	len = strlen(buf);
 
 	/* 3. send ACK */
@@ -1521,8 +1601,8 @@ int sb4s_delete_oid(int sockfd)
 
 	/* get document id */
 	warn("del oid = %s", buf);
-	if ((n = sb_run_client_get_docid(buf, &docid)) < 0 &&
-			n != DI_NOT_REGISTERED) {
+	if ((n = sb_run_get_docid(did_db, buf, &docid)) < 0 &&
+			n != DOCID_NOT_REGISTERED) {
 		error("cannot get_docid from oid[%s]", buf);
 		send_nak(sockfd, SB4_ERT_RECV_DATA);
 		return FAIL;
@@ -1543,7 +1623,7 @@ int sb4s_delete_oid(int sockfd)
 #endif
 
 	/* if no docid */
-	if (n == DI_NOT_REGISTERED) {
+	if (n == DOCID_NOT_REGISTERED) {
 		failed = 0;
 		for (i=1; i<=MAX_DOC_SPLIT; i++) {
 			if (failed == 3) break;
@@ -1552,7 +1632,7 @@ int sb4s_delete_oid(int sockfd)
 			sprintf(tmp, "%s-%d", buf, i);
 
 			/* get document id */
-			if ((n = sb_run_client_get_docid(tmp, &docid)) > 0) {
+			if ((n = sb_run_get_docid(did_db, tmp, &docid)) > 0) {
 				docattr_mask_t docmask;
 
 				DOCMASK_SET_ZERO(&docmask);
@@ -1561,7 +1641,7 @@ int sb4s_delete_oid(int sockfd)
 
 				continue;
 			}
-			else if (n == DI_NOT_REGISTERED) {
+			else if (n == DOCID_NOT_REGISTERED) {
 				failed++;
 			}
 			else {
@@ -1797,9 +1877,9 @@ int sb4s_delete_doc(int sockfd)
 	debug("you can delete upto %d document.\n",1024);
 
 	debug("you want to delete document");
-	debug("%ld", docid[0]);
+	debug("%u", docid[0]);
 	for (i=1; i<j; i++) {
-		debug(", %ld", docid[i]);
+		debug(", %u", docid[i]);
 	}
 
 	{
@@ -2038,7 +2118,7 @@ static int sb4s_search_doc(int sockfd)
 	req.type = FULL_SEARCH;
 	
 /*	sb_run_qp_light_search(&req);*/
-	n = sb_run_qp_full_search(&req);
+	n = sb_run_qp_full_search(word_db, &req);
 	if (n != SUCCESS) {
 		error("full search failed. ret.sb4error:%d", req.sb4error);
 		send_nak(sockfd, req.sb4error);
@@ -2215,8 +2295,6 @@ static int sb4s_dispatch(int sockfd)
 		return sb_run_sb4s_get_wordid(sockfd);	
 	else if ( strncmp(buf, SB4_OP_GET_NEW_WORDID, 3) == 0 )
 		return sb_run_sb4s_get_new_wordid(sockfd);	
-	else if ( strncmp(buf, SB4_OP_PRINT_HASH_BUCKET, 3) == 0 )
-		return sb_run_sb4s_print_hash_bucket(sockfd);	
 	else if ( strncmp(buf, SB4_OP_GET_DOCID, 3) == 0 )
 		return sb_run_sb4s_get_docid(sockfd);														
 	else if ( strncmp(buf, SB4_OP_INDEX_LIST, 3) == 0 )
@@ -2646,7 +2724,7 @@ int sb4s_qpp(int sockfd)
 	}
 	
 	/* get qpp */
-	nRet = sb4_com_qpp(sockfd, tmpbuf);
+	nRet = sb4_com_qpp(sockfd, tmpbuf, word_db);
 
 	return SUCCESS;	
 }
@@ -2854,7 +2932,7 @@ int sb4s_get_wordid(int sockfd)
 	}
 	
 	/* get wordid */
-	nRet = sb4_com_get_wordid(sockfd, tmpbuf);
+	nRet = sb4_com_get_wordid(sockfd, tmpbuf, word_db);
 	
 	return SUCCESS;	
 	
@@ -2889,41 +2967,7 @@ int sb4s_get_new_wordid(int sockfd)
 	}
 	
 	/* get new wordid */
-	nRet = sb4_com_get_new_wordid(sockfd, tmpbuf);
-	
-	return SUCCESS;	
-}
-
-int sb4s_print_hash_bucket(int sockfd)
-{
-	int len, nRet;
-	char tmpbuf[STRING_SIZE];
-
-	/* 1. receive OP_CODE */
-	// done
-	
-	/* 2. send ACK */
-	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
-		error("cannot send ACK");
-		return FAIL;
-	}
-
-	/* 3. receive bucket_idx */
-	if ( TCPRecvData(sockfd, tmpbuf, &len, TRUE) == FAIL ) {
-		error("cannot recv bucket_idx");
-		return FAIL;
-	}
-	tmpbuf[len] = '\0';
-
-	 
-	/* 4. send ACK */
-	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
-		error("cannot send ACK");
-		return FAIL;
-	}
-	
-	/* get hash bucket */
-	nRet = sb4_com_print_hash_bucket(sockfd, tmpbuf);
+	nRet = sb4_com_get_new_wordid(sockfd, tmpbuf, word_db);
 	
 	return SUCCESS;	
 }
@@ -2957,7 +3001,7 @@ int sb4s_get_docid(int sockfd)
 	}
 	
 	/* getdodid */
-	nRet = sb4_com_get_docid(sockfd, tmpbuf);
+	nRet = sb4_com_get_docid(sockfd, tmpbuf, did_db);
 	
 	return SUCCESS;	
 }
@@ -3056,7 +3100,7 @@ int sb4s_word_list(int sockfd)
 	}
 	
 	/* get word list */
-	nRet = sb4_com_get_word_by_wordid(sockfd, tmpbuf);
+	nRet = sb4_com_get_word_by_wordid(sockfd, tmpbuf, word_db);
 	
 	return SUCCESS;	
 }
@@ -3387,21 +3431,11 @@ int TCPRecvLongData(int sockfd, long size , void *data, int server_side)
 
 
 /*****************************************************************************/
-static int init(void)
-{
-	assign_word_db();
-
-	/* open file */
-	regifailfd = sb_open(regifail_file_path, O_RDWR | O_CREAT | O_APPEND, 0666);
-	if (regifailfd == -1) {
-		error("cannot open file[%s]", regifail_file_path);
-		return FAIL;
-	}
-	return SUCCESS;
-}
-
 static void register_hooks(void)
 {
+	sb_hook_protocol_open(protocol_open,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_protocol_close(protocol_close,NULL,NULL,HOOK_MIDDLE);
+
 	// FIXME obsolete
 /*	sb_hook_sb4c_connect(sb4c_connect,NULL,NULL,HOOK_MIDDLE);*/
 /*	sb_hook_sb4c_close(sb4c_close,NULL,NULL,HOOK_MIDDLE);*/
@@ -3449,7 +3483,6 @@ static void register_hooks(void)
 	//sb_hook_sb4s_config(sb4s_config, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_get_wordid(sb4s_get_wordid, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_get_new_wordid(sb4s_get_new_wordid, NULL, NULL, HOOK_MIDDLE);
-	sb_hook_sb4s_print_hash_bucket(sb4s_print_hash_bucket, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_get_docid(sb4s_get_docid, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_index_list(sb4s_index_list, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_word_list(sb4s_word_list, NULL, NULL, HOOK_MIDDLE);
@@ -3458,13 +3491,31 @@ static void register_hooks(void)
 	
 }
 
+/***************************************************
+ *                config   stuff
+ ***************************************************/
 
+static void get_did_set(configValue v)
+{
+	did_set = atoi( v.argument[0] );
+}
+
+static void get_word_db_set(configValue v)
+{
+	word_db_set = atoi( v.argument[0] );
+}
+
+static config_t config[] = {
+	CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
+	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDb Set 0~..."),
+	{NULL}
+};
 
 module protocol4_module = {
 	STANDARD_MODULE_STUFF,
-	NULL,					/* config */
+	config,                 /* config */
 	NULL,					/* registry */
-	init,					/* initialize */
+	NULL,					/* initialize */
 	NULL,					/* child_main */
 	NULL,					/* scoreboard */
 	register_hooks			/* register hook api */

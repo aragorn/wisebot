@@ -41,7 +41,6 @@ struct index_list_t {
 						  (and could be smaller if filtered by field) */
 	uint32_t 	list_size; /* size of doc_hits array/idf/relevancy */
 	uint32_t	nhits;
-	uint32_t	df;
 	uint32_t	*relevancy;
 	doc_hit_t	*doc_hits;
 	uint32_t	field;
@@ -82,7 +81,7 @@ void stack_push(sb_stack_t *stack, struct index_list_t *this);
 struct index_list_t *stack_pop(sb_stack_t *stack);
 /* stack related stuff end */
 
-int light_search (struct request_t *req);
+int light_search (void* word_db, struct request_t *req);
 int getAutoComment(char *pszStr, int lPosition);
 
 #endif

@@ -4,7 +4,11 @@
  * mod_did.c
  *
  */
-#include "mod_did.h"
+
+#include "mod_api/did.h"
+
+#define BLOCK_DATA_SIZE       16000000
+#define DID_MAX_BLOCK_NUM     256
 
 typedef struct {
     uint8_t  block_idx  :8;  /* max 255 blocks */
@@ -21,36 +25,44 @@ typedef struct {
     int      alloc_block_num;
 } did_db_shared_t;
 
-struct _did_db_t {
+typedef struct _did_db_custom_t {
     char             path[MAX_PATH_LEN];
     void             *hash;
     block_t          *block[DID_MAX_BLOCK_NUM];
     did_db_shared_t  *shared;
-};
+	int              lock_id;
+} did_db_custom_t;
 
-#define DOCID_NEW_KEY	 	(101)
-#define DOCID_EXIST_KEY 	(102)
+typedef struct _did_db_set_t {
+	int set;
+
+	int set_did_file;
+	char did_file[MAX_FILE_LEN];
+
+	// init()에서 초기화
+	int set_lock_id;
+	int lock_id;
+} did_db_set_t;
+
+static did_db_set_t* did_set = NULL;
+static int current_did_set = -1;
 
 #define HASH_SIZE   (sizeof(hash_shareddata_t))
 
-//did_db_t gDidDB;
-static char mDidDataPath[MAX_FILE_LEN] = "dat/did/docid";
-static int docid_lock = -1;
-
-static int block_load(did_db_t *did_db, int block_idx);
-static int block_unload(did_db_t *did_db, int block_idx);
-static int block_sync(did_db_t *did_db, int block_idx);
-static int did_hash_open(did_db_t *did_db);
-static int did_hash_sync(did_db_t *did_db);
-static int did_hash_close(did_db_t *did_db);
+static int block_load(did_db_custom_t *did_db, int block_idx);
+static int block_unload(did_db_custom_t *did_db, int block_idx);
+static int block_sync(did_db_custom_t *did_db, int block_idx);
+static int did_hash_open(did_db_custom_t *did_db);
+static int did_hash_sync(did_db_custom_t *did_db);
+static int did_hash_close(did_db_custom_t *did_db);
 
 #define ACQUIRE_LOCK() \
-	if ( acquire_lock( docid_lock ) != SUCCESS ) return FAIL;
+	if ( acquire_lock( db->lock_id ) != SUCCESS ) return FAIL;
 #define RELEASE_LOCK() \
-	if ( release_lock( docid_lock ) != SUCCESS ) return FAIL;
+	if ( release_lock( db->lock_id ) != SUCCESS ) return FAIL;
 
 /****** DB 관련 함수 ******/
-static int init_did_db(did_db_t *did_db)
+static int init_did_db(did_db_custom_t *did_db)
 {
 	int ret;
 	
@@ -64,7 +76,7 @@ static int init_did_db(did_db_t *did_db)
 	return SUCCESS;
 }
 
-static int load_did_db(did_db_t *did_db)
+static int load_did_db(did_db_custom_t *did_db)
 {
 	int i, ret;
 	
@@ -78,7 +90,7 @@ static int load_did_db(did_db_t *did_db)
 	return SUCCESS;
 }
 
-static int alloc_shared_did_db(did_db_t *did_db, int *mmap_attr)
+static int alloc_shared_did_db(did_db_custom_t *did_db, int *mmap_attr)
 {
 	ipc_t mmap;
 
@@ -101,7 +113,7 @@ static int alloc_shared_did_db(did_db_t *did_db, int *mmap_attr)
 	return SUCCESS;
 }
 
-static int free_shared_did_db(did_db_t *did_db)
+static int free_shared_did_db(did_db_custom_t *did_db)
 {
 	int ret;
 
@@ -111,83 +123,144 @@ static int free_shared_did_db(did_db_t *did_db)
 	return ret;
 }
 
-static did_db_t *open_did_db(char *path)
+static int open_did_db(did_db_t** did_db, int opt)
 {
 	int ret, mmap_attr;
-	did_db_t *did_db;
+	did_db_custom_t* db = NULL;
 
-	did_db = (did_db_t *)sb_calloc(1, sizeof(did_db_t));
-	if (did_db == NULL) return NULL;
+	if ( did_set == NULL ) {
+		warn("did_set is NULL. you must set DidSet in config file");
+		return DECLINE;
+	}
 
-	strncpy(did_db->path, path, MAX_PATH_LEN-1);
-	
-	if (alloc_shared_did_db(did_db, &mmap_attr) != SUCCESS) return NULL;
+	if ( opt >= MAX_DID_SET || opt < 0 ) {
+		error("opt[%d] is invalid. MAX_DID_SET[%d]", opt, MAX_DID_SET);
+		return FAIL;
+	}
+
+	if ( !did_set[opt].set ) {
+		warn("DidSet[opt:%d] is not defined", opt);
+		return DECLINE;
+	}
+
+	if ( !did_set[opt].set_did_file ) {
+		error("DidFile is not set [DidSet:%d]. see config", opt);
+		return FAIL;
+	}
+
+	if ( !did_set[opt].set_lock_id ) {
+		error("invalid lock_id. maybe failed from init()");
+		return FAIL;
+	}
+
+	*did_db = (did_db_t*) sb_calloc(1, sizeof(did_db_t));
+	if ( *did_db == NULL ) {
+		error("sb_calloc failed: %s", strerror(errno));
+		goto error;
+	}
+
+	db = (did_db_custom_t*) sb_calloc(1, sizeof(did_db_custom_t));
+	if ( db == NULL ) {
+		error("sb_calloc failed: %s", strerror(errno));
+		goto error;
+	}
+
+	strncpy(db->path, did_set[opt].did_file, MAX_PATH_LEN-1);
+	db->lock_id = did_set[opt].lock_id;
+
+	if (alloc_shared_did_db(db, &mmap_attr) != SUCCESS)
+		goto error;
 	
 	if (mmap_attr == MMAP_CREATED) {
-		ret = init_did_db(did_db);
+		ret = init_did_db(db);
 		if (ret != SUCCESS) {
-			error("did_db init failed");
-			return NULL;
+			error("db init failed");
+			goto error;
 		}
 	} 
 	else if (mmap_attr == MMAP_ATTACHED) {
-		ret = load_did_db(did_db);
+		ret = load_did_db(db);
 		if (ret != SUCCESS) {
-			error("did_db load failed");
-			return NULL;
+			error("db load failed");
+			goto error;
 		}
 	} 
 	else {
 		error("unknow mmap_attr [%d]", mmap_attr);
-		return NULL;
+		goto error;
 	}
 
-	ret = did_hash_open(did_db);
-	if (ret != SUCCESS) return NULL;
-	
-	return did_db;
+	ret = did_hash_open(db);
+	if (ret != SUCCESS) goto error;
+
+	(*did_db)->set = opt;
+	(*did_db)->db = (void*) db;
+	return SUCCESS;
+
+error:
+	if ( db ) {
+		if ( db->hash ) did_hash_close( db );
+		if ( db->shared ) free_shared_did_db( db );
+		sb_free( db );
+	}
+	if ( *did_db ) {
+		sb_free( *did_db );
+		*did_db = NULL;
+	}
+	return FAIL;
 }
 
-static int sync_did_db(did_db_t *did_db)
+static int sync_did_db(did_db_t* did_db)
 {
 	int i, ret;
+	did_db_custom_t* db;
+
+	if ( did_set == NULL || !did_set[did_db->set].set )
+		return DECLINE;
+	db = (did_db_custom_t*) did_db->db;
 
 	info("did_db: last_did [%u] alloc_block[%d]",
-			did_db->shared->last_did, did_db->shared->alloc_block_num);
+			db->shared->last_did, db->shared->alloc_block_num);
 	
-	for (i=0; i< did_db->shared->alloc_block_num; i++) {
-		ret = block_sync(did_db, i);
+	for (i=0; i< db->shared->alloc_block_num; i++) {
+		ret = block_sync(db, i);
 		if(ret != SUCCESS) return FAIL;
 	}
 
-	ret = sync_mmap( did_db->shared, sizeof(did_db_shared_t) );
+	ret = sync_mmap( db->shared, sizeof(did_db_shared_t) );
 	if ( ret != SUCCESS ) {
-		error("write did_db->shared failed");
+		error("write db->shared failed");
 		return FAIL;
 	}
 
-	ret = did_hash_sync(did_db);
+	ret = did_hash_sync(db);
 	if (ret!= SUCCESS) return FAIL;
 	
 	return SUCCESS;
 }
 
-static int close_did_db(did_db_t *did_db)
+static int close_did_db(did_db_t* did_db)
 {
 	int i;
+	did_db_custom_t* db;
+
+	if ( did_set == NULL || !did_set[did_db->set].set )
+		return DECLINE;
+	db = (did_db_custom_t*) did_db->db;
 
 	if (sync_did_db(did_db) == FAIL) return FAIL;
 
-	if (did_hash_close(did_db) == FAIL)
+	if (did_hash_close(db) == FAIL)
 		error("did hash close failed");
 
-	for (i=0; i< did_db->shared->alloc_block_num; i++) {
-		block_unload(did_db, i);
+	for (i=0; i< db->shared->alloc_block_num; i++) {
+		block_unload(db, i);
 	}
 
-	if (free_shared_did_db(did_db) == FAIL)
+	if (free_shared_did_db(db) == FAIL)
 		error("did shared free failed");
 
+	sb_free(did_db->db);
 	sb_free(did_db);
 
 	return SUCCESS;
@@ -200,7 +273,7 @@ static int get_block_path(char *dest, char *base_path, int block_idx)
 }
 
 //	ret = load_block(did_db, block_idx);
-static int block_load(did_db_t *did_db, int block_idx)
+static int block_load(did_db_custom_t *did_db, int block_idx)
 {
 	char block_path[MAX_PATH_LEN];
 	ipc_t mmap;
@@ -240,7 +313,7 @@ static int block_load(did_db_t *did_db, int block_idx)
 	return SUCCESS;	
 }
 
-static int block_unload(did_db_t *did_db, int block_idx)
+static int block_unload(did_db_custom_t *did_db, int block_idx)
 {
 	int ret;
 	char block_path[MAX_PATH_LEN];
@@ -262,7 +335,7 @@ static int block_unload(did_db_t *did_db, int block_idx)
 }
 
 // ret = block_sync(did_db, i);
-static int block_sync(did_db_t *did_db, int block_idx)
+static int block_sync(did_db_custom_t *did_db, int block_idx)
 {
 	int ret;
 	block_t *block;
@@ -292,7 +365,7 @@ static int block_sync(did_db_t *did_db, int block_idx)
 
 // ret = block_assign_offset( did_db , offset, len+1 );
 // XXX: need to be locked !!!
-static int block_assign_offset( did_db_t *did_db , did_offset_t* offset, int len )
+static int block_assign_offset( did_db_custom_t *did_db , did_offset_t* offset, int len )
 {
 	int ret;
 	int block_idx;
@@ -328,7 +401,7 @@ static int block_assign_offset( did_db_t *did_db , did_offset_t* offset, int len
 }
 
 //ret = block_write_data( did_db, offset, pKey, len+1);
-static int block_write_data( did_db_t *did_db, did_offset_t offset, void *data, int size )
+static int block_write_data( did_db_custom_t *did_db, did_offset_t offset, void *data, int size )
 {
 	block_t *block;
 
@@ -354,7 +427,7 @@ static int block_write_data( did_db_t *did_db, did_offset_t offset, void *data, 
 }
 
 //ret = block_offset_increase (did_db, len+1);
-static int block_offset_increase (did_db_t *did_db, did_offset_t offset, int size)
+static int block_offset_increase (did_db_custom_t *did_db, did_offset_t offset, int size)
 {
 	block_t *block;
 
@@ -373,7 +446,7 @@ static int block_offset_increase (did_db_t *did_db, did_offset_t offset, int siz
 }
 
 /****** hash 관련 함수 ******/
-static void *offset2ptr(did_db_t *did_db, did_offset_t *offset)
+static void *offset2ptr(did_db_custom_t *did_db, did_offset_t *offset)
 {	
 	int ret;
 	block_t *block;
@@ -402,7 +475,7 @@ static void hash_func(hash_t *hash, void *key, uint8_t *hashkey) {
     char *str;
     MD5_CTX context;
     unsigned char digest[16];
-    did_db_t *did_db = (did_db_t *)(hash->parent);
+    did_db_custom_t *did_db = (did_db_custom_t *)(hash->parent);
 
     str = offset2ptr(did_db, (did_offset_t *)key);
     len = strlen(str);
@@ -422,7 +495,7 @@ static int hash_keycmp_func(hash_t *hash, void *key1, void *key2)
 {
     int n;
     char *str1, *str2;
-    did_db_t *did_db = (did_db_t *)(hash->parent);
+    did_db_custom_t *did_db = (did_db_custom_t *)(hash->parent);
 
     if (key1 == NULL && key2 == NULL) {
         warn("key1 == key2 == NULL");
@@ -502,7 +575,7 @@ static int alloc_did_db_hash(hash_t *hash, int *mmap_attr)
 {
     ipc_t mmap;
     char hash_path[MAX_PATH_LEN];
-    did_db_t *did_db = (did_db_t *)hash->parent;
+    did_db_custom_t *did_db = (did_db_custom_t *)hash->parent;
 
     /* allocate memory for hash index data  */
     sprintf(hash_path, "%s.hash", did_db->path);
@@ -535,7 +608,7 @@ static int free_did_db_hash(hash_t *hash)
 	return ret;
 }
 
-static int did_hash_open(did_db_t *did_db)
+static int did_hash_open(did_db_custom_t *did_db)
 {
     hash_t *hash;
     char hash_path[MAX_PATH_LEN];
@@ -579,11 +652,11 @@ static int did_hash_open(did_db_t *did_db)
         return FAIL;
     }
 
-    debug("hash->parent->shared [%p]", ((did_db_t *)(hash->parent))->shared);
+    debug("hash->parent->shared [%p]", ((did_db_custom_t *)(hash->parent))->shared);
     return SUCCESS;
 }
 	
-static int did_hash_sync(did_db_t *did_db)
+static int did_hash_sync(did_db_custom_t *did_db)
 {
     char hash_path[MAX_PATH_LEN];
     int ret;
@@ -604,7 +677,7 @@ static int did_hash_sync(did_db_t *did_db)
     return SUCCESS;
 }
 
-static int did_hash_close(did_db_t *did_db)
+static int did_hash_close(did_db_custom_t *did_db)
 {
 	char hash_path[MAX_PATH_LEN];
 
@@ -623,7 +696,7 @@ static int did_hash_close(did_db_t *did_db)
 	return SUCCESS;
 }
 
-static int did_hash_put( did_db_t *did_db, char *pKey, uint32_t *docid, uint32_t *olddocid)
+static int did_hash_put( did_db_custom_t *did_db, char *pKey, uint32_t *docid, uint32_t *olddocid)
 {
 	int len, ret;
 	did_offset_t offset;
@@ -664,19 +737,19 @@ static int did_hash_put( did_db_t *did_db, char *pKey, uint32_t *docid, uint32_t
 		case SUCCESS:
 			ret = block_offset_increase (did_db, offset, len+1);
 			if (ret != SUCCESS) return FAIL;
-			return DOCID_NEW_KEY;
+			return DOCID_NEW_REGISTERED;
 		case HASH_COLLISION:
 			ret = hash_update( did_db->hash, &offset, (uint8_t*)&(tempid));
 			*docid = tempid;
 			if (ret != SUCCESS) return FAIL;
-			return DOCID_EXIST_KEY;
+			return DOCID_OLD_REGISTERED;
 		default:
 			error("hash add return[%d]", ret);
 			return FAIL;
 	}
 }
 
-static int did_hash_find(did_db_t *did_db, char* pKey, uint32_t* docid)
+static int did_hash_find(did_db_custom_t *did_db, char* pKey, uint32_t* docid)
 {
 	int ret, len;
 	did_offset_t offset;
@@ -698,7 +771,7 @@ static int did_hash_find(did_db_t *did_db, char* pKey, uint32_t* docid)
 	switch (ret)
 	{
 		case SUCCESS:
-			return DOCID_EXIST_KEY;
+			return DOCID_OLD_REGISTERED;
 		case FAIL:
 			return DOCID_NOT_REGISTERED;	
 		default:
@@ -708,23 +781,26 @@ static int did_hash_find(did_db_t *did_db, char* pKey, uint32_t* docid)
 }
 
 /****** API function ******/ 
-static int get_new_doc_id(did_db_t *did_db, char *pKey, uint32_t *docid, uint32_t *olddocid)
+static int get_new_doc_id(did_db_t* did_db, char *pKey, DocId* docid, DocId* olddocid)
 {
 	int ret;
+	did_db_custom_t* db;
+
+	if ( did_set == NULL || !did_set[did_db->set].set )
+		return DECLINE;
+	db = (did_db_custom_t*) did_db->db;
 
 	ACQUIRE_LOCK();
-	*docid = did_db->shared->last_did+1;
+	*docid = db->shared->last_did+1;
 	
-	ret = did_hash_put(did_db, pKey, docid, olddocid);
+	ret = did_hash_put(db, pKey, docid, olddocid);
 	switch (ret) {
-		case DOCID_NEW_KEY:
-			did_db->shared->last_did++;
-			ret = DOCID_NEW_REGISTERED;
+		case DOCID_NEW_REGISTERED:
+			db->shared->last_did++;
 			break;
 
-		case DOCID_EXIST_KEY:
-			did_db->shared->last_did++;
-			ret = DOCID_OLD_REGISTERED;
+		case DOCID_OLD_REGISTERED:
+			db->shared->last_did++;
 			break;
 
 		default:
@@ -735,15 +811,20 @@ static int get_new_doc_id(did_db_t *did_db, char *pKey, uint32_t *docid, uint32_
 	return ret;
 }
 
-static int get_doc_id(did_db_t *did_db, char *pKey, uint32_t *docid)
+static int get_doc_id(did_db_t* did_db, char *pKey, DocId *docid)
 {
 	int ret;
+	did_db_custom_t* db;
+
+	if ( did_set == NULL || !did_set[did_db->set].set )
+		return DECLINE;
+	db = (did_db_custom_t*) did_db->db;
 
 	ACQUIRE_LOCK();
-	ret = did_hash_find(did_db, pKey, docid);
+	ret = did_hash_find(db, pKey, docid);
 	RELEASE_LOCK();
 
-	if (ret == DOCID_EXIST_KEY) {
+	if (ret == DOCID_OLD_REGISTERED) {
 		return DOCID_OLD_REGISTERED;
 	} else if (ret == DOCID_NOT_REGISTERED) {
 		*docid = 0;
@@ -757,29 +838,68 @@ static int get_doc_id(did_db_t *did_db, char *pKey, uint32_t *docid)
 static int init() 
 {
 	ipc_t lock;
-	int ret;
+	int i, ret;
+
+	if ( did_set == NULL ) return SUCCESS;
 
 	lock.type = IPC_TYPE_SEM;
 	lock.pid  = SYS5_DOCID;
-	lock.pathname = wrapper_diddb_path;
 
-	ret = get_sem( &lock );
-	if ( ret != SUCCESS ) return FAIL;
+	for ( i = 0; i < MAX_DID_SET; i++ ) {
+		if ( !did_set[i].set ) continue;
 
-	docid_lock = lock.id;
+		if ( !did_set[i].set_did_file ) {
+			warn("SharedFile [DidSet:%d] is not set", i);
+			continue;
+		}
+
+		lock.pathname = did_set[i].did_file;
+
+		ret = get_sem( &lock );
+		if ( ret != SUCCESS ) return FAIL;
+
+		did_set[i].lock_id = lock.id;
+		did_set[i].set_lock_id = 1;
+	}
 
 	return SUCCESS;
 }
 
-static void get_did_data_path(configValue v)
+static void get_did_set(configValue v)
 {
-	strncpy(mDidDataPath, v.argument[0], MAX_FILE_LEN);
-	mDidDataPath[MAX_FILE_LEN-1]='\0';
+	static did_db_set_t local_did_set[MAX_DID_SET];
+	int value = atoi( v.argument[0] );
+
+	if ( value < 0 || value >= MAX_DID_SET ) {
+		error("Invalid DidSet value[%s], MAX_DID_SET[%d]",
+				v.argument[0], MAX_DID_SET);
+		return;
+	}
+
+	if ( did_set == NULL ) {
+		memset( local_did_set, 0, sizeof(local_did_set) );
+		did_set = local_did_set;
+	}
+
+	current_did_set = value;
+	did_set[value].set = 1;
+}
+
+static void get_did_file(configValue v)
+{
+	if ( did_set == NULL || current_did_set < 0 ) {
+		error("first, set DidSet");
+		return;
+	}
+
+
+	strncpy( did_set[current_did_set].did_file, v.argument[0], MAX_FILE_LEN-1);
+	did_set[current_did_set].set_did_file = 1;
 }
 
 static config_t config[] = {
-	CONFIG_GET("did_data_path", get_did_data_path,1,\
-				"path of did database file. ex) dat/did/did"),
+	CONFIG_GET("DidSet", get_did_set, 1, "DidSet {number}"),
+	CONFIG_GET("DidFile", get_did_file, 1, "ex> DidFile dat/did/did.db"),
 	{NULL}
 };
 

@@ -3,16 +3,13 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-lib_LTLIBRARIES = libmodlexicon.la
-libmodlexicon_la_SOURCES = mod_lexicon.c \
-						 lexicon_index_dynamic_hash.c \
-						 lexicon_index_truncation.c
-libmodlexicon_la_LDFLAGS = -all-static -avoid-version
+libexec_LTLIBRARIES = mod_lexicon.la mod_lexicon2.la
 
-libexec_LTLIBRARIES = mod_lexicon.la 
 mod_lexicon_la_SOURCES = mod_lexicon.c \
-						 lexicon_index_dynamic_hash.c \
-						 lexicon_index_truncation.c
+						 lexicon_index_dynamic_hash.c
 mod_lexicon_la_LDFLAGS = -module -avoid-version 
+
+mod_lexicon2_la_SOURCES = mod_lexicon2.c
+mod_lexicon2_la_LDFLAGS = -module -avoid-version
 						 
 include ../install-libexec.mk

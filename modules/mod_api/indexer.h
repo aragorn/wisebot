@@ -25,10 +25,9 @@
 	
 //extern cdm_db_t *m_cdmdb;
 
-SB_DECLARE_HOOK(int,index_each_spooled_doc, \
-	(uint32_t did,word_hit_t *wordhit,uint32_t hitsize,uint32_t *hitidx) )
 SB_DECLARE_HOOK(int,index_each_doc, \
-	(uint32_t did,word_hit_t *wordhit,uint32_t hitsize,uint32_t *hitidx, void *data, int size) )
+	(void* word_db, uint32_t did,word_hit_t *wordhit,uint32_t hitsize,
+	 uint32_t *hitidx, void *data, int size) )
 
 SB_DECLARE_HOOK(int,index_one_doc, \
 	(uint32_t did,word_hit_t *wordhit,uint32_t hitsize,uint32_t *hitidx) )
@@ -41,7 +40,6 @@ SB_DECLARE_HOOK(int,get_para_position,(hit_t *hit))
 SB_DECLARE_HOOK(uint32_t,get_position,(hit_t *hit))
 SB_DECLARE_HOOK(int,cmp_field,(hit_t *u, hit_t *v))
 SB_DECLARE_HOOK(int,get_field,(hit_t *hit))
-//SB_DECLARE_HOOK(char*,get_indexer_port,(void))
 SB_DECLARE_HOOK(const char*,get_indexer_socket_file,(void))
 
 #endif

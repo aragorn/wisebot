@@ -2,9 +2,11 @@
 #include "softbot.h"
 #include "mod_mp/mod_mp.h"
 #include "mod_api/vrfi.h"
-#include "mod_api/mod_api.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/indexer.h"
+#include "mod_api/tcp.h"
+#include "mod_api/cdm.h"
+#include "mod_api/index_word_extractor.h"
 
 #include "mod_qp/mod_qp.h" /* XXX: STD_HITS_LEN */
 #include "mod_daemon_indexer.h"
@@ -87,6 +89,9 @@ typedef struct {
 /* member variables  */
 static int mTimer = 1;
 
+static int mWordDbSet = -1;
+static word_db_t* mWordDb = NULL;
+
 static VariableRecordFile *mVRFI=NULL;
 static char mInvertedIdxFile[STRING_SIZE]="dat/indexer/index";
 
@@ -109,7 +114,7 @@ static uint32_t count_successive_wordid_same_to_first_in_wordhit
 							static int cmp_word_hit(const void* var1,const void* var2);
 static uint32_t sum_nhits(doc_hit_t dochits[], uint32_t nelm);
 static void save_index(mem_index_t *mem_index);
-static int set_mem_index(mem_index_t *mem_index, uint32_t docid, void *data, int size);
+static int set_mem_index(void* word_db, mem_index_t *mem_index, uint32_t docid, void *data, int size);
 static int recv_from_rmac(int sockfd, void **data, uint32_t *docid, int *size);
 
 /*** signal handler **********************************************************/
@@ -421,7 +426,13 @@ static int indexer_main(slot_t *slot)
 
 	slot->state = SLOT_PROCESS;
 
-	if( sb_run_vrfi_alloc(&mVRFI) != SUCCESS ) {
+	if ( sb_run_open_word_db( &mWordDb, mWordDbSet ) != SUCCESS ) {
+		error("lexicon open failed");
+		slot->state = SLOT_FINISH;
+		return -1;
+	}
+
+	if ( sb_run_vrfi_alloc(&mVRFI) != SUCCESS ) {
 		error("vrfi alloc failed: %s", strerror(errno));
 		slot->state = SLOT_FINISH;
 		return -1;
@@ -520,7 +531,7 @@ static int indexer_main(slot_t *slot)
 			}
 
 			// 형태소 분석된 결과를 mem_index에 저장
-			ret = set_mem_index(&mem_index, docid, data, size);
+			ret = set_mem_index(mWordDb, &mem_index, docid, data, size);
 			if (ret != SUCCESS) {
 				error("set_mem_doc error, docid=%d", docid);
 				ADD_AND_SEND_AND_CLOSE(ret);
@@ -583,7 +594,7 @@ static int indexer_main(slot_t *slot)
 		save_index(&mem_index);
 
 		/* every saving time, word db is also saved */
-		sb_run_sync_word_db(&gWordDB); //XXX: indexer should do this?
+		sb_run_sync_word_db(mWordDb); //XXX: indexer should do this?
 
 		sb_run_vrfi_sync(mVRFI);
 #if FORWARD_INDEX==1
@@ -607,8 +618,7 @@ static int indexer_main(slot_t *slot)
 			break;
 	} /* endless while loop */
 
-
-	sb_run_sync_word_db(&gWordDB); //XXX: indexer should do this?
+	sb_run_close_word_db(mWordDb);
 
 	sb_run_vrfi_close(mVRFI);
 #if FORWARD_INDEX==1
@@ -764,7 +774,7 @@ static int init() {
 	return SUCCESS;
 }
 
-int set_mem_index(mem_index_t *mem_index, uint32_t docid, void *data, int size)
+int set_mem_index(void* word_db, mem_index_t *mem_index, uint32_t docid, void *data, int size)
 {
 	int16_t ret=0;
 	word_hit_t *wordhits = mem_index->_word_hits_storage;
@@ -772,7 +782,7 @@ int set_mem_index(mem_index_t *mem_index, uint32_t docid, void *data, int size)
 
 	sb_assert(docid > 0);
 
-	ret = sb_run_index_each_doc(docid, wordhits, max_word_hit_len, &hitidx, data, size);
+	ret = sb_run_index_each_doc(word_db, docid, wordhits, max_word_hit_len, &hitidx, data, size);
 	if (ret != SUCCESS) {
 		return ret;
 	}
@@ -1382,6 +1392,11 @@ static void set_doc_hit_list_memorysize(configValue v)
 	INFO("doc_hit_list_memorysize:%u", doc_hit_list_memorysize);
 }
 
+static void set_word_db_set(configValue v)
+{
+	mWordDbSet = atoi( v.argument[0] );
+}
+
 /* registry related functions */
 REGISTRY void init_last_indexed_docid(void *data)
 {
@@ -1406,13 +1421,13 @@ static registry_t registry[] = {
 
 static config_t config[] = {
 	CONFIG_GET("SocketFile",set_socket_file,1,"set socket file"),
-//	CONFIG_GET("IndexerPort",set_indexer_port,1,"set indexer port"),
 	CONFIG_GET("InvertedIndexFile",set_inverted_index_file,1,\
 			"inv indexer db path (e.g: IndexDbPath dat/indexdb)"),
 	CONFIG_GET("IndexTimer",set_timer,1,\
 			"timer(sec) for watching if there's newly assembled document"),
 	CONFIG_GET("IndexMemorySize", set_doc_hit_list_memorysize, 1, \
 			"dochit list memory size (e.g: IndexMemorySize 200000000)"),
+	CONFIG_GET("WordDbSet", set_word_db_set, 1, "WordDbSet {number}"),
 #if FORWARD_INDEX==1
 	CONFIG_GET("ForwardIndexFile",set_forward_index_file,1,\
 		"forward index db file path (e.g: ForwardIndexFile dat/forward_index/forward)"),
@@ -1433,7 +1448,6 @@ static const char* get_socket_file(void)
 static void register_hooks(void)
 {
 	sb_hook_last_indexed_did(last_indexed_did,NULL, NULL, HOOK_FIRST);
-//	sb_hook_get_indexer_port(get_indexer_port,NULL, NULL, HOOK_FIRST);
 	sb_hook_get_indexer_socket_file(get_socket_file,NULL,NULL,HOOK_FIRST);
 }
 

@@ -5,12 +5,14 @@
 #ifndef DATA_TYPE_H
 #define DATA_TYPE_H
 
-typedef char    Int8;
-typedef long    Int32;
-typedef short	Int16;
-typedef unsigned char	UInt8;
-typedef unsigned long   UInt32;
-typedef unsigned short  UInt16;
+#include <inttypes.h>
+
+typedef int8_t   Int8;
+typedef int32_t  Int32;
+typedef int16_t  Int16;
+typedef uint8_t  UInt8;
+typedef uint32_t UInt32;
+typedef uint16_t UInt16;
 
 typedef UInt32	WordId;
 typedef UInt32	DocId;

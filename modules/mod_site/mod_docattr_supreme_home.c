@@ -1,5 +1,6 @@
 #include "softbot.h"
-#include "mod_api/mod_api.h"
+#include "mod_api/docattr.h"
+#include "mod_api/qp.h"
 #include "mod_api/index_word_extractor.h"
 #include "mod_docattr_supreme_home.h"
 #include "mod_qp/mod_qp.h"

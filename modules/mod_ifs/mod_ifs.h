@@ -2,16 +2,12 @@
 #ifndef __MOD_IFS_H__
 #define __MOD_IFS_H__
 
+#include "mod_api/indexdb.h"
 #include "table.h"
 #include "../mod_sfs/mod_sfs.h"
 
-#ifdef WIN32
-#  include "../mod_sfs/wisebot.h"
-#  define PATH_SEP '\\'
-#else
-#  include "softbot.h"
-#  define PATH_SEP '/'
-#endif
+#include "softbot.h"
+#define PATH_SEP '/'
 
 #define IFS_MAGIC "IFS0"
 #define IFS_FILE_NAME "ifs"
@@ -47,15 +43,30 @@ typedef struct _ifs_t {
 	shared_t* shared;
 } ifs_t;
 
+typedef struct _ifs_set_t {
+	int set;
+
+	int set_ifs_path;
+	char ifs_path[MAX_PATH_LEN];
+
+	int set_segment_size;
+	int segment_size;
+
+	int set_block_size;
+	int block_size;
+
+	int set_lock_id;
+	int lock_id;
+} ifs_set_t;
+
+extern ifs_set_t* ifs_set;
+
 int ifs_init();
-void* ifs_create();
-int ifs_destroy(void* indexdb);
-int ifs_open(void* indexdb, int opt);
-int _ifs_open(ifs_t* ifs, char* root_path, int segment_size, int block_size);
-int ifs_close(void* ifs);
-int ifs_append(void* indexdb, int file_id, int size, void* buf);
-int ifs_read(void* indexdb, int file_id, int offset, int size, void* buf);
-int ifs_getsize(void* indexdb, int file_id);
+int ifs_open(index_db_t** indexdb, int opt);
+int ifs_close(index_db_t* indexdb);
+int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf);
+int ifs_read(index_db_t* indexdb, int file_id, int offset, int size, void* buf);
+int ifs_getsize(index_db_t* indexdb, int file_id);
 
 int __sfs_activate(ifs_t* ifs, int p, int type, int perform_format, int format_option);
 int __sfs_all_activate(ifs_t* ifs, int* physical_segment_array, int count, int type);

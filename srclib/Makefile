@@ -10,9 +10,9 @@ prefix = $(shell cd .. && pwd)
 exec_prefix = ${prefix}
 ###############################################################################
 all: install
-cvs-export: expat-export koma2c-export
+cvs-export: expat-export koma2c-export bdb-export
 build: expat koma2c bdb
-install: expat-install koma2c-install
+install: expat-install koma2c-install bdb-install
 clean: expat-clean koma2c-clean bdb-clean
 
 # XXX we don't need w3c-libwww & xmlrpc for supreme-release
@@ -37,24 +37,24 @@ apr-util-export:
 expat-export:
 	[ -f expat/configure ] || (gzip -c -d expat.tar.gz | tar xf -)
 	cd expat && \
-	./configure --prefix=$(prefix)
+	./configure --prefix=$(prefix) --includedir=$(prefix)/include/expat
 
 bdb-export:
 	[ -f db-4.3.27.NC/dist/configure ] || (gzip -c -d db-4.3.27.NC.tar.gz | tar xf -)
 	cd db-4.3.27.NC/build_unix && \
-	../dist/configure --prefix=$(prefix)
+	../dist/configure --prefix=$(prefix) --includedir=$(prefix)/include/db
 
 sn2-export:
 	[ -f SynapNext2/configure ] || (gzip -c -d SynapNext2.tar.gz | tar xf -)
 	cd SynapNext2 && \
 	./buildconf && \
-	./configure --prefix=$(prefix)
+	./configure --prefix=$(prefix) --includedir=$(prefix)/include/sn2
 
 koma2c-export:
-	[ -f koma2c/buildconf ] || (cvs export -D today koma2c)
+	[ -f koma2c/buildconf ] || (cvs co koma2c)
 	cd koma2c && \
 	./buildconf && \
-	./configure --prefix=$(prefix)
+	./configure --prefix=$(prefix) --includedir=$(prefix)/include/koma
 ###############################################################################
 apr: apr-export
 	cd apr && make

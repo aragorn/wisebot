@@ -600,20 +600,20 @@ static int32_t	deleteSlot(hash_t *hash, uint32_t bucket_idx, uint32_t slotnum){
 SB_DECLARE(void) print_hashstatus(hash_t *hash) {
 	hash_shareddata_t *shrdat = hash->shared;
 
-	debug("table structure size : %d bytes.\n",
+	debug("table structure size : %d bytes.",
 			(int)sizeof(hash_t)+(int)sizeof(hash_shareddata_t));
-	debug("slot size : %d bytes.\n",(int)sizeof(hslot_t));
-	debug("bucket size : %d bytes.\n",(int)sizeof(bucket_t));
-	debug("max bucket : %d\n",HASH_MAX_BUCKET);
-	debug("# of slot prer bucket : %d\n",HASH_SLOT_NUM);
-	debug("final hashtable depth : %d\n",shrdat->nDepth);
+	debug("slot size : %d bytes.",(int)sizeof(hslot_t));
+	debug("bucket size : %d bytes.",(int)sizeof(bucket_t));
+	debug("max bucket : %d",HASH_MAX_BUCKET);
+	debug("# of slot prer bucket : %d",HASH_SLOT_NUM);
+	debug("final hashtable depth : %d",shrdat->nDepth);
 
-	debug("\nstored slot : %d\n",shrdat->nSlot);
-	debug("actually allocated bucket : %d\n",shrdat->nBucket);
-	debug("slot / bucket : %.1f%% (%.1f/%d)\n",
+	debug("\nstored slot : %d",shrdat->nSlot);
+	debug("actually allocated bucket : %d",shrdat->nBucket);
+	debug("slot / bucket : %.1f%% (%.1f/%d)",
 			(float)shrdat->nSlot/shrdat->nBucket/HASH_SLOT_NUM*100,
 			(float)shrdat->nSlot/shrdat->nBucket,HASH_SLOT_NUM);
-	debug("total bucket size : %d bytes (%.1fMB)\n",
+	debug("total bucket size : %d bytes (%.1fMB)",
 			shrdat->nBucket * (int)sizeof(bucket_t),
 			(float)shrdat->nBucket * sizeof(bucket_t)/1024/1024);
 }

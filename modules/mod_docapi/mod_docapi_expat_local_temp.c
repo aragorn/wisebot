@@ -8,7 +8,6 @@
 #include "mod_api/docapi.h"
 #include "mod_api/cdm.h"
 #include "mod_api/vbm.h"
-#include "mod_api/did_client.h"
 #include "mod_api/xmlparser.h"
 
 #include <errno.h>
@@ -89,7 +88,7 @@ DAPI_get (DocId             docId,
 	iSize = sb_run_buffer_getsize(&buf);
 	iResult = sb_run_buffer_get(&buf, 0, iSize, tmpChar);
 	if (iResult < 0) {
-		error("cannot get document[%ld] from variable buffer", docId);
+		error("cannot get document[%u] from variable buffer", docId);
 		sb_free(doc);
 		return FALSE;
 	}
@@ -100,7 +99,7 @@ DAPI_get (DocId             docId,
 	/* parse */
 	doc->p = sb_run_xmlparser_parselen("CP949", tmpChar, size);
 	if (doc->p == NULL) {
-		error("cannot parse document[%ld]", docId);
+		error("cannot parse document[%u]", docId);
 		sb_free(doc);
 		return FALSE;
 	}

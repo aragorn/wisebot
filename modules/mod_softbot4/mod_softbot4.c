@@ -2,7 +2,6 @@
 
 #include "softbot.h"
 #include "mod_softbot4.h"
-#include "mod_api/mod_api.h"
 #include "mod_api/docattr.h"
 #include "mod_api/did.h"
 
@@ -72,20 +71,10 @@ static int child_main (slot_t *slot)
 	int max_requests=0;
 	static struct sockaddr remote_addr;
 
-	info("calling sb_run_qp_init");
-	sb_run_qp_init();
-	info("called sb_run_qp_init");
 	CRIT("mod_softbot4.c slot->id: %d started", slot->id);
 
-	ret = sb_run_server_canneddoc_init();
-	if ( ret != SUCCESS && ret != DECLINE ) {
-		error( "cdm module init failed" );
-		return 1;
-	}
-
-	ret = sb_run_buffer_initmodule();
-	if ( ret != SUCCESS && ret != DECLINE ) {
-		error( "vbm module init failed" );
+	if ( sb_run_protocol_open() != SUCCESS ) {
+		error("protocol open failed");
 		return 1;
 	}
 
@@ -129,7 +118,6 @@ static int child_main (slot_t *slot)
 			info("slot[%d]: tcp_select_accept() failed", slot->id);
 			continue;
 		}
-/*		debug("slot[%d]: accepted new request[%dth]", slot->id, i);*/
 		slot->state = SLOT_READ;
 		time(&(slot->recent_request));
 
@@ -138,7 +126,6 @@ static int child_main (slot_t *slot)
 
 		setproctitle("softbotd: %s(processing) - [%d]",__FILE__,i);
 		sb_run_sb4s_dispatch(sockfd);
-/*		debug("slot[%d]: completed request[%dth]", slot->id, i);*/
 		sb_run_tcp_close(sockfd);
 
 		debug("%d'th iteration of %d(max_requests)",i,max_requests);
@@ -154,6 +141,9 @@ static int child_main (slot_t *slot)
 		slot->state = SLOT_RESTART;
 	}
 	debug("slot[%d] exits", slot->id);
+
+	sb_run_protocol_close();
+
 	return EXIT_SUCCESS;
 }
 
@@ -182,7 +172,6 @@ static int module_main (slot_t *slot)
 	debug("monitor_threads returned");
 	info("syncronize docattr db: this should be called in new cdm register module later");
 	sb_run_docattr_close();
-	sb_run_close_did_db(wrapper_diddb);
 
 	return 0;
 }
@@ -202,12 +191,6 @@ static int init()
 
 	if ( get_sem(&lock) != SUCCESS ) return FAIL;
 	accept_lock = lock.id;
-
-    wrapper_diddb = sb_run_open_did_db(wrapper_diddb_path);
-    if (wrapper_diddb == NULL) {
-        crit("cannot open diddb: %s", wrapper_diddb_path);
-        return 1; 
-    }
 
 	return SUCCESS;
 }

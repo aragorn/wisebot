@@ -192,7 +192,7 @@ sub register {
 		$data =~ s/^\s+|\s+$//g;
 		$dit{$key} = $data;
 	}
-	$dit{OID} = substr($dit{OID}, -30) if length($dit{OID}) > 30;
+	#$dit{OID} = substr($dit{OID}, -30) if length($dit{OID}) > 30;
 
 	my $dit2 = sprintf("PT=%s^CT=%s^OID=%s^RID=%s^KY=%s^DN=%s^TT=%s^",
 					$dit{PT},

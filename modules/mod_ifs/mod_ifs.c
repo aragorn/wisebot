@@ -1,38 +1,14 @@
-/* $Id$ */
+#include "mod_api/indexdb.h"
 #include "mod_ifs.h"
 #include "../mod_sfs/shared_memory.h"
-#include "memory.h" /* see include/memory.h */
 
-#ifndef WIN32
-#include <string.h>
-#include "mod_api/indexdb.h"
-
-typedef struct _ifs_set_t {
-	int set;
-
-	int set_ifs_path;
-	char ifs_path[MAX_PATH_LEN];
-
-	int set_segment_size;
-	int segment_size;
-
-	int set_block_size;
-	int block_size;
-
-	int set_lock_id;
-	int lock_id;
-} ifs_set_t;
-
-#define MAX_IFS_SET (10)
 ifs_set_t* ifs_set = NULL;
-int current_ifs_set = -1;
-#endif
+static int current_ifs_set = -1;
 
 static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg);
 int __get_start_segment(ifs_t* ifs, int* pseg, int count, int file_id, int offset, 
 							   int* start_segment, int* start_offset);
 int __get_file_size(ifs_t* ifs, int* pseg, int count, int file_id);
-static int __lock_init(ifs_t* ifs, char* path);
 int __sfs_activate(ifs_t* ifs, int p, int type, int perform_format, int format_option);
 int __sfs_all_activate(ifs_t* ifs, int* physical_segment_array, int count, int type);
 int __sfs_deactivate(ifs_t* ifs, int p);
@@ -56,10 +32,12 @@ int ifs_init()
 	ipc_t lock;
 	int i;
 
+	if ( ifs_set == NULL ) return SUCCESS;
+
     lock.type = IPC_TYPE_SEM;
     lock.pid = SYS5_IFS;
 
-	for ( i = 0; i < MAX_IFS_SET; i++ ) {
+	for ( i = 0; i < MAX_INDEXDB_SET; i++ ) {
 		if ( !ifs_set[i].set ) continue;
 
 		if ( !ifs_set[i].set_ifs_path ) {
@@ -67,7 +45,7 @@ int ifs_init()
 			continue;
 		}
 
-		lock.pathname = ifs_set[i].ifs_path;
+    	lock.pathname = ifs_set[i].ifs_path;
 
 		if ( get_sem(&lock) != SUCCESS )
 			return FAIL;
@@ -79,46 +57,16 @@ int ifs_init()
 	return SUCCESS;
 }
 
-void* ifs_create()
-{
-	ifs_t* ifs = NULL;
-
-	ifs = (ifs_t*)sb_malloc(sizeof(ifs_t));
-	if ( ifs == NULL ) return NULL;
-
-	memset(&ifs->local, 0x00, sizeof(local_t));
-
-    return ifs;
-}
-
-int ifs_destroy(void* indexdb)
-{
-	ifs_t* ifs = (ifs_t*) indexdb;
-
-	if(ifs != NULL) free(ifs);
-
-	return SUCCESS;
-}
-
 int __file_open(ifs_t* ifs, int sec)
 {
 	if(ifs->local.sfs_fd[sec] <= 0) {
 		sprintf(ifs->local.full_path[sec], "%s%c%s_%d", ifs->shared->root_path, PATH_SEP, SFS_FILE_NAME, sec);
 		info("open %s", ifs->local.full_path[sec]);
-#ifdef WIN32
-		ifs->local.sfs_fd[sec] = sb_open_win(ifs->local.full_path[sec],
-											GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
-											NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if(ifs->local.sfs_fd[sec] == -1) {
-			return FAIL;
-		}
-#else
 		ifs->local.sfs_fd[sec] = sb_open(ifs->local.full_path[sec], O_RDWR|O_CREAT, S_IREAD|S_IWRITE);
 		if(ifs->local.sfs_fd[sec] == -1) {
 			error("can't open file[%s] : %s", ifs->local.full_path[sec], strerror(errno));
 			return FAIL;
 		}
-#endif
 	}
 
 	return SUCCESS;
@@ -210,35 +158,6 @@ int __sfs_deactivate(ifs_t* ifs, int p)
 	return SUCCESS;
 }
 
-static int __lock_init(ifs_t* ifs, char* path)
-{
-#ifdef WIN32
-    ipc_t ifs_lock;
-    int fd;
-
-	fd = sb_open_win(path,
-					GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
-					NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if(fd > 0) {
-        sb_close_win(fd);
-    } else {
-        return FAIL;
-    }
-    ifs_lock.type = IPC_TYPE_SEM;
-    ifs_lock.pid = SYS5_IFS;
-    ifs_lock.pathname = path;
-
-    if ( get_sem(&ifs_lock) != SUCCESS )
-		return FAIL;
-
-    ifs->local.lock = ifs_lock.id;
-#else
-	// ifs_open() 에서 이미 줬다
-#endif
-
-    return SUCCESS;
-}
-
 // segment_size <= 0 이거나 block_size <=0 인 경우는 
 // create는 허용하지 않고 load만 된다.
 int _ifs_open(ifs_t* ifs, char* root_path, int segment_size, int block_size)
@@ -258,26 +177,12 @@ int _ifs_open(ifs_t* ifs, char* root_path, int segment_size, int block_size)
 	}
 
 	sprintf(path, "%s%c%s", root_path, PATH_SEP, IFS_FILE_NAME);
-	/* semaphore create */
-	if(__lock_init(ifs, path) != SUCCESS) {
-		error("can not lock init");
-		return FAIL;
-	}
 
-#ifdef WIN32
-	ifs->local.ifs_fd = sb_open_win(path,
-									GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
-									NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-	if(ifs->local.ifs_fd == -1) {
-		return FAIL;
-	}
-#else
     ifs->local.ifs_fd = sb_open(path, O_RDWR|O_CREAT, S_IREAD|S_IWRITE);
     if(ifs->local.ifs_fd == -1) {
         error("can't open file[%s] : %s", path, strerror(errno));
         return FAIL;
     }
-#endif
 	info("open ifs: %s", path);
 
 	ifs->shared = get_shared_memory(2000, ifs->local.ifs_fd, 0, sizeof(shared_t));
@@ -336,21 +241,24 @@ fail:
 	return FAIL;
 }
 
-int ifs_open(void* indexdb, int opt)
+int ifs_open(index_db_t** indexdb, int opt)
 {
+	ifs_t* ifs = NULL;
+	index_db_t* index_db = NULL;
+
 	if ( ifs_set == NULL ) {
 		error("ifs_set is NULL. you must set IndexDbSet in config file");
-		return FAIL;
+		return DECLINE;
 	}
 
-	if ( opt >= MAX_IFS_SET || opt < 0 ) {
-		error("opt[%d] is invalid. MAX_IFS_SET[%d]", opt, MAX_IFS_SET);
+	if ( opt >= MAX_INDEXDB_SET || opt < 0 ) {
+		error("opt[%d] is invalid. MAX_INDEXDB_SET[%d]", opt, MAX_INDEXDB_SET);
 		return FAIL;
 	}
 
 	if ( !ifs_set[opt].set ) {
-		error("IndexDbSet[opt:%d] is not defined", opt);
-		return FAIL;
+		warn("IndexDbSet[opt:%d] is not defined", opt);
+		return DECLINE;
 	}
 
 	if ( !ifs_set[opt].set_ifs_path ) {
@@ -369,19 +277,44 @@ int ifs_open(void* indexdb, int opt)
 	}
 
 	if ( !ifs_set[opt].set_lock_id ) {
-		error("lock init failed? [IndexDbSet:%d].", opt);
+		error("invalid lock_id [IndexDbSet:%d]. maybe failed from init()", opt);
 		return FAIL;
 	}
-	else ((ifs_t*)indexdb)->local.lock = ifs_set[opt].lock_id;
 
-	return _ifs_open((ifs_t*)indexdb, ifs_set[opt].ifs_path,
-						ifs_set[opt].segment_size, ifs_set[opt].block_size);
+	ifs = (ifs_t*) sb_malloc(sizeof(ifs_t));
+	if ( ifs == NULL ) goto error;
+
+	index_db = (index_db_t*) sb_malloc(sizeof(index_db_t));
+	if ( index_db == NULL ) goto error;
+
+	memset(&ifs->local, 0x00, sizeof(local_t));
+	ifs->local.lock = ifs_set[opt].lock_id;
+
+	if ( _ifs_open(ifs, ifs_set[opt].ifs_path,
+				ifs_set[opt].segment_size, ifs_set[opt].block_size) != SUCCESS )
+		goto error;
+
+	index_db->set = opt;
+	index_db->db = (void*) ifs;
+
+	*indexdb = index_db;
+	return SUCCESS;
+
+error:
+	if ( ifs ) sb_free( ifs );
+	if ( index_db ) sb_free( index_db );
+
+	return FAIL;
 }
 
-int ifs_close(void* indexdb)
+int ifs_close(index_db_t* indexdb)
 {
-	ifs_t* ifs = (ifs_t*) indexdb;
+	ifs_t* ifs;
 	int i = 0;
+
+	if ( ifs_set == NULL || !ifs_set[indexdb->set].set )
+		return DECLINE;
+	ifs = (ifs_t*) indexdb->db;
 
     for(i = 0; i < MAX_SEGMENT_COUNT*MAX_SECTOR_COUNT; i++) {
 		if(ifs->local.sfs[i] != NULL) {
@@ -393,17 +326,16 @@ int ifs_close(void* indexdb)
 
 	for(i = 0; i < MAX_FILE_COUNT; i++) {
 		if(ifs->local.sfs_fd[i] != 0) {
-#ifdef WIN32
-			sb_close_win(ifs->local.sfs_fd[i]);
-#else
 			close(ifs->local.sfs_fd[i]);
-#endif
 			ifs->local.sfs_fd[i] = 0;
 		}
     }
 
     unmmap_memory(ifs->shared, sizeof(shared_t));
 	ifs->shared = NULL;
+
+	sb_free( indexdb->db );
+	sb_free( indexdb );
 
 	return SUCCESS;
 }
@@ -428,9 +360,9 @@ static void __release_append_segment(ifs_t* ifs, int p)
  * lock잡는데 실패했다고 중단하고 그냥 포기할 수가 없다....
  * 관리 잘해야지...
  *******************************************************************/
-int ifs_append(void* indexdb, int file_id, int size, void* buf)
+int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf)
 {
-	ifs_t* ifs = (ifs_t*) indexdb;
+	ifs_t* ifs;
     int append_byte = 0;
     int try_append_byte = 0;
 	int total_byte = 0;
@@ -438,6 +370,10 @@ int ifs_append(void* indexdb, int file_id, int size, void* buf)
 	int physical_segment = 0;
 	int free_segment = 0;
 	sfs_t* s;
+
+	if ( ifs_set == NULL || !ifs_set[indexdb->set].set )
+		return MINUS_DECLINE;
+	ifs = (ifs_t*) indexdb->db;
 
 	ACQUIRE_LOCK();
 
@@ -508,9 +444,9 @@ fail:
 // 리턴값은 실제 읽은 크기
 // INDEXDB_FILE_NOT_EXISTS : 파일 없음
 // FAIL : 일반 에러
-int ifs_read(void* indexdb, int file_id, int offset, int size, void* buf)
+int ifs_read(index_db_t* indexdb, int file_id, int offset, int size, void* buf)
 {
-	ifs_t* ifs = (ifs_t*) indexdb;
+	ifs_t* ifs;
 	int read_byte, total_byte;
     int physical_segment_array[MAX_LOGICAL_COUNT];
 	int count, table_version;
@@ -519,6 +455,10 @@ int ifs_read(void* indexdb, int file_id, int offset, int size, void* buf)
 	int i, file_exists;
 
 	const int type = O_FILE;
+
+	if ( ifs_set == NULL || !ifs_set[indexdb->set].set )
+		return MINUS_DECLINE;
+	ifs = (ifs_t*) indexdb->db;
 
 retry:
 	ACQUIRE_LOCK();
@@ -580,14 +520,18 @@ retry:
 // 리턴값 : 파일크기
 // INDEXDB_FILE_NOT_EXISTS : 파일없음
 // FAIL : 일반오류
-int ifs_getsize(void* indexdb, int file_id)
+int ifs_getsize(index_db_t* indexdb, int file_id)
 {
-	ifs_t* ifs = (ifs_t*) indexdb;
+	ifs_t* ifs;
     int physical_segment_array[MAX_LOGICAL_COUNT];
 	int count, file_size;
 	int table_version;
 
 	const int type = O_FILE;
+
+	if ( ifs_set == NULL || !ifs_set[indexdb->set].set )
+		return MINUS_DECLINE;
+	ifs = (ifs_t*) indexdb->db;
 
 retry:
 	ACQUIRE_LOCK();
@@ -794,8 +738,6 @@ fail:
 	return FAIL;
 }
 
-#ifndef WIN32
-
 /******************************************************
  *                   module stuff
  ******************************************************/
@@ -818,12 +760,12 @@ static void set_file_size(configValue v)
 
 static void set_ifs_set(configValue v)
 {
+	static ifs_set_t local_ifs_set[MAX_INDEXDB_SET];
 	int value = atoi( v.argument[0] );
-	static ifs_set_t local_ifs_set[MAX_IFS_SET];
 
-	if ( value < 0 || value >= MAX_IFS_SET ) {
-		error("Invalid IndexDbSet value[%s], MAX_IFS_SET[%d]",
-				v.argument[0], MAX_IFS_SET);
+	if ( value < 0 || value >= MAX_INDEXDB_SET ) {
+		error("Invalid IndexDbSet value[%s], MAX_INDEXDB_SET[%d]",
+				v.argument[0], MAX_INDEXDB_SET);
 		return;
 	}
 
@@ -843,7 +785,8 @@ static void set_ifs_path(configValue v)
 		return;
 	}
 
-	strncpy(ifs_set[current_ifs_set].ifs_path, v.argument[0], MAX_PATH_LEN);
+	strncpy( ifs_set[current_ifs_set].ifs_path, v.argument[0], MAX_PATH_LEN-1 );
+	ifs_set[current_ifs_set].set_ifs_path = 1;
 }
 
 static void set_segment_size(configValue v)
@@ -863,6 +806,7 @@ static void set_segment_size(configValue v)
 	}
 
 	ifs_set[current_ifs_set].segment_size = segment_size;
+	ifs_set[current_ifs_set].set_segment_size = 1;
 }
 
 static void set_block_size(configValue v)
@@ -882,14 +826,17 @@ static void set_block_size(configValue v)
 	}
 
 	ifs_set[current_ifs_set].block_size = block_size;
+	ifs_set[current_ifs_set].set_block_size = 1;
 }
 
 static config_t config[] = {
-	CONFIG_GET("TempAliveTime", set_temp_alive_time, 1, "time for temp segment is kept alive"),
+	// not in IndexDbSet
 	CONFIG_GET("FileSize", set_file_size, 1,
-					"size of one file (segment * sector. e.g: FileSize 1024)"),
+					"size of one file (segment * sector. e.g: FileSize 1024(default))"),
+	CONFIG_GET("TempAliveTime", set_temp_alive_time, 1, "time for temp segment is kept alive."),
 
-	CONFIG_GET("IndexDbSet", set_ifs_set, 1, "ifs set. (e.g: IndexDbSet 1)"),
+	// in IndexDbSet
+	CONFIG_GET("IndexDbSet", set_ifs_set, 1, "ifs set (e.g: IndexDbSet 1)"),
 	CONFIG_GET("IfsPath", set_ifs_path, 1, "ifs path(not file). but, remove last '/'"),
 	CONFIG_GET("SegmentSize", set_segment_size, 1, "sfs segment size(MB) (e.g: SegmentSize 256"),
 	CONFIG_GET("BlockSize", set_block_size, 1, "sfs block size (e.g: BlockSize 256)"),
@@ -898,8 +845,6 @@ static config_t config[] = {
 
 static void register_hooks(void)
 {
-    sb_hook_indexdb_create(ifs_create,NULL,NULL,HOOK_MIDDLE);
-    sb_hook_indexdb_destroy(ifs_destroy,NULL,NULL,HOOK_MIDDLE);
     sb_hook_indexdb_open(ifs_open,NULL,NULL,HOOK_MIDDLE);
     sb_hook_indexdb_close(ifs_close,NULL,NULL,HOOK_MIDDLE);
     sb_hook_indexdb_append(ifs_append,NULL,NULL,HOOK_MIDDLE);
@@ -916,6 +861,4 @@ module ifs_module = {
     NULL,                   /* scoreboard */
     register_hooks,         /* register hook api */
 };    
-
-#endif
 

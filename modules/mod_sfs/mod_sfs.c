@@ -1,4 +1,3 @@
-/* $Id$ */
 #include "mod_sfs.h"
 #include "fat.h"
 #include "directory.h"

@@ -61,7 +61,7 @@ SB_DECLARE_HOOK(int,server_canneddoc_close,())
 SB_DECLARE_HOOK(int,server_canneddoc_put, \
 	(DocId docid, VariableBuffer* pDocument))
 SB_DECLARE_HOOK(int,server_canneddoc_put_with_oid, \
-	(char *oid, DocId *registeredDocid, VariableBuffer* pDocument))
+	(void* did_db, char *oid, DocId *registeredDocid, VariableBuffer* pDocument))
 SB_DECLARE_HOOK(int,server_canneddoc_get, \
 	(DocId docid, VariableBuffer* pDocument))	
 SB_DECLARE_HOOK(int,server_canneddoc_get_as_pointer, \
