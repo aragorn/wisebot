@@ -114,6 +114,9 @@ static int compare_function_for_qsort(const void *dest, const void *sour, void *
 			case '4': // Cate1
 				diff = attr1.Cate1 - attr2.Cate1;
 				break;
+			case '5': // Cate2
+				diff = attr1.Cate2 - attr2.Cate2;
+				break;
 			default:
 				diff = 0;
 		}
