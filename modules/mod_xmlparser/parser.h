@@ -8,6 +8,7 @@
 // >>>>>>>
 
 #include "dh.h"
+#include "constants.h"
 
 #define MAX_PATHKEY_LEN				MAX_KEY_LEN
 #define MAX_CHARSET_LEN				16

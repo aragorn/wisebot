@@ -29,6 +29,7 @@ else
 testparser_LDADD = $(top_builddir)/lib/libexpat.la \
                    $(top_builddir)/lib/libsoftbotserver.la
 endif
+testparser_LDFLAGS = -L../../lib -export-dynamic -ldl $(THREAD_LIB)
 
 teststree_SOURCES = teststree.c simpletree.c
 teststree_LDADD   = $(top_builddir)/lib/libsoftbotserver.la
