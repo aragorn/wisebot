@@ -429,6 +429,12 @@ static int indexer_main(slot_t *slot)
 
 	slot->state = SLOT_PROCESS;
 
+	if ( sb_run_server_canneddoc_init() != SUCCESS ) {
+		error("cdm open failed");
+		slot->state = SLOT_FINISH;
+		return -1;
+	}
+
 	if ( sb_run_open_word_db( &mWordDb, mWordDbSet ) != SUCCESS ) {
 		error("lexicon open failed");
 		slot->state = SLOT_FINISH;

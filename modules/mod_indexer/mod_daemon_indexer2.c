@@ -304,6 +304,11 @@ static int indexer_main(slot_t *slot)
 		goto error_return;
 	}
 
+	if ( sb_run_server_canneddoc_init() != SUCCESS ) {
+		error("cdm open failed");
+		goto error_return;
+	}
+
 	if ( sb_run_open_word_db( &word_db, mWordDbSet ) != SUCCESS ) {
 		error("word db open failed");
 		goto error_return;
