@@ -2867,3 +2867,7 @@ module qp_module = {
 	NULL,					/* scoreboard */
 	register_hooks			/* register hook api */
 };
+
+/* options for vim 
+ * vim:ts=4
+ */
