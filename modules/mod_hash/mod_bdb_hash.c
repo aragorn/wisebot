@@ -7,7 +7,7 @@
  *************************************************************/
 
 typedef struct _bdb_hash_t {
-	DB_ENV* dbenvp;
+//	DB_ENV* dbenvp;
 	DB* dbp;
 	DBTYPE type;
 } bdb_hash_t;
@@ -104,7 +104,7 @@ static int bdb_hash_open(api_hash_t** hash, int opt)
 	snprintf( abs_file, sizeof(abs_file), "%s/%s", abs_path, filename );
 
 	// no fail
-	db_env_create( &bdb_hash->dbenvp, 0 );
+/*	db_env_create( &bdb_hash->dbenvp, 0 );
 
 	ret = bdb_hash->dbenvp->open( bdb_hash->dbenvp, abs_path,
 			DB_INIT_LOCK|DB_INIT_MPOOL|DB_CREATE, 0 );
@@ -112,9 +112,10 @@ static int bdb_hash_open(api_hash_t** hash, int opt)
 		error("DB_ENV->open() failed: DB[%s], %d, %s",
 				abs_path, ret, strerror(ret));
 		goto fail;
-	}
+	}*/
 
-	ret = db_create( &bdb_hash->dbp, bdb_hash->dbenvp, 0 );
+//	ret = db_create( &bdb_hash->dbp, bdb_hash->dbenvp, 0 );
+	ret = db_create( &bdb_hash->dbp, NULL, 0 );
 	if ( ret != 0 ) {
 		error("db_create failed. ret:%d, EINVAL[%d]", ret, EINVAL);
 		goto fail;
@@ -154,10 +155,10 @@ fail:
 			bdb_hash->dbp = NULL;
 		}
 
-		if ( bdb_hash->dbenvp ) {
+/*		if ( bdb_hash->dbenvp ) {
 			bdb_hash->dbenvp->close( bdb_hash->dbenvp, 0 );
 			bdb_hash->dbenvp = NULL;
-		}
+		}*/
 
 		sb_free( bdb_hash );
 	}
@@ -197,7 +198,7 @@ static int bdb_hash_close(api_hash_t* hash)
 	bdb_hash = (bdb_hash_t*) hash->db;
 
 	bdb_hash->dbp->close( bdb_hash->dbp, 0 );
-	bdb_hash->dbenvp->close( bdb_hash->dbenvp, 0 );
+//	bdb_hash->dbenvp->close( bdb_hash->dbenvp, 0 );
 	memset( bdb_hash, 0, sizeof(bdb_hash_t));
 
 	sb_free( hash->db );
