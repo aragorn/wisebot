@@ -434,7 +434,7 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 	char path[STRING_SIZE];
 	int fd, ret;
 	off_t off;
-	int offset_correction;
+	uintptr_t offset_correction;
 
 	if ( ipc->pathname[0] != '/' ) {
 		snprintf(path,STRING_SIZE,"%s/%s",gSoftBotRoot,ipc->pathname);
@@ -486,23 +486,23 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 
 	offset_correction = offset % getpagesize();
 	if ( offset_correction != 0 ) {
-		info( "offset[0x%x] is not multiple of PAGE_SIZE[%d], but OK - correction[%d]",
-				(unsigned int)offset, getpagesize(), offset_correction);
+		info( "offset[0x%lx] is not multiple of PAGE_SIZE[%d], but OK - correction[%" PRIuPTR "]",
+				offset, getpagesize(), offset_correction);
 	}
 
 	ipc->addr = mmap( NULL, ipc->size + offset_correction,
 					PROT_READ|PROT_WRITE, MAP_SHARED, fd, offset - offset_correction );
 	if ( ipc->addr == MAP_FAILED ) {
-		error( "mmap() failed: [%s:%s()], size:%d, offset:0x%x, %s",
-				file, caller, ipc->size, (unsigned int)offset, strerror(errno) );
+		error( "mmap() failed: [%s:%s()], size:%d, offset:0x%lx, %s",
+				file, caller, ipc->size, offset, strerror(errno) );
 		close( fd );
 		return FAIL;
 	}
 	else ipc->addr += offset_correction;
 
-	info( "[%s:%s()] mmap successed at[0x%p]: %s(0x%x~0x%x)",
+	info( "[%s:%s()] mmap successed at[0x%p]: %s(0x%lx~0x%lx)",
 			file, caller, ipc->addr, ipc->pathname,
-			(unsigned int)offset, (unsigned int)offset+ipc->size );
+			offset, offset+ipc->size );
 	close( fd );
 	return SUCCESS;
 }
@@ -510,11 +510,11 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 int _sync_mmap(void* start, int size, const char* file, const char* caller)
 {
 	int ret;
-	unsigned int offset_correction;
+	uintptr_t offset_correction;
    
 	offset_correction = (uintptr_t)start % getpagesize();
 	if ( offset_correction != 0 ) {
-		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%u]",
+		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%" PRIuPTR "]",
 				start, getpagesize(), offset_correction);
 	}
 
@@ -529,11 +529,11 @@ int _sync_mmap(void* start, int size, const char* file, const char* caller)
 int _free_mmap(void* start, int size, const char* file, const char* caller)
 {
 	int ret;
-	unsigned int offset_correction;
+	uintptr_t offset_correction;
    
 	offset_correction = (uintptr_t)start % getpagesize();
 	if ( offset_correction != 0 ) {
-		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%u]",
+		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%" PRIuPTR "]",
 				start, getpagesize(), offset_correction);
 	}
 
