@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES = mod_morpheme.la
+pkglib_LTLIBRARIES = mod_morpheme.la
 #					  mod_bigram.la 
 #					  mod_koma.la 
 
@@ -51,4 +51,4 @@ dist-hook:
 #check_PROGRAMS = bigram_test 
 #bigram_test_SOURCES = mod_bigram.c bigram_test.c
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

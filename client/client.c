@@ -322,9 +322,11 @@ int client_main()
 
 	init_readline();
 
-	printf("SoftBot Client Version: %s\n", VERSION);
-	printf("      Internal Version: %08x\n", INTERNAL_VERSION);
-	printf("           Build Stamp: %s\n", BUILDSTAMP);
+	printf("SoftBot Client Version: %s\n", PACKAGE_VERSION);
+	printf("          Release Date: %s\n", RELEASE_DATE);
+	printf("   Module Magic Number: %u:%u\n",
+			MODULE_MAGIC_NUMBER_MAJOR, MODULE_MAGIC_NUMBER_MINOR);
+	printf("          Architecture: %ld-bit\n", 8*(long)sizeof(void *));
 
 	for ( ; ; ) {
 		line = readline(prompt);
@@ -542,13 +544,12 @@ main(int argc, char *argv[], char *envp[])
 	// end of getopt stuff
 
 	if ( show_version ) {
-		if ( show_version == 1 )
-			notice("SoftBot Client Version " VERSION);
-		else {
-			notice("SoftBot Client Version: %s", VERSION);
-			notice("      Internal Version: %08x", INTERNAL_VERSION);
-			notice("           Build Stamp: %s", BUILDSTAMP);
-		}
+		printf("SoftBot Client Version: %s\n", PACKAGE_VERSION);
+		printf("          Release Date: %s\n", RELEASE_DATE);
+		printf("   Module Magic Number: %d:%d\n",
+			MODULE_MAGIC_NUMBER_MAJOR, MODULE_MAGIC_NUMBER_MINOR);
+		printf("          Architecture: %d-bit\n", 8*(long)sizeof(void *));
+
 		exit(0);
 	}
 

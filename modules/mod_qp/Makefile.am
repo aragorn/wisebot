@@ -5,7 +5,7 @@ MAINTAINERCLEANFILES = Makefile Makefile.in
 
 ## AM_CFLAGS = `glib-config --cflags`
 
-libexec_LTLIBRARIES = mod_qp.la
+pkglib_LTLIBRARIES = mod_qp.la
 #mod_qp_cdmi.la
 
 mod_qp_la_SOURCES = mod_qp.c mod_qp.h
@@ -27,4 +27,4 @@ mod_qp_la_LDFLAGS = -module -avoid-version -lm
 
 ##TESTS = mod_qp_test
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES = mod_ifs.la mod_ifs_defrag.la mod_ifs_test.la
+pkglib_LTLIBRARIES = mod_ifs.la mod_ifs_defrag.la mod_ifs_test.la
 mod_ifs_la_SOURCES = mod_ifs.c table.c \
                      mod_ifs.h
 mod_ifs_la_LDFLAGS = -module -avoid-version

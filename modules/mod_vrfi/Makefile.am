@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES = mod_vrfi.la
+pkglib_LTLIBRARIES = mod_vrfi.la
 mod_vrfi_la_SOURCES = mod_vrfi.c mod_vrfi.h \
 					  data_handle.c data_handle.h \
 					  header_handle.c header_handle.h
@@ -22,4 +22,4 @@ header_reader_SOURCES = header_reader.c header_handle.h
 data_reader_SOURCES = data_reader.c data_handle.h
 master_reader_SOURCES = master_reader.c mod_vrfi.h
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

@@ -5,7 +5,7 @@ MAINTAINERCLEANFILES = Makefile Makefile.in
 
 ## AM_CFLAGS = `glib-config --cflags`
 
-libexec_LTLIBRARIES = mod_qpp.la
+pkglib_LTLIBRARIES = mod_qpp.la
 mod_qpp_la_SOURCES = mod_qpp.c tokenizer.c stack.c  relatedTerm.c \
 					mod_qpp.h qpp_test.h relatedTerm.h \
 					stack.h synonym.h tokenizer.h 
@@ -31,4 +31,4 @@ mod_qpp_la_LDFLAGS = -module -avoid-version
 ## 
 ## TESTS = tokenizer_test stack_test qpp_test
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

@@ -239,10 +239,10 @@ int save_registry_file(char *file)
 	}
 
 	time(&now);
-	fprintf(out, "# SoftBotNext[%s] Registry File\n", VERSION);
+	fprintf(out, "# %s Registry File\n", PACKAGE_STRING);
 	fprintf(out, "# This data has byte-order dependency.\n");
 	fprintf(out, "# Platform: %s\n", CANONICAL_HOST);
-	fprintf(out, "# Build Stamp: %s\n", BUILDSTAMP);
+	fprintf(out, "# Release Date: %s\n", RELEASE_DATE);
 	fprintf(out, "# Date: %s", ctime(&now));
 
 	r = save_registry(out, NULL);

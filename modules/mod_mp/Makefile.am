@@ -15,7 +15,7 @@ else
 libmp_la_LDFLAGS = -shared -avoid-version
 endif
 
-libexec_LTLIBRARIES = mod_mp.la 
+pkglib_LTLIBRARIES = mod_mp.la 
 
 mod_mp_la_SOURCES = $(SOURCE_FILES)
 mod_mp_la_LDFLAGS = -module -avoid-version
@@ -23,5 +23,5 @@ mod_mp_la_LDFLAGS = -module -avoid-version
 #libmod_mp_la_SOURCES = $(SOURCE_FILES)
 #libmod_mp_la_LDFLAGS = $(THREAD_LIB) -all-static -avoid-version
 
-include ../install-libexec.mk
+include ../install-pkglib.mk
 

@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES = mod_daemon_indexer.la \
+pkglib_LTLIBRARIES = mod_daemon_indexer.la \
                       mod_daemon_indexer2.la \
 					  mod_index_each_doc.la \
 					  mod_index_check.la
@@ -20,4 +20,4 @@ mod_index_each_doc_la_LDFLAGS = -module -avoid-version
 mod_index_check_la_SOURCES = mod_index_check.c
 mod_index_check_la_LDFLAGS = -module -avoid-version
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

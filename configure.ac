@@ -1,93 +1,39 @@
-dnl # $Id$ 
-dnl 
-dnl Autoconf configuration for SoftBotNext
-dnl
-dnl    Use ./buildconf to produce a configure script
-dnl
+# $Id$ 
+# 
+# Autoconf configuration fot SoftBot 6.0
+#
 
-dnl autoconf 2.13 is too buggy. should avoid autoconf 2.13 as much as possible.
+AC_INIT(SoftBot, 6.0.0, support@softwise.co.kr, softbot-6.0.0)
+PACKAGE=softbot
+
 AC_PREREQ(2.50)
-AC_INIT(server/server.c)
+AC_COPYRIGHT([Copyright 2001-2005 SoftWise Inc.])
+AC_REVISION([$Revision$])
 
-AC_CONFIG_AUX_DIR(build)
-AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(softbot,6.0,nodefine)
-AM_CONFIG_HEADER(include/auto_config.h)
+#AC_CONFIG_SRCDIR([server/server.c])
+AC_CONFIG_AUX_DIR([build])
 
-dnl #
-dnl # Include our own M4 macros along with those for APR and libtool
-dnl #
-dnl # XXX apr_common.m4 causes fatal error, exceeding recursion limit of 1024.
-dnl #     do not include apr_common.m4.
-dnl sinclude(build/apr_common.m4)
+AC_CANONICAL_HOST()
 
-dnl XXX WiseBot does not need apr and apu. 2004/08/03
-dnl sinclude(build/find_apr.m4)
-dnl sinclude(build/find_apu.m4)
-dnl sinclude(acinclude.m4)
-
-dnl sinclude(aclocal.m4)
-
-dnl # include lt config hack, which facilitates
-dnl sinclude(build/sb_ltconfig_hack.m4)
+# AM_INIT_AUTOMAKE with package, version argument is deprecated in above automake 1.5.
+# The third argument of no-define indicates that this options are not valid.
+# --aragorn, 2005/02/22
+AM_INIT_AUTOMAKE(SoftBot, 6.0.0, no-define)
+AM_CONFIG_HEADER([include/auto_config.h])
+# AC_CONFIG_HEADERS([include/auto_config.h])
 
 dnl XXX setting default prefix to `pwd` is not a good idea. --jiwon
 dnl but, we can't avoid this for a time being. --aragorn
 AC_PREFIX_DEFAULT(`pwd`)
 
-nl='
-'
-
 dnl ---------------------------------------------------------------------------
-dnl ## echo $ac_n "${nl}Configuring Apache Portable Runtime library ...${nl}"
-dnl ## 
-dnl ## APR_FIND_APR("bin", , 1)
-dnl ## 
-dnl ## if test "$apr_found" = "no"; then
-dnl ##   AC_MSG_ERROR([APR not found. Please read the documentation.])
-dnl ## fi
-dnl ## 
-dnl ## APR_SETIFNULL(CC, `$apr_config --cc`)
-dnl ## APR_SETIFNULL(CPP, `$apr_config --cpp`)
-dnl ## 
-dnl ## APR_LIBS=`$apr_config --link-libtool --libs`
-dnl ## APR_INCLUDES=`$apr_config --includes`
-dnl ## APR_CFLAGS=`$apr_config --cflags`
-dnl ## APR_LDFLAGS=`$apr_config --ldflags`
-dnl ## dnl APR_BINDIR=`$apr_config --bindir`
-dnl ## dnl SHLIBPATH_VAR=`$apr_config --shlib-path-var`
-dnl ## 
-dnl ## 
-dnl ## echo $ac_n "${nl}Configuring Apache Portable Runtime Utility library...${nl}"
-dnl ## 
-dnl ## APR_FIND_APU("bin", , 1)
-dnl ## 
-dnl ## if test "$apu_found" = "no"; then
-dnl ##   AC_MSG_ERROR([APR-util not found.  Please read the documentation.])
-dnl ## fi
-dnl ## 
-dnl ## dnl XXX to test with new iconv
-dnl ## APU_LIBS=`$apu_config --link-libtool --libs`
-dnl ## APU_LDFLAGS=`$apu_config --ldflags`
-dnl ## APU_INCLUDES=`$apu_config --includes`
-dnl ## APU_BINDIR=`$apu_config --bindir`
-
-dnl ---------------------------------------------------------------------------
-echo $ac_n "${nl}Configuring SoftBotNext ...${nl}"
-
-dnl
 dnl header template, include/auto_config.h.in
 
 AH_TOP([#ifndef AUTO_CONFIG_H
 #define AUTO_CONFIG_H 1
 
 #include "auto_defines.h"
-
-/* some definitions related to layout */
-#ifndef SERVER_ROOT
-#       error SERVER_ROOT must be set by autoconf
-#endif
 
 #define DEFAULT_CONFIG_FILE     "etc/softbot.conf"
 #define DEFAULT_ERROR_LOG_FILE  "logs/error_log"
@@ -136,7 +82,10 @@ AH_VERBATIM([1_NEAR_TOP__],[
 #define SB_ARGV_PSSTRINGS   4
 
 #undef SB_ARGV_TYPE
+
 ])
+
+dnl ---------------------------------------------------------------------------
 
 AC_ARG_WITH(forwardidx,
 [  --with-forwardidx       build with forward index support [default=no]], [
@@ -153,17 +102,7 @@ AC_ARG_WITH(hitsize,
 AC_DEFINE_UNQUOTED(HIT_SIZE,$withval)
 ])
 
-dnl ## AC_ARG_ENABLE(apr,
-dnl ## [  --enable-apr            build with apr, apr-util support [default=no]], [
-dnl ## if test "$enableval" != yes
-dnl ## then
-dnl ##     AC_DEFINE(USE_APR,0)
-dnl ## else
-dnl ##     AC_DEFINE(USE_APR,1)
-dnl ## fi
-dnl ## ])
-
-
+dnl ---------------------------------------------------------------------------
 
 dnl See if the compiler supports __attribute__ gracefully.
 AC_MSG_CHECKING(whether compiler supports __attribute__)
@@ -179,6 +118,7 @@ fi
 AC_DEFINE_UNQUOTED(ATTR_UNUSED, $attr_unused,
                    [see if the compiler supports __attribute__ gracefully])
 
+dnl ---------------------------------------------------------------------------
 
 dnl Check system environments
 CANONICAL_HOST="$host"
@@ -251,8 +191,6 @@ case $host in
         OS_SPECIFIC_VARS=""
 esac
 
-
-
 dnl ---------------------------------------------------------------------------
 
 dnl Checks for programs
@@ -272,12 +210,6 @@ CFLAGS="-Wall -g3 -O2"
 
 AC_LIBTOOL_DLOPEN
 AC_PROG_LIBTOOL
-
-dnl Note: Avoid using AC_C_BIGENDIAN because it does not
-dnl work in a cross compile.
-sinclude(build/ac_c_bigendian_cross.m4)
-AC_C_BIGENDIAN_CROSS
-
 
 dnl ---------------------------------------------------------------------------
 
@@ -300,12 +232,13 @@ AC_CHECK_FUNCS( \
   mmap \
   mergesort \
 )
-AC_REPLACE_FUNCS(setproctitle)
 
 
-dnl
+dnl ---------------------------------------------------------------------------
 dnl replacing setproctitle stuff.
 dnl corresponding header template is included above.
+
+AC_REPLACE_FUNCS(setproctitle)
 
 if test "$ac_cv_func_setproctitle" = "yes"; then
   AC_DEFINE(SB_ARGV_TYPE, SB_ARGV_NONE)
@@ -372,49 +305,28 @@ else
   fi
 fi
 
-TOP_BUILDDIR=`pwd`
-TIMESTAMP=`date`
+dnl ---------------------------------------------------------------------------
+# PACKAGE variable determines pkglib path.
+# Unfortunately /usr/share/autoconf/autoconf/general.m4 set PACKAGE 
+# to softbot-6.0.0 and we have to reassign the value without version number.
+# --aragorn, 2005/02/22
+PACKAGE=softbot
+SB_RELEASE_DATE=`LANG=C date "+%a %b %d %T %Z %Y"`
 
+AC_SUBST(PACKAGE)
+AC_SUBST(SB_RELEASE_DATE)
+AC_SUBST(CANONICAL_HOST)
 
-dnl following is due to a bug of autoconf.(LTLIBOBJS is not set properly)
-dnl (only until autoconf sets LTLIBOBJS appropriately)
-dnl I don't know if autoconf 2.5 is debugged for this,
-dnl but I want to be sure that wide distribution of autoconf
-dnl (now 2.13) can set it properly.
-dnl autoconf2.50 suggests LIBOBJS -> AC_LIBOBJ 
-
-dnl SED="sed"
-dnl Xsed="sed -e s/^X//"
-
-dnl LTLIBOBJS=`echo X"$LIBOBJS"|\
-dnl            [$Xsed -e "s,\.[^.]* ,.lo ,g;s,\.[^.]*$,.lo,"]`
-dnl AC_SUBST(LTLIBOBJS)
-
-dnl AC_SUBST(APR_LIBS)
-dnl AC_SUBST(APR_INCLUDES)
-dnl AC_SUBST(APR_CFLAGS)
-dnl AC_SUBST(APR_LDFLAGS)
-dnl AC_SUBST(APU_LIBS)
-dnl AC_SUBST(APU_INCLUDES)
-dnl AC_SUBST(APU_CFLAGS)
-dnl AC_SUBST(APU_LDFLAGS)
-
-dnl AC_SUBST(CFLAGS)
 AC_SUBST(OS_TYPE)
-dnl AC_SUBST(PLATFORM_OS)
 AC_SUBST(THREAD_LIB)
 AC_SUBST(DYN_LIB)
 AC_SUBST(SOFTBOTD_LDFLAGS)
 AC_SUBST(SOFTBOTCLI_LDFLAGS)
-AC_SUBST(TOP_BUILDDIR)
-AC_SUBST(TIMESTAMP)
 AC_SUBST(ac_aux_dir)
 AC_SUBST(am_aux_dir)
-AC_SUBST(CANONICAL_HOST)
 
 AC_CONFIG_FILES([
     include/auto_defines.h
-    include/timestamp.h
 
     Make.defs
     Makefile

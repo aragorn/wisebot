@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES = mod_xmlparser.la
+pkglib_LTLIBRARIES = mod_xmlparser.la
 mod_xmlparser_la_SOURCES = mod_xmlparser.c parser.c \
 						   dh.c stack.c checksum.c \
 						   checksum.h dh.h parser.h stack.h
@@ -29,4 +29,4 @@ endif
 teststree_SOURCES = teststree.c simpletree.c
 teststree_LDADD   = $(top_builddir)/lib/libsoftbotserver.la
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

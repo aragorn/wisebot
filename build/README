@@ -1,5 +1,5 @@
 /**
- * This directory is not for configuration for softbotd
+ * This directory is not for configuration of softbotd.
  * It's for autoconf private files, or autoconf temporary files
  * do not edit any files in this directory, or add something.
  */

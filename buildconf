@@ -1,14 +1,11 @@
 #!/bin/sh
 # $Id$ 
 #
-# buildconf: Build the support scripts needed to compile from
-#            a checked-out version of the source code.
+# buildconf: Build the autoconfiguration files.
 
-# set a couple of defaults for where we should be looking for our support libs.
-# can be overridden with --with-apr=[dir] and --with-apr-util=[dir]
+#set -x
 
-#apr_src_dir=srclib/apr
-#apu_src_dir=srclib/apr-util
+trap 'rm -f aclocal.m4 ; exit 0' 0 1 2 3 13 15
 
 while test $# -gt 0
 do
@@ -23,93 +20,35 @@ do
 #   apr_src_dir=$optarg
 #   ;;
 #   esac
-# 
-#   case "$1" in
-#   --with-apr-util=*)
-#   apu_src_dir=$optarg
-#   ;;
-#   esac
 
   shift
 done
 
-#
-# Check to be sure that we have the srclib dependencies checked-out
-#
-
-# if [ ! -d "$apr_src_dir" -o ! -f "$apr_src_dir/build/apr_common.m4" ]; then
-#   echo ""
-#   echo "You don't have a copy of the apr source in $apr_src_dir. " 
-#   echo "Please get the source using the following instructions," 
-#   echo "or specify the location of the source with " 
-#   echo "--with-apr=[path to apr] :"
-#   echo ""
-#   echo "   cd srclib && make"
-#   echo ""
-#   exit 1
-# fi
-# 
-# if [ ! -d "$apu_src_dir" -o ! -f "$apu_src_dir/Makefile.in" ]; then
-#   echo ""
-#   echo "You don't have a copy of the apr-util source in $apu_src_dir. "   
-#   echo "Please get the source using the following instructions,"   
-#   echo "or specify the location of the source with "   
-#   echo "--with-apr-util=[path to apr-util] :"  
-#   echo ""
-#   echo "   cd srclib && make"
-#   echo ""   
-#   exit 1
-# fi
-  
-# if [ ! -d srclib/SynapNext2 -o ! -f lib/libsn2.a ]; then
-# 	echo "You don't have srclib/SynapNext2. Please get one:"
-# 	echo ""
-# 	echo "  cd srclib && make"
-# 	exit 1
-# fi
-
-## XXX we don't need xmlrpc and w3c-libwww for supreme release
-## 
-## if [ ! -d srclib/xmlrpc-c -o ! -f srclib/xmlrpc-c/src/libxmlrpc.la ]; then
-## 	echo "You don't have srclib/xmlrpc-c. Please get one:"
-## 	echo ""
-## 	echo "  cd srclib && make"
-## 	exit 1
-## fi
-## 
-## if [ ! -d srclib/w3c-libwww -o ! -f srclib/w3c-libwww/Library/src/libwwwcore.la ]; then
-## 	echo "You don't have srclib/w3c-libwww. Please get one:"
-## 	echo ""
-## 	echo "  cd srclib && make"
-## 	exit 1
-## fi
 
 ###############################################################################
-rm -f aclocal.m4
+echo building ${SB_VERSION_STRING}
 
-cross_compile_warning="warning: AC_TRY_RUN called without default to allow cross compiling"
-
-#echo copying build files
-#cp $apr_src_dir/build/apr_common.m4 $apr_src_dir/build/find_apr.m4 \
-#   $apu_src_dir/build/find_apu.m4 build
-
-echo building $configure
-
+#rm -f aclocal.m4
 echo running aclocal -I build ...
 aclocal -I build
 
 echo running libtoolize --automake --force --copy ...
+#rm -f libtool
 ln -s configure.ac configure.in
 libtoolize --automake --force --copy
 rm -f configure.in
 
 echo running autoheader ...
-autoheader 2>&1 | grep -v "$cross_compile_warning"
+#rm -f include/auto_config.h.in
+autoheader
+#  chmod 444 include/auto_config.h.in
 
 echo running automake --foreign --add-missing --copy --force ...
 automake --foreign --add-missing --copy --force
 
-echo running autoconf ...
-autoconf 2>&1 | grep -v "$cross_compile_warning"
+echo running autoconf to build configure
+#rm -f configure
+autoconf
 
 exit 0
+

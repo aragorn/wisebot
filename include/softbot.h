@@ -75,8 +75,6 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #include "hook.h"
 #include "message.h"
 
-#include "version.h"
-
 #include "platform.h" /* include all related files in platform/ directory */
 
 #include "util.h"

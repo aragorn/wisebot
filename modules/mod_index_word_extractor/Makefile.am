@@ -4,7 +4,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES  = mod_bigram.la \
+pkglib_LTLIBRARIES  = mod_bigram.la \
                        mod_rmas.la mod_rmac2.la \
                        mod_koma.la \
                        mod_dummy_ma.la \
@@ -54,5 +54,5 @@ EXTRA_DIST = lib
 dist-hook:
 	rm -rf `find $(distdir)/ -name CVS`
 
-include ../install-libexec.mk
+include ../install-pkglib.mk
 

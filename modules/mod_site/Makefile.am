@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES = mod_supreme_court_precedent.la \
+pkglib_LTLIBRARIES = mod_supreme_court_precedent.la \
 					  mod_supreme_court_literature.la \
 					  mod_supreme_court_regulation.la \
 					  mod_supreme_court_statute.la \
@@ -60,4 +60,4 @@ mod_supreme_home_la_SOURCES = mod_docattr_supreme_home.c \
 							  mod_qp_supreme_home.c
 mod_supreme_home_la_LDFLAGS = -module -avoid-version
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

@@ -1,7 +1,0 @@
-#ifndef TIMESTAMP_H
-#define TIMESTAMP_H
-
-#define TIMESTAMP	"@TIMESTAMP@"
-#define BUILDSTAMP	TIMESTAMP
-
-#endif

@@ -94,7 +94,7 @@ char *ap_getword_white(apr_pool_t *p, const char **line)
 /*****************************************************************************/
 const char *sb_get_server_version(void)
 {
-	return VERSION;
+	return PACKAGE_VERSION;
 }
 
 int sb_server_root_relative(char *buf, const char *filename)

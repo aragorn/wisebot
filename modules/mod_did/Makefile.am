@@ -3,8 +3,8 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-#libexec_LTLIBRARIES = mod_did.la mod_did_daemon.la mod_did_client.la
-libexec_LTLIBRARIES = mod_did.la mod_did2.la
+#pkglib_LTLIBRARIES = mod_did.la mod_did_daemon.la mod_did_client.la
+pkglib_LTLIBRARIES = mod_did.la mod_did2.la
 
 #mod_did_daemon_la_SOURCES = mod_did_wrap_daemon.c
 #mod_did_daemon_la_LDFLAGS = -module -avoid-version

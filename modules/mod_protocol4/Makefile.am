@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES = mod_protocol4.la 
+pkglib_LTLIBRARIES = mod_protocol4.la 
 
 mod_protocol4_la_SOURCES = mod_protocol4.c mod_protocol4.h mod_client.c mod_client.h
 #mod_protocol4_la_LIBADD =  libsn2.la
@@ -30,4 +30,4 @@ mod_protocol4_la_LDFLAGS = -module -avoid-version
 ## 
 ## TESTS = mod_protocol4_test
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

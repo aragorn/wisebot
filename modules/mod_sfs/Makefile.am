@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES = mod_sfs.la
+pkglib_LTLIBRARIES = mod_sfs.la
 mod_sfs_la_SOURCES = mod_sfs.c super_block.c fat.c directory.c shared_memory.c \
                      mod_sfs.h super_block.h fat.h directory.h shared_memory.h
 mod_sfs_la_LDFLAGS = -module -avoid-version
@@ -18,4 +18,4 @@ test2_sfs_SOURCES = test2.c
 test2_sfs_LDADD = mod_sfs.la $(libdir)/libapi.la $(libdir)/libsoftbotserver.la
 test2_sfs_LDFLAGS = -L$(libdir) -export-dynamic -static -ldl
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

@@ -33,8 +33,8 @@ else
 libapi_la_LDFLAGS = -shared -avoid-version
 endif
 
-libexec_LTLIBRARIES = mod_api.la
+pkglib_LTLIBRARIES = mod_api.la
 mod_api_la_SOURCES = $(SOURCE_FILES)
 mod_api_la_LDFLAGS = -module -avoid-version
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

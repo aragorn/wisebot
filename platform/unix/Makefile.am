@@ -27,6 +27,7 @@ libplatform_la_LDFLAGS = -all-static
 
 test_msort_SOURCES = test_msort.c ../generic/msort.c
 test_msort_LDFLAGS = $(DYN_LIB)
+test_msort_CFLAGS  = $(AM_CFLAGS)
 
 noinst_HEADERS = sb_fopen.h sb_open.h sb_tstat.h setproctitle.h
 

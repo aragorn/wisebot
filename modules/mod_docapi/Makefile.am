@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-libexec_LTLIBRARIES = mod_docapi.la #mod_docapi_cdmi.la mod_docapi_test.la
+pkglib_LTLIBRARIES = mod_docapi.la #mod_docapi_cdmi.la mod_docapi_test.la
 #mod_docapi_la_SOURCES = mod_docapi_libxml.c ## if you want use libxml library
 #mod_docapi_la_SOURCES = mod_docapi_expat.c 
 mod_docapi_la_SOURCES = mod_docapi_expat_local_temp.c \

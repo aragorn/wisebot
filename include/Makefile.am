@@ -15,7 +15,6 @@ noinst_HEADERS = config.h \
 					registry.h \
 					softbot.h \
 					util.h \
-					version.h \
 					memory.h
 
-dist_pkgdata_DATA = timestamp.h.in auto_defines.h.in
+dist_pkgdata_DATA = auto_config.h.in
