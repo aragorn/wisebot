@@ -28,7 +28,7 @@
 #define ADD_AND_SEND_AND_CLOSE(ret) \
 		add_result_document(&index_result, docid, SKIP_DOCUMENT); \
         add_error_document(&index_error, docid, SKIP_DOCUMENT); \
-		*last_indexed_docid = docid; \
+		indexer_shared->last_indexed_docid = docid; \
         if ( sb_run_tcp_send(sockfd, &ret, sizeof(int), sb_run_tcp_server_timeout()) != SUCCESS ) \
 		    error("cannot send RET"); \
 		sb_run_tcp_close(sockfd); \
@@ -38,7 +38,10 @@ uint32_t doc_hit_list_memorysize = 300*1024*1024; /* 300 Mbytes */
 uint32_t max_word_hit_len=400000;
 uint32_t max_doc_hit_list_num=3500000;
 
-REGISTRY uint32_t *last_indexed_docid=NULL;
+struct indexer_shared_t {
+	uint32_t last_indexed_docid;
+} *indexer_shared = NULL;
+static char indexer_shared_file[MAX_FILE_LEN] = "dat/indexer/indexer.shared";
 
 static char mSocketFile[SHORT_STRING_SIZE] = "dat/indexer/socket";
 static int m_backlog = 8;
@@ -470,7 +473,7 @@ static int indexer_main(slot_t *slot)
 		free_mem_index(&mem_index);
    		return FAIL;
     }
-	setproctitle("softbotd: %s(%u indexed, now idle)", __FILE__, (*last_indexed_docid) );
+	setproctitle("softbotd: %s(%u indexed, now idle)", __FILE__, (indexer_shared->last_indexed_docid) );
 	
 	while (1) { /* endless while loop */
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown) 
@@ -510,24 +513,22 @@ static int indexer_main(slot_t *slot)
 				continue;
 			}
 
-            if (*last_indexed_docid+1 != docid)
+            if (indexer_shared->last_indexed_docid+1 != docid)
 			{
-				error("last_indexed_docid[%d]+1 != docid[%d]", *last_indexed_docid, docid);
+				error("last_indexed_docid[%d]+1 != docid[%d]", indexer_shared->last_indexed_docid, docid);
 			}
 
-			if (*last_indexed_docid >= docid) 
+			if (indexer_shared->last_indexed_docid >= docid) 
 			{
-				error("last_indexed_docid[%d] is greater than docid[%d]", *last_indexed_docid, docid);
+				error("last_indexed_docid[%d] is greater than docid[%d]", indexer_shared->last_indexed_docid, docid);
 			    SEND_RET_AND_CLOSE(ret);
 				continue;
 			}
 							
 			if (indexednum % 10 == 0) {
-				setproctitle("softbotd: %s (%u indexed[avg idx spd: %.2f doc/s], "
-				 "[%u] left)",
-				__FILE__, *last_indexed_docid, 
-				 (cumulative_time) ? (double)cumulative_indexednum/cumulative_time : 0,
-				 last_registered_docid - *last_indexed_docid);
+				setproctitle("softbotd: %s (%u/%u indexed[avg idx spd: %.2f doc/s])",
+				__FILE__, indexer_shared->last_indexed_docid, last_registered_docid,
+				 (cumulative_time) ? (double)cumulative_indexednum/cumulative_time : 0);
 			}
 
 			// 형태소 분석된 결과를 mem_index에 저장
@@ -543,19 +544,19 @@ static int indexer_main(slot_t *slot)
 			}
 			
 		    SEND_RET_AND_CLOSE(ret);
-			*last_indexed_docid = docid;
+			indexer_shared->last_indexed_docid = docid;
 
 			last_registered_docid = sb_run_server_canneddoc_last_registered_id();
 
 			// 더이상 색인할 데이타가 없을시 break;
-			if (last_registered_docid == *last_indexed_docid) {
+			if (last_registered_docid == indexer_shared->last_indexed_docid) {
 				int i, no_work = 1;
 				for ( i = 0; i < 10; i++ ) {
 					sleep( 1 ); // 잠깐 쉬어보고 진짜 없는지 확인
 					if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 
 					last_registered_docid = sb_run_server_canneddoc_last_registered_id();
-					if (last_registered_docid != *last_indexed_docid) {
+					if (last_registered_docid != indexer_shared->last_indexed_docid) {
 						no_work = 0;
 						break;
 					}
@@ -573,7 +574,7 @@ static int indexer_main(slot_t *slot)
 			
 			setproctitle("softbotd: %s(%u indexed, now idle [avg idx spd:%.2f doc/s])",
                 __FILE__,
-                (*last_indexed_docid),
+                (indexer_shared->last_indexed_docid),
                 (double)cumulative_indexednum/cumulative_time);
 
 			timeout.tv_sec = mTimer;
@@ -584,7 +585,7 @@ static int indexer_main(slot_t *slot)
 		}
 	
 		setproctitle("softbotd: %s (%u indexed, saving %u)",
-						__FILE__, *last_indexed_docid, indexednum);
+						__FILE__, indexer_shared->last_indexed_docid, indexednum);
 
 		save_all_wrong_documents(&index_result, &index_error);
 #if FORWARD_INDEX==1
@@ -608,10 +609,8 @@ static int indexer_main(slot_t *slot)
 		cumulative_time =  diff;
 		cumulative_indexednum = indexednum;
 
-		setproctitle("softbotd: %s(%u indexed. [%u] left.[avg idx spd:%.2f doc/s])",
-				__FILE__,
-				(*last_indexed_docid),
-				last_registered_docid - *last_indexed_docid,
+		setproctitle("softbotd: %s(%u/%u indexed.[avg idx spd:%.2f doc/s])",
+				__FILE__, (indexer_shared->last_indexed_docid), last_registered_docid,
 				(double)cumulative_indexednum/cumulative_time);
 	
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown) 
@@ -628,7 +627,11 @@ static int indexer_main(slot_t *slot)
 	close(mDocFileFd);
 	free_mem_index(&mem_index);
 	
-	slot->state = SLOT_FINISH;
+	if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
+		slot->state = SLOT_FINISH;
+	else
+		slot->state = SLOT_RESTART;
+
 	return 0;
 }
 
@@ -686,23 +689,23 @@ static int test_indexer_main(slot_t *slot)
 			continue;
 		}
 
-        if (*last_indexed_docid+1 != docid)
+        if (indexer_shared->last_indexed_docid+1 != docid)
 		{
-			error("last_indexed_docid[%d]+1 != docid[%d]", *last_indexed_docid, docid);
+			error("last_indexed_docid[%d]+1 != docid[%d]", indexer_shared->last_indexed_docid, docid);
 		}
 
-		if (*last_indexed_docid >= docid) 
+		if (indexer_shared->last_indexed_docid >= docid) 
 		{
-			error("last_indexed_docid[%d] is greater than docid[%d]", *last_indexed_docid, docid);
+			error("last_indexed_docid[%d] is greater than docid[%d]", indexer_shared->last_indexed_docid, docid);
 		    SEND_RET_AND_CLOSE(ret);
 			continue;
 		}
 							
 		if (indexednum % 10 == 0) {
 			setproctitle("softbotd: %s (%u indexed[avg idx spd: %.2f doc/s], [%u] left)",
-			__FILE__, *last_indexed_docid, 
+			__FILE__, indexer_shared->last_indexed_docid, 
 			 (cumulative_time) ? (double)cumulative_indexednum/cumulative_time : 0,
-			 last_registered_docid - *last_indexed_docid);
+			 last_registered_docid - indexer_shared->last_indexed_docid);
 		}
 
 		indexednum++;
@@ -720,7 +723,7 @@ static int test_indexer_main(slot_t *slot)
 		}
 		
 	    SEND_RET_AND_CLOSE(ret);
-		*last_indexed_docid = docid;
+		indexer_shared->last_indexed_docid = docid;
 
 		gettimeofday(&tf,NULL);
 		diff = timediff(&tf, &ts);
@@ -730,8 +733,8 @@ static int test_indexer_main(slot_t *slot)
 
 		setproctitle("softbotd: %s(%u indexed. [%u] left.[avg idx spd:%.2f doc/s])",
 				__FILE__,
-				(*last_indexed_docid),
-				last_registered_docid - *last_indexed_docid,
+				(indexer_shared->last_indexed_docid),
+				last_registered_docid - indexer_shared->last_indexed_docid,
 				(double)cumulative_indexednum/cumulative_time);
 	
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown) 
@@ -771,6 +774,21 @@ static int test_main(slot_t *slot) {
 
 /*FIXME: should be removed from module structure and called in indexer_main() */
 static int init() {
+	ipc_t ipc;
+
+	ipc.type = IPC_TYPE_MMAP;
+	ipc.pathname = indexer_shared_file;
+	ipc.size = sizeof(struct indexer_shared_t);
+
+	if ( alloc_mmap(&ipc, 0) != SUCCESS ) {
+		error("alloc mmap to indexer_shared failed");
+		return FAIL;
+	}
+	indexer_shared = (struct indexer_shared_t*) ipc.addr; 
+
+	if ( ipc.attr == MMAP_CREATED )
+		memset( indexer_shared, 0, ipc.size );
+
 	return SUCCESS;
 }
 
@@ -1397,27 +1415,11 @@ static void set_word_db_set(configValue v)
 	mWordDbSet = atoi( v.argument[0] );
 }
 
-/* registry related functions */
-REGISTRY void init_last_indexed_docid(void *data)
+static void set_shared_file(configValue v)
 {
-	last_indexed_docid = data;
-	*last_indexed_docid = 0;
+	strncpy(indexer_shared_file, v.argument[0], MAX_FILE_LEN);
+	indexer_shared_file[MAX_FILE_LEN-1] = '\0';
 }
-REGISTRY char* registry_get_last_indexed_did()
-{
-	static char buf[STRING_SIZE];
-
-	snprintf(buf,STRING_SIZE,"last indexed did:%d",(*last_indexed_docid));
-
-	return buf;
-}
-
-static registry_t registry[] = {
-	PERSISTENT_REGISTRY("LAST_INDEXED_DOCID","last indexed document id",sizeof(uint32_t),
-					init_last_indexed_docid, registry_get_last_indexed_did,NULL),
-	NULL_REGISTRY
-};
-
 
 static config_t config[] = {
 	CONFIG_GET("SocketFile",set_socket_file,1,"set socket file"),
@@ -1428,6 +1430,7 @@ static config_t config[] = {
 	CONFIG_GET("IndexMemorySize", set_doc_hit_list_memorysize, 1, \
 			"dochit list memory size (e.g: IndexMemorySize 200000000)"),
 	CONFIG_GET("WordDbSet", set_word_db_set, 1, "WordDbSet {number}"),
+	CONFIG_GET("SharedFile",set_shared_file,1,"(e.g: SharedFile dat/indexer/indexer.shared)"),
 #if FORWARD_INDEX==1
 	CONFIG_GET("ForwardIndexFile",set_forward_index_file,1,\
 		"forward index db file path (e.g: ForwardIndexFile dat/forward_index/forward)"),
@@ -1437,7 +1440,7 @@ static config_t config[] = {
 
 static uint32_t last_indexed_did(void)
 {
-	return *last_indexed_docid;
+	return indexer_shared->last_indexed_docid;
 }
 // 원본을 return하므로 손상하지 않도록 주의한다.
 static const char* get_socket_file(void)
@@ -1454,7 +1457,7 @@ static void register_hooks(void)
 module daemon_indexer_module = {
 	STANDARD_MODULE_STUFF,
 	config,					/* config */
-	registry,				/* registry */
+	NULL,    				/* registry */
 	init,					/* initialize function of module */
 	module_main,			/* child_main */
 	scoreboard,				/* scoreboard */
@@ -1464,7 +1467,7 @@ module daemon_indexer_module = {
 module daemon_indexer_test_module = {
 	STANDARD_MODULE_STUFF,
 	config,					/* config */
-	registry,				/* registry */
+	NULL,    				/* registry */
 	init,					/* initialize function of module */
 	test_main,				/* child_main */
 	scoreboard,				/* scoreboard */

@@ -11,9 +11,6 @@
 static int mNumOfField = 0;
 static char mFieldName[MAX_EXT_FIELD][MAX_FIELD_STRING];
 
-REGISTRY int *pos_stat=NULL; /* ~5 ~10 ~20 ~40 40~ */
-REGISTRY int *max_pos=NULL;
-
 #define PARAHIT(hit)	EXTHIT(paragraph_hit_t,hit)
 
 int get_fieldid_by_fieldname(char *field)
@@ -377,44 +374,6 @@ static void register_hooks(void)
 	sb_hook_get_field(get_field, NULL, NULL, HOOK_MIDDLE);
 }
 
-REGISTRY void init_pos_stat(void *data)
-{
-	pos_stat = data;
-	memset(pos_stat, 0x00, sizeof(int)*5);
-}
-REGISTRY void init_max_pos(void *data)
-{
-	max_pos = data;
-	*max_pos = 0;
-}
-
-REGISTRY char* registry_get_pos_stat()
-{
-	static char buf[STRING_SIZE];
-	uint32_t sum = 0;
-	int i=0;
-
-	for (i=0; i<5; i++) sum+=pos_stat[i];
-
-	snprintf(buf,STRING_SIZE,"~5:%d(%.1f%%), ~10:%d(%.1f%%), ~20:%d(%.1f%%), ~40:%d(%.1f%%), 40~:%d(%.1f%%) (max_pos:%d)",
-							pos_stat[0], (float)pos_stat[0]/sum*100,
-							pos_stat[1], (float)pos_stat[1]/sum*100,
-							pos_stat[2], (float)pos_stat[2]/sum*100,
-							pos_stat[3], (float)pos_stat[3]/sum*100,
-							pos_stat[4], (float)pos_stat[4]/sum*100,
-							*max_pos);
-	buf[STRING_SIZE-1] = '\0';
-	return buf;
-}
-
-static registry_t registry[] = {
-	PERSISTENT_REGISTRY("PosStat","position statistic", sizeof(int)*5,
-					init_pos_stat, registry_get_pos_stat, NULL),
-	PERSISTENT_REGISTRY("MaxPos", "position maximum value that ever appeared", sizeof(int),
-					init_max_pos, NULL, NULL),
-	NULL_REGISTRY
-};
-
 static void set_fieldname(configValue v)
 {
 	int fieldid=0;
@@ -458,7 +417,7 @@ static config_t config[] = {
 module index_each_doc_module = {
 	STANDARD_MODULE_STUFF,
 	config,					/* config */
-	registry,				/* registry */
+	NULL,    				/* registry */
 	NULL,					/* initialize function of module */
 	NULL,					/* child_main */
 	NULL,					/* scoreboard */
