@@ -19,7 +19,7 @@ Options:
     -n count - lotate count. default is $count
     -s size  - execute lotate when file size is larger then size.
                k: kilo, M: mega, G: giga bytes
-	-h       - print this help message
+    -h       - print this help message
 END
 	exit;
 }
