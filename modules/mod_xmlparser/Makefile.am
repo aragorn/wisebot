@@ -7,7 +7,11 @@ pkglib_LTLIBRARIES = mod_xmlparser.la
 mod_xmlparser_la_SOURCES = mod_xmlparser.c parser.c \
 						   dh.c stack.c checksum.c \
 						   checksum.h dh.h parser.h stack.h
+if SOLARIS
+mod_xmlparser_la_LIBADD = $(top_builddir)/lib/libexpat.la /usr/local/lib/libiconv.la
+else
 mod_xmlparser_la_LIBADD = $(top_builddir)/lib/libexpat.la
+endif
 mod_xmlparser_la_LDFLAGS =-module -avoid-version
 mod_xmlparser_la_CFLAGS = $(EXPAT_INCLUDES) -fno-strict-aliasing
 
