@@ -22,6 +22,14 @@ static long long constants_value[MAX_ENUM_NUM];
 
 static long long return_constants_value(char *value, int valuelen);
 static int get_item(char *src, char **info, char delimiter);
+
+static char fieldRootName[MAX_FIELD_NAME_LEN] = "Document"; //XXX HACK!
+
+/******************************************************************************
+ * ACL(Access Control List) Things
+ *
+ */
+
 static int get_policy_item(char *src, int type, lgcaltex_vrm_t* v, char* seps);
 
 enum {
@@ -31,11 +39,9 @@ enum {
     TYPE_TFT
 };
 
-static char fieldRootName[MAX_FIELD_NAME_LEN] = "Document"; //XXX HACK!
-
 #define	AC_PATH "dat/cdm/lgcaltex_ac"
 #define MAX_ACFIELD_LEN 4
-char docattrFields[MAX_ACFIELD_LEN][16] =
+static char ac_field_name[MAX_ACFIELD_LEN][16] =
 {
     "Structure",
     "Duty",
@@ -60,13 +66,15 @@ static int ac_read(int docid, lgcaltex_vrm_t* v) {
     SB_DEBUG_ASSERT(size % sizeof(lgcaltex_policy_t) == 0);
 
 	v->policy = (lgcaltex_policy_t*)data;
-    v->count = size / sizeof(lgcaltex_policy_t);
+    v->count  = size / sizeof(lgcaltex_policy_t);
 
 	return SUCCESS;
 }
 
-//vrm open
+/* vrm open */
 static int init(void) {
+	sb_assert(sizeof(lgcaltex_attr_t) == 64);
+
 	if(sb_run_vrm_open(AC_PATH, &ac_list) != SUCCESS)
 		return FAIL;
     else
@@ -80,7 +88,7 @@ static int ac_close(void) {
 	    return SUCCESS;
 }
 
-char *_trim(char *str, int *len)
+static char* _trim(char *str, int *len)
 {
     char *tmp, *start;
 
@@ -106,23 +114,7 @@ char *_trim(char *str, int *len)
     return start;
 }
 
-/* FIXME delete me */
-#if 0
-static long m_lSize = 0;
-
-static void allocStack()
-{
-    char sz[1024];
-    memset(sz, 'a', 1024); //==> 디버그 모드에서 메모리 볼때 편함 
-
-    /* 4byte : 스택에 저장되는 함수 포인터의 크기 */
-    m_lSize += 1024 + 4;
-    printf("stack size : %ld\n", m_lSize);
-    allocStack();
-}
-#endif
-
-//vrm add
+/* vrm add */
 static int put_doc_ac(void* did_db, char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc)
 {
     parser_t *p;
@@ -179,26 +171,26 @@ static int put_doc_ac(void* did_db, char *oid, DocId *registeredDocId, VariableB
     }
 
     DOCATTR_SET_ZERO(&docattr);
-    for (i=0; i<MAX_ACFIELD_LEN && docattrFields[i]; i++) {
+    for (i=0; i<MAX_ACFIELD_LEN && ac_field_name[i]; i++) {
         char *val, value[STRING_SIZE];
         int len;
 
         strcpy(path, "/");
         strcat(path, fieldRootName);
         strcat(path, "/");
-        strcat(path, docattrFields[i]);
+        strcat(path, ac_field_name[i]);
 
         f = sb_run_xmlparser_retrieve_field(p, path);
         if (f == NULL) {
             warn("cannot get field[/%s/%s] of ducument[%s] (path:%s)", 
                     fieldRootName, 
-                    docattrFields[i], oid, path);
+                    ac_field_name[i], oid, path);
             continue;
         }
 
         len = f->size;
         val = _trim(f->value, &len);
-        len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
+        len = (len > STRING_SIZE-1) ? STRING_SIZE-1 : len;
         strncpy(value, val, len);
         value[len] = '\0';
 
@@ -206,7 +198,7 @@ static int put_doc_ac(void* did_db, char *oid, DocId *registeredDocId, VariableB
             continue;
         }
        
-        debug("f->value : [%s], docattrField[%s]", value, docattrFields[i]);
+        debug("f->value : [%s], docattrField[%s]", value, ac_field_name[i]);
         get_policy_item(value, i, &lgcaltex_vrm, ":"); 
     }
     sb_run_xmlparser_free_parser(p);
@@ -251,9 +243,6 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
 
 	lgcaltex_attr_t *docattr = (lgcaltex_attr_t*)dest;
 	lgcaltex_cond_t *doccond = (lgcaltex_cond_t*)cond;
-
-	//print_docattr(docattr, docid);
-
 
 	/* always check delete mark */
 	if (docattr->is_deleted) {
@@ -425,42 +414,7 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
     return 1;
 }
 
-/*static int compare_hit_for_qsort(const void *dest, const void *sour, 
-		void *userdata)
-{
-	int i, diff;
-	docattr_sort_t *sh;
-	//lgcaltex_attr_t attr1, attr2;
-
-	if (sb_run_docattr_get(((doc_hit_t *)dest)->id, &attr1) < 0) {
-		error("cannot get docattr element");
-		return 0;
-	}
-	if (sb_run_docattr_get(((doc_hit_t *)sour)->id, &attr2) < 0) {
-		error("cannot get docattr element");
-		return 0;
-	}
-
-	sh = (docattr_sort_t *)userdata;
-	for (i=0; 
-			i<MAX_SORTING_CRITERION && sh->keys[i].key[0]!='\0'; 
-			i++) {
-
-		switch (sh->keys[i].key[0]) {
-			case '0': // Hit
-				if ((diff = dest-> .Date1 - attr2.Date1) == 0) {
-					break;
-				}
-				else {
-					diff = diff > 0 ? 1 : -1;
-					return diff * sh->keys[i].order;
-				}
-				break;
-		}
-	}
-
-	return 0;
-}*/
+/*****************************************************************************/
 
 static int compare_function_for_qsort(const void *dest, const void *sour, void *userdata)
 {
@@ -481,8 +435,8 @@ static int compare_function_for_qsort(const void *dest, const void *sour, void *
 
 	sh = (docattr_sort_t *)userdata;
 	for (i=0; 
-			i<MAX_SORTING_CRITERION && sh->keys[i].key[0]!='\0'; 
-			i++) {
+		 i<MAX_SORTING_CRITERION && sh->keys[i].key[0]!='\0'; 
+		 i++) {
 
 		switch (sh->keys[i].key[0]) {
 			case '0': // HIT
@@ -557,9 +511,6 @@ static int mask_function(void *dest, void *mask) {
 	if (docmask->set_FileExt)
 		docattr->FileExt = docmask->FileExt;
 
-	//if (docmask->set_Duty)
-	//	docattr->Duty = docmask->Duty;
-		
 	if (docmask->set_SC)
 		docattr->SC = docmask->SC;
 	
@@ -575,9 +526,6 @@ static int mask_function(void *dest, void *mask) {
 	if (docmask->set_TFTYN)
 		docattr->TFTYN = docmask->TFTYN;
 		
-	if (docmask->set_MILE)
-		docattr->MILE = docmask->MILE;
-	
 	if (docmask->set_Date1)
 		docattr->Date1 = docmask->Date1;
 	
@@ -596,9 +544,6 @@ static int mask_function(void *dest, void *mask) {
 /* if fail, return -1 : 등록시 doc에 대한 docattr 설정 */
 static int set_docattr_function(void *dest, char *key, char *value)
 {
-	char  *pExt;
-	char szExt[10];
-
 	lgcaltex_attr_t *docattr = (lgcaltex_attr_t *)dest;
 	
     debug("key[%s] : value[%s]", key, value);
@@ -618,17 +563,14 @@ static int set_docattr_function(void *dest, char *key, char *value)
 			(uint8_t)return_constants_value(value, strlen(value));
 	}
 	else if (strcasecmp(key, "FileName") == 0) {
-		if (strrchr(value,'.'))
-		{
-		 	pExt = 1 + strrchr(value,'.');
-		 	sprintf(szExt, "%s", pExt);
-			docattr->FileExt = 
-				(uint8_t)return_constants_value(szExt, strlen(szExt));
-		}
+		char *str;
+		str = strrchr(value,'.');
+		if ( str == NULL ) str = value;
+
+		docattr->FileExt = 
+			(uint8_t)return_constants_value(str, strlen(str));
 	}
 	else if (strcasecmp(key, "Duty") == 0) {
-		//docattr->Duty = (uint8_t)return_constants_value(value, strlen(value));
-		//if ( docattr->Duty == 0x00 )
 		if ( strlen(value) == 0 )
 			docattr->DutyYN = 0;
 		else
@@ -655,9 +597,6 @@ static int set_docattr_function(void *dest, char *key, char *value)
 			docattr->TFTYN = 0;
 		else
 			docattr->TFTYN = 1;
-	}
-	else if (strcasecmp(key, "MILE") == 0) {
-		docattr->MILE = (uint32_t)atoi(value);
 	}
 	else if (strcasecmp(key, "Date1") == 0) {
 		docattr->Date1 = (uint32_t)atol(value);
@@ -726,9 +665,6 @@ static int get_docattr_function(void *dest, char *key, char *buf, int buflen)
 	else if (strcasecmp(key, "FileExt") == 0) {
 		snprintf(buf, buflen, "%u",docattr->FileExt);
 	}
-	//else if (strcasecmp(key, "Duty") == 0) {
-	//	snprintf(buf, buflen, "%u",docattr->Duty);
-	//}
 	else if (strcasecmp(key, "SC") == 0) {
 		snprintf(buf, buflen, "%u",docattr->SC);
 	}
@@ -743,9 +679,6 @@ static int get_docattr_function(void *dest, char *key, char *buf, int buflen)
 	}
 	else if (strcasecmp(key, "TFTYN") == 0) {
 		snprintf(buf, buflen, "%u",docattr->TFTYN);
-	}
-	else if (strcasecmp(key, "MILE") == 0) {
-		snprintf(buf, buflen, "%u",docattr->MILE);
 	}
 	else if (strcasecmp(key, "Date1") == 0) {
 		snprintf(buf, buflen, "%u",docattr->Date1);
@@ -770,140 +703,100 @@ static int get_docattr_function(void *dest, char *key, char *buf, int buflen)
 static int set_doccond_function(void *dest, char *key, char *value)
 {
 	lgcaltex_cond_t *doccond = (lgcaltex_cond_t *)dest;
-	char *c;
-	int i, n=0;
-	char *pExt;
-	char szExt[10];
-	char **info;
-	int nRet=0, cnt=0;
-	uint8_t tmpDuty;
+	/* length(value) should be shorter than STRING_SIZE(=256) */
+	char my_value[STRING_SIZE];
+	int  nRet=0, cnt=0;
 
-	if (strcmp(key, "Delete") == 0) {
+	if (strcasecmp(key, "Delete") == 0) {
 		doccond->delete_check = 1;
 		return 1;
 	}
 
-	INFO("key:%s, value:%s",key,value);
+	INFO("key:%s, value:%s", key, value);
 
-	while ((c = strchr(value, ',')) != NULL) {
-			cnt++;
-			*c = ' ';
-	}
-	cnt++;
+	strncpy(my_value, value, STRING_SIZE); my_value[STRING_SIZE-1] = '\0';
 
-	if (strcmp(key, "SystemName") == 0) {
-		/*n = sscanf(value, "%s %s %s %s %s %s %s %s %s %s %s %s ", 
-				values[0], values[1], values[2],
-				values[3], values[4], values[5],
-				values[6], values[7], values[8],
-				values[9], values[10], values[11]);*/
-		info = (char**)sb_calloc(cnt, sizeof(char*));
-		if ( info == NULL )
+	if (strcasecmp(key, "SystemName") == 0) {
+		int  count;	
+		char *token;
+
+		token = strtok(my_value, ",");
+		for ( count = 0; count < MAX_SYSTEM_NAME_COND; count++ )
 		{
-			error("fail calling calloc: %s", strerror(errno));
-			return -1;
-		}	
-		
-		nRet = get_item(value, info, ' ');			
-			
-		for (i=0; i<cnt; i++) {
-			doccond->SystemName[i] = 
-				return_constants_value(info[i], strlen(info[i]));
-//printf("SystemName[%d]:%d\n", i, doccond->SystemName[i]);				
+			if (token == NULL) break;
+			doccond->SystemName[count] = 
+				return_constants_value(token, strlen(token));
+			token = strtok(NULL, ",");
 		}
-		doccond->SystemName_check = cnt;		
+		doccond->SystemName_check = count;
 	}
-	
-	
-	
-	/*if (strcmp(key, "SystemName") == 0) {
-		doccond->SystemName = (uint8_t)return_constants_value(value, strlen(value));
-		doccond->SystemName_check = 1;
-	}*/
-	else if (strcmp(key, "Part") == 0) {
-		info = (char**)sb_calloc(cnt, sizeof(char*));
-		if ( info == NULL )
+	else if (strcasecmp(key, "Part") == 0) {
+		int  count;	
+		char *token;
+
+		token = strtok(my_value, ",");
+		for ( count = 0; count < MAX_PART_COND; count++ )
 		{
-			error("fail calling calloc: %s", strerror(errno));
-			return -1;
-		}	
-		
-		nRet = get_item(value, info, ' ');			
-			
-		for (i=0; i<cnt; i++) {
-			doccond->Part[i] = 
-				return_constants_value(info[i], strlen(info[i]));
+			if (token == NULL) break;
+
+			doccond->Part[count] = 
+				return_constants_value(token, strlen(token));
+			token = strtok(NULL, ",");
 		}
-		doccond->Part_check = cnt;		
+		doccond->Part_check = count;
 	}
-	
-	else if (strcmp(key, "FileName") == 0) {
-		if (strrchr(value,'.'))
-		{
-		 	pExt = 1 + strrchr(value,'.');
-		 	sprintf(szExt, "%s", pExt);
-			doccond->FileExt = 
-				(uint8_t)return_constants_value(szExt, strlen(szExt));
-			doccond->FileExt_check = 1;
-		}
+	else if (strcasecmp(key, "FileName") == 0) {
+		char *str;
+		str = strrchr(value,'.');
+		if ( str == NULL ) str = value;
+
+		doccond->FileExt = 
+			(uint8_t)return_constants_value(str, strlen(str));
+		doccond->FileExt_check = 1;
 	}
-	else if (strcmp(key, "Duty") == 0) {
-		
-		info = (char**)sb_calloc(cnt, sizeof(char*));
-		if ( info == NULL )
+	else if (strcasecmp(key, "Duty") == 0) {
+		int  count;
+		char *token;
+		int  duty, min_duty = 255;
+
+		token = strtok(my_value, ",");
+		for ( count = 0; ; count++ )
 		{
-			error("fail calling calloc: %s", strerror(errno));
-			return -1;
-		}	
-		
-		nRet = get_item(value, info, ' ');			
-			
-		tmpDuty = (uint8_t)return_constants_value(info[0], strlen(info[0]));
-//printf("tmpDuty:%d\n", tmpDuty);		
-		for (i=0; i<cnt-1; i++) {
-			 if ( tmpDuty > (uint8_t)return_constants_value(info[i+1], strlen(info[i+1])) )
-			 	tmpDuty = (uint8_t)return_constants_value(info[i+1], strlen(info[i+1])); 
-//printf("Next Duty:%d\n", (uint8_t)return_constants_value(info[i+1], strlen(info[i+1])));
-			 	
+			if (token == NULL) break;
+			duty = return_constants_value(token, strlen(token));
+			if (duty < min_duty) min_duty = duty;
+
+			token = strtok(NULL, ",");
 		}
-		
-		doccond->Duty = tmpDuty;
-//printf("Duty:%d\n", doccond->Duty);
-		
+
+		doccond->Duty = min_duty;
 		doccond->Duty_check = 1;
 		doccond->Duty_cnt=1;
 	}
-	
 	else if (strcmp(key, "Structure") == 0) {
 		
 		doccond->Structure = (char**)sb_calloc(cnt, sizeof(char*));
 		if ( doccond->Structure == NULL )
 		{
-			error("fail calling calloc: %s", strerror(errno));
+			error("fail to calloc: %s", strerror(errno));
 			return -1;
 		}	
 
 		nRet = get_item(value, doccond->Structure, ' ');	
 		
-		//for(j=0; j<cnt; j++)
-		//	printf("Structure[%d]:%s\n", j, doccond->Structure[j]);		
-		
 		doccond->Structure_check = 1;
 		doccond->Structure_cnt = cnt;
 	}
-	
-	
 	
 	else if (strcmp(key, "SUPER") == 0) {
 		doccond->Super_User = (uint8_t)return_constants_value(value, strlen(value));;
 	}
 	else if (strcmp(key, "Person") == 0) {
-		strcat(doccond->Person, value);
-//printf("Person:%s\n", doccond->Person);		
+		strncpy(doccond->Person, value, SHORT_STRING_SIZE);
+		doccond->Person[SHORT_STRING_SIZE-1] = '\0';
 		doccond->Person_check = 1;
 	}
 	else if (strcmp(key, "TFT") == 0) {
-		
 		doccond->TFT = (char**)sb_calloc(cnt, sizeof(char*));
 		if ( doccond->TFT == NULL )
 		{
@@ -913,27 +806,24 @@ static int set_doccond_function(void *dest, char *key, char *value)
 
 		nRet = get_item(value, doccond->TFT, ' ');	
 		
-		//for(j=0; j<cnt; j++)
-		//	printf("TFT[%d]:%s\n", j, doccond->TFT[j]);		
-		
 		doccond->TFT_check = 1;
 		doccond->TFT_cnt = cnt;
 	}
 	else if (strcmp(key, "Date1") == 0) {
-			n = sscanf(value, "%u-%u", &(doccond->Date1_start), &(doccond->Date1_finish));
-			if (n != 2) {
-				warn("wrong docattr query: Date1");
-				return -1;
-			}
-	        doccond->Date1_check = 1;
+		int n = sscanf(value, "%u-%u", &(doccond->Date1_start), &(doccond->Date1_finish));
+		if (n != 2) {
+			warn("wrong docattr query: Date1");
+			return -1;
+		}
+	    doccond->Date1_check = 1;
 	}
 	else if (strcmp(key, "Date2") == 0) {
-			n = sscanf(value, "%u-%u", &(doccond->Date2_start), &(doccond->Date2_finish));
-			if (n != 2) {
-				warn("wrong docattr query: Date2");
-				return -1;
-			}
-	        doccond->Date2_check = 1;
+		int n = sscanf(value, "%u-%u", &(doccond->Date2_start), &(doccond->Date2_finish));
+		if (n != 2) {
+			warn("wrong docattr query: Date2");
+			return -1;
+		}
+	    doccond->Date2_check = 1;
 	}
 	else {
 		warn("no such a field in docattr db: %s", key);
@@ -945,15 +835,12 @@ static int set_doccond_function(void *dest, char *key, char *value)
 
 static int set_docmask_function(void *dest, char *key, char *value)
 {
-	char szExt[10];
-	char *pExt;
-	
 	lgcaltex_mask_t *docmask = (lgcaltex_mask_t *)dest;
 
-	if (strcmp(key, "Delete") == 0) {
+	if (strcasecmp(key, "Delete") == 0) {
 		docmask->delete_mark = 1;
 	}
-    	else if (strcmp(key, "Undelete") == 0) {
+    	else if (strcasecmp(key, "Undelete") == 0) {
         	docmask->undelete_mark = 1;
     	}
     	else if (strcasecmp(key, "SystemName") == 0) {
@@ -961,7 +848,7 @@ static int set_docmask_function(void *dest, char *key, char *value)
 			(uint8_t)return_constants_value(value, strlen(value));
 		docmask->set_SystemName = 1;
 	}
-	else if (strcmp(key, "AppFlag") == 0) {
+	else if (strcasecmp(key, "AppFlag") == 0) {
 		docmask->AppFlag = (uint8_t)atoi(value);
 		docmask->set_AppFlag = 1;
 	}
@@ -971,45 +858,34 @@ static int set_docmask_function(void *dest, char *key, char *value)
 		docmask->set_Part = 1;
 	}
 	else if (strcasecmp(key, "FileName") == 0) {
-		if (strrchr(value,'.'))
-		{
-		 	pExt = 1 + strrchr(value,'.');
-		 	sprintf(szExt, "%s", pExt);
-			docmask->FileExt = 
-				(uint8_t)return_constants_value(szExt, strlen(szExt));
-			docmask->set_FileExt = 1;
-		}
+		char *str;
+		str = strrchr(value,'.');
+		if ( str == NULL ) str = value;
+
+		docmask->FileExt = 
+			(uint8_t)return_constants_value(str, strlen(str));
+		docmask->set_FileExt = 1;
 	}
-	//else if (strcasecmp(key, "Duty") == 0) {
-	//	docmask->Duty = 
-	//		(uint8_t)return_constants_value(value, strlen(value));
-	//	docmask->set_Duty = 1;
-	//}
-	else if (strcmp(key, "SC") == 0) {
+	else if (strcasecmp(key, "SC") == 0) {
 		docmask->SC = (uint8_t)atoi(value);
 		docmask->set_SC = 1;
 	}
-	else if (strcmp(key, "StrYN") == 0) {
+	else if (strcasecmp(key, "StrYN") == 0) {
 		docmask->StrYN = (uint8_t)atoi(value);
 		docmask->set_StrYN = 1;
 	}
-	else if (strcmp(key, "DutyYN") == 0) {
+	else if (strcasecmp(key, "DutyYN") == 0) {
 		docmask->DutyYN = (uint8_t)atoi(value);
 		docmask->set_DutyYN = 1;
 	}
-	else if (strcmp(key, "PerYN") == 0) {
+	else if (strcasecmp(key, "PerYN") == 0) {
 		docmask->PerYN = (uint8_t)atoi(value);
 		docmask->set_PerYN = 1;
 	}
-	else if (strcmp(key, "TFTYN") == 0) {
+	else if (strcasecmp(key, "TFTYN") == 0) {
 		docmask->TFTYN = (uint8_t)atoi(value);
 		docmask->set_TFTYN = 1;
 	}
-	else if (strcmp(key, "MILE") == 0) {
-		docmask->MILE = (uint32_t)atoi(value);
-		docmask->set_MILE = 1;
-	}
-	
 	else if (strcasecmp(key, "Date1") == 0) {
 		docmask->Date1 = (uint32_t)atol(value);
 		docmask->set_Date1 = 1;
@@ -1055,16 +931,22 @@ static int set_docmask_function(void *dest, char *key, char *value)
 		docmask->set_Author = 1;
 	}
 	else {
-		warn("there is no such a field[%s]", key);
+		warn("there is no such field[%s]", key);
 	}
 	return 1;
 }
  
- /* src : 123,23,45 
+/* src : 123,23,45 
     int return : count
     info : 123 
     delimiter: split(,) */
- 
+/**
+ * get_list
+ * @param src delimiter로 entry가 구분된 source string. 함수를 호출하면 NULL문자가 삽입되어
+ *            문자열이 변경됨.
+ * @param list source string의 각  입력되어 구분됨.
+ * @
+ */
 static int get_item(char *src, char **info, char delimiter)
 {
 	char *start, *end,  *c;
@@ -1199,7 +1081,6 @@ static void register_hooks(void)
 	sb_hook_docattr_compare_function(compare_function_ac, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_docattr_mask_function(mask_function, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_docattr_sort_function(compare_function_for_qsort, NULL, NULL, HOOK_MIDDLE);
-//	sb_hook_docattr_hit_sort_function(compare_hit_for_qsort, NULL, NULL, HOOK_MIDDLE);
 
 	sb_hook_docattr_set_docattr_function(set_docattr_function,
 			NULL, NULL, HOOK_MIDDLE);
@@ -1295,16 +1176,16 @@ static int remake_ac(int start_docid, int count) {
             continue;
         }
 
-        for(j=0; j<MAX_ACFIELD_LEN && docattrFields[j]; j++) {
+        for(j=0; j<MAX_ACFIELD_LEN && ac_field_name[j]; j++) {
             strcpy(path, "/Document/");
-            strcat(path, docattrFields[j]);
-			debug("docattrFields[%d]:%s", j, docattrFields[j]);
+            strcat(path, ac_field_name[j]);
+			debug("ac_field_name[%d]:%s", j, ac_field_name[j]);
 
             f = sb_run_xmlparser_retrieve_field(p, path);
             if (f == NULL) {
                 warn("cannot get field[/%s/%s] of ducument[%d] (path:%s)",
                         "Document",
-                        docattrFields[j], i, path);
+                        ac_field_name[j], i, path);
                 continue;
             }
 

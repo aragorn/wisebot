@@ -25,43 +25,44 @@ typedef struct {
 	lgcaltex_policy_t* policy;
 } lgcaltex_vrm_t;
 
-/* must smaller than 64 byte */
+/* should be exactly 64 byte long */
 typedef struct {
-	uint8_t is_deleted:1;
-	uint8_t SystemName:6;
-	uint8_t AppFlag:1;
-	
-	uint8_t Part:4; 
-	uint8_t FileExt:4; 
-		
-	uint8_t dummay:3; 
-	uint8_t SC:1;
-	uint8_t StrYN:1;
-	uint8_t DutyYN:1;
-	uint8_t PerYN:1;
-	uint8_t TFTYN:1;
-		
-	uint32_t MILE:32; 
-	 
-	uint32_t Date1:32;
-	 
-	uint32_t Date2:32; 
+	uint32_t is_deleted : 1;
+	uint32_t AppFlag    : 1;
+
+	uint32_t SC         : 1;
+	uint32_t StrYN      : 1;
+	uint32_t DutyYN     : 1;
+	uint32_t PerYN      : 1;
+	uint32_t TFTYN      : 1;
+
+	uint32_t _padding1  : 1;
+
+	uint32_t SystemName : 8;
+	uint32_t Part       : 8;
+	uint32_t FileExt    : 8;    /*  4 bytes, total  4 bytes */
+
+
+	uint32_t Date1;
+	uint32_t Date2;             /*  8 bytes, total 12 bytes */
 
 	char Title[16];
 	char Author[16];
-	char rsv2[17];
+	char rsv2[20];
 } __attribute__((packed)) lgcaltex_attr_t;
 
 
 /* must smaller than STRING_SIZE(256) byte */
+#define MAX_SYSTEM_NAME_COND (20)
+#define MAX_PART_COND        (20)
 typedef struct {
 	uint8_t delete_check;
 
 	uint8_t SystemName_check;
-	uint8_t SystemName[60];
+	uint8_t SystemName[MAX_SYSTEM_NAME_COND];
 
 	uint8_t Part_check;
-	uint8_t Part[16];
+	uint8_t Part[MAX_PART_COND];
 
 	uint8_t FileExt_check;
 	uint8_t FileExt;
@@ -75,7 +76,7 @@ typedef struct {
 	char 	**Structure;
 	
 	uint8_t Person_check;
-	char Person[20];
+	char Person[SHORT_STRING_SIZE];
 	
 	uint8_t TFT_check;
 	int	TFT_cnt;
@@ -111,9 +112,6 @@ typedef struct {
 	uint8_t set_FileExt;
 	uint8_t FileExt;
 	
-	//uint8_t set_Duty;
-	//uint8_t Duty;
-	
 	uint8_t set_SC;
 	uint8_t SC;
 	
@@ -128,9 +126,6 @@ typedef struct {
 	
 	uint8_t set_TFTYN;
 	uint8_t TFTYN;
-	
-	uint8_t set_MILE;
-	uint32_t MILE;
 	
 	uint8_t set_Date1;
 	uint32_t Date1;
