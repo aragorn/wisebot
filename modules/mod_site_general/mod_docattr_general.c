@@ -935,26 +935,7 @@ static int build_field_offset()
 	int assigned_count = 0;
 	docattr_field_t* field;
 
-	// need field offset initialize. 8, 4, 2, 1, bit, other 순서로..
-
-	// 8, 4, 2, 1
-	for ( size = sizeof(uint64_t); size > 0; size /= 2 ) {
-		for ( i = 0; i < docattr_field_count; i++ ) {
-			if ( size == 1 && offset%sizeof(long) == 0 ) break;
-
-			field = &docattr_field[i];
-			if ( assigned_field[i] || field->size != size || is_bit_field( field->field_type ) ) continue;
-
-			field->offset = offset;
-			offset += size;
-
-			assigned_field[i] = 1;
-			assigned_count++;
-
-			info("DocAttrField [%s] - offset: %d, size: %d",
-					field->name, field->offset, field->size);
-		}
-	}
+	// need field offset initialize. bit, 8, 4, 2, other 순서로..
 
 	// bit
 	// 일단 byte align 맞추고...
@@ -987,6 +968,25 @@ static int build_field_offset()
 		offset += (bit_offset-1)/BIT_PER_BYTE+1;
 	} */
 	if ( bit_offset ) offset += sizeof(long);
+
+	// 8, 4, 2
+	for ( size = sizeof(uint64_t); size > 1; size /= 2 ) {
+		for ( i = 0; i < docattr_field_count; i++ ) {
+			if ( size == 1 && offset%sizeof(long) == 0 ) break;
+
+			field = &docattr_field[i];
+			if ( assigned_field[i] || field->size != size || is_bit_field( field->field_type ) ) continue;
+
+			field->offset = offset;
+			offset += size;
+
+			assigned_field[i] = 1;
+			assigned_count++;
+
+			info("DocAttrField [%s] - offset: %d, size: %d",
+					field->name, field->offset, field->size);
+		}
+	}
 
 	// other. byte align 필요없음
 	for ( i = 0; i < docattr_field_count; i++ ) {
