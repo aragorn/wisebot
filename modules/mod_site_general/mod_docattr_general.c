@@ -959,8 +959,8 @@ static int build_field_offset()
 		assigned_field[i] = 1;
 		assigned_count++;
 
-		info("DocAttrField [%s] - offset: %d, size: %d, bit offset: %d, bit size: %d",
-				field->name, field->offset, field->size, field->bit_offset, field->bit_size);
+//		info("DocAttrField [%s] - offset: %d, size: %d, bit offset: %d, bit size: %d",
+//				field->name, field->offset, field->size, field->bit_offset, field->bit_size);
 	}
 
 /*  BIG ENDIAN 에서 정상적으로 작동하지 않는 코드다 */
@@ -983,8 +983,8 @@ static int build_field_offset()
 			assigned_field[i] = 1;
 			assigned_count++;
 
-			info("DocAttrField [%s] - offset: %d, size: %d",
-					field->name, field->offset, field->size);
+//			info("DocAttrField [%s] - offset: %d, size: %d",
+//					field->name, field->offset, field->size);
 		}
 	}
 
@@ -999,12 +999,15 @@ static int build_field_offset()
 		assigned_field[i] = 1;
 		assigned_count++;
 
-		info("DocAttrField [%s] - offset: %d, size: %d",
-				field->name, field->offset, field->size);
+//		info("DocAttrField [%s] - offset: %d, size: %d",
+//				field->name, field->offset, field->size);
 	}
 
 	info("DocAttr Size: %d, Field Count: %d", offset, assigned_count);
 	if ( offset > sizeof(docattr_t) ) {
+		for ( i = 0; i < docattr_field_count; i++ ) {
+			print_docattr_field( &docattr_field[i] );
+		}
 		error("DocAttr size is larger than sizeof(docattr_t):%d", (int) sizeof(docattr_t));
 		return FAIL;
 	}
@@ -1016,15 +1019,17 @@ static int build_field_offset()
  * docattr db 가 처음 만들어진 거면 db scheme을 저장하고
  * 이미 만들어져 있으면 예전 설정을 불러온다
  ********************************************************/
+
 static int prepare_db_scheme()
 {
 	FILE* fp;
 	int i;
 	char field_name[32], field_type[20];
+	int field_offset, field_bit_offset;
 	
-	fp = sb_fopen( "dat/cdm/docattr.scheme", "r+" );
+	fp = sb_fopen( "dat/cdm/docattr.scheme", "r" );
 	if ( fp == NULL ) {
-		fp = sb_fopen( "dat/cdm/docattr.scheme", "w+" );
+		fp = sb_fopen( "dat/cdm/docattr.scheme", "w" );
 		if ( fp == NULL ) {
 			error("docattr scheme file create failed");
 			return FAIL;
@@ -1034,11 +1039,15 @@ static int prepare_db_scheme()
 		info("save docattr scheme");
 		for ( i = 0; i < docattr_field_count; i++ ) {
 			if ( is_bit_field( docattr_field[i].field_type ) )
-				fprintf( fp, "%s %s(%d)\n", docattr_field[i].name,
-						get_field_type( docattr_field[i].field_type ), docattr_field[i].bit_size );
+				fprintf( fp, "%s %s(%d) %d %d\n", docattr_field[i].name,
+						get_field_type( docattr_field[i].field_type ), docattr_field[i].bit_size,
+						docattr_field[i].offset, docattr_field[i].bit_offset );
 			else
-				fprintf( fp, "%s %s(%d)\n", docattr_field[i].name,
-						get_field_type( docattr_field[i].field_type ), docattr_field[i].size );
+				fprintf( fp, "%s %s(%d) %d 0\n", docattr_field[i].name,
+						get_field_type( docattr_field[i].field_type ), docattr_field[i].size,
+						docattr_field[i].offset );
+
+			print_docattr_field( &docattr_field[i] );
 		}
 
 		fclose( fp );
@@ -1048,8 +1057,14 @@ static int prepare_db_scheme()
 	info("load docattr scheme");
 	// 초기화
 	docattr_field_count = 0;
-	while ( fscanf( fp, "%s %s\n", field_name, field_type ) != EOF ) {
+	while ( fscanf( fp, "%s %s %d %d\n", field_name, field_type,
+				&field_offset, &field_bit_offset ) != EOF ) {
 		add_docattr_field( field_name, field_type );
+
+		docattr_field[docattr_field_count-1].offset = field_offset;
+		docattr_field[docattr_field_count-1].bit_offset = field_bit_offset;
+
+		print_docattr_field( &docattr_field[docattr_field_count-1] );
 	}
 
 	fclose( fp );
@@ -1136,13 +1151,13 @@ static int init()
 		add_docattr_field( "Delete", "Bit(1)" );
 	}
 
-	if ( prepare_db_scheme() != SUCCESS ) {
-		error("docattr db scheme check failed");
+	if ( build_field_offset() != SUCCESS ) {
+		error("build field offset failed");
 		return FAIL;
 	}
 
-	if ( build_field_offset() != SUCCESS ) {
-		error("build field offset failed");
+	if ( prepare_db_scheme() != SUCCESS ) {
+		error("docattr db scheme check failed");
 		return FAIL;
 	}
 
