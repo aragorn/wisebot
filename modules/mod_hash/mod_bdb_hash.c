@@ -38,7 +38,7 @@ static int bdb_hash_count(api_hash_t* hash, int* count);
 
 static int bdb_hash_init()
 {
-	int i, ret;
+	int i;
 	DB_ENV* dbenv;
 
 	info("%s", DB_VERSION_STRING);
@@ -58,7 +58,8 @@ static int bdb_hash_init()
 
 		// config 초기화 때문에..
 		db_env_create( &dbenv, 0 );
-		ret = dbenv->remove( dbenv, hash_set[i].path, 0 );
+		if ( dbenv->remove( dbenv, hash_set[i].path, 0 ) != 0 )
+			warn("dbenv->remove failed. [HashSet:%d]", i);
 	}
 
 	return SUCCESS;
