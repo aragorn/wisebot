@@ -976,6 +976,10 @@ static int build_field_offset()
 	}
 
 	info("DocAttr Size: %d, Field Count: %d", offset, assigned_count);
+	if ( offset > sizeof(docattr_t) ) {
+		error("DocAttr size is larger than sizeof(docattr_t):%d", (int) sizeof(docattr_t));
+		return FAIL;
+	}
 
 	return SUCCESS;
 }
@@ -1042,12 +1046,6 @@ static int build_sort_field()
 static int init()
 {
 	docattr_field_t* delete_field;
-
-	if ( sizeof(docattr_t) > sizeof(docattr_t) ) {
-		crit("sizeof(docattr_t) (%d) > sizeof(docattr_t) (%d)",
-				(int) sizeof(docattr_t), (int) sizeof(docattr_t) );
-		return FAIL;
-	}
 
 	if ( sizeof(general_mask_t) > sizeof(docattr_mask_t) ) {
 		crit("sizeof(general_mask_t) (%d) > sizeof(docattr_mask_t) (%d)",
