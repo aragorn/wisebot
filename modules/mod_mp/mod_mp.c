@@ -518,10 +518,10 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 				if (scoreboard->shutdown ||
 					scoreboard->graceful_shutdown ) continue;
 
-				if ( sig == 9 || sig == 11 ) {
+//				if ( sig == 9 || sig == 11 ) {
 					// list에 집어넣고 나중에 재시작한다.
 					if ( add_to_last( &proc_list, slot->id ) == SUCCESS ) continue;
-				}
+//				}
 
 				slow_start();
 				sb_spawn_process(slot, slot->name, slot->main);
