@@ -5,6 +5,9 @@
 %left LOGICAL_OR
 %left LOGICAL_AND
 %nonassoc LOGICAL_NOT
+%left BIT_OR
+%left BIT_AND
+%nonassoc BIT_NOT
 %{
 #include "mod_docattr_general.h"
 #include "mod_qp_general.h"
@@ -43,56 +46,64 @@ logi_expr:  logi_expr LOGICAL_AND logi_expr {
 			| cmp_expr { general_cond.root_operand = $1; $$ = $1; }
 			;
 
-cmp_expr: operand EQ operand {
+cmp_expr: calc_expr EQ calc_expr {
 			$$ = $2;
 			$$->expr.operand1 = $1;
 			$$->expr.operand2 = $3;
 			if ( expr_eq_set($$) != SUCCESS ) YYERROR;
 		}
-		| operand NEQ operand {
+		| calc_expr NEQ calc_expr {
 			$$ = $2;
 			$$->expr.operand1 = $1;
 			$$->expr.operand2 = $3;
 			if ( expr_neq_set($$) != SUCCESS ) YYERROR;
 		}
-		| operand GT operand {
+		| calc_expr GT calc_expr {
 			$$ = $2;
 			$$->expr.operand1 = $1;
 			$$->expr.operand2 = $3;
 			if ( expr_gt_set($$) != SUCCESS ) YYERROR;
 		}
-		| operand GT_EQ operand {
+		| calc_expr GT_EQ calc_expr {
 			$$ = $2;
 			$$->expr.operand1 = $1;
 			$$->expr.operand2 = $3;
 			if ( expr_gteq_set($$) != SUCCESS ) YYERROR;
 		}
-		| operand LT operand {
+		| calc_expr LT calc_expr {
 			$$ = $2;
 			$$->expr.operand1 = $1;
 			$$->expr.operand2 = $3;
 			if ( expr_lt_set($$) != SUCCESS ) YYERROR;
 		}
-		| operand LT_EQ operand {
+		| calc_expr LT_EQ calc_expr {
 			$$ = $2;
 			$$->expr.operand1 = $1;
 			$$->expr.operand2 = $3;
 			if ( expr_lteq_set($$) != SUCCESS ) YYERROR;
 		}
-		| operand BIT_AND operand {
-			$$ = $2;
-			$$->expr.operand1 = $1;
-			$$->expr.operand2 = $3;
-			if ( expr_bitand_set($$) != SUCCESS ) YYERROR;
-		}
-		| operand BIT_OR operand {
-			$$ = $2;
-			$$->expr.operand1 = $1;
-			$$->expr.operand2 = $3;
-			if ( expr_bitor_set($$) != SUCCESS ) YYERROR;
-		}
-		| operand BIT_NOT operand { error("bit not operator is not supported"); YYERROR; }
 		;
+
+calc_expr:	calc_expr BIT_AND calc_expr {
+				$$ = $2;
+				$$->expr.operand1 = $1;
+				$$->expr.operand2 = $3;
+				if ( expr_bitand_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr BIT_OR calc_expr {
+				$$ = $2;
+				$$->expr.operand1 = $1;
+				$$->expr.operand2 = $3;
+				if ( expr_bitor_set($$) != SUCCESS ) YYERROR;
+			}
+			| BIT_NOT calc_expr {
+				$$ = $1;
+				$$->expr.operand1 = $2;
+				if ( expr_bitnot_set($$) != SUCCESS ) YYERROR;
+			}
+			| LPAREN calc_expr RPAREN { $$ = $2; }
+			| operand { $$ = $1; }
+			;
 
 operand:  NAME { $$ = $1; }
 		| VALUE { $$ = $1; }

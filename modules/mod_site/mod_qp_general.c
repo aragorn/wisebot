@@ -336,7 +336,7 @@ int expr_lteq_set(docattr_operand_t* operand)
 
 int expr_bitand_int_int(docattr_expr_t* expr)
 {
-	RESULT.boolean = ( RESULT1->integer & RESULT2->integer );
+	RESULT.integer = ( RESULT1->integer & RESULT2->integer );
 
 	return SUCCESS;
 }
@@ -354,13 +354,13 @@ int expr_bitand_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_BOOLEAN;
+	operand->value_type = VALUE_INTEGER;
 	return SUCCESS;
 }
 
 int expr_bitor_int_int(docattr_expr_t* expr)
 {
-	RESULT.boolean = ( RESULT1->integer | RESULT2->integer );
+	RESULT.integer = ( RESULT1->integer | RESULT2->integer );
 
 	return SUCCESS;
 }
@@ -378,7 +378,31 @@ int expr_bitor_set(docattr_operand_t* operand)
 		return FAIL;
 	}
 
-	operand->value_type = VALUE_BOOLEAN;
+	operand->value_type = VALUE_INTEGER;
+	return SUCCESS;
+}
+
+int expr_bitnot_int(docattr_expr_t* expr)
+{
+	RESULT.integer = ~RESULT1->integer;
+
+	return SUCCESS;
+}
+
+int expr_bitnot_set(docattr_operand_t* operand)
+{
+	if ( OPERAND1->value_type == VALUE_INTEGER
+			&& OPERAND2->value_type == VALUE_INTEGER ) {
+		operand->expr.exec_func = expr_bitnot_int;
+	}
+	else {
+		print_operand(OPERAND1);
+		print_operand(OPERAND2);
+		error("operator BIT_NOT doesn't support above types");
+		return FAIL;
+	}
+
+	operand->value_type = VALUE_INTEGER;
 	return SUCCESS;
 }
 
