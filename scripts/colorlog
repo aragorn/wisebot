@@ -58,7 +58,8 @@ my $level_to_show = get_level($opt_g);
 my $context = $opt_c || 0;
 my @history;
 while ( <STDIN> ) {
-	m/^\[([\w: ]+)\] \[(\w+)\] ([\w:\.]+) ([\w:\.]+\(\)) (.+)/ or do { print; next; };
+	m/^\[([\w: ]+)\] \[(\w+)\] ([\w:\.]+) ([\w:\.<>]+\(\)) (.+)/ or do { print; next; };
+	#    date          level    module     function        message
 	#m/^(\[[\w: ]+\])/;
 	#my ($date, $level, $module, $function, $message) = @_;
 	my @log = ($1, $2, $3, $4, $5);
