@@ -473,6 +473,7 @@ static int indexer_main(slot_t *slot)
 		free_mem_index(&mem_index);
    		return FAIL;
     }
+	last_registered_docid = sb_run_server_canneddoc_last_registered_id();
 	setproctitle("softbotd: %s(%u indexed, now idle)", __FILE__, (indexer_shared->last_indexed_docid) );
 	
 	while (1) { /* endless while loop */
