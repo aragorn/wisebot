@@ -334,7 +334,7 @@ static void show_version_and_exit (void)
 	printf("          Release Date: %s\n", RELEASE_DATE);
 	printf("   Module Magic Number: %d:%d\n",
 			MODULE_MAGIC_NUMBER_MAJOR, MODULE_MAGIC_NUMBER_MINOR);
-	printf("          Architecture: %d-bit\n", 8*(long)sizeof(void *));
+	printf("          Architecture: %ld-bit\n", 8*(long)sizeof(void *));
 	printf("Server compiled with....\n");
 #ifdef DEBUG_SOFTBOTD
 	printf(" -D DEBUG_SOFTBOTD\n");
