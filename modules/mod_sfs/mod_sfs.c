@@ -63,7 +63,7 @@ int sfs_destroy(sfs_t* sfs)
 
 void __view_sfs_info(sfs_t* sfs)
 {
-	char sz_type[8];
+	char sz_type[12];
 
 	switch(sfs->type) {
 		case O_UNLOAD:
