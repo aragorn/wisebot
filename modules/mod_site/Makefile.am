@@ -11,7 +11,8 @@ pkglib_LTLIBRARIES = mod_supreme_court_precedent.la \
 					  mod_lgcaltex.la \
 					  mod_supreme_court.la \
 					  mod_momaf.la \
-					  mod_supreme_home.la
+					  mod_supreme_home.la \
+					  mod_nhrd.la
 
 mod_supreme_court_la_SOURCES = $(mod_supreme_court_precedent_la_SOURCES) \
 		$(mod_supreme_court_literature_la_SOURCES) \
@@ -59,5 +60,10 @@ mod_supreme_home_la_SOURCES = mod_docattr_supreme_home.c \
                               mod_docattr_supreme_home.h \
 							  mod_qp_supreme_home.c
 mod_supreme_home_la_LDFLAGS = -module -avoid-version
+
+mod_nhrd_la_SOURCES = mod_docattr_nhrd.c \
+                      mod_docattr_nhrd.h \
+					  mod_qp_nhrd.c
+mod_nhrd_la_LDFLAGS = -module -avoid-version
 
 include ../install-pkglib.mk
