@@ -9,15 +9,15 @@
 #define BIT_PER_BYTE		8
 #define MAX_BIT_SIZE		((int)(sizeof(docattr_integer)*BIT_PER_BYTE-2))
 
-static docattr_field_t docattr_field[MAX_DOCATTR_FIELD];
-static int docattr_field_count = 0;
+static docattr_field_t   docattr_field[MAX_DOCATTR_FIELD];
+static int               docattr_field_count = 0;
 
-static docattr_field_t* rid_field = NULL;
-static char rid_field_name[SHORT_STRING_SIZE] = "";
+static docattr_field_t*  rid_field = NULL;
+static char              rid_field_name[SHORT_STRING_SIZE] = "";
 
 // dummy, 실제 field가 아니다.
-#define HIT_FIELD "<HIT>"
-static docattr_field_t* hit_field = (docattr_field_t*) 0x11;
+#define HIT_FIELD_NAME   "<HIT>"
+#define HIT_FIELD        ((docattr_field_t*) 0x11)
 
 // zero 를 대표하는 값. 하나 만들어 놓고 두고두고 쓴다...
 docattr_value_t value_zero;
@@ -665,7 +665,7 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 		field = sort->condition[i].field;
 
 		// hit는 docattr field 가 아니다.
-		if ( field == hit_field ) {
+		if ( field == HIT_FIELD ) {
 			diff = ((doc_hit_t*) dest)->hitratio - ((doc_hit_t*) sour)->hitratio;
 		}
 		else { // 일반 docattr field
@@ -1114,8 +1114,8 @@ static int build_sort_field()
 
 			*(sort_order++) = '\0';
 
-			if ( strcasecmp( field_name, HIT_FIELD ) == 0 ) {
-				field = hit_field;
+			if ( strcasecmp( field_name, HIT_FIELD_NAME ) == 0 ) {
+				field = HIT_FIELD;
 			}
 			else return_docattr_field( field_name, &field );
 
