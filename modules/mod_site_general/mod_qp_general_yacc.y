@@ -23,24 +23,24 @@ logi_expr:  logi_expr LOGICAL_AND logi_expr {
 				general_cond.root_operand = $2;
 				$$ = $2;
 				$$->value_type = VALUE_BOOLEAN;
-				$$->expr.operand1 = $1;
-				$$->expr.operand2 = $3;
-				$$->expr.exec_func = expr_logical_and;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				$$->o.expr.exec_func = expr_logical_and;
 			}
 			| logi_expr LOGICAL_OR logi_expr {
 				general_cond.root_operand = $2;
 				$$ = $2;
 				$$->value_type = VALUE_BOOLEAN;
-				$$->expr.operand1 = $1;
-				$$->expr.operand2 = $3;
-				$$->expr.exec_func = expr_logical_or;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				$$->o.expr.exec_func = expr_logical_or;
 			}
 			| LOGICAL_NOT logi_expr {
 				general_cond.root_operand = $1;
 				$$ = $1;
 				$$->value_type = VALUE_BOOLEAN;
-				$$->expr.operand1 = $2;
-				$$->expr.exec_func = expr_logical_not;
+				$$->o.expr.operand1 = $2;
+				$$->o.expr.exec_func = expr_logical_not;
 			}
 			| LPAREN logi_expr RPAREN { $$ = $2; }
 			| cmp_expr { general_cond.root_operand = $1; $$ = $1; }
@@ -48,57 +48,57 @@ logi_expr:  logi_expr LOGICAL_AND logi_expr {
 
 cmp_expr: calc_expr EQ calc_expr {
 			$$ = $2;
-			$$->expr.operand1 = $1;
-			$$->expr.operand2 = $3;
+			$$->o.expr.operand1 = $1;
+			$$->o.expr.operand2 = $3;
 			if ( expr_eq_set($$) != SUCCESS ) YYERROR;
 		}
 		| calc_expr NEQ calc_expr {
 			$$ = $2;
-			$$->expr.operand1 = $1;
-			$$->expr.operand2 = $3;
+			$$->o.expr.operand1 = $1;
+			$$->o.expr.operand2 = $3;
 			if ( expr_neq_set($$) != SUCCESS ) YYERROR;
 		}
 		| calc_expr GT calc_expr {
 			$$ = $2;
-			$$->expr.operand1 = $1;
-			$$->expr.operand2 = $3;
+			$$->o.expr.operand1 = $1;
+			$$->o.expr.operand2 = $3;
 			if ( expr_gt_set($$) != SUCCESS ) YYERROR;
 		}
 		| calc_expr GT_EQ calc_expr {
 			$$ = $2;
-			$$->expr.operand1 = $1;
-			$$->expr.operand2 = $3;
+			$$->o.expr.operand1 = $1;
+			$$->o.expr.operand2 = $3;
 			if ( expr_gteq_set($$) != SUCCESS ) YYERROR;
 		}
 		| calc_expr LT calc_expr {
 			$$ = $2;
-			$$->expr.operand1 = $1;
-			$$->expr.operand2 = $3;
+			$$->o.expr.operand1 = $1;
+			$$->o.expr.operand2 = $3;
 			if ( expr_lt_set($$) != SUCCESS ) YYERROR;
 		}
 		| calc_expr LT_EQ calc_expr {
 			$$ = $2;
-			$$->expr.operand1 = $1;
-			$$->expr.operand2 = $3;
+			$$->o.expr.operand1 = $1;
+			$$->o.expr.operand2 = $3;
 			if ( expr_lteq_set($$) != SUCCESS ) YYERROR;
 		}
 		;
 
 calc_expr:	calc_expr BIT_AND calc_expr {
 				$$ = $2;
-				$$->expr.operand1 = $1;
-				$$->expr.operand2 = $3;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
 				if ( expr_bitand_set($$) != SUCCESS ) YYERROR;
 			}
 			| calc_expr BIT_OR calc_expr {
 				$$ = $2;
-				$$->expr.operand1 = $1;
-				$$->expr.operand2 = $3;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
 				if ( expr_bitor_set($$) != SUCCESS ) YYERROR;
 			}
 			| BIT_NOT calc_expr {
 				$$ = $1;
-				$$->expr.operand1 = $2;
+				$$->o.expr.operand1 = $2;
 				if ( expr_bitnot_set($$) != SUCCESS ) YYERROR;
 			}
 			| LPAREN calc_expr RPAREN { $$ = $2; }

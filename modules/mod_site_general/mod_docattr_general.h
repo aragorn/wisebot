@@ -39,7 +39,7 @@ typedef struct _docattr_value_t {
 		docattr_integer		integer;
 		docattr_boolean		boolean;
 		docattr_md5			md5;
-	};
+	} v;
 	char my_string[MAX_DOCATTR_ELEMENT_SIZE];
 } docattr_value_t;
 
@@ -110,7 +110,7 @@ struct _docattr_operand_t {
 		docattr_value_t value;
 		docattr_field_t* field;
 		docattr_expr_t expr;
-	};
+	} o;
 
 	docattr_value_t* result; // operand 계산 결과(즉, exec_func의 결과)
 	                         // query 컴파일 할 때, value, field->value, expr->value중 하나와 연결

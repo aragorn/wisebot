@@ -50,16 +50,16 @@ void print_operand(docattr_operand_t* operand)
 	switch( operand->operand_type ) {
 		case OPERAND_VALUE:
 			info("OPERAND[%s]: value[%s]",
-					get_value_type_name( operand->value_type ), operand->value.my_string);
+					get_value_type_name( operand->value_type ), operand->o.value.my_string);
 			break;
 		case OPERAND_FIELD:
-			value_type = get_value_type_name( operand->field->value_type );
+			value_type = get_value_type_name( operand->o.field->value_type );
 			info("OPERAND[%s]: field[%s], type[%s]",
-					get_value_type_name( operand->value_type ), operand->field->name, value_type);
+					get_value_type_name( operand->value_type ), operand->o.field->name, value_type);
 			break;
 		case OPERAND_EXPR:
 			info("OPERAND[%s]: expr[%s]",
-					get_value_type_name( operand->value_type ), operand->expr.operator_string);
+					get_value_type_name( operand->value_type ), operand->o.expr.operator_string);
 			break;
 	}
 }
@@ -99,18 +99,18 @@ docattr_field_t* find_field_from_cond(const char* name)
  * int vs int, string vs string 만 구현하면 된다..
  *************************************************************/
 
-#define OPERAND1 (operand->expr.operand1)
-#define OPERAND2 (operand->expr.operand2)
+#define OPERAND1 (operand->o.expr.operand1)
+#define OPERAND2 (operand->o.expr.operand2)
 
-#define RESULT  (expr->result)
-#define RESULT1 (expr->operand1->result)
-#define RESULT2 (expr->operand2->result)
+#define RESULT  (expr->result.v)
+#define RESULT1 (expr->operand1->result->v)
+#define RESULT2 (expr->operand2->result->v)
 
 int operand_expr_exec_func(docattr_operand_t* operand)
 {
 	if ( OPERAND1 && OPERAND1->exec_func ) OPERAND1->exec_func( OPERAND1 );
 	if ( OPERAND2 && OPERAND2->exec_func ) OPERAND2->exec_func( OPERAND2 );
-	operand->expr.exec_func( &operand->expr );
+	operand->o.expr.exec_func( &operand->o.expr );
 
 	return SUCCESS;
 }
@@ -119,7 +119,7 @@ int operand_expr_exec_func(docattr_operand_t* operand)
 
 int expr_eq_int_int(docattr_expr_t* expr)
 {
-	RESULT.boolean = ( RESULT1->integer == RESULT2->integer );
+	RESULT.boolean = ( RESULT1.integer == RESULT2.integer );
 
 	return SUCCESS;
 }
@@ -127,7 +127,7 @@ int expr_eq_int_int(docattr_expr_t* expr)
 int expr_eq_string_string(docattr_expr_t* expr)
 {
 	RESULT.boolean =
-		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) == 0 );
+		( hangul_strncmp( RESULT1.string, RESULT2.string, SHORT_STRING_SIZE ) == 0 );
 
 	return SUCCESS;
 }
@@ -136,11 +136,11 @@ int expr_eq_set(docattr_operand_t* operand)
 {
 	if ( OPERAND1->value_type == VALUE_INTEGER
 			&& OPERAND2->value_type == VALUE_INTEGER ) {
-		operand->expr.exec_func = expr_eq_int_int;
+		operand->o.expr.exec_func = expr_eq_int_int;
 	}
 	else if ( OPERAND1->value_type == VALUE_STRING
 			&& OPERAND2->value_type == VALUE_STRING ) {
-		operand->expr.exec_func = expr_eq_string_string;
+		operand->o.expr.exec_func = expr_eq_string_string;
 	}
 	else {
 		print_operand(OPERAND1);
@@ -155,7 +155,7 @@ int expr_eq_set(docattr_operand_t* operand)
 
 int expr_neq_int_int(docattr_expr_t* expr)
 {
-	RESULT.boolean = ( RESULT1->integer != RESULT2->integer );
+	RESULT.boolean = ( RESULT1.integer != RESULT2.integer );
 
 	return SUCCESS;
 }
@@ -163,7 +163,7 @@ int expr_neq_int_int(docattr_expr_t* expr)
 int expr_neq_string_string(docattr_expr_t* expr)
 {
 	RESULT.boolean =
-		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) != 0 );
+		( hangul_strncmp( RESULT1.string, RESULT2.string, SHORT_STRING_SIZE ) != 0 );
 
 	return SUCCESS;
 }
@@ -172,11 +172,11 @@ int expr_neq_set(docattr_operand_t* operand)
 {
 	if ( OPERAND1->value_type == VALUE_INTEGER
 			&& OPERAND2->value_type == VALUE_INTEGER ) {
-		operand->expr.exec_func = expr_neq_int_int;
+		operand->o.expr.exec_func = expr_neq_int_int;
 	}
 	else if ( OPERAND1->value_type == VALUE_STRING
 			&& OPERAND2->value_type == VALUE_STRING ) {
-		operand->expr.exec_func = expr_neq_string_string;
+		operand->o.expr.exec_func = expr_neq_string_string;
 	}
 	else {
 		print_operand(OPERAND1);
@@ -191,7 +191,7 @@ int expr_neq_set(docattr_operand_t* operand)
 
 int expr_gt_int_int(docattr_expr_t* expr)
 {
-	RESULT.boolean = ( RESULT1->integer > RESULT2->integer );
+	RESULT.boolean = ( RESULT1.integer > RESULT2.integer );
 
 	return SUCCESS;
 }
@@ -199,7 +199,7 @@ int expr_gt_int_int(docattr_expr_t* expr)
 int expr_gt_string_string(docattr_expr_t* expr)
 {
 	RESULT.boolean =
-		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) > 0 );
+		( hangul_strncmp( RESULT1.string, RESULT2.string, SHORT_STRING_SIZE ) > 0 );
 
 	return SUCCESS;
 }
@@ -208,11 +208,11 @@ int expr_gt_set(docattr_operand_t* operand)
 {
 	if ( OPERAND1->value_type == VALUE_INTEGER
 			&& OPERAND2->value_type == VALUE_INTEGER ) {
-		operand->expr.exec_func = expr_gt_int_int;
+		operand->o.expr.exec_func = expr_gt_int_int;
 	}
 	else if ( OPERAND1->value_type == VALUE_STRING
 			&& OPERAND2->value_type == VALUE_STRING ) {
-		operand->expr.exec_func = expr_gt_string_string;
+		operand->o.expr.exec_func = expr_gt_string_string;
 	}
 	else {
 		print_operand(OPERAND1);
@@ -227,7 +227,7 @@ int expr_gt_set(docattr_operand_t* operand)
 
 int expr_gteq_int_int(docattr_expr_t* expr)
 {
-	RESULT.boolean = ( RESULT1->integer >= RESULT2->integer );
+	RESULT.boolean = ( RESULT1.integer >= RESULT2.integer );
 
 	return SUCCESS;
 }
@@ -235,7 +235,7 @@ int expr_gteq_int_int(docattr_expr_t* expr)
 int expr_gteq_string_string(docattr_expr_t* expr)
 {
 	RESULT.boolean =
-		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) >= 0 );
+		( hangul_strncmp( RESULT1.string, RESULT2.string, SHORT_STRING_SIZE ) >= 0 );
 
 	return SUCCESS;
 }
@@ -244,11 +244,11 @@ int expr_gteq_set(docattr_operand_t* operand)
 {
 	if ( OPERAND1->value_type == VALUE_INTEGER
 			&& OPERAND2->value_type == VALUE_INTEGER ) {
-		operand->expr.exec_func = expr_gteq_int_int;
+		operand->o.expr.exec_func = expr_gteq_int_int;
 	}
 	else if ( OPERAND1->value_type == VALUE_STRING
 			&& OPERAND2->value_type == VALUE_STRING ) {
-		operand->expr.exec_func = expr_gteq_string_string;
+		operand->o.expr.exec_func = expr_gteq_string_string;
 	}
 	else {
 		print_operand(OPERAND1);
@@ -263,7 +263,7 @@ int expr_gteq_set(docattr_operand_t* operand)
 
 int expr_lt_int_int(docattr_expr_t* expr)
 {
-	RESULT.boolean = ( RESULT1->integer < RESULT2->integer );
+	RESULT.boolean = ( RESULT1.integer < RESULT2.integer );
 
 	return SUCCESS;
 }
@@ -271,7 +271,7 @@ int expr_lt_int_int(docattr_expr_t* expr)
 int expr_lt_string_string(docattr_expr_t* expr)
 {
 	RESULT.boolean =
-		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) < 0 );
+		( hangul_strncmp( RESULT1.string, RESULT2.string, SHORT_STRING_SIZE ) < 0 );
 
 	return SUCCESS;
 }
@@ -280,11 +280,11 @@ int expr_lt_set(docattr_operand_t* operand)
 {
 	if ( OPERAND1->value_type == VALUE_INTEGER
 			&& OPERAND2->value_type == VALUE_INTEGER ) {
-		operand->expr.exec_func = expr_lt_int_int;
+		operand->o.expr.exec_func = expr_lt_int_int;
 	}
 	else if ( OPERAND1->value_type == VALUE_STRING
 			&& OPERAND2->value_type == VALUE_STRING ) {
-		operand->expr.exec_func = expr_lt_string_string;
+		operand->o.expr.exec_func = expr_lt_string_string;
 	}
 	else {
 		print_operand(OPERAND1);
@@ -299,7 +299,7 @@ int expr_lt_set(docattr_operand_t* operand)
 
 int expr_lteq_int_int(docattr_expr_t* expr)
 {
-	RESULT.boolean = ( RESULT1->integer <= RESULT2->integer );
+	RESULT.boolean = ( RESULT1.integer <= RESULT2.integer );
 
 	return SUCCESS;
 }
@@ -307,7 +307,7 @@ int expr_lteq_int_int(docattr_expr_t* expr)
 int expr_lteq_string_string(docattr_expr_t* expr)
 {
 	RESULT.boolean =
-		( hangul_strncmp( RESULT1->string, RESULT2->string, sizeof(RESULT1->my_string) ) <= 0 );
+		( hangul_strncmp( RESULT1.string, RESULT2.string, SHORT_STRING_SIZE ) <= 0 );
 
 	return SUCCESS;
 }
@@ -316,11 +316,11 @@ int expr_lteq_set(docattr_operand_t* operand)
 {
 	if ( OPERAND1->value_type == VALUE_INTEGER
 			&& OPERAND2->value_type == VALUE_INTEGER ) {
-		operand->expr.exec_func = expr_lteq_int_int;
+		operand->o.expr.exec_func = expr_lteq_int_int;
 	}
 	else if ( OPERAND1->value_type == VALUE_STRING
 			&& OPERAND2->value_type == VALUE_STRING ) {
-		operand->expr.exec_func = expr_lteq_string_string;
+		operand->o.expr.exec_func = expr_lteq_string_string;
 	}
 	else {
 		print_operand(OPERAND1);
@@ -335,7 +335,7 @@ int expr_lteq_set(docattr_operand_t* operand)
 
 int expr_bitand_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer & RESULT2->integer );
+	RESULT.integer = ( RESULT1.integer & RESULT2.integer );
 
 	return SUCCESS;
 }
@@ -344,7 +344,7 @@ int expr_bitand_set(docattr_operand_t* operand)
 {
 	if ( OPERAND1->value_type == VALUE_INTEGER
 			&& OPERAND2->value_type == VALUE_INTEGER ) {
-		operand->expr.exec_func = expr_bitand_int_int;
+		operand->o.expr.exec_func = expr_bitand_int_int;
 	}
 	else {
 		print_operand(OPERAND1);
@@ -359,7 +359,7 @@ int expr_bitand_set(docattr_operand_t* operand)
 
 int expr_bitor_int_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ( RESULT1->integer | RESULT2->integer );
+	RESULT.integer = ( RESULT1.integer | RESULT2.integer );
 
 	return SUCCESS;
 }
@@ -368,7 +368,7 @@ int expr_bitor_set(docattr_operand_t* operand)
 {
 	if ( OPERAND1->value_type == VALUE_INTEGER
 			&& OPERAND2->value_type == VALUE_INTEGER ) {
-		operand->expr.exec_func = expr_bitor_int_int;
+		operand->o.expr.exec_func = expr_bitor_int_int;
 	}
 	else {
 		print_operand(OPERAND1);
@@ -383,7 +383,7 @@ int expr_bitor_set(docattr_operand_t* operand)
 
 int expr_bitnot_int(docattr_expr_t* expr)
 {
-	RESULT.integer = ~RESULT1->integer;
+	RESULT.integer = ~RESULT1.integer;
 
 	return SUCCESS;
 }
@@ -392,7 +392,7 @@ int expr_bitnot_set(docattr_operand_t* operand)
 {
 	if ( OPERAND1->value_type == VALUE_INTEGER
 			&& OPERAND2->value_type == VALUE_INTEGER ) {
-		operand->expr.exec_func = expr_bitnot_int;
+		operand->o.expr.exec_func = expr_bitnot_int;
 	}
 	else {
 		print_operand(OPERAND1);
@@ -407,19 +407,19 @@ int expr_bitnot_set(docattr_operand_t* operand)
 
 int expr_logical_and(docattr_expr_t* expr)
 {
-	RESULT.boolean = RESULT1->boolean && RESULT2->boolean;
+	RESULT.boolean = RESULT1.boolean && RESULT2.boolean;
 	return SUCCESS;
 }
 
 int expr_logical_or(docattr_expr_t* expr)
 {
-	RESULT.boolean = RESULT1->boolean || RESULT2->boolean;
+	RESULT.boolean = RESULT1.boolean || RESULT2.boolean;
 	return SUCCESS;
 }
 
 int expr_logical_not(docattr_expr_t* expr)
 {
-	RESULT.boolean = !RESULT1->boolean;
+	RESULT.boolean = !RESULT1.boolean;
 	return SUCCESS;
 }
 
@@ -440,8 +440,8 @@ void print_tree(docattr_operand_t* operand)
 	if ( operand == NULL ) return;
 
 	if ( operand->operand_type == OPERAND_EXPR ) {
-		print_tree( operand->expr.operand1 );
-		print_tree( operand->expr.operand2 );
+		print_tree( operand->o.expr.operand1 );
+		print_tree( operand->o.expr.operand2 );
 	}
 	print_operand( operand );
 }
@@ -481,7 +481,7 @@ static int compare_function(void* dest, void* cond, uint32_t docid)
 	fetch_docattr_field( docattr, doccond );
 	doccond->root_operand->exec_func( doccond->root_operand );
 
-	return (int) doccond->root_operand->result->boolean;
+	return (int) doccond->root_operand->result->v.boolean;
 }
 
 /*
@@ -496,7 +496,7 @@ static int docattr_qpp(docattr_cond_t *cond, char* attrquery)
 	int ret, len;
 
 	len = strlen( attrquery );
-	while ( len > 0 && isspace(attrquery[len-1]) )
+	while ( len > 0 && isspace((int) attrquery[len-1]) )
 		attrquery[--len] = '\0';
 
 	info("docattr query: [%s]", attrquery);

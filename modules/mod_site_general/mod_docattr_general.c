@@ -127,12 +127,12 @@ static int string_set_func(docattr_t* docattr, docattr_field_t* field, char *val
 static void string_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
-	value->string = DATA_POSITION;
+	value->v.string = DATA_POSITION;
 }
 
 static int string_compare_func(docattr_value_t* value1, docattr_value_t* value2)
 {
-	return hangul_strncmp( value1->string, value2->string, (int) sizeof(value1->my_string) );
+	return hangul_strncmp( value1->v.string, value2->v.string, (int) sizeof(value1->my_string) );
 }
 
 static int integer_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
@@ -151,7 +151,7 @@ static int integer_set_func(docattr_t* docattr, docattr_field_t* field, char *va
 static void integer_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
-	value->integer = *((docattr_integer*) DATA_POSITION);
+	value->v.integer = *((docattr_integer*) DATA_POSITION);
 }
 
 static void integer_get_as_string_func(docattr_t* docattr,
@@ -159,13 +159,13 @@ static void integer_get_as_string_func(docattr_t* docattr,
 {
 	field->get_func( docattr, field, value );
 	snprintf( value->my_string, sizeof(value->my_string),
-			"%ld", value->integer);
-	value->string = value->my_string;
+			"%ld", value->v.integer);
+	value->v.string = value->my_string;
 }
 
 static int integer_compare_func(docattr_value_t* value1, docattr_value_t* value2)
 {
-	return value1->integer - value2->integer;
+	return value1->v.integer - value2->v.integer;
 }
 
 static int integer4_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
@@ -184,7 +184,7 @@ static int integer4_set_func(docattr_t* docattr, docattr_field_t* field, char *v
 static void integer4_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
-	value->integer = *((int32_t*) DATA_POSITION);
+	value->v.integer = *((int32_t*) DATA_POSITION);
 }
 
 static int integer2_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
@@ -208,7 +208,7 @@ static int integer2_set_func(docattr_t* docattr, docattr_field_t* field, char *v
 static void integer2_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
-	value->integer = *((int16_t*) DATA_POSITION);
+	value->v.integer = *((int16_t*) DATA_POSITION);
 }
 
 static int integer1_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
@@ -232,7 +232,7 @@ static int integer1_set_func(docattr_t* docattr, docattr_field_t* field, char *v
 static void integer1_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
-	value->integer = *((int8_t*) DATA_POSITION);
+	value->v.integer = *((int8_t*) DATA_POSITION);
 }
 
 static int onebit_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
@@ -254,18 +254,18 @@ static void onebit_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	if ( *((docattr_integer*) DATA_POSITION) & (1<<field->bit_offset) )
-		value->integer = 1;
-	else value->integer = 0;
+		value->v.integer = 1;
+	else value->v.integer = 0;
 }
 
 static void onebit_get_as_string_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
 	onebit_get_func( docattr, field, value );
-	if ( value->integer == 1 ) value->my_string[0] = '1';
+	if ( value->v.integer == 1 ) value->my_string[0] = '1';
 	else value->my_string[0] = '0';
 	value->my_string[1] = '\0';
-	value->string = value->my_string;
+	value->v.string = value->my_string;
 }
 
 static int bit_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
@@ -303,7 +303,7 @@ static void bit_get_func(docattr_t* docattr,
 	number = *((docattr_integer*) DATA_POSITION);
 	number = (number >> field->bit_offset) & mask;
 
-	value->integer = number;
+	value->v.integer = number;
 }
 
 // bit_compare_func -> integer_compare_func
@@ -313,8 +313,8 @@ static void bit_get_as_string_func(docattr_t* docattr,
 {
 	bit_get_func( docattr, field, value );
 	snprintf( value->my_string, sizeof(value->my_string),
-			"%ld", value->integer );
-	value->string = value->my_string;
+			"%ld", value->v.integer );
+	value->v.string = value->my_string;
 }
 
 static void enum_get_as_string_func(docattr_t* docattr,
@@ -323,13 +323,13 @@ static void enum_get_as_string_func(docattr_t* docattr,
 	docattr_value_t integer_value;
 
 	field->get_func( docattr, field, &integer_value );
-	value->string = return_enum_name( integer_value.integer );
-	if ( value->string == NULL ) {
+	value->v.string = return_enum_name( integer_value.v.integer );
+	if ( value->v.string == NULL ) {
 		warn("enum name of [%ld] is not defined. field:%s",
-				integer_value.integer, field->name);
+				integer_value.v.integer, field->name);
 		snprintf( value->my_string, sizeof(value->my_string),
-				"%ld", integer_value.integer );
-		value->string = value->my_string;
+				"%ld", integer_value.v.integer );
+		value->v.string = value->my_string;
 	}
 }
 
@@ -350,12 +350,12 @@ static int md5_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 static void md5_get_func(docattr_t* docattr,
 		docattr_field_t* field, docattr_value_t* value)
 {
-	value->md5 = *((docattr_md5*) DATA_POSITION);
+	value->v.md5 = *((docattr_md5*) DATA_POSITION);
 }
 
 static int md5_compare_func(docattr_value_t* value1, docattr_value_t* value2)
 {
-	return value1->md5 - value2->md5;
+	return value1->v.md5 - value2->v.md5;
 }
 
 static void md5_get_as_string_func(docattr_t* docattr,
@@ -363,8 +363,8 @@ static void md5_get_as_string_func(docattr_t* docattr,
 {
 	md5_get_func( docattr, field, value );
 	snprintf( value->my_string, sizeof(value->my_string),
-			"0x%"PRIx64"", value->md5 );
-	value->string = value->my_string;
+			"0x%"PRIx64"", value->v.md5 );
+	value->v.string = value->my_string;
 }
 
 /**********************************************************************************
@@ -463,11 +463,11 @@ static int get_docattr_function(void* dest, char* key, char* buf, int buflen)
 	// docattr 의 string은 '\0'으로 끝나지 않을 수도 있다.
 	field->get_as_string_func( docattr, field, &field->value );
 	if ( field->value_type == VALUE_STRING && buflen > field->size ) {
-		strncpy( buf, field->value.string, field->size );
+		strncpy( buf, field->value.v.string, field->size );
 		buf[field->size] = '\0';
 	}
 	else {
-		strncpy( buf, field->value.string, buflen );
+		strncpy( buf, field->value.v.string, buflen );
 		buf[buflen-1] = '\0';
 	}
 	return SUCCESS;
@@ -491,8 +491,8 @@ static int compare_rid_md5(const void* dest, const void* sour)
 	rid_field->get_func( attr1, rid_field, &value1 );
 	rid_field->get_func( attr2, rid_field, &value2 );
 
-	if ( value1.md5 > value2.md5 ) return 1;
-	else if ( value1.md5 == value2.md5 ) return 0;
+	if ( value1.v.md5 > value2.v.md5 ) return 1;
+	else if ( value1.v.md5 == value2.v.md5 ) return 0;
 	else return -1;
 }
 
@@ -511,10 +511,10 @@ static int docattr_distinct_rid_md5(int id, index_list_t* list)
 		return FAIL;
 	}
 	rid_field->get_func( attr1, rid_field, &value2 );
-	info("md5: %" PRIu64, value2.md5);
+	info("md5: %" PRIu64, value2.v.md5);
 
 	for ( i = 0; i < list->ndochits; ) {
-		value1.md5 = value2.md5;
+		value1.v.md5 = value2.v.md5;
 
 		if ( abst != i ) {
 			memcpy( &(list->doc_hits[abst]), &(list->doc_hits[i]),
@@ -528,10 +528,10 @@ static int docattr_distinct_rid_md5(int id, index_list_t* list)
 			}
 			
 			rid_field->get_func( attr2, rid_field, &value2 );
-			info("md5: %" PRIu64, value2.md5);
+			info("md5: %" PRIu64, value2.v.md5);
 
-			if ( value1.md5 == 0 || value2.md5 == 0 ) break;
-			if ( value1.md5 != value2.md5 ) break;
+			if ( value1.v.md5 == 0 || value2.v.md5 == 0 ) break;
+			if ( value1.v.md5 != value2.v.md5 ) break;
 		}
 
 		abst++;
@@ -600,7 +600,7 @@ static int docattr_distinct_rid_general(int id, index_list_t* list)
 					|| rid_field->compare_func( &value2, &value_zero ) == 0 ) break;
 			if ( rid_field->compare_func( &value1, &value2 ) != 0 ) break;
 
-			info("same value: %s, %s", value1.string, value2.string);
+			info("same value: %s, %s", value1.v.string, value2.v.string);
 		}
 
 		info("abst inc");
@@ -1057,7 +1057,7 @@ static int init()
 
 	// value_zero 초기화
 	memset( &value_zero, 0, sizeof(value_zero) );
-	value_zero.string = value_zero.my_string;
+	value_zero.v.string = value_zero.my_string;
 
 	// 반드시 있어야 하는 field 강제로 추가
 	return_docattr_field( "Delete", &delete_field );
