@@ -38,9 +38,13 @@ static char *docattrFields[MAX_FIELD_NUM] = { NULL };
 static int fdIndexFile = -1;
 static int *fdDBFile = NULL;
 
-REGISTRY uint16_t *currentDBNo = NULL;
-REGISTRY DocId *lastDocId = NULL;
-REGISTRY int *cdm_stat = NULL;
+static struct cdm_shared_t {
+	uint16_t currentDBNo;
+	DocId    lastDocId;
+	int      cdm_stat[6];
+} *cdm_shared = NULL;
+static char cdm_shared_file[MAX_FILE_LEN] = "dat/cdm/cdm.shared";
+
 /* 
  * stat[0] : 0 - 16k
  * stat[1] : 17k - 32k
@@ -117,6 +121,21 @@ static int InitDBFiles() {
  */
 static int CDM_init() {
 	int iResult; //, iCount;
+	ipc_t ipc;
+
+	ipc.type = IPC_TYPE_MMAP;
+	ipc.pathname = cdm_shared_file;
+	ipc.size = sizeof(struct cdm_shared_t);
+
+	iResult = alloc_mmap(&ipc, 0);
+	if (iResult < 0) {
+		error("alloc mmap to cdm_shared failed");
+		return FAIL;
+	}
+	cdm_shared = (struct cdm_shared_t*) ipc.addr;
+
+	if ( ipc.attr == MMAP_CREATED )
+		memset( cdm_shared, 0, ipc.size );
 
 	// initialize index file
 	iResult = InitIndexFile();
@@ -240,7 +259,7 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 #endif
 
 	// seek dit file
-	ditNo = *currentDBNo;
+	ditNo = cdm_shared->currentDBNo;
 
 	// get canned doc from variable buffer
 	iSize = sb_run_buffer_getsize(pCannedDoc);
@@ -256,22 +275,22 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 	}
 
 	if (iSize < 16 * 1024) {
-		cdm_stat[0]++;
+		cdm_shared->cdm_stat[0]++;
 	}
 	else if (iSize < 32 * 1024) {
-		cdm_stat[1]++;
+		cdm_shared->cdm_stat[1]++;
 	}
 	else if (iSize < 64 * 1024) {
-		cdm_stat[2]++;
+		cdm_shared->cdm_stat[2]++;
 	}
 	else if (iSize < 128 * 1024) {
-		cdm_stat[3]++;
+		cdm_shared->cdm_stat[3]++;
 	}
 	else if (iSize < 512 * 1024) {
-		cdm_stat[4]++;
+		cdm_shared->cdm_stat[4]++;
 	}
 	else {
-		cdm_stat[5]++;
+		cdm_shared->cdm_stat[5]++;
 	}
 
 	iResult = sb_run_buffer_get(pCannedDoc, 0, iSize, aCannedDoc);
@@ -349,10 +368,10 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 	while (dwCurrentDBOffset + iSize > dwMaxDBFileSize) {
 		un_lock(fdDBFile[ditNo], SEEK_SET, 0, 0);
 
-		*currentDBNo += 1;
-		ditNo = *currentDBNo;
+		cdm_shared->currentDBNo++;
+		ditNo = cdm_shared->currentDBNo;
 
-		if (*currentDBNo == dwMaxDBFileNum) {
+		if (ditNo == dwMaxDBFileNum) {
 			error("database is full! (dit file number needs to modified)");
 			return FAIL;
 		}
@@ -400,8 +419,8 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 
 	// FIXME -- lock lastDocId also!!!
 	// set last registered docid
-	if (*lastDocId < docId) {
-		*lastDocId = docId;
+	if (cdm_shared->lastDocId < docId) {
+		cdm_shared->lastDocId = docId;
 	}
 
 	return iResult;
@@ -438,7 +457,7 @@ int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuff
 #endif
 
 	// seek dit file
-	ditNo = *currentDBNo;
+	ditNo = cdm_shared->currentDBNo;
 
 	// get canned doc from variable buffer
 	iSize = sb_run_buffer_getsize(pCannedDoc);
@@ -454,22 +473,22 @@ int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuff
 	}
 
 	if (iSize < 16 * 1024) {
-		cdm_stat[0]++;
+		cdm_shared->cdm_stat[0]++;
 	}
 	else if (iSize < 32 * 1024) {
-		cdm_stat[1]++;
+		cdm_shared->cdm_stat[1]++;
 	}
 	else if (iSize < 64 * 1024) {
-		cdm_stat[2]++;
+		cdm_shared->cdm_stat[2]++;
 	}
 	else if (iSize < 128 * 1024) {
-		cdm_stat[3]++;
+		cdm_shared->cdm_stat[3]++;
 	}
 	else if (iSize < 512 * 1024) {
-		cdm_stat[4]++;
+		cdm_shared->cdm_stat[4]++;
 	}
 	else {
-		cdm_stat[5]++;
+		cdm_shared->cdm_stat[5]++;
 	}
 
 	iResult = sb_run_buffer_get(pCannedDoc, 0, iSize, aCannedDoc);
@@ -496,10 +515,10 @@ int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuff
 	while (dwCurrentDBOffset + iSize > dwMaxDBFileSize) {
 		un_lock(fdDBFile[ditNo], SEEK_SET, 0, 0);
 
-		*currentDBNo += 1;
-		ditNo = *currentDBNo;
+		cdm_shared->currentDBNo++;
+		ditNo = cdm_shared->currentDBNo;
 
-		if (*currentDBNo == dwMaxDBFileNum) {
+		if (ditNo == dwMaxDBFileNum) {
 			error("database is full! (dit file number needs to modified)");
 			un_lock(fdDBFile[ditNo], SEEK_SET, 0, 0);
 		    goto return_fail;
@@ -620,12 +639,12 @@ int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuff
 		//return iResult;
 	}
 	/* set last registered docid */
-	if (*lastDocId + 1 != *registeredDocId) {
+	if (cdm_shared->lastDocId + 1 != *registeredDocId) {
 		crit("last docid of did daemon is not equal to lastdocid of registry");
 	}
 
-	if (*lastDocId < *registeredDocId) {
-		*lastDocId = *registeredDocId;
+	if (cdm_shared->lastDocId < *registeredDocId) {
+		cdm_shared->lastDocId = *registeredDocId;
 	}
 
 	un_lock(fdIndexFile, SEEK_SET, 0, 0);
@@ -1136,7 +1155,7 @@ static int CDM_printDocList(FILE *pFp) {
 #endif
 
 static DocId CDM_getLastId (void) {
-	return *lastDocId;
+	return cdm_shared->lastDocId;
 }
 
 static int CDM_drop(void) {
@@ -1258,40 +1277,9 @@ static void get_field_root_name(configValue v) {
 	fieldRootName[MAX_FIELD_NAME_LEN-1] = '\0';
 }
 
-static void init_LastRegisteredDocId(void *data)
-{
-	lastDocId = data;
-	*lastDocId = 0;
-}
-
-static char* get_LastRegisteredDocId()
-{
-	static char result[MAX_EACH_REGISTRY_RESULT_STRING_SIZE];
-	snprintf(result, MAX_EACH_REGISTRY_RESULT_STRING_SIZE, "%u", *lastDocId);
-	result[MAX_EACH_REGISTRY_RESULT_STRING_SIZE-1] = '\0';
-	return (char*)result;
-}
-
-static void init_CdmStat(void *data)
-{
-	cdm_stat = data;
-	bzero(cdm_stat, sizeof(int) * 6);
-}
-
-static char* get_CdmStat()
-{
-	static char result[MAX_EACH_REGISTRY_RESULT_STRING_SIZE];
-	snprintf(result, MAX_EACH_REGISTRY_RESULT_STRING_SIZE, 
-			"~16:%d, ~32:%d, ~64:%d, ~128:%d, ~512:%d, 512~:%d", 
-			cdm_stat[0], cdm_stat[1], cdm_stat[2], cdm_stat[3], cdm_stat[4], cdm_stat[5]);
-	result[MAX_EACH_REGISTRY_RESULT_STRING_SIZE-1] = '\0';
-	return (char*)result;
-}
-
-static void init_CurrentDBFileNo(void *data)
-{
-	currentDBNo = data;
-	*currentDBNo = 0;
+static void get_shared_file(configValue v) {
+	strncpy(cdm_shared_file, v.argument[0], MAX_FILE_LEN);
+	cdm_shared_file[MAX_FILE_LEN-1] = '\0';
 }
 
 static void register_hooks(void)
@@ -1321,26 +1309,15 @@ static config_t config[] = {
 	CONFIG_GET("FieldRootName", get_field_root_name, 1, \
 			"canned document root element name"),
 	CONFIG_GET("DocAttrField", get_field, VAR_ARG, "fields inserted into docattr db"),
+	CONFIG_GET("SharedFile", get_shared_file, 1, \
+			"cdm shared memory file. (ex. SharedFile dat/cdm/cdm.shared)"),
 	{NULL}
-};
-
-static registry_t registry[] = {
-    PERSISTENT_REGISTRY("LastRegisteredDocId", "last registered document id", 
-					sizeof(DocId),init_LastRegisteredDocId, 
-					get_LastRegisteredDocId, NULL),
-    PERSISTENT_REGISTRY("CurrentDBFileNo", "db file no to save data currently", 
-					sizeof(uint16_t),init_CurrentDBFileNo, 
-					NULL, NULL),
-    PERSISTENT_REGISTRY("CdmStat", "statistic of document size", 
-					sizeof(int)*6,init_CdmStat, 
-					get_CdmStat, NULL),
-	NULL_REGISTRY
 };
 
 module cdm_module = {
 	STANDARD_MODULE_STUFF,
 	config,				/* config */
-	registry,			/* registry */
+	NULL,    			/* registry */
 	init,               /* initialize function */
 	NULL,				/* child_main */
 	NULL,				/* scoreboard */
