@@ -930,7 +930,6 @@ int operator_and_with_not(sb_stack_t *stack, QueryNode *qnode)
 		if (not->doc_hits[idx2].id == operand->doc_hits[idx1].id)
 			continue;
 
-		INFO("inserting to result");
 		insert_one_to_result(this,idx3,operand,idx1);
 		idx3++;
 	}
