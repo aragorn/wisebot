@@ -443,7 +443,7 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 
 		/* monitor child processes */
 		pid = waitpid(-1, &status, WNOHANG);
-		if (pid != 0) debug("waitpid returned pid[%d]", pid);
+		if (pid != 0) debug("waitpid returned pid[%d]", (int) pid);
 		if ( pid == 0 ) {
 			int i;
 			if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
@@ -480,7 +480,7 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 			if ( WIFEXITED(status) && WEXITSTATUS(status) == 0 ) {
 				info("%s monitor: child process[%d, %s] "
 						"exited with status[%d].",
-						scoreboard->name,pid, slot->name, status);
+						scoreboard->name, (int) pid, slot->name, status);
 				if (slot->state == SLOT_RESTART) {
 					slow_start();
 					sb_spawn_process(slot, slot->name, slot->main);
