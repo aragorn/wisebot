@@ -70,6 +70,9 @@ void print_operand(docattr_operand_t* operand)
 			info("OPERAND[%s]: expr[%s]",
 					get_value_type_name( operand->value_type ), operand->o.expr.operator_string);
 			break;
+		default:
+			info("OPERAND[%s]: unknown", get_value_type_name( operand->value_type ));
+			break;
 	}
 }
 
