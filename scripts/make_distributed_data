@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# $Id $
+# $Id$
 
 use strict;
 
@@ -24,39 +24,42 @@ my $filename_format;
 if ( $orig_path =~ m/cdm(\/?)$/
      or
      -f "$orig_path/keys.idx" ) {
-  $filename_format = "cdm%06d.db";
+  distribute_file("cdm%06d.db", $orig_path, $first_path, $second_path);
 } 
 elsif ( $orig_path =~ m/indexer(\/?)$/
      or
      -f "$orig_path/index" ) {
-  $filename_format = "index.data.%02d";
+  distribute_file("index.data.%02d", $orig_path, $first_path, $second_path);
+  distribute_file("sfs_%d", $orig_path, $first_path, $second_path);
 } else {
   die "unknown type of data directory. cdm or indexer type is available.";
 }
 
 
-foreach my $n ( 0..11 ) {
-  my $filename  = sprintf($filename_format, $n);
-  my $dest_path = $first_path; $dest_path = $second_path if $n % 2 == 1;
-  my $relative_path = relative_path($orig_path, $dest_path);
+sub distribute_file {
+  my ($filename_format, $orig_path, $first_path, $second_path) = @_;
 
-  if ( -e "$dest_path/$filename" ) {
-    die "$dest_path/$filename already exists. please delete this file by your hand.";
-  }
+  foreach my $n ( 0..40 ) {
+    my $filename  = sprintf($filename_format, $n);
+    my $dest_path = $first_path; $dest_path = $second_path if $n % 2 == 1;
+    my $relative_path = relative_path($orig_path, $dest_path);
 
-  if ( -e "$orig_path/$filename" ) {
-    print "moves $orig_path/$filename to $dest_path/$filename\n";
-    system("mv", "$orig_path/$filename", "$dest_path/$filename");
-  } else {
-    print "creates $dest_path/$filename\n";
-    open(FILE, ">$dest_path/$filename") or die "cannot create file, $dest_path/$filename: $!";
-    close(FILE);
+    if ( -e "$dest_path/$filename" ) {
+      die "$dest_path/$filename already exists. please delete this file by your hand.";
+    }
+
+    if ( -e "$orig_path/$filename" ) {
+      print "moves $orig_path/$filename to $dest_path/$filename\n";
+      system("mv", "$orig_path/$filename", "$dest_path/$filename");
+    } else {
+      print "creates $dest_path/$filename\n";
+      open(FILE, ">$dest_path/$filename") or die "cannot create file, $dest_path/$filename: $!";
+      close(FILE);
+    }
+    symlink("$relative_path/$filename", "$orig_path/$filename")
+      or die "symlink($relative_path/$filename, $orig_path/$filename) failed: $!";
   }
-  symlink("$relative_path/$filename", "$orig_path/$filename")
-    or die "symlink($relative_path/$filename, $orig_path/$filename) failed: $!";
 }
-
-
 
 sub relative_path {
   my $from = shift || ".";
