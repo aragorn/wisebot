@@ -37,7 +37,7 @@ enum requesttype {
 // 통합검색 지원
 typedef struct group_result_t {
 	char field[20];
-	char value[16];
+	char value[32];
 	int count;
 } group_result_t;
 
