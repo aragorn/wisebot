@@ -11,8 +11,8 @@
 #include "mod_vrm/vrm.h"
 
 #include <stdio.h>
-#include <sys/types.h> /* waitpid(2) of test_main() */
-#include <sys/wait.h>  /* waitpid(2) of test_main() */
+#include <sys/types.h> /* waitpid(2) of ac_remake_main() */
+#include <sys/wait.h>  /* waitpid(2) of ac_remake_main() */
 
 #define MAX_ENUM_NUM		1024
 #define MAX_ENUM_LEN		SHORT_STRING_SIZE
@@ -1237,21 +1237,22 @@ static int remake_ac(int start_docid, int count) {
     return 0;
 }
 
-static int test_main(slot_t *slot) {
+static int ac_remake_main(slot_t *slot) {
     registry_t *reg;
     int last_registered_docid;
     pid_t pid;
-    int i, status;
+    int i, status, ret;
 
-	info("start ac_remake........................");
+    info("start ac_remake........................");
 
-    reg = registry_get("LastRegisteredDocId");
-    if (reg == NULL) {
-        crit("cannot get LastRegisteredDocId registry");
+	ret = sb_run_server_canneddoc_init();
+	if ( ret != SUCCESS ) {
+		error( "cdm module init failed" );
 		return 1;
     }
-    last_registered_docid = *(int*)reg->data;
-	info("last doc id [%d] from registry", last_registered_docid);
+
+    last_registered_docid = sb_run_server_canneddoc_last_registered_id();
+    info("last doc id [%d] from registry", last_registered_docid);
 
     for(i=1; i<=last_registered_docid; i+= 5000) {
         pid = fork();
@@ -1263,7 +1264,7 @@ static int test_main(slot_t *slot) {
         }
     }
 
-	info("end ac_remake........................");
+    info("end ac_remake........................");
 
     return 0;
 }
@@ -1273,7 +1274,7 @@ module ac_remake_module = {
 	NULL,				/* config */
 	NULL,				/* registry */
 	NULL,				/* initialize */
-	test_main,			/* child_main */
+	ac_remake_main,			/* child_main */
 	NULL,				/* scoreboard */
 	NULL,       		/* register hook api */
 };
