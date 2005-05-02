@@ -79,15 +79,11 @@ void __view_sfs_info(sfs_t* sfs)
 			break;
 	}
 
-	debug("==== sfs debug ====");
-	debug("sfs->fd[%d]", sfs->fd);
-	debug("sfs->seq[%d]", sfs->seq);
-	debug("sfs->type[%s]", sz_type);
+	info("-- sfs information --------------------------------------------------------------");
+    info("sfs     fd:%02d    seq:%02d   type:%-12s", sfs->fd, sfs->seq, sz_type);
+    info("        base_offset:%d     base_ptr:%p", sfs->base_offset, sfs->base_ptr);
 
-	debug("sfs->base_offset[%d]", sfs->base_offset);
-	debug("sfs->base_ptr[%p]", sfs->base_ptr);
-
-	superblock_view( sfs->super_block );
+	superblock_view(sfs->super_block);
 }
 
 int sfs_format(sfs_t* sfs, int option, int size, int block_size)
@@ -178,7 +174,7 @@ int sfs_format(sfs_t* sfs, int option, int size, int block_size)
 		return FAIL;
 	}
 
-	__view_sfs_info( sfs );
+	__view_sfs_info(sfs);
 
 	return SUCCESS;
 }

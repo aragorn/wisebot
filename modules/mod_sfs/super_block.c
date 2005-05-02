@@ -25,39 +25,30 @@ int superblock_update_write_byte(super_block_t* s, int write_byte)
 
 void superblock_view(super_block_t * s)
 {
+	char magic[5];
 	char sz_option[128]={0,};
 
-	if(s->option & O_FAT) {
-		strcat(sz_option, "O_FAT");
-	}
+	memcpy(magic, s->magic, 4); magic[4] = '\0';
+	if(s->option & O_FAT)             strcat(sz_option, "O_FAT");
+	if(s->option & O_ARRAY_ROOT_DIR)  strcat(sz_option, " | O_ARRAY_ROOT_DIR");
+	if(s->option & O_HASH_ROOT_DIR)   strcat(sz_option, " | O_HASH_ROOT_DIR");
 
-	if(s->option & O_ARRAY_ROOT_DIR) {
-		strcat(sz_option, " | O_ARRAY_ROOT_DIR");
-	}
+	info("-- super block information ------------------------------------------------------");
+	info("magic[%4s]    option[%s]", magic, sz_option);
 
-	if(s->option & O_HASH_ROOT_DIR) {
-		strcat(sz_option, " | O_HASH_ROOT_DIR");
-	}
+	info("block   fat[%d]~[%d]   file[%d]~[%d] free_block_num[%d]  dir[%d]~[%d]",
+				s->start_fat_block, s->end_fat_block,
+				s->start_file_block, s->end_file_block,
+				s->free_block_num,
+				s->start_dir_block, s->end_dir_block);
 
-	debug("===========super block debug===========");
-	debug("magic[%c%c%c%c]", s->magic[0], s->magic[1], s->magic[2], s->magic[3]);
+	info("file    id[%d]~[%d]   count[%d]   total_byte[%d]",
+				s->min_file_id, s->max_file_id, s->file_count, s->file_total_byte);
 
-	debug("fat_block: [%d] ~ [%d]", s->start_fat_block, s->end_fat_block);
-	debug("file_block: [%d] ~ [%d]", s->start_file_block, s->end_file_block);
-	debug("dir_block: [%d] ~ [%d]", s->start_dir_block, s->end_dir_block);
+	info("size    segment size[%d]   block_count[%d]   block_size[%d]",
+				s->size, s->block_count, s->block_size);
 
-	debug("min_file_id[%d]", s->min_file_id);
-	debug("max_file_id[%d]", s->max_file_id);
-	debug("file_count[%d]", s->file_count);
-	debug("file_total_byte[%d]", s->file_total_byte);
-
-	debug("option[%s]", sz_option);
-	debug("size[%d]", s->size);
-	debug("block_count[%d]", s->block_count);
-	debug("block_size[%d]", s->block_size);
-
-	debug("entry_count_in_block[%d]", s->entry_count_in_block);
-	debug("dir_block_count[%d]", s->dir_block_count);
-	debug("free_block_num[%d]", s->free_block_num);
+	info("dir     entry_count_in_block[%d], dir_block_count[%d]",
+				s->entry_count_in_block, s->dir_block_count);
 }
 
