@@ -393,7 +393,7 @@ int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf)
 
 		/* full segment */
         if(try_append_byte > append_byte) {
-	        debug("sfs is full, append_segment[%d], size[%d], append_byte[%d]", append_segment, size, append_byte);
+	        info("sfs is full, append_segment[%d], size[%d], append_byte[%d]", append_segment, size, append_byte);
 
 			if(table_allocate(&ifs->shared->mapping_table, &free_segment, INDEX) != SUCCESS) {
 				error("can not allocation fail, state[%d]", INDEX);
@@ -415,12 +415,13 @@ int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf)
 				goto fail;
 			}
 
-			notice("append segment format");
+			notice("formatting append_segment...");
 			if(__sfs_activate(ifs, append_segment, O_MMAP, 1, O_FAT|O_HASH_ROOT_DIR) != SUCCESS) {
 				error("format failed. segment[%d], size[%d], block_size[%d]",
 						append_segment, ifs->shared->segment_size, ifs->shared->block_size);
 				return FAIL;
 			}
+			notice("formatting done.");
 
 			if(table_append_logical_segment(&ifs->shared->mapping_table, append_segment) != SUCCESS) {
 				error("table append failed. segment[%d]", append_segment);
@@ -703,6 +704,10 @@ static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg)
 				error("can not append file, sfs[%d], file_id[%d], read_size[%d]",
 					  to_seg, file_array[i], read_size);
 				goto fail;
+			} else if (append_size != read_size) {
+				crit("sfs_append(sfs[%d],file[%d],size[%d],data) should have appended size[%d] bytes, but appended %d bytes.",
+						to_seg, file_array[i], read_size, read_size, append_size);
+				SB_DEBUG_ASSERT(append_size == read_size);
 			}
 
 			total_append_size += append_size;
