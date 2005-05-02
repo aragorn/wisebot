@@ -95,7 +95,7 @@ static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 static void makeUpperLetter(QueryNode *pQuNode);
 /*static int processSyn(StateObj *pStObj,QueryNode *pQuNode);*/
 
-int QPP_postfixPrint(FILE *fp, QueryNode postfix[],int numNode) {
+int QPP_postfixPrint(QueryNode postfix[],int numNode) {
 	int i = 0;
 	char operatorName[12][16] = 
 		{"QPP_OP_AND","QPP_OP_OR","QPP_OP_NOT","QPP_OP_PARA",
@@ -105,7 +105,7 @@ int QPP_postfixPrint(FILE *fp, QueryNode postfix[],int numNode) {
 
 	for ( i=0; i<numNode; i++) {
 		if (postfix[i].type == OPERAND) {
-			fprintf(fp,"word: %s(field:%s)(wordid:%u)(opParam:%d)\n",
+			info("word: %s(field:%s)(wordid:%u)(opParam:%d)\n",
 						postfix[i].word_st.string,
 						sb_strbin(postfix[i].field,sizeof(postfix[i].field)),
 						postfix[i].word_st.id,
@@ -113,7 +113,7 @@ int QPP_postfixPrint(FILE *fp, QueryNode postfix[],int numNode) {
 		}
 		else {
 			opNum = postfix[i].operator;
-			fprintf(fp,"operator: %s (num_operands:%d,param:%d)\n",operatorName[opNum-1],\
+			info("operator: %s (num_operands:%d,param:%d)\n",operatorName[opNum-1],\
 						postfix[i].num_of_operands,postfix[i].opParam);
 		}
 	}

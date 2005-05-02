@@ -2504,13 +2504,6 @@ static void reduce_dochits_to_one_per_doc(index_list_t *list)
 //	DEBUG("ndochits:%d after reduce", list->ndochits);
 }
 
-#ifdef DEBUG_SOFTBOTD
-	#define debug_print_querynode(stream, qnode, max) \
-				sb_run_print_querynode(stderr,qnodes,num_of_node);
-#else 
-	#define debug_print_querynode(stream, qnode, max)
-#endif
-
 #define MAX_QUERY_NODES 60
 int light_search (void* word_db, request_t *req)
 {
@@ -2532,8 +2525,10 @@ int light_search (void* word_db, request_t *req)
 		sb_run_preprocess(word_db, req->query_string, MAX_QUERY_STRING_SIZE,
 									qnodes, MAX_QUERY_NODES);
 
+#ifdef DEBUG_SOFTBOTD
 	INFO("postfix query");
-	debug_print_querynode(stderr, qnodes, num_of_node);
+	sb_run_print_querynode(qnodes,num_of_node);
+#endif
 
 	if (num_of_node < 0) {
 		error("preprocess error");
