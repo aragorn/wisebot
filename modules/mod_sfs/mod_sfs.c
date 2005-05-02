@@ -149,6 +149,14 @@ int sfs_format(sfs_t* sfs, int option, int size, int block_size)
 	}
 
 	// directory 영역 계산
+	/* dir_size : dir_hash_entry_t가 저장될 최대 데이터 크기
+       = sizeof(dir_hash_entry_t)
+		x (
+		 	block_count   // segment의 전체 block 수. size / block_size
+            -
+			super_block->free_block_num  // free_block_num 이전에는 file을 저장하지 못한다
+		  )
+     */
 	dir_size = sizeof(dir_hash_entry_t) * (block_count - super_block->free_block_num);
 	dir_block_count = 
 		((dir_size % block_size) == 0) ? (dir_size / block_size) : (dir_size / block_size) + 1;
