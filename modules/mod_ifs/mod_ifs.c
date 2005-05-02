@@ -9,7 +9,7 @@ static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg);
 int __get_start_segment(ifs_t* ifs, int* pseg, int count, int file_id, int offset, 
 							   int* start_segment, int* start_offset);
 int __get_file_size(ifs_t* ifs, int* pseg, int count, int file_id);
-int __sfs_activate(ifs_t* ifs, int p, int type, int perform_format, int format_option);
+int __sfs_activate(ifs_t* ifs, int p, int type, int do_format, int format_option);
 int __sfs_all_activate(ifs_t* ifs, int* physical_segment_array, int count, int type);
 int __sfs_deactivate(ifs_t* ifs, int p);
 int __file_open(ifs_t* ifs, int sec);
@@ -72,8 +72,8 @@ int __file_open(ifs_t* ifs, int sec)
 	return SUCCESS;
 }
 
-// format_option은 perform_format이 아니면 필요없다.
-int __sfs_activate(ifs_t* ifs, int p, int type, int perform_format, int format_option)
+// format_option은 do_format이 아니면 필요없다.
+int __sfs_activate(ifs_t* ifs, int p, int type, int do_format, int format_option)
 {
 	int offset = 0;
 	segment_info_t info;
@@ -89,28 +89,28 @@ int __sfs_activate(ifs_t* ifs, int p, int type, int perform_format, int format_o
 		__sfs_deactivate( ifs, p );
 	}
 
-	if ( ifs->local.sfs[p] != NULL && !perform_format ) return SUCCESS;
+	if ( ifs->local.sfs[p] != NULL && do_format == DO_NOT_FORMAT ) return SUCCESS;
 
 	if( ifs->local.sfs[p] == NULL ) {
 		table_get_segment_info(p, ifs->shared->mapping_table.segment_count_in_sector, &info);
 		if( __file_open(ifs, info.sector ) != SUCCESS ) {
-			error("can not activate sfs[%d], sector[%d]", p, info.sector);
+			error("cannot activate sfs[%d], sector[%d]", p, info.sector);
 			return FAIL;
 		}
 		
 		offset = info.segment * ifs->shared->segment_size;
 		ifs->local.sfs[p] = sfs_create(p, ifs->local.sfs_fd[info.sector], offset);
 		if( ifs->local.sfs[p] == NULL ) {
-			error("can not activate(sfs_create) sfs[%d], fd[%d], offset[%d]",
+			error("cannot activate(sfs_create) sfs[%d], fd[%d], offset[%d]",
 				  p, ifs->local.sfs_fd[p], offset);
 			return FAIL;
 		}
 	}
 
-	if( perform_format ) {
+	if( do_format ) {
 		if( sfs_format(ifs->local.sfs[p], format_option, 
 				ifs->shared->segment_size, ifs->shared->block_size) != SUCCESS ) {
-			error("can not activate(sfs_format) sfs[%d], option[%d], "
+			error("cannot activate(sfs_format) sfs[%d], option[%d], "
 				  "segment_size[%d], block_size[%d]",
 				  p, format_option, ifs->shared->segment_size, ifs->shared->block_size);
 			return FAIL;
@@ -118,7 +118,7 @@ int __sfs_activate(ifs_t* ifs, int p, int type, int perform_format, int format_o
 	}
 
 	if ( sfs_open(ifs->local.sfs[p], type) != SUCCESS ) {
-		error("can not activate(sfs_open) sfs[%d], type[%d], fd[%d], offset[%d]",
+		error("cannot activate(sfs_open) sfs[%d], type[%d], fd[%d], offset[%d]",
 			  p, type, ifs->local.sfs_fd[p], offset);
 		return FAIL;
 	}
@@ -134,7 +134,7 @@ int __sfs_all_activate(ifs_t* ifs, int* physical_segment_array, int count, int t
 		p = physical_segment_array[i];
 		if ( p == NOT_USE || p == ifs->shared->append_segment ) continue;
 
-		if ( __sfs_activate( ifs, p, type, 0, 0 ) != SUCCESS ) {
+		if ( __sfs_activate( ifs, p, type, DO_NOT_FORMAT, O_NONE ) != SUCCESS ) {
 			error("return FAIL");
 			return FAIL;
 		}
@@ -169,7 +169,7 @@ int _ifs_open(ifs_t* ifs, char* root_path, int segment_size, int block_size)
 	if ( segment_size > 0 ) {
 		mod = file_size % segment_size;
 		if(mod != 0) {
-			error("can not create ifs, should be "
+			error("cannot create ifs, should be "
 				  "'file_size[%d] mod segment_size[%d]' is zero",
 				  file_size, segment_size);
 			return FAIL;
@@ -187,7 +187,7 @@ int _ifs_open(ifs_t* ifs, char* root_path, int segment_size, int block_size)
 
 	ifs->shared = get_shared_memory(2000, ifs->local.ifs_fd, 0, sizeof(shared_t));
 	if(ifs->shared == NULL) {
-		error("can not ifs get mmap block, root_path[%s]", root_path);
+		error("cannot ifs get mmap block, root_path[%s]", root_path);
 		return FAIL;
 	}
 
@@ -217,7 +217,7 @@ int _ifs_open(ifs_t* ifs, char* root_path, int segment_size, int block_size)
 			goto fail;
 		}
 
-		if(__sfs_activate(ifs, append_segment, O_MMAP, 1, O_FAT|O_HASH_ROOT_DIR) != SUCCESS) {
+		if(__sfs_activate(ifs, append_segment, O_MMAP, DO_FORMAT, O_FAT|O_HASH_ROOT_DIR) != SUCCESS) {
 			error("cannot sfs activate, segment[%d]", append_segment);
 			goto fail;
 		}
@@ -227,7 +227,7 @@ int _ifs_open(ifs_t* ifs, char* root_path, int segment_size, int block_size)
 	else {
 		append_segment = ifs->shared->append_segment;
 
-		if(__sfs_activate(ifs, append_segment, O_MMAP, 0, 0) != SUCCESS) {
+		if(__sfs_activate(ifs, append_segment, O_MMAP, DO_NOT_FORMAT, O_NONE) != SUCCESS) {
 			error("cannot sfs activate, segment[%d]", append_segment);
 			goto fail;
 		}
@@ -384,7 +384,7 @@ int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf)
 		try_append_byte = size - total_byte;
         append_byte = sfs_append(s, file_id, try_append_byte, (char*)buf + total_byte);
 		if(append_byte == -1) {
-			error("can not sfs append, file_id[%d], total_byte[%d],"
+			error("cannot sfs append, file_id[%d], total_byte[%d],"
 				  "append_byte[%d]", file_id, total_byte, append_byte);
 			goto fail;
 		}
@@ -396,27 +396,27 @@ int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf)
 	        info("sfs is full, append_segment[%d], size[%d], append_byte[%d]", append_segment, size, append_byte);
 
 			if(table_allocate(&ifs->shared->mapping_table, &free_segment, INDEX) != SUCCESS) {
-				error("can not allocation fail, state[%d]", INDEX);
+				error("cannot allocation fail, state[%d]", INDEX);
 				goto fail;
 			}
 
 			/* read process를 위해 임계구역을 최소화 한다. */
 			RELEASE_LOCK();
             if(__move_file_segment(ifs, append_segment, free_segment) != SUCCESS) {
-				error("can not move file segment[%d]", append_segment);
+				error("cannot move file segment[%d]", append_segment);
 				return FAIL;
 			}
 			// ACQUIRE_LOCK()을 쓸 수 없다. 죽이되더라도 진행해야 하기 때문에..
 			acquire_lock(ifs->local.lock);
 
 			if(table_update_last_logical_segment(&ifs->shared->mapping_table, free_segment) != SUCCESS) {
-				error("can not add logical segment, maybe logical segment is full, segment[%d]",
+				error("cannot add logical segment, maybe logical segment is full, segment[%d]",
 					physical_segment);
 				goto fail;
 			}
 
 			notice("formatting append_segment...");
-			if(__sfs_activate(ifs, append_segment, O_MMAP, 1, O_FAT|O_HASH_ROOT_DIR) != SUCCESS) {
+			if(__sfs_activate(ifs, append_segment, O_MMAP, DO_FORMAT, O_FAT|O_HASH_ROOT_DIR) != SUCCESS) {
 				error("format failed. segment[%d], size[%d], block_size[%d]",
 						append_segment, ifs->shared->segment_size, ifs->shared->block_size);
 				return FAIL;
@@ -494,7 +494,7 @@ retry:
 
 		if ( read_byte == INDEXDB_FILE_NOT_EXISTS ) continue; // 파일 없음
 		else if ( read_byte == -1 ) {
-			error("can not sfs read, file_id[%d], total_byte[%d],"
+			error("cannot sfs read, file_id[%d], total_byte[%d],"
 				  "read_byte[%d]", file_id, total_byte, read_byte);
 			return FAIL;
 		}
@@ -663,7 +663,7 @@ static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg)
 
 	/* file_id == 0 이면 entry정보는 가져오지 않는다. */
 	if(sfs_get_info(ifs->local.sfs[from_seg], &sfs_info, 0) != SUCCESS) {
-		error("can not get sfs[%d] info", from_seg);
+		error("cannot get sfs[%d] info", from_seg);
 		return FAIL;
 	}
 
@@ -675,21 +675,20 @@ static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg)
 		goto fail;
 	}
 
-	// FAT는 필요없다
-	if(__sfs_activate(ifs, to_seg, O_FILE, 1, O_HASH_ROOT_DIR) != SUCCESS) {
-		error("can not sfs activate, physical_segment[%d], option[%d], type[O_FILE], perform_format[%d]",
-			to_seg, option, 1);
+	/* 새로 만드는 segment에는 FAT가 필요없다. */
+	if(__sfs_activate(ifs, to_seg, O_FILE, DO_FORMAT, O_HASH_ROOT_DIR) != SUCCESS) {
+		error("cannot activate sfs, physical_segment[%d], option[%d], type[O_FILE], do_format[%d]",
+			to_seg, option, DO_FORMAT);
 		goto fail;
 	}
 
 	for(i = 0; i < sfs_info.file_count; i++) {
 		debug("moving[%d]...", file_array[i]);
 		do {
-//			debug("sfs_read, from_seg[%d], file_id[%d], offset[%d], size[%d]", from_seg, file_array[i], offset, size);
 			read_size = sfs_read(ifs->local.sfs[from_seg], file_array[i], 
 								 offset, size, buf);
 			if(read_size < 0) {
-				error("can not read file, sfs[%d], file_id[%d], offset[%d], size[%d]",
+				error("cannot read file, sfs[%d], file_id[%d], offset[%d], size[%d]",
 					  from_seg, file_array[i], offset, size);
 				goto fail;
 			}
@@ -698,16 +697,15 @@ static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg)
 			offset += read_size;
 			total_read_size += read_size;
 
-//			debug("sfs_append, id[%d], size[%d], buf[0x%p]", file_array[i], read_size, buf);
 			append_size = sfs_append(ifs->local.sfs[to_seg], file_array[i], read_size, buf);
 			if(append_size < 0) {
-				error("can not append file, sfs[%d], file_id[%d], read_size[%d]",
+				error("cannot append file, sfs[%d], file_id[%d], read_size[%d]",
 					  to_seg, file_array[i], read_size);
 				goto fail;
 			} else if (append_size != read_size) {
 				crit("sfs_append(sfs[%d],file[%d],size[%d],data) should have appended size[%d] bytes, but appended %d bytes.",
 						to_seg, file_array[i], read_size, read_size, append_size);
-				SB_DEBUG_ASSERT(append_size == read_size);
+				goto fail;
 			}
 
 			total_append_size += append_size;
@@ -724,7 +722,7 @@ static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg)
 	}
 
     if(__sfs_deactivate(ifs, to_seg) != SUCCESS) {
-		error("can not deactivate sfs, num[%d]", to_seg);
+		error("cannot deactivate sfs, num[%d]", to_seg);
 	}
 
 	free(file_array);
@@ -733,7 +731,7 @@ static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg)
 
 fail:
     if(__sfs_deactivate(ifs, to_seg) == FAIL) {
-		error("can not deactivate sfs, num[%d]", to_seg);
+		error("cannot deactivate sfs, num[%d]", to_seg);
 		free(file_array);
 		return -1;
 	}

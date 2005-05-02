@@ -18,6 +18,11 @@
 #define DEFAULT_BLOCK_SIZE (128)
 #define MAX_FILE_COUNT MAX_SECTOR_COUNT    /* index file max 200Gbyte */
 
+/* __sfs_activate() options : do_format */
+#define DO_FORMAT      (1)
+#define DO_NOT_FORMAT  (0)
+#define O_NONE         (0)
+
 typedef struct _local_t {
 	int ifs_fd;
     int sfs_fd[MAX_FILE_COUNT];
@@ -68,7 +73,7 @@ int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf);
 int ifs_read(index_db_t* indexdb, int file_id, int offset, int size, void* buf);
 int ifs_getsize(index_db_t* indexdb, int file_id);
 
-int __sfs_activate(ifs_t* ifs, int p, int type, int perform_format, int format_option);
+int __sfs_activate(ifs_t* ifs, int p, int type, int do_format, int format_option);
 int __sfs_all_activate(ifs_t* ifs, int* physical_segment_array, int count, int type);
 int __sfs_deactivate(ifs_t* ifs, int p);
 int __file_open(ifs_t* ifs, int sec);
