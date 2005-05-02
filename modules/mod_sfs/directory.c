@@ -165,7 +165,8 @@ int dir_find_entry(sfs_t* sfs, int file_id, dir_op_t op,
 		if ( (super_block->start_dir_block + block_idx) > super_block->end_dir_block )
 			block_idx -= (super_block->end_dir_block - super_block->start_dir_block + 1);
 
-		crit("hash collision [%d] - %dth", file_id, retry);
+		crit("hash collision [%d] - %dth, directory size[%d], next_try[%d]",
+				file_id, retry, super_block->end_dir_block - super_block->start_dir_block, block_idx);
 	} while( 1 );
 
 	if ( op == DIR_OP_ADD ) {
