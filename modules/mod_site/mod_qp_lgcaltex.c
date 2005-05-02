@@ -43,6 +43,7 @@ static int docattr_filtering(docattr_cond_t *cond, char *attrquery)
 		warn("cannot check delete mark");
 	}
 
+	debug("query = [%s]", attrquery);
 	if (attrquery[0] != '\0') {
 
 		//XXX: ... --;; i'm in hurry...

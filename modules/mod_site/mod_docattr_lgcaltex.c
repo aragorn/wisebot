@@ -236,51 +236,55 @@ static void print_docattr(lgcaltex_attr_t* v, int docid) {
 #endif
 
 //vrm read
+#define AC_NO  (0)
+#define AC_YES (1)
 static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
 	int i;
 	lgcaltex_vrm_t lgcaltex_vrm;
-	static char ac_string[2][4] = {"NO", "YES"};
+	static char ac_string[2][7] = {"AC_NO", "AC_YES"};
 
 	lgcaltex_attr_t *docattr = (lgcaltex_attr_t*)dest;
 	lgcaltex_cond_t *doccond = (lgcaltex_cond_t*)cond;
 
 	/* always check delete mark */
 	if (docattr->is_deleted) {
-		return 0;
+		return AC_NO;
 	}
 
 	if (doccond->Date1_check == 1) {
 		if (doccond->Date1_start > docattr->Date1 ||
 				doccond->Date1_finish < docattr->Date1)
-			return 0;
+			return AC_NO;
 	}
 
 	if (doccond->Date2_check == 1) {
 		if (doccond->Date2_start > docattr->Date2 ||
 				doccond->Date2_finish < docattr->Date2)
-			return 0;
+			return AC_NO;
 	}
 
 	if (doccond->SystemName_check > 0 && doccond->SystemName[0] != 255) {
 		for (i=0; i<doccond->SystemName_check; i++) {
 			if (doccond->SystemName[i] == docattr->SystemName) break;
 		}
-		if (i == doccond->SystemName_check) return 0;
+		if (i == doccond->SystemName_check) return AC_NO;
 	}
 	
 	if (doccond->Part_check > 0 && doccond->Part[0] != 255) {
 		for (i=0; i<doccond->Part_check; i++) {
 			if (doccond->Part[i] == docattr->Part) break;
 		}
-		if (i == doccond->Part_check) return 0;
+		if (i == doccond->Part_check) return AC_NO;
 	}
 	
 	if (doccond->FileExt_check == 1 && doccond->FileExt != docattr->FileExt) {
-		return 0;
+		return AC_NO;
 	}
 	
-	if ( doccond->Super_User == 255 )
-		return 1;
+	if ( doccond->Super_User == 255 ) {
+		debug("user is a Super_User, return AC_YES");
+		return AC_YES;
+	}
 		
 	/*보안 알고리즘 추가 */
 	if (docattr->SC == 1)
@@ -288,12 +292,13 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
         int k,j, accessable=0;
 
 		if (docattr->TFTYN == 0 && docattr->PerYN == 0 && docattr->DutyYN == 0 && docattr->StrYN == 0) {
-            warn("docid[%d] sc field on, but all access control fields off", docid);
-            return 1;
+            warn("docid[%d] sc field on, but all access control fields off, return AC_YES", docid);
+            return AC_YES;
         }
 
         if(ac_read(docid, &lgcaltex_vrm) != SUCCESS) {
-    		return 0;
+		warn("cannot read ac_read(%d, &lgcaltex_vrm), return AC_NO: %s", docid, strerror(errno));
+    		return AC_NO;
     	}
 
     	for(i=0; i < lgcaltex_vrm.count; i++) {
@@ -314,41 +319,39 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
                 warn("unknown type [%d]", lgcaltex_vrm.policy[i].type);
                 break;
     		}
-    	}	
+    	}
 
 		/* TFT 보안 -  사용자 TFT중 하나라도 문서 TFT에 존재시 검색대상이 됨 - 없으면 검색대상에서 제외 */
 		if (docattr->TFTYN == 1) {
 			
 			if ( doccond->TFT_cnt == 0 )
-				return 0;
+				return AC_NO;
 				
 			for(k=0; k<doccond->TFT_cnt; k++)
 			{
                 for(j=0; j < lgcaltex_vrm.count; j++) {
                     if(lgcaltex_vrm.policy[j].type == TYPE_TFT) {
                         if(strncmp(doccond->TFT[k], lgcaltex_vrm.policy[j].policy.tft, TFT_CODE_LEN) == 0) {
-							debug("[%s] tft match, will show: %s",
-                                  ac_string[1], lgcaltex_vrm.policy[j].policy.tft);
-                            return 1;
+							debug("user's tft[%s] is matched in doc's tft[%s], return AC_YES",
+                                  doccond->TFT[k], lgcaltex_vrm.policy[j].policy.tft);
+                            return AC_YES;
 						}
                     }
                 }
 			}
-
-			//return 0; <- 사원보안 체크로 넘어가도록
 		}
 
 		/* 사번 보안 -  사용자 사번이 문서 사번에 존재시 검색대상이 됨 - 없으면 다음 보안(직급, 조직) 체크 */
 		if (docattr->PerYN == 1) {
 			if ( doccond->Person == NULL )
-				return 0;
+				return AC_NO;
 
             for(j=0; j < lgcaltex_vrm.count; j++) {
                 if(lgcaltex_vrm.policy[j].type == TYPE_PERSON) {
-                    if(strncmp(doccond->Person, lgcaltex_vrm.policy[j].policy.person, TFT_CODE_LEN) == 0) {
-						debug("[%s] person match, will show: %s",
-							  ac_string[1], lgcaltex_vrm.policy[j].policy.person);
-                        return 1;
+                    if(strncmp(doccond->Person, lgcaltex_vrm.policy[j].policy.person, PERSON_CODE_LEN) == 0) {
+						debug("users's person[%s] is matched in doc's person[%s], return AC_YES",
+							  doccond->Person, lgcaltex_vrm.policy[j].policy.person);
+                        return AC_YES;
 					}
                 }
             }
@@ -357,12 +360,12 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
 		/* 직급보안 - 자기보다 작으면 않 보여줌*/
 		if (docattr->DutyYN == 1) {
 			if ( doccond->Duty_cnt == 0)
-				return 0;
+				return AC_NO;
 		    
             for(j=0; j < lgcaltex_vrm.count; j++) {
                 if(lgcaltex_vrm.policy[j].type == TYPE_DUTY) {
                     if(doccond->Duty > lgcaltex_vrm.policy[j].policy.duty) {
-                        return 0;
+                        return AC_NO;
 					}
                 }
             }
@@ -374,8 +377,10 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
 		if (docattr->StrYN == 1) {
             long long q_structure=0, d_structure=0;
 			
-			if ( doccond->Structure_cnt == 0 )
-				return 0;
+			if ( doccond->Structure_cnt == 0 ) {
+				debug("no structure info in doccond, return AC_NO");
+				return AC_NO;
+			}
 		    
             for(k=0; k<doccond->Structure_cnt; k++) {
                 q_structure = return_constants_value(doccond->Structure[k], strlen(doccond->Structure[k]));		
@@ -393,25 +398,26 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
                         } 
     
                         if(d_structure == q_structure) {
-						    debug("[%s] structure match, will show : d[%lld], q[%lld]",
-								  ac_string[1], d_structure, q_structure);
-                            return 1; 
+						    debug("d_structure[%lld] == q_structure[%lld]", d_structure, q_structure);
+						    debug("user's structure[%s] is matched in doc's structure[%s], return AC_YES",
+									doccond->Structure[k], lgcaltex_vrm.policy[j].policy.structure);
+                            return AC_YES; 
 						}
                     }
                 }
             }
 
 		} else { 
-			debug("[%s] no structure policy.", ac_string[accessable]);
+			debug("no structure policy, return %s", ac_string[accessable]);
 			return accessable; //직급보안은 통과하고 조직보안이 존재하지 않을때.
 		}
 
-        debug("[%s] structure policy is not matched.", ac_string[0]);
-    	return 0;
+        debug("structure policy is not matched, return %s", ac_string[0]);
+    	return AC_NO;
     } 
 
-	debug("no security policy. accessable.");
-    return 1;
+	debug("no security policy, return AC_YES");
+    return AC_YES;
 }
 
 /*****************************************************************************/
@@ -1238,7 +1244,6 @@ static int remake_ac(int start_docid, int count) {
 }
 
 static int ac_remake_main(slot_t *slot) {
-    registry_t *reg;
     int last_registered_docid;
     pid_t pid;
     int i, status, ret;
