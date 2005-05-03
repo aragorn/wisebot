@@ -26,7 +26,7 @@
 
 #define VRFI_SHMID_TABLE_ID 'V'
 #define VRFI_CACHED_MEM_ID 'v' /* XXX: depends on 'V' < 'v' */
-#define MAX_VRF_SHM_NUM 50
+#define MAX_VRF_SHM_NUM 80
 #define NUM_OF_EACH_BUNDLED_KEYS 500000
 //#define NUM_OF_EACH_BUNDLED_KEYS 50000
 
