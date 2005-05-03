@@ -977,7 +977,7 @@ int com_qpp (char *arg)
 	}
 
 	numofnodes = sb_run_preprocess(mWordDb, arg,1024, qnodes, 64);
-	sb_run_print_querynode(stderr,qnodes,numofnodes);
+	sb_run_print_querynode(qnodes,numofnodes);
 	return SUCCESS;
 }
 
