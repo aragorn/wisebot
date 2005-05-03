@@ -18,8 +18,8 @@
 #define SFS_END         SEEK_END
     
 #define MAX_BLOCK_SIZE (4096)
-#define SUPER_BLOCK_NUM 0   //must be start zero
-#define SUPER_BLOCK_COUNT 2
+#define SUPER_BLOCK_NUM   (0)   // must be zero
+#define SUPER_BLOCK_COUNT (2)
 
 typedef struct _super_block_t {
     char magic[4];

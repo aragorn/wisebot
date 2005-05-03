@@ -5,6 +5,7 @@
 
 #include "sfs_types.h"
 
+void dir_init_superblock(super_block_t *sb);
 int dir_get_entry(sfs_t* sfs, dir_hash_entry_t* entry);
 int dir_add_entry(sfs_t* sfs, dir_hash_entry_t* entry);
 int dir_update_entry(sfs_t* sfs, dir_hash_entry_t* entry);

@@ -89,8 +89,6 @@ void __view_sfs_info(sfs_t* sfs)
 int sfs_format(sfs_t* sfs, int option, int size, int block_size)
 {
 	super_block_t* super_block;
-	int dir_size = 0;
-	int dir_block_count =0;
 	int block_count = 0;
 
 	debug("sfs_format, seq[%d], option[%d], size[%d], block_size[%d]", sfs->seq, option, size, block_size);
@@ -98,6 +96,7 @@ int sfs_format(sfs_t* sfs, int option, int size, int block_size)
 	super_block = sfs->super_block;
 	block_count = size / block_size;
 
+	/* input error check */
 	if ( block_size * SUPER_BLOCK_COUNT < sizeof(super_block_t) ) {
         error("must be block_size[%d] * SUPER_BLOCK_COUNT[%d] > sizeof(super_block_t)[%d]", 
 			   block_size, SUPER_BLOCK_COUNT, (int)sizeof(super_block_t));
@@ -132,40 +131,11 @@ int sfs_format(sfs_t* sfs, int option, int size, int block_size)
 	super_block->block_count = block_count;
 	super_block->block_size = block_size;
 
-	//fat 영역 계산
-	if ( option & O_FAT ) {
-		super_block->start_fat_block = SUPER_BLOCK_COUNT;
-		super_block->end_fat_block =
-			(block_count * sizeof(fat_entry_t) % block_size == 0) ?
-				super_block->start_fat_block + (block_count * sizeof(fat_entry_t) / block_size) - 1:
-				super_block->start_fat_block + (block_count * sizeof(fat_entry_t) / block_size);
-
-		super_block->free_block_num = super_block->end_fat_block + 1;
-	}
-	else {
-		super_block->start_fat_block = -1;
-		super_block->end_fat_block = -1;
-		super_block->free_block_num = SUPER_BLOCK_COUNT;
-	}
+	/* fat 영역 계산 */
+	fat_init_superblock(super_block);
 
 	// directory 영역 계산
-	/* dir_size : dir_hash_entry_t가 저장될 최대 데이터 크기
-       = sizeof(dir_hash_entry_t)
-		x (
-		 	block_count   // segment의 전체 block 수. size / block_size
-            -
-			super_block->free_block_num  // free_block_num 이전에는 file을 저장하지 못한다
-		  )
-     */
-	dir_size = sizeof(dir_hash_entry_t) * (block_count - super_block->free_block_num);
-	dir_block_count = 
-		((dir_size % block_size) == 0) ? (dir_size / block_size) : (dir_size / block_size) + 1;
-
-	super_block->start_dir_block = block_count - dir_block_count;
-	super_block->end_dir_block = block_count - 1;
-
-	super_block->entry_count_in_block = block_size / sizeof(dir_hash_entry_t);
-	super_block->dir_block_count = dir_block_count;
+	dir_init_superblock(super_block);
 
 	// file 영역 계산
 	super_block->start_file_block = super_block->free_block_num;

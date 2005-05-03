@@ -1,6 +1,7 @@
 /* $Id$ */
 #include "sfs_types.h"
 #include "directory.h"
+#include "super_block.h" /* refered for superblock_view() */
 #include "mod_sfs.h"
 
 /********************************************************
@@ -11,13 +12,41 @@
 #define MAX_ENTRY_COUNT (MAX_BLOCK_SIZE/sizeof(dir_hash_entry_t))
 
 static int __get_block_idx(int file_id, int block_count);
-static int __hash_func(int id);
+static int __hash_func(int key);
 static int __compare(const void * arg1, const void *arg2);
 
 static int __compare(const void * arg1, const void *arg2)
 {
 	return (*(int*)arg1 >= *(int*)arg2) ? 1 : -1;
 }
+
+void dir_init_superblock(super_block_t *sb)
+{
+	int block_size      = sb->block_size;
+	int block_count     = sb->block_count;
+	int dir_size        = 0;
+	int dir_block_count = 0;
+
+	/* dir_size : dir_hash_entry_t가 저장될 최대 데이터 크기
+       = sizeof(dir_hash_entry_t)
+		x (
+		 	block_count   // segment의 전체 block 수. size / block_size
+            -
+			super_block->free_block_num  // free_block_num 이전에는 file을 저장하지 못한다
+		  )
+     */
+	dir_size = sizeof(dir_hash_entry_t) * (block_count - sb->free_block_num);
+	dir_block_count = 
+		((dir_size % block_size) == 0) ? (dir_size / block_size) : (dir_size / block_size) + 1;
+
+	sb->start_dir_block = block_count - dir_block_count;
+	sb->end_dir_block = block_count - 1;
+
+	sb->entry_count_in_block = block_size / sizeof(dir_hash_entry_t);
+	sb->dir_block_count = dir_block_count;
+}
+
+
 
 int dir_get_file_array(sfs_t* sfs, int* file_array)
 {
@@ -75,8 +104,11 @@ int dir_get_file_array(sfs_t* sfs, int* file_array)
  *   FILE 이면 entry_if_file 에 복사해 넣는다.
  */
 
-// hash collision이 발생하면 다음  block으로 간다. 마지막 0은 꼭 필요하다
+/* hash collision이 발생하면 다음  block으로 간다. 마지막 0은 꼭 필요하다. */
 static int next_block[] = { 7, 13, 17, 23, 41, 0 };
+//static int next_block[] = { 7*7, 13*13, 17*17, 23*23, 31*31, 43*43, 53*53, 0 };
+                           /* make it a series of square of selected prime numbers */
+/* prime numbers: http://www.utm.edu/research/primes/lists/small/1000.txt */
 
 // dir_find_entry() 에 넣을 argument
 typedef enum {
@@ -165,13 +197,30 @@ int dir_find_entry(sfs_t* sfs, int file_id, dir_op_t op,
 		if ( (super_block->start_dir_block + block_idx) > super_block->end_dir_block )
 			block_idx -= (super_block->end_dir_block - super_block->start_dir_block + 1);
 
-		crit("hash collision [%d] - %dth, directory size[%d], next_try[%d]",
-				file_id, retry, super_block->end_dir_block - super_block->start_dir_block, block_idx);
+		/* retry 횟수에 따라 log level을 바꾼다. */
+		if ( op == DIR_OP_ADD )
+		switch ( retry ) {
+		case 0:
+		case 1:
+		case 2:
+			debug("%dth hash collision file_id[%d], num of dir blocks[%d]",
+				retry, file_id, super_block->end_dir_block - super_block->start_dir_block);
+			break;
+		case 3:
+		case 4:
+			info("%dth hash collision file_id[%d], num of dir blocks[%d]",
+				retry, file_id, super_block->end_dir_block - super_block->start_dir_block);
+			break;
+		default:
+			crit("%dth hash collision file_id[%d], num of dir blocks[%d]",
+				retry, file_id, super_block->end_dir_block - super_block->start_dir_block);
+		}
 	} while( 1 );
 
 	if ( op == DIR_OP_ADD ) {
 		warn("hash full -> block is full, super_block->start_dir_block[%d] + block_idx[%d], "
 			  "file_id[%d]", super_block->start_dir_block, block_idx, file_id);
+		superblock_view(super_block);
 		return SEGMENT_FULL;
 	}
 	else return FILE_NOT_EXISTS;
@@ -224,7 +273,27 @@ static int __get_block_idx(int file_id, int block_count)
 	return __hash_func(file_id) % block_count;
 }
 
-static int __hash_func(int id)
+
+/* wiki:SegmentFileSystem/HashCollision 참조 */
+#if 0
+/* see http://www.concentric.net/~Ttwang/tech/inthash.htm for more information
+ * about this hash function. */
+static int __hash_func(int key)
 {
-	return id;
+  key += (key << 12);
+  key ^= (key >> 22);
+  key += (key << 4);
+  key ^= (key >> 9);
+  key += (key << 10);
+  key ^= (key >> 2);
+  key += (key << 7);
+  key ^= (key >> 12);
+
+  return key;
 }
+#else
+static int __hash_func(int key)
+{
+  return key;
+}
+#endif

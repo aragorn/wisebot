@@ -3,11 +3,31 @@
 #include "fat.h"
 #include "memory.h" /* see include/memory.h */
 
-static int __move_free_block(sfs_t* super_block, int n);
+static int __move_free_block(sfs_t* sfs, int n);
 static int __get_fat_entry_offset_in_sfs_block(int num, int block_size);
 static int __read_fat_entry(sfs_t* sfs, inode_t* inode, int num, fat_entry_t* entry);
 static int __write_fat_entry(sfs_t* sfs, int num, fat_entry_t* entry);
 static int __get_sfs_block(int fat_entry_num, int block_size);
+
+
+void fat_init_superblock(super_block_t *sb)
+{
+	int fat_size = sb->block_count * sizeof(fat_entry_t);
+
+	if ( sb->option & O_FAT ) {
+		sb->start_fat_block = SUPER_BLOCK_COUNT;
+		sb->end_fat_block   = SUPER_BLOCK_COUNT + fat_size / sb->block_size;
+		if ( fat_size % sb->block_size == 0 ) sb->end_fat_block -= 1;
+
+		sb->free_block_num = sb->end_fat_block + 1;
+	}
+	else {
+		sb->start_fat_block = -1;
+		sb->end_fat_block   = -1;
+		sb->free_block_num  = SUPER_BLOCK_COUNT;
+	}
+}
+
 
 /*
  * block_count 만큼의 연속된 block을 할당한다.
