@@ -314,6 +314,11 @@ int ifs_close(index_db_t* indexdb)
 
 	if ( ifs_set == NULL || !ifs_set[indexdb->set].set )
 		return DECLINE;
+
+	if ( indexdb == NULL ) {
+		warn("indexdb is NULL. nothing to close");
+		return SUCCESS;
+	}
 	ifs = (ifs_t*) indexdb->db;
 
     for(i = 0; i < MAX_SEGMENT_COUNT*MAX_SECTOR_COUNT; i++) {
