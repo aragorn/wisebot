@@ -26,6 +26,7 @@ int sfs_close(sfs_t* sfs);
 
 int sfs_append(sfs_t* sfs, int file_id, int size, void* buf);
 int sfs_read(sfs_t* sfs, int file_id, int offset, int size, void* buf);
+int sfs_directory_copy(sfs_t* src, sfs_t* dest);
 
 int sfs_exist_file(sfs_t* sfs, int file_id);
 

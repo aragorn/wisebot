@@ -313,13 +313,14 @@ int ifs_close(index_db_t* indexdb)
 	ifs_t* ifs;
 	int i = 0;
 
-	if ( ifs_set == NULL || !ifs_set[indexdb->set].set )
-		return DECLINE;
-
 	if ( indexdb == NULL ) {
 		warn("indexdb is NULL. nothing to close");
 		return SUCCESS;
 	}
+
+	if ( ifs_set == NULL || !ifs_set[indexdb->set].set )
+		return DECLINE;
+
 	ifs = (ifs_t*) indexdb->db;
 
     for(i = 0; i < MAX_SEGMENT_COUNT*MAX_SECTOR_COUNT; i++) {
@@ -681,10 +682,18 @@ static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg)
 		goto fail;
 	}
 
-	/* 새로 만드는 segment에는 FAT가 필요없다. */
-	if(__sfs_activate(ifs, to_seg, O_FILE, DO_FORMAT, O_HASH_ROOT_DIR) != SUCCESS) {
+	/* 새로 만드는 segment에는 FAT가 필요없다. 
+	 * 하지만 sfs_copy() 에서 directory 를 잘 copy 하려면 sfs 내부구조가 같아야 하기 때문에
+	 * 필요없는 FAT을 만들어 주는 것이 좋다.
+	 */
+	if(__sfs_activate(ifs, to_seg, O_FILE, DO_FORMAT, O_FAT|O_HASH_ROOT_DIR) != SUCCESS) {
 		error("cannot activate sfs, physical_segment[%d], option[%d], type[O_FILE], do_format[%d]",
 			to_seg, option, DO_FORMAT);
+		goto fail;
+	}
+
+	if(sfs_directory_copy(ifs->local.sfs[from_seg], ifs->local.sfs[to_seg]) != SUCCESS) {
+		error("cannot copy directory structure, from_seg[%d], to_seg[%d]", from_seg, to_seg);
 		goto fail;
 	}
 

@@ -334,6 +334,17 @@ int sfs_read(sfs_t* sfs, int file_id, int offset, int size, void* buf)
 	return read_byte;
 }
 
+// directory 구조만 복사한다. file size 0 인 것들이 생성된다.
+int sfs_directory_copy(sfs_t* src, sfs_t* dest)
+{
+	if ( dir_copy(src, dest) != SUCCESS ) {
+		error("dir_copy() failed: %s", strerror(errno));
+		return FAIL;
+	}
+
+	return SUCCESS;
+}
+
 static int __open_file(sfs_t* sfs, int file_id, inode_t* inode)
 {
 	int block_size = sfs->super_block->block_size;
@@ -939,7 +950,7 @@ int sfs_block_write(sfs_t* sfs, int offset, int size, void* buf)
 
 int sfs_get_file_array(sfs_t* sfs, int* file_array)
 {
-	return dir_get_file_array(sfs, file_array);
+	return dir_get_file_array(sfs, file_array, 1);
 }
 
 #ifndef WIN32

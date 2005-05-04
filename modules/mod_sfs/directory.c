@@ -46,9 +46,8 @@ void dir_init_superblock(super_block_t *sb)
 	sb->dir_block_count = dir_block_count;
 }
 
-
-
-int dir_get_file_array(sfs_t* sfs, int* file_array)
+// b_sort 가 0이면 결과를 sorting하지 않는다.
+int dir_get_file_array(sfs_t* sfs, int* file_array, int b_sort)
 {
 	int i = 0;
 	int block_idx = 0;
@@ -83,7 +82,67 @@ int dir_get_file_array(sfs_t* sfs, int* file_array)
 		}
 	}
 
-	qsort((void*)file_array, file_count, sizeof(int), __compare);
+	if ( b_sort )
+		qsort((void*)file_array, file_count, sizeof(int), __compare);
+
+	return SUCCESS;
+}
+
+#define check_value(a,b,c) \
+	if ( (a) != (b) ) { \
+		error("different %s: src[%d], dest[%d]", c, a, b); \
+		return FAIL; \
+	}
+
+int dir_copy(sfs_t* src, sfs_t* dest)
+{
+	int i;
+	int block_idx = 0;
+	int block_size = src->super_block->block_size;
+	int entry_count_in_block = src->super_block->entry_count_in_block;
+
+	dir_hash_entry_t entry_in_block[MAX_ENTRY_COUNT];
+
+	// directory 의 start block, block count 등이 다르면
+	// hash function 결과가 달라지므로 조심해야 한다.
+	check_value( src->super_block->block_size,
+			dest->super_block->block_size, "block size" );
+	check_value( src->super_block->start_dir_block,
+			dest->super_block->start_dir_block, "directory start block" );
+	check_value( src->super_block->dir_block_count,
+			dest->super_block->dir_block_count, "directory block count" );
+	check_value( src->super_block->entry_count_in_block,
+			dest->super_block->entry_count_in_block, "entry_count_in_block" );
+
+	for(block_idx = 0; block_idx < src->super_block->dir_block_count; block_idx++) {
+		int offset =  (src->super_block->start_dir_block + block_idx)*block_size;
+
+		if(sfs_block_read(src, offset, block_size, (void*)entry_in_block) == FAIL) {
+			error("can't read entry_in_block, super_block->start_dir_block[%d] + block_idx[%d]",
+				  src->super_block->start_dir_block, block_idx);
+			return FAIL;
+		}
+
+		for ( i = 0; i < entry_count_in_block; i++ ) {
+			if ( entry_in_block[i].id == 0 ) break;
+
+			entry_in_block[i].size = 0;
+			entry_in_block[i].first_block_num = 0;
+			entry_in_block[i].last_block_num = 0;
+		}
+
+		if ( i == 0 ) continue;
+
+		if(sfs_block_write(dest, offset, block_size, (void*)entry_in_block) == FAIL) {
+			error("cant't write entry_in_block, super_block->start_dir_block[%d] + block_idx[%d]",
+					dest->super_block->start_dir_block, block_idx);
+			return FAIL;
+		}
+	}
+
+	dest->super_block->file_count = src->super_block->file_count;
+	dest->super_block->min_file_id = src->super_block->min_file_id;
+	dest->super_block->max_file_id = src->super_block->max_file_id;
 
 	return SUCCESS;
 }

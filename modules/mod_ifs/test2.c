@@ -8,7 +8,7 @@
 //static int segment_size = 128*1024*1024;
 //static int block_size = 128;
 
-static char path[]="../../dat/test/ifs";
+static char path[]="dat/test/ifs";
 
 /******************************************************************************/
 char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
@@ -20,8 +20,8 @@ module *static_modules;
 //#define REPEAT      (26790)
 //#define FRAG_COUNT  (5)
 
-#define BUFFER_SIZE (546*4)
-#define REPEAT      (6790)
+#define BUFFER_SIZE (846*4)
+#define REPEAT      (16790)
 #define FRAG_COUNT  (5)
 
 int main(int argc, char* argv[], char* envp[])
