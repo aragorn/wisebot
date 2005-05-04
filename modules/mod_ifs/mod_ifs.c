@@ -304,6 +304,7 @@ error:
 	if ( ifs ) sb_free( ifs );
 	if ( index_db ) sb_free( index_db );
 
+	*indexdb = NULL;
 	return FAIL;
 }
 
