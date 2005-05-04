@@ -412,8 +412,8 @@ status() {
 
 cron() {
 	stop_cmd
-	$SOFTBOT_ROOT/scripts/logrotate.pl $SOFTBOT_ROOT/$SOFTBOTD_LOG_FILE
-	$SOFTBOT_ROOT/scripts/logrotate.pl $SOFTBOT_ROOT/$RMAS_LOG_FILE
+	$SOFTBOT_ROOT/scripts/logrotate.pl -s 100M $SOFTBOT_ROOT/$SOFTBOTD_LOG_FILE
+	$SOFTBOT_ROOT/scripts/logrotate.pl -s 100M $SOFTBOT_ROOT/$RMAS_LOG_FILE
 	start
 }
 
