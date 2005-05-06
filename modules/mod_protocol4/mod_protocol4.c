@@ -1636,7 +1636,7 @@ int sb4s_delete_oid(int sockfd)
 				docattr_mask_t docmask;
 
 				DOCMASK_SET_ZERO(&docmask);
-				sb_run_docattr_set_docmask_function(&docmask, NULL, NULL);
+				sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 				sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
 
 				continue;
