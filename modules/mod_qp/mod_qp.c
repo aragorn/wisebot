@@ -529,7 +529,7 @@ static index_list_t *read_index_list(index_list_t *list)
 	uint32_t wordid = list->wordid;
 	uint32_t field = list->field;
 
-	uint32_t ndochits=0;
+	int ndochits=0;
 	char word[MAX_WORD_LEN];
 	int i=0, idx=0, cnt=0, nWordHit=0, tot_index_doccnt=0, j=0;
 	enum index_list_type list_type = NORMAL;
