@@ -5,7 +5,7 @@ distdir=softbotnext
 subdirs="bin dat dat/koma dat/cdm dat/dic dat/did dat/indexer dat/lexicon dat/vrf dat/forward_index etc include lib lib/perl libexec logs scripts"
 
 ## if dist is not defined, all the files and directories of 'subdirs' are insert to package
-dist="softbot bin/softbotd bin/softbotcli dat/clean*.sh dat/koma/* dat/dic/* etc/* include/*.h lib/*.so lib/*.so.* lib/*.a libexec/*.so scripts/* lib/perl/*"
+dist="softbot bin/softbotd bin/softbotcli bin/ifs_defrag dat/clean*.sh dat/koma/* dat/dic/* etc/* include/*.h lib/*.so lib/*.so.* lib/*.a libexec/*.so scripts/* lib/perl/*"
 
 ## if you want to remove some file or directory from whole directory of package
 globalnodist="Makefile.in Makefile.am Makefile CVS"
