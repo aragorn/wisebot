@@ -559,6 +559,10 @@ int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuff
 		error("2. cannot parse document[%s]", oid);
 	    goto return_fail;
 	}
+	else if (p == (parser_t*)1) {
+		warn("sb_run_xmlparser_parselen() returned DECLINE(1)");
+		goto return_fail;
+	}
 	DOCATTR_SET_ZERO(&docattr);
 	for (i=0; i<MAX_FIELD_NUM && docattrFields[i]; i++) {
 		strcpy(path, "/");
@@ -571,6 +575,10 @@ int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuff
 			warn("cannot get field[/%s/%s] of ducument[%s] (path:%s)", 
 					fieldRootName, 
 					docattrFields[i], oid, path);
+			continue;
+		}
+		else if ( f == (field_t*)1 ) {
+			warn("sb_run_xmlparser_retrieve_field() returned DECLINE(1)");
 			continue;
 		}
 
