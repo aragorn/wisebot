@@ -5,17 +5,6 @@
 
 #define MAX_SYS5_IPC (200)
 
-// solaris 에서 PRIuPTR 이 없는 경우가 있었다.
-#ifndef PRIuPTR
-
-# if sizeof(void*) == 64
-#  define PRIuPTR "lu"
-# else
-#  define PRIuPTR "u"
-# endif
-
-#endif // ifndef PRIuPTR
-
 typedef struct {
 	int type;
 	int id;
@@ -445,7 +434,7 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 	char path[STRING_SIZE];
 	int fd, ret;
 	off_t off;
-	uintptr_t offset_correction;
+	int offset_correction;
 
 	if ( ipc->pathname[0] != '/' ) {
 		snprintf(path,STRING_SIZE,"%s/%s",gSoftBotRoot,ipc->pathname);
@@ -495,9 +484,9 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 		info( "use existing file: %s", ipc->pathname );
 	}
 
-	offset_correction = offset % getpagesize();
+	offset_correction = (int) (offset % getpagesize());
 	if ( offset_correction != 0 ) {
-		info( "offset[0x%lx] is not multiple of PAGE_SIZE[%d], but OK - correction[%" PRIuPTR "]",
+		info( "offset[0x%lx] is not multiple of PAGE_SIZE[%d], but OK - correction[%d]",
 				offset, getpagesize(), offset_correction);
 	}
 
@@ -521,11 +510,11 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 int _sync_mmap(void* start, int size, const char* file, const char* caller)
 {
 	int ret;
-	uintptr_t offset_correction;
+	int offset_correction;
    
-	offset_correction = (uintptr_t)start % getpagesize();
+	offset_correction = (int)((uintptr_t)start % getpagesize());
 	if ( offset_correction != 0 ) {
-		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%" PRIuPTR "]",
+		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%d]",
 				start, getpagesize(), offset_correction);
 	}
 
@@ -540,11 +529,11 @@ int _sync_mmap(void* start, int size, const char* file, const char* caller)
 int _free_mmap(void* start, int size, const char* file, const char* caller)
 {
 	int ret;
-	uintptr_t offset_correction;
+	int offset_correction;
    
-	offset_correction = (uintptr_t)start % getpagesize();
+	offset_correction = (int)((uintptr_t)start % getpagesize());
 	if ( offset_correction != 0 ) {
-		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%" PRIuPTR "]",
+		crit( "offset[0x%p] is not multiple of PAGE_SIZE[%d] - correction[%d]",
 				start, getpagesize(), offset_correction);
 	}
 
