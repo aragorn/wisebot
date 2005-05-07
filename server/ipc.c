@@ -5,6 +5,17 @@
 
 #define MAX_SYS5_IPC (200)
 
+// solaris 에서 PRIuPTR 이 없는 경우가 있었다.
+#ifndef PRIuPTR
+
+# if sizeof(void*) == 64
+#  define PRIuPTR "lu"
+# else
+#  define PRIuPTR "u"
+# endif
+
+#endif // ifndef PRIuPTR
+
 typedef struct {
 	int type;
 	int id;
