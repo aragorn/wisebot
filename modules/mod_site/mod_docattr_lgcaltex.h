@@ -52,9 +52,11 @@ typedef struct {
 } __attribute__((packed)) lgcaltex_attr_t;
 
 
-/* must smaller than STRING_SIZE(256) byte */
+/* must be smaller than STRING_SIZE(256) byte */
 #define MAX_SYSTEM_NAME_COND (20)
 #define MAX_PART_COND        (20)
+#define MAX_STRUCTURE_COND   (5)
+#define MAX_TFT_COND         (10)
 typedef struct {
 	uint8_t delete_check;
 
@@ -67,20 +69,23 @@ typedef struct {
 	uint8_t FileExt_check;
 	uint8_t FileExt;
 	
+	uint8_t AppFlag_check;
+	uint8_t AppFlag;
+
 	uint8_t Duty_check;
 	int	Duty_cnt;
 	uint8_t Duty;
 	
 	uint8_t Structure_check;
 	int	Structure_cnt;
-	char 	**Structure;
-	
-	uint8_t Person_check;
-	char Person[SHORT_STRING_SIZE];
+	char 	*Structure[MAX_STRUCTURE_COND];
 	
 	uint8_t TFT_check;
 	int	TFT_cnt;
-	char 	**TFT;
+	char 	*TFT[MAX_TFT_COND];
+
+	uint8_t Person_check;
+	char Person[SHORT_STRING_SIZE];
 	
 	uint8_t Date1_check;
 	uint32_t Date1_start;
@@ -95,7 +100,7 @@ typedef struct {
 } lgcaltex_cond_t;   /* 검색시 조건 입력 */
 
 
-/* must smaller than STRING_SIZE(256) byte */
+/* must be smaller than STRING_SIZE(256) byte */
 typedef struct {
 	uint8_t delete_mark;
 	uint8_t undelete_mark;

@@ -321,12 +321,9 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
     		}
     	}
 
-		/* TFT 보안 -  사용자 TFT중 하나라도 문서 TFT에 존재시 검색대상이 됨 - 없으면 검색대상에서 제외 */
-		if (docattr->TFTYN == 1) {
+		/* TFT 보안 : 사용자 TFT중 하나라도 문서 TFT에 존재시 검색대상이 됨. 없으면 다음 조건 비교. */
+		if (docattr->TFTYN == 1 && doccond->TFT_cnt > 0) {
 			
-			if ( doccond->TFT_cnt == 0 )
-				return AC_NO;
-				
 			for(k=0; k<doccond->TFT_cnt; k++)
 			{
                 for(j=0; j < lgcaltex_vrm.count; j++) {
@@ -341,11 +338,8 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
 			}
 		}
 
-		/* 사번 보안 -  사용자 사번이 문서 사번에 존재시 검색대상이 됨 - 없으면 다음 보안(직급, 조직) 체크 */
-		if (docattr->PerYN == 1) {
-			if ( doccond->Person == NULL )
-				return AC_NO;
-
+		/* 사번 보안 : 사용자 사번이 문서 사번에 존재시 검색대상이 됨. 없으면 다음 조건 비교. */
+		if (docattr->PerYN == 1 && doccond->Person != NULL) {
             for(j=0; j < lgcaltex_vrm.count; j++) {
                 if(lgcaltex_vrm.policy[j].type == TYPE_PERSON) {
                     if(strncmp(doccond->Person, lgcaltex_vrm.policy[j].policy.person, PERSON_CODE_LEN) == 0) {
@@ -357,7 +351,7 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
             }
 		}
 
-		/* 직급보안 - 자기보다 작으면 않 보여줌*/
+		/* 직급보안 - 자기보다 작으면 안 보여줌 */
 		if (docattr->DutyYN == 1) {
 			if ( doccond->Duty_cnt == 0)
 				return AC_NO;
@@ -711,7 +705,6 @@ static int set_doccond_function(void *dest, char *key, char *value)
 	lgcaltex_cond_t *doccond = (lgcaltex_cond_t *)dest;
 	/* length(value) should be shorter than STRING_SIZE(=256) */
 	char my_value[STRING_SIZE];
-	int  nRet=0, cnt=0;
 
 	if (strcasecmp(key, "Delete") == 0) {
 		doccond->delete_check = 1;
@@ -719,7 +712,6 @@ static int set_doccond_function(void *dest, char *key, char *value)
 	}
 
 	INFO("key:%s, value:%s", key, value);
-
 	strncpy(my_value, value, STRING_SIZE); my_value[STRING_SIZE-1] = '\0';
 
 	if (strcasecmp(key, "SystemName") == 0) {
@@ -751,6 +743,10 @@ static int set_doccond_function(void *dest, char *key, char *value)
 		}
 		doccond->Part_check = count;
 	}
+	else if (strcasecmp(key, "AppFlag") == 0) {
+		doccond->AppFlag = (uint8_t)atoi(value);
+		doccond->AppFlag_check = 1;
+	}
 	else if (strcasecmp(key, "FileName") == 0) {
 		char *str;
 		str = strrchr(value,'.');
@@ -780,20 +776,43 @@ static int set_doccond_function(void *dest, char *key, char *value)
 		doccond->Duty_cnt=1;
 	}
 	else if (strcmp(key, "Structure") == 0) {
-		
-		doccond->Structure = (char**)sb_calloc(cnt, sizeof(char*));
-		if ( doccond->Structure == NULL )
-		{
-			error("fail to calloc: %s", strerror(errno));
-			return -1;
-		}	
+		int  count, len;	
+		char *token;
 
-		nRet = get_item(value, doccond->Structure, ' ');	
-		
+		token = strtok(my_value, ",");
+		for ( count = 0; count < MAX_STRUCTURE_COND; count++ )
+		{
+			if (token == NULL) break;
+			len = strlen(token);
+
+			doccond->Structure[count] = (char*)sb_calloc(len+1, sizeof(char));
+			strncpy(doccond->Structure[count], token, len);
+			doccond->Structure[count][len] = '\0';
+
+			token = strtok(NULL, ",");
+		}
 		doccond->Structure_check = 1;
-		doccond->Structure_cnt = cnt;
+		doccond->Structure_cnt = count;
 	}
-	
+	else if (strcmp(key, "TFT") == 0) {
+		int  count, len;	
+		char *token;
+
+		token = strtok(my_value, ",");
+		for ( count = 0; count < MAX_TFT_COND; count++ )
+		{
+			if (token == NULL) break;
+			len = strlen(token);
+
+			doccond->TFT[count] = (char*)sb_calloc(len+1, sizeof(char));
+			strncpy(doccond->TFT[count], token, len);
+			doccond->TFT[count][len] = '\0';
+
+			token = strtok(NULL, ",");
+		}
+		doccond->TFT_check = 1;
+		doccond->TFT_cnt = count;
+	}
 	else if (strcmp(key, "SUPER") == 0) {
 		doccond->Super_User = (uint8_t)return_constants_value(value, strlen(value));;
 	}
@@ -801,19 +820,6 @@ static int set_doccond_function(void *dest, char *key, char *value)
 		strncpy(doccond->Person, value, SHORT_STRING_SIZE);
 		doccond->Person[SHORT_STRING_SIZE-1] = '\0';
 		doccond->Person_check = 1;
-	}
-	else if (strcmp(key, "TFT") == 0) {
-		doccond->TFT = (char**)sb_calloc(cnt, sizeof(char*));
-		if ( doccond->TFT == NULL )
-		{
-			error("fail calling calloc: %s", strerror(errno));
-			return -1;
-		}	
-
-		nRet = get_item(value, doccond->TFT, ' ');	
-		
-		doccond->TFT_check = 1;
-		doccond->TFT_cnt = cnt;
 	}
 	else if (strcmp(key, "Date1") == 0) {
 		int n = sscanf(value, "%u-%u", &(doccond->Date1_start), &(doccond->Date1_finish));
