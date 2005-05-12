@@ -65,6 +65,13 @@ static int docattr_filtering(docattr_cond_t *cond, char *attrquery)
 			}
 		}
 
+		get_str_item(buf, attrquery, "AppFlag:", '&', STRING_SIZE);
+		if (buf[0]) {
+			if (sb_run_docattr_set_doccond_function(cond, "AppFlag", buf) == -1) {
+				return -1;
+			}
+		}
+
 		get_str_item(buf, attrquery, "FileExt:", '&', STRING_SIZE);
 		if (buf[0]) {
 			if (sb_run_docattr_set_doccond_function(cond, "FileExt", buf) == -1) {

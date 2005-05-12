@@ -52,11 +52,11 @@ typedef struct {
 } __attribute__((packed)) lgcaltex_attr_t;
 
 
-/* must be smaller than STRING_SIZE(256) byte */
+/* must be smaller than STRING_SIZE(256) x 2 byte */
 #define MAX_SYSTEM_NAME_COND (20)
 #define MAX_PART_COND        (20)
 #define MAX_STRUCTURE_COND   (5)
-#define MAX_TFT_COND         (10)
+#define MAX_TFT_COND         (50)
 typedef struct {
 	uint8_t delete_check;
 

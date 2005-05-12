@@ -276,6 +276,12 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
 		}
 		if (i == doccond->Part_check) return AC_NO;
 	}
+
+	if (doccond->AppFlag_check == 1 && doccond->AppFlag != docattr->AppFlag) {
+		debug("doccond->AppFlag[%d] != docattr->AppFlag[%d], return AC_NO",
+				doccond->AppFlag, docattr->AppFlag);
+		return AC_NO;
+	}
 	
 	if (doccond->FileExt_check == 1 && doccond->FileExt != docattr->FileExt) {
 		return AC_NO;
@@ -502,11 +508,11 @@ static int mask_function(void *dest, void *mask) {
 	if (docmask->set_SystemName)
 		docattr->SystemName = docmask->SystemName;
 
-	if (docmask->set_AppFlag)
-		docattr->AppFlag = docmask->AppFlag;
-
 	if (docmask->set_Part)
 		docattr->Part = docmask->Part;
+
+	if (docmask->set_AppFlag)
+		docattr->AppFlag = docmask->AppFlag;
 
 	if (docmask->set_FileExt)
 		docattr->FileExt = docmask->FileExt;
@@ -555,12 +561,12 @@ static int set_docattr_function(void *dest, char *key, char *value)
 		docattr->SystemName = 
 			(uint8_t)return_constants_value(value, strlen(value));
 	}
-	else if (strcasecmp(key, "AppFlag") == 0) {
-		docattr->AppFlag = (uint8_t)atoi(value);
-	}
 	else if (strcasecmp(key, "Part") == 0) {
 		docattr->Part = 
 			(uint8_t)return_constants_value(value, strlen(value));
+	}
+	else if (strcasecmp(key, "AppFlag") == 0) {
+		docattr->AppFlag = (uint8_t)atoi(value);
 	}
 	else if (strcasecmp(key, "FileName") == 0) {
 		char *str;
@@ -656,11 +662,11 @@ static int get_docattr_function(void *dest, char *key, char *buf, int buflen)
 	else if (strcasecmp(key, "SystemName") == 0) {
 		snprintf(buf, buflen, "%u",docattr->SystemName);
 	}
-	else if (strcasecmp(key, "AppFlag") == 0) {
-		snprintf(buf, buflen, "%u",docattr->AppFlag);
-	}
 	else if (strcasecmp(key, "Part") == 0) {
 		snprintf(buf, buflen, "%u",docattr->Part);
+	}
+	else if (strcasecmp(key, "AppFlag") == 0) {
+		snprintf(buf, buflen, "%u",docattr->AppFlag);
 	}
 	else if (strcasecmp(key, "FileExt") == 0) {
 		snprintf(buf, buflen, "%u",docattr->FileExt);
@@ -852,22 +858,22 @@ static int set_docmask_function(void *dest, char *key, char *value)
 	if (strcasecmp(key, "Delete") == 0) {
 		docmask->delete_mark = 1;
 	}
-    	else if (strcasecmp(key, "Undelete") == 0) {
-        	docmask->undelete_mark = 1;
-    	}
-    	else if (strcasecmp(key, "SystemName") == 0) {
+    else if (strcasecmp(key, "Undelete") == 0) {
+       	docmask->undelete_mark = 1;
+    }
+    else if (strcasecmp(key, "SystemName") == 0) {
 		docmask->SystemName = 
 			(uint8_t)return_constants_value(value, strlen(value));
 		docmask->set_SystemName = 1;
-	}
-	else if (strcasecmp(key, "AppFlag") == 0) {
-		docmask->AppFlag = (uint8_t)atoi(value);
-		docmask->set_AppFlag = 1;
 	}
 	else if (strcasecmp(key, "Part") == 0) {
 		docmask->Part = 
 			(uint8_t)return_constants_value(value, strlen(value));
 		docmask->set_Part = 1;
+	}
+	else if (strcasecmp(key, "AppFlag") == 0) {
+		docmask->AppFlag = (uint8_t)atoi(value);
+		docmask->set_AppFlag = 1;
 	}
 	else if (strcasecmp(key, "FileName") == 0) {
 		char *str;
