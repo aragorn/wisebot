@@ -148,6 +148,7 @@ int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
 			strncpy(path,ipc->pathname,STRING_SIZE);
 			path[STRING_SIZE-1] = '\0';
 		}
+		info("get semaphore with path: %s", path);
 
         ipc->key = ftok(path, ipc->pid);
 		if (ipc->key == -1) {
