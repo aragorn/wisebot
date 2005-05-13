@@ -87,7 +87,8 @@ int _acquire_lock(int semid,int idx,const char *file,const char* caller)
 	/* process exit시에 kernel이 sem value를 adjusting할 수 있게 */
 	semopt.sem_flg = SEM_UNDO;
 	if (semop(semid,&semopt,1) == -1) {
-		error("semop failed while acquiring lock: %s", strerror(errno));
+		error("semop failed while acquiring lock(file=%s,caller=%s): %s",
+				file, caller, strerror(errno));
 		return FAIL;
 	}
 	return SUCCESS;
@@ -103,6 +104,7 @@ int _acquire_lock_nowait(int semid,int idx,const char* file, const char* caller)
 	/* process exit시에 kernel이 sem value를 adjusting할 수 있게 */
 	semopt.sem_flg = SEM_UNDO | IPC_NOWAIT;
 	if (semop(semid,&semopt,1) == -1) {
+		debug("semop failed while acquiring lock(file=%s,caller=%s): %s", file, caller, strerror(errno));
 		return FAIL;
 	}
 	return SUCCESS;
@@ -117,7 +119,8 @@ int _release_lock(int semid,int idx,const char* file, const char* caller)
 	semopt.sem_flg = SEM_UNDO;
 
 	if (semop(semid,&semopt,1) == -1) {
-		error("semop failed while releasing lock: %s",strerror(errno));
+		error("semop failed while releasing lock(file=%s,caller=%s): %s",
+				file, caller, strerror(errno));
 		return FAIL;
 	}
 	return SUCCESS;
@@ -129,6 +132,8 @@ int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
 	union semun semarg;
 	char path[STRING_SIZE];
 
+
+	debug("file[%s], caller[%s]", file, caller);
 
 	if (ipc->pathname == NULL) {
 		ipc->key = IPC_PRIVATE;
