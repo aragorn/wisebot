@@ -13,6 +13,8 @@
 static void add_index_word(index_word_t *index_word , token_t *token , int32_t pos);
 static void merge_two_tokens(token_t *token1 , token_t *token2 , token_t *dest_token);
 
+static int minimum_token_length = 3; /* 색인어로 사용하는 최소길이의 토큰 */
+
 // XXX: should be extern...
 bigram_t* new_bigram()
 {
@@ -165,16 +167,21 @@ int bigram_generator(bigram_t *handle, index_word_t index_word[], int32_t max_in
 			case TOKEN_NUMBER:         
 			case TOKEN_SPECIAL_CHAR : 
 
-				if (current_token->len >= 3) // 길이가 3byte 이상인 경우 bigram 방식의   
-					is_index_word = 1;       // 조합과는 별도로 홑 Token을 색인어로 추가한다. 
-				else if (current_token->len >= 2) //길이가 2byte 이상이면서 해당 Token이 어절 
-				{                                 // 양 끝단에 위치한 경우 해당 Token을 색인어로 추가한다.  
+				if (current_token->len >= minimum_token_length)
+				/* 길이가 minimum_token_length byte 이상인 경우 bigram 방식의   
+				 * 조합과는 별도로 홑 Token을 색인어로 추가한다. */
+					is_index_word = 1;       
+				else if (current_token->len >= 2)
+				/* 길이가 2byte 이상이면서 해당 Token이 어절 양 끝단에 위치한 경우 
+				 * 해당 Token을 색인어로 추가한다.  */
+				{                                 
 					if (IS_WHITE_TOKEN(prev_token) || IS_WHITE_TOKEN(next_token) ) 
 						is_index_word = 1; 
 				} 
 
-				if (current_token->len < 3) // 홀로 쓰인, 즉 앞뒤가 모두 어절 종결 상태인  
-											// 홑 Token은 길이가 3byte 미만인 경우 색인어로 사용하지 않는다.  
+				if (current_token->len < minimum_token_length)
+				/* 홀로 쓰인, 즉 앞뒤가 모두 어절 종결 상태인 홑 Token은 길이가 
+				 * minimum_token_length byte 미만인 경우 색인어로 사용하지 않는다. */
 				{  
 					if ( IS_WHITE_TOKEN(prev_token) && IS_WHITE_TOKEN(next_token) ) 
 						is_index_word = 0; 
@@ -224,7 +231,7 @@ int bigram_generator(bigram_t *handle, index_word_t index_word[], int32_t max_in
 						handle->last_token = tmp_token1;
 						handle->last_token.type = TOKEN_KOREAN;
 
-						if ( current_token->len>2 ) {
+						if ( current_token->len > 2 ) {
 							strncpy(&(current_token->string[0]) , &(current_token->string[2]),
 											MAX_WORD_LEN );
 							current_token->len = strlen(current_token->string);
@@ -240,10 +247,10 @@ int bigram_generator(bigram_t *handle, index_word_t index_word[], int32_t max_in
 				}
 
 				/* 
-				 * 홀로 쓰인, 즉 앞뒤가 모두 어절 종결 상태인  
-				 * 홑 Token은 길이가 3byte 미만인 경우 색인어로 사용하지 않는다.  
+				 * 홀로 쓰인, 즉 앞뒤가 모두 어절 종결 상태인 홑 Token은 길이가 
+				 * minimum_token_length byte 미만인 경우 색인어로 사용하지 않는다.  
 				 */
-				if (current_token->len < 3)
+				if (current_token->len < minimum_token_length)
 					break;
 
 				for(i=0 ; i < current_token->len-2 ; i+=2) 
@@ -359,6 +366,17 @@ static void add_index_word ( index_word_t *index_word , token_t *token , int32_t
 	return;
 }
 
+static void set_minimum_token_length(configValue v)
+{
+	minimum_token_length = atoi(v.argument[0]);
+}
+
+static config_t config[] = {
+	CONFIG_GET("MinimumTokenLength", set_minimum_token_length,1,\
+			"Minimum token length, default 3"),
+	{NULL}
+};
+
 static void register_hooks(void)
 {
 	sb_hook_new_index_word_extractor(new_bigram_generator,NULL,NULL,HOOK_MIDDLE);
@@ -369,7 +387,7 @@ static void register_hooks(void)
 
 module bigram_module = {
     STANDARD_MODULE_STUFF,
-    NULL, 	                /* config */
+    config,	                /* config */
     NULL,                   /* registry */
 	NULL,					/* module initialize */
     NULL,					/* child_main */
