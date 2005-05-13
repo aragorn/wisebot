@@ -23,13 +23,14 @@ typedef struct _docattr_t {
 } docattr_t;
 
 /* cond structure of user specific docattr module 
- * must be smaller than STRING_SIZE(256) byte */
+ * must be smaller than STRING_SIZE(256) x 2 bytes */
 typedef struct _docattr_cond_t {
-	char rsv[STRING_SIZE];
+	char rsv1[STRING_SIZE];
+	char rsv2[STRING_SIZE];
 } docattr_cond_t;
 
 /* mask structure of user specific docattr module 
- * must be smaller than STRING_SIZE(256) byte */
+ * must be smaller than STRING_SIZE(256) bytes */
 typedef struct _docattr_mask_t {
 	char rsv[STRING_SIZE];
 } docattr_mask_t;
