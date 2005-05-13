@@ -29,6 +29,7 @@ static int file_size = DEFAULT_FILE_SIZE;
 
 int ifs_init()
 {
+	char path[MAX_PATH_LEN];
 	ipc_t lock;
 	int i;
 
@@ -45,7 +46,8 @@ int ifs_init()
 			continue;
 		}
 
-    	lock.pathname = ifs_set[i].ifs_path;
+		snprintf( path, sizeof(path), "%s/ifs", ifs_set[i].ifs_path );
+    	lock.pathname = path;
 
 		if ( get_sem(&lock) != SUCCESS )
 			return FAIL;
@@ -802,6 +804,10 @@ static void set_ifs_path(configValue v)
 		error("first, set IndexDbSet");
 		return;
 	}
+
+	// 마지막 / 제거
+	if ( v.argument[0][strlen(v.argument[0])-1] == '/' )
+		v.argument[0][strlen(v.argument[0])-1] = '\0';
 
 	strncpy( ifs_set[current_ifs_set].ifs_path, v.argument[0], MAX_PATH_LEN-1 );
 	ifs_set[current_ifs_set].set_ifs_path = 1;
