@@ -36,20 +36,25 @@ static int get_str_item(char *dest, char *dit, char *key, char delimiter, int le
 static int docattr_filtering(docattr_cond_t *cond, char *attrquery)
 {
 	int len;
-	char buf[STRING_SIZE];
+	char buf[STRING_SIZE] = "";
 
 	DOCCOND_SET_ZERO(cond);
-	if (sb_run_docattr_set_doccond_function(cond, "Delete", buf) == -1) {
-		warn("cannot check delete mark");
-	}
 
 	debug("query = [%s]", attrquery);
+
 	if (attrquery[0] != '\0') {
 
 		//XXX: ... --;; i'm in hurry...
 		len = strlen(attrquery);
 		attrquery[len] = '&';
 		attrquery[len+1] = '\0';
+
+		get_str_item(buf, attrquery, "Delete:", '&', STRING_SIZE);
+		if (buf[0]) {
+			if (sb_run_docattr_set_doccond_function(cond, "Delete", buf) == -1) {
+				return -1;
+			}
+		}
 
 		get_str_item(buf, attrquery, "SystemName:", '&', STRING_SIZE);
 		if (buf[0]) {

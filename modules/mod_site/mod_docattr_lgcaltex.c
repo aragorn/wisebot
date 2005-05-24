@@ -246,10 +246,7 @@ static int compare_function_ac(void *dest, void *cond, uint32_t docid) {
 	lgcaltex_attr_t *docattr = (lgcaltex_attr_t*)dest;
 	lgcaltex_cond_t *doccond = (lgcaltex_cond_t*)cond;
 
-	/* always check delete mark */
-	if (docattr->is_deleted) {
-		return AC_NO;
-	}
+	if (doccond->delete_check == 0 && docattr->is_deleted) return AC_NO;
 
 	if (doccond->Date1_check == 1) {
 		if (doccond->Date1_start > docattr->Date1 ||
@@ -712,13 +709,13 @@ static int set_doccond_function(void *dest, char *key, char *value)
 	/* length(value) should be shorter than STRING_SIZE(=256) */
 	char my_value[STRING_SIZE];
 
-	if (strcasecmp(key, "Delete") == 0) {
-		doccond->delete_check = 1;
-		return 1;
-	}
-
 	INFO("key:%s, value:%s", key, value);
 	strncpy(my_value, value, STRING_SIZE); my_value[STRING_SIZE-1] = '\0';
+
+	if (strcasecmp(key, "Delete") == 0) {
+		doccond->delete_check = atoi(value);
+		return 1;
+	}
 
 	if (strcasecmp(key, "SystemName") == 0) {
 		int  count;	
