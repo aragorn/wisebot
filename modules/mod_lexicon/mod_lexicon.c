@@ -820,7 +820,7 @@ static int get_num_of_wordid(word_db_t* word_db, uint32_t *num_of_word )
 	if ( word_db_set == NULL || !word_db_set[word_db->set].set )
 		return DECLINE;
 
-	*num_of_word = ((lexicon_t*) word_db)->shared->last_wordid;
+	*num_of_word = ((lexicon_t*) word_db->db)->shared->last_wordid;
 	return SUCCESS;
 }
 
