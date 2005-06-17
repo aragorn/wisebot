@@ -11,7 +11,7 @@ general_at_t parser_result; // yacc의 결과는 여기에 들어간다.
 
 // 원래는 docattr_cond_t 를 사용해야 하지만 용량이 모자라서 ...
 #define MAX_GROUP_FIELD 4 // 통합검색 가능한 최대 field수
-#define MAX_GROUP_FIELD_VALUE 64
+#define MAX_GROUP_FIELD_VALUE 128
 general_at_t at; // AT=
 general_at_t at2; // AT2=
 docattr_field_t* group_field_list[MAX_GROUP_FIELD]; // GR=
@@ -576,7 +576,8 @@ static int compare2_function(void* dest, void* cond, uint32_t docid)
 			field_value = field->value.v.integer;
 
 			if ( field_value <= 0 || field_value > MAX_GROUP_FIELD_VALUE ) {
-				warn("invalid group field[%s] value[%ld]", field->name, field_value);
+				warn("invalid group field[%s] value[%ld], MAX(%d)",
+						field->name, field_value, MAX_GROUP_FIELD_VALUE);
 				continue;
 			}
 
