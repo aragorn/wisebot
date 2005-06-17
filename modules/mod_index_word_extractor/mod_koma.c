@@ -392,6 +392,28 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 	
 		} // for num_of_cut
 
+		// 접두사 전처리후 다음이 없으면 색인어로 처리한다.
+		// 닭, 비 등이 이것에 의해 색인어가 된다.
+		if ( jupdusa_exist == TRUE ) {
+			strncpy(out[idx_of_index_word].word,
+					jupdusa_string, MAX_WORD_LEN);
+			out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
+			out[idx_of_index_word].len =
+					strlen(out[idx_of_index_word].word);
+
+			out[idx_of_index_word].pos = *cur_pos;
+
+			jupdusa_exist = FALSE;
+
+			// 품사 정보 처리 : FIXME
+			memcpy(&(out[idx_of_index_word].attribute),
+				   "NNCG", sizeof(out[idx_of_index_word].attribute));
+			// byteposition 처리 : FIXME
+			out[idx_of_index_word].bytepos 
+					=  h->current_bytes_position + h->bPos[i] - 1;
+			idx_of_index_word++;
+		}
+
 		(*cur_pos)++;	
 
 	} // for koma_result
