@@ -11,6 +11,7 @@ extern const char *current_hooking_module;
 
 char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
 char gErrorLogFile[MAX_PATH_LEN] = DEFAULT_ERROR_LOG_FILE;
+char gQueryLogFile[MAX_PATH_LEN] = DEFAULT_QUERY_LOG_FILE;
 
 char mServerAddr[SHORT_STRING_SIZE] = "localhost";
 char mServerPort[SHORT_STRING_SIZE] = "8605";

@@ -37,8 +37,10 @@ char *gLogLevelStr[] = {
 	NULL
 };
 
-static FILE *fplog = NULL;
+static FILE *fplog = NULL; // error_log
+static FILE *fpqlog = NULL; // query_log
 static int  screen_log = 0;
+
 static int  debug_module_policy=NO_POLICY;
 static int  debug_module_number=0;
 static char debug_module_name[DEBUG_MODULE_NUM][STRING_SIZE];
@@ -53,41 +55,70 @@ void set_screen_log(void) {
 	screen_log = 1;
 }
 
-void open_error_log(const char *file) {
+void open_error_log(const char* error_log, const char* query_log) {
 	init_loglock();
+
+	if ((fpqlog = sb_fopen(query_log,"a")) == NULL){
+		crit("cannot open query log file %s: %s", query_log, strerror(errno));
+	}
+	setlinebuf(fpqlog);
+
 	/* screen_log > 0이면 파일을 열지 않는다. 열지 않으면 기본으로 stderr로 찍음. */
 	if (screen_log) return;
 
-	if((fplog = sb_freopen(file,"a",stderr)) == NULL){
-		crit("cannot open error log file %s: %s", file, strerror(errno));
+	if((fplog = sb_freopen(error_log,"a",stderr)) == NULL){
+		crit("cannot open error log file %s: %s", error_log, strerror(errno));
 		crit("server exits(1)");
 		exit(1);
 	}
 	setlinebuf(stderr);
+
     return;
 }
 
 void close_error_log() {
 	int ignored = 0;
 
-	if (fplog) fclose(fplog);
+	if (fplog) {
+		fclose(fplog);
+		fplog = NULL;
+	}
+
+	if (fpqlog) {
+		fclose(fpqlog);
+		fpqlog = NULL;
+	}
 	
 	if (semid != -1 && semctl(semid, ignored, IPC_RMID) != 0)
 		fprintf(stderr, "error while removing semaphore: %s", strerror(errno));
 }
 
-void reopen_error_log(const char *file)
+void reopen_error_log(const char* error_log, const char* query_log)
 {
+	if (fpqlog) {
+		fclose(fpqlog);
+		fpqlog = NULL;
+	}
+	
+	if ((fpqlog = sb_fopen(query_log,"a")) == NULL){
+		crit("cannot open query log file %s: %s", query_log, strerror(errno));
+	}
+	setlinebuf(fpqlog);
+
 	if (screen_log) return;
 
-	fclose(fplog);
+	if (fplog) {
+		fclose(fplog);
+		fplog = NULL;
+	}
 
-	if((fplog = sb_freopen(file,"a",stderr)) == NULL){
-		crit("cannot open error log file %s: %s", file, strerror(errno));
+	if((fplog = sb_freopen(error_log,"a",stderr)) == NULL){
+		crit("cannot open error log file %s: %s", error_log, strerror(errno));
 		crit("server exits(1)");
 		exit(1);
 	}
 	setlinebuf(stderr);
+
 	return;
 }
 
@@ -237,6 +268,21 @@ void log_error_core(int          level,
 		vfprintf(fplog, format, args);
 		fputc('\n', fplog);
 	}
+	release_loglock(semid);
+
+	return;
+}
+
+void log_query(const char* query)
+{
+	time_t now;
+	
+	acquire_loglock(semid);
+
+	time(&now);
+	if ( fpqlog )
+		fprintf (fpqlog, "[%.24s] %s\n", ctime(&now), query);
+
 	release_loglock(semid);
 
 	return;

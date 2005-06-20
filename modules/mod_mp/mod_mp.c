@@ -37,7 +37,7 @@ static void _sig_panic(int sig)
 
 static void _reopen_log_error(int sig)
 {
-	reopen_error_log(gErrorLogFile);
+	reopen_error_log(gErrorLogFile, gQueryLogFile);
 	return;
 }
 

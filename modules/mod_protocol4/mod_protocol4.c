@@ -26,6 +26,7 @@ static int did_set = -1;
 static did_db_t* did_db = NULL;
 static int word_db_set = -1;
 static word_db_t* word_db = NULL;
+static int b_log_query = 0; // != 0 이면 logs/query_log 에 검색쿼리 저장
 
 /*****************************************************************************/
 static void make_querystr(char *formatted, int size, char *query, char *docAttr, int listcount, int page, char *sh);
@@ -2043,22 +2044,14 @@ static char *replace_newline_to_space(char *str) {
 	}
 	return str;
 }
-#define QUERY_LOG		"logs/query_log"
-static int query_log_fd = -1;
-static void open_query_log()
+
+static void write_query_log(const char* buf)
 {
-	char path[STRING_SIZE];
-	sb_server_root_relative(path, QUERY_LOG);
-	query_log_fd = open(path, O_APPEND | O_CREAT, 0666);
+	if ( !b_log_query ) return;
+
+	log_query(buf);
 }
-static void write_query_log(char *query, char *subquery)
-{
-	char buf[LONG_STRING_SIZE];
-	wr_lock(query_log_fd, SEEK_SET, 0, 0);
-	sprintf(buf, "%s\t%s\n", query, subquery);
-	write(query_log_fd, buf, strlen(buf));
-	un_lock(query_log_fd, SEEK_SET, 0, 0);
-}
+
 static int sb4s_search_doc(int sockfd) 
 {
 	int i, len, error_status, n;
@@ -2082,6 +2075,8 @@ static int sb4s_search_doc(int sockfd)
 	}
 
     buf[len] = '\0';
+	for(i=0; i<len; i++) // query_log 모양을 이쁘게 하려고...
+		if (buf[i]=='\n' || buf[i]=='\r') buf[i]=' ';
     strcat(buf, "^");
 
     info("request:|%s|",buf);
@@ -2111,12 +2106,7 @@ static int sb4s_search_doc(int sockfd)
 	DEBUG("req.first_result:%d",req.first_result);
 	DEBUG("req.filtering_id:%d", req.filtering_id);
 
-	if (query_log_fd == -1)
-		open_query_log();
-
-	if (query_log_fd != -1) {
-		write_query_log(req.query_string, req.attr_string);
-	}
+	write_query_log(buf);
 
 /*	req.type = LIGHT_SEARCH;*/
 	req.type = FULL_SEARCH;
@@ -2293,12 +2283,7 @@ static int sb4s_search2_doc(int sockfd)
 	DEBUG("req.first_result:%d",req.first_result);
 	DEBUG("req.filtering_id:%d", req.filtering_id);
 
-	if (query_log_fd == -1)
-		open_query_log();
-
-	if (query_log_fd != -1) {
-		write_query_log(req.query_string, req.attr_string);
-	}
+	write_query_log(buf);
 
 /*	req.type = LIGHT_SEARCH;*/
 	req.type = FULL_SEARCH;
@@ -3699,9 +3684,15 @@ static void get_word_db_set(configValue v)
 	word_db_set = atoi( v.argument[0] );
 }
 
+static void get_log_query(configValue v)
+{
+	b_log_query = ( strcasecmp( v.argument[0], "true" ) == 0 );
+}
+
 static config_t config[] = {
 	CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
 	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDb Set 0~..."),
+	CONFIG_GET("LogQuery", get_log_query, 1, "if True, write query log to server.c/QueryLog"),
 	{NULL}
 };
 

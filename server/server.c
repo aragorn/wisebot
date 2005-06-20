@@ -8,6 +8,7 @@
 
 char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
 char gErrorLogFile[MAX_PATH_LEN] = DEFAULT_ERROR_LOG_FILE;
+char gQueryLogFile[MAX_PATH_LEN] = DEFAULT_QUERY_LOG_FILE;
 pid_t gRootPid = 0;
 FILE *tlog_fp = NULL;
 char tlog_file[MAX_PATH_LEN] = "logs/time_log";
@@ -88,7 +89,7 @@ static void _graceful_shutdown(int sig)
 
 static void _reopen_log_error(int sig)
 {
-	reopen_error_log(gErrorLogFile);
+	reopen_error_log(gErrorLogFile, gQueryLogFile);
 	return;
 }
 
@@ -236,7 +237,7 @@ int server_main()
 	 * 2. setup each modules's configuration -> call each config function
 	 */
 
-	open_error_log(gErrorLogFile);
+	open_error_log(gErrorLogFile, gQueryLogFile);
 
 #ifdef TIMELOG
 	/* open time log file */
@@ -614,6 +615,11 @@ static void setErrorLog(configValue a)
 	strncpy(gErrorLogFile, a.argument[0], MAX_PATH_LEN);
 }
 
+static void setQueryLog(configValue a)
+{
+	strncpy(gQueryLogFile, a.argument[0], MAX_PATH_LEN);
+}
+
 static void setPidFile(configValue a)
 {
 	debug("pid file. argument[0]:%s",a.argument[0]);
@@ -687,6 +693,8 @@ static config_t config[] = {
 				"write error log messages of this level or above"),
 	CONFIG_GET("ErrorLog", setErrorLog, 1, \
 				"path to error log file"),
+	CONFIG_GET("QueryLog", setQueryLog, 1, \
+				"path to query log file"),
 	CONFIG_GET("DebugModulePolicy", setDebugModulePolicy, 1, \
 				"debug message only with these modules or only without these modules"),
 	CONFIG_GET("DebugModuleName", setDebugModuleName, VAR_ARG, \

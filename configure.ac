@@ -37,6 +37,7 @@ AH_TOP([#ifndef AUTO_CONFIG_H
 
 #define DEFAULT_CONFIG_FILE     "etc/softbot.conf"
 #define DEFAULT_ERROR_LOG_FILE  "logs/error_log"
+#define DEFAULT_QUERY_LOG_FILE  "logs/query_log"
 #define DEFAULT_PID_FILE        "logs/softbotd.pid"
 #define DEFAULT_REGISTRY_FILE   "dat/softbotd.reg"
 

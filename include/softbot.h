@@ -81,6 +81,7 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 
 extern SB_DECLARE_DATA char gSoftBotRoot[MAX_PATH_LEN];
 extern SB_DECLARE_DATA char gErrorLogFile[MAX_PATH_LEN];
+extern SB_DECLARE_DATA char gQueryLogFile[MAX_PATH_LEN];
 extern SB_DECLARE_DATA char gRegistryFile[MAX_PATH_LEN];
 
 #endif
