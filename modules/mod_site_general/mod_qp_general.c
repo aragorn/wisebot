@@ -2,7 +2,6 @@
 #include "mod_api/qp.h"
 #include "mod_qp/mod_qp.h"
 #include <ctype.h>
-#include <stdio_ext.h>
 
 static docattr_operand_t operands[MAX_OPERAND_NUM];
 static int current_operand_index = 0;
