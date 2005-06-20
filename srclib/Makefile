@@ -10,10 +10,10 @@ prefix = $(shell cd .. && pwd)
 exec_prefix = ${prefix}
 ###############################################################################
 all: install
-cvs-export: expat-export koma2c-export bdb-export
-build: expat koma2c bdb
-install: expat-install koma2c-install bdb-install
-clean: expat-clean koma2c-clean bdb-clean
+cvs-export: expat-export koma2c-export
+build: expat koma2c
+install: expat-install koma2c-install
+clean: expat-clean koma2c-clean
 
 # XXX we don't need w3c-libwww & xmlrpc for supreme-release
 
