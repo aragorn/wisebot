@@ -24,4 +24,4 @@ test2_ifs_SOURCES = test2.c
 test2_ifs_LDADD = mod_ifs_defrag.la mod_ifs.la ../mod_sfs/mod_sfs.la ../../lib/libapi.la ../mod_mp/libmp.la ../../lib/libplatform.la ../../lib/libsoftbotserver.la
 test2_ifs_LDFLAGS = -L../../lib -export-dynamic -ldl $(THREAD_LIB)
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

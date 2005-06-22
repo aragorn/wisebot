@@ -18,4 +18,4 @@ mod_docapi_la_LDFLAGS = -module -avoid-version
 #mod_docapi_test_la_SOURCES = testdocapicdmi.c
 #mod_docapi_test_la_LDFLAGS = -module -avoid-version 
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

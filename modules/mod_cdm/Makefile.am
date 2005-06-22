@@ -9,4 +9,4 @@ mod_cdm_la_SOURCES = mod_cdm.c indexHandle.c \
 #					 syncManager.c cannedDocServer.h mod_cdm.h 
 mod_cdm_la_LDFLAGS = -module -avoid-version
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

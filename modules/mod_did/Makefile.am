@@ -26,4 +26,4 @@ mod_did2_la_LDFLAGS = -module -avoid-version
 #mod_did_client_la_SOURCES = mod_did_client.c mod_did_client.h
 #mod_did_client_la_LDFLAGS = -module -avoid-version
 
-include ../install-libexec.mk
+include ../install-pkglib.mk

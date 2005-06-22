@@ -11,4 +11,4 @@ mod_docattr_la_LDFLAGS = -module -avoid-version
 ## mod_docattr_new_la_SOURCES = mod_docattr_new.c mod_docattr_new.h
 ## mod_docattr_new_la_LDFLAGS = -module -avoid-version
 
-include ../install-libexec.mk
+include ../install-pkglib.mk
