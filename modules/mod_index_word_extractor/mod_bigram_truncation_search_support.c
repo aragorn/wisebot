@@ -132,7 +132,9 @@ static int bigram_generator2(index_word_extractor_t *extractor,
 	}
 	else if (ret == 0 && ! wrapper->end_of_extraction ) {
 
-		bigram_word_copy(tmp_string , wrapper->last_index_word.word, MAX_WORD_LEN, 2);
+		if ( wrapper->last_index_word.len > 2 )
+			bigram_word_copy(tmp_string, wrapper->last_index_word.word, MAX_WORD_LEN, 2);
+		else bigram_word_copy(tmp_string, wrapper->last_index_word.word, MAX_WORD_LEN, 0);
 
 		snprintf(index_word[0].word, MAX_WORD_LEN, "%s%s", tmp_string, "\\>");
 		index_word[0].pos = wrapper->last_index_word.pos;
@@ -177,7 +179,9 @@ static int bigram_generator2(index_word_extractor_t *extractor,
 
 		if ( i+1 < ret && index_word[i+1].pos != index_word[i].pos ) {
 
-			bigram_word_copy(tmp_string , index_word[i].word, MAX_WORD_LEN, 2);
+			if ( index_word[i].len > 2 )
+				bigram_word_copy(tmp_string, index_word[i].word, MAX_WORD_LEN, 2);
+			else bigram_word_copy(tmp_string, index_word[i].word, MAX_WORD_LEN, 0);
 
 			snprintf(index_word[idx].word, MAX_WORD_LEN, "%s%s", tmp_string, "\\>");
 
