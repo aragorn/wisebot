@@ -287,6 +287,8 @@ int bigram_generator(bigram_t *handle, index_word_t index_word[], int32_t max_in
 					}
 				} 
 
+				// 한글 토큰에서 한글자만 남은 것. 홑글자인 경우도 여기다.
+
 				tmp_token1.len = 2;                         // 임시 token setting 
 				tmp_token1.string[0] = current_token->string[i];   // 복사 
 				tmp_token1.string[1] = current_token->string[i+1];                                     
@@ -296,6 +298,9 @@ int bigram_generator(bigram_t *handle, index_word_t index_word[], int32_t max_in
 				current_token->string[MAX_WORD_LEN-1] = '\0';
 				current_token->len = tmp_token1.len;
 				
+				if ( i == 0 )
+					add_index_word( &(index_word[index_word_idx++]) , &tmp_token1, *pos); 
+
 				break; 
 
 			case TOKEN_END_OF_WORD:      // 종결 토큰 

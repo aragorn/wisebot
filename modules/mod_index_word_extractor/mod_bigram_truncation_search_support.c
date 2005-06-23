@@ -124,6 +124,8 @@ static int bigram_generator2(index_word_extractor_t *extractor,
 
 	/* add truncation search support routine */
 	wrapper = extractor->handle;
+	if ( ret == 0 && wrapper->last_index_word.len == 0 )
+		wrapper->end_of_extraction = 1;
 
 	if (ret == 0 && wrapper->end_of_extraction) {
 		return 0;
@@ -173,7 +175,7 @@ static int bigram_generator2(index_word_extractor_t *extractor,
 			}
 		}
 
-		if ( i+1 < ret && index_word[i+1].pos != index_word[i].pos) {
+		if ( i+1 < ret && index_word[i+1].pos != index_word[i].pos ) {
 
 			bigram_word_copy(tmp_string , index_word[i].word, MAX_WORD_LEN, 2);
 
