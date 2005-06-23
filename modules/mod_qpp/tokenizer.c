@@ -355,10 +355,10 @@ static int16_t fieldOpCmp(TokenObj *pTkObj,char* src,int32_t *pOpParam){
 		int len = strlen(mFieldName[i]);
 
 		if (len == 0) continue;
-        if (strncasecmp(src, mFieldName[i], len) == 0) {
+        if (strncasecmp(src, mFieldName[i], len) == 0 && src[len] == ':') {
 			INFO("src = [%s], field[%d] = [%s]", src, i, mFieldName[i]);
-            paramLen = strlen(mFieldName[i]);
-            break;
+			paramLen = len;
+			break;
         }
 	}
 	if (paramLen == 0)
