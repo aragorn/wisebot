@@ -2081,7 +2081,7 @@ static void fill_title_and_comment(request_t *req)
 			// 길이가 너무 길면 좀 자른다. 한글 안다치게...
 			if (strlen(tmpstr) > max_comment_bytes) {
 				for ( last_position = tmpstr+max_comment_bytes;
-						last_position > tmpstr || (int)(*last_position) < 127;
+						last_position > tmpstr && (unsigned int)(*last_position) > 127;
 						last_position-- ) {
 				}
 				*last_position = '\0';
