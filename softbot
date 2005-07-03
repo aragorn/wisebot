@@ -356,14 +356,14 @@ start() {
 	run_command "$SOFTBOT_ROOT/scripts/clear_ipcs"
 	[ $WITH_RMAS = "0" ] || {
 	    printf "rmas "
-	    start_daemon $SOFTBOT_ROOT $RMAS \
-					$RMAS_PID_FILE $RMAS_CONF
+	    start_daemon "$SOFTBOT_ROOT" "$RMAS" \
+					"$RMAS_PID_FILE" "$RMAS_CONF"
 	    sleep 3
 	}
 
 	printf "softbotd"
-	start_daemon $SOFTBOT_ROOT $SOFTBOTD \
-					$SOFTBOTD_PID_FILE $SOFTBOTD_CONF
+	start_daemon "$SOFTBOT_ROOT" "$SOFTBOTD" \
+					"$SOFTBOTD_PID_FILE" "$SOFTBOTD_CONF"
 	echo "." 
 }
 
@@ -371,13 +371,13 @@ stop_cmd() {
 	printf "Stopping softbot daemon: "
 
 	printf "softbotd"
-		stop_daemon $SOFTBOT_ROOT $SOFTBOTD_PID_FILE 60 \
-		  || force_shutdown_softbotd $SOFTBOT_ROOT $SOFTBOTD_PID_FILE 
+		stop_daemon "$SOFTBOT_ROOT" "$SOFTBOTD_PID_FILE" 60 \
+		  || force_shutdown_softbotd "$SOFTBOT_ROOT" "$SOFTBOTD_PID_FILE"
 
 	[ $WITH_RMAS = "0" ] || {
 		printf " rmas"
-		stop_daemon $SOFTBOT_ROOT $RMAS_PID_FILE 10 \
-		  || force_shutdown_rmas $SOFTBOT_ROOT $RMAS_PID_FILE
+		stop_daemon "$SOFTBOT_ROOT" "$RMAS_PID_FILE" 10 \
+		  || force_shutdown_rmas "$SOFTBOT_ROOT" "$RMAS_PID_FILE"
 	}
 	echo "."
 	run_command "$SOFTBOT_ROOT/scripts/clear_ipcs"
