@@ -32,8 +32,9 @@ static char sortingcriterion[STRING_SIZE] = { '\0' };
 static int listcount=15;
 static int first_page=0;
 
-//-- siouk 2004.2.1
-void skip_white_space(char** p)
+/* ut_stest.c stuff ***********************************************************/
+/* siouk 2004/02/01 */
+static void skip_white_space(char** p)
 {
 	while(1) {
 		if(**p == '\0') break;
@@ -45,7 +46,7 @@ void skip_white_space(char** p)
 	}
 }
 
-void find_white_space(char** p)
+static void find_white_space(char** p)
 {
 	while(1) {
 		if(**p == '\0') break;
@@ -57,7 +58,7 @@ void find_white_space(char** p)
 	}
 }
 
-void find_quote(char** p, char quote)
+static void find_quote(char** p, char quote)
 {
 	while(1) {
 		if(**p == '\0') break;
@@ -205,6 +206,8 @@ int destroy_arg(char** argv, int argc)
     free(argv);
     return SUCCESS;
 }
+
+/* ut_stest.c stuff end *******************************************************/
 
 int com_repeat(char *arg)
 {
@@ -866,31 +869,6 @@ END:
 	return SUCCESS;
 }
 
-/*
-int com_bigram (char *arg)
-{
-    int i, num=-1;
-    bigram_handle_t *handle;
-    index_word_t index_word[1024];
-
-    handle = new_bigram_generator();
-
-    bigram_set_text(handle,"법 ABCD한국인의두통약12345 우리나라a 좋은나라cd ee qwe aaa123 \n\n");
-
-    printf("법 ABCD한국인의두통약12345 우리나라a 좋은나라cd ee qwe aaa123 \n\n");
-    do {
-        num = bigram_generator(handle, index_word, 5);
-
-        for(i=0; index_word[i].len != 0 ; i++) {
-            printf("%ld %s\n", index_word[i].position , index_word[i].string);
-        }
-
-    } while(num);
-
-    bigram_destroyer(handle);
-
-    return 0;
-}*/
 int com_index_word_extractor (char *arg)
 {
 	char *text=NULL,*idstr=NULL;
