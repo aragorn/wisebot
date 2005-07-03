@@ -1976,10 +1976,34 @@ int full_info (request_t *r)
 	return 0;
 }
 
+// 마지막 NULL 은 빼고 길이를 maxLen 으로 맞춘다. 그러니까 text는 최소한 maxLen+1
+// 한글을 고려해서 자른다.
+void cut_string(char* text, int maxLen)
+{
+	int korCnt = 0, engIdx;
+	int textLen = strlen( text );
+
+	if ( textLen <= maxLen ) return;
+	else textLen = maxLen;
+
+	for ( engIdx = textLen; engIdx >= 0; engIdx-- ) {
+		if ( text[engIdx] >= 0 ) break; // 0~127
+
+		korCnt++;
+		continue;
+	}
+
+	if ( korCnt == 0 || korCnt % 2 == 1 )
+		text[textLen] = '\0';
+	else text[textLen-1] = '\0';
+
+	return;
+}
+
 #define COMMENT_SIZE 10 /* words */
 static void fill_title_and_comment(request_t *req)
 {
-	int i=0,j=0,k=0,ret=0, last=0, m=0, nCheck=0, sum_pos=0, n=0, len=0, pos=0;
+	int i=0,j=0,k=0,ret=0, last=0, m=0, nCheck=0, sum_pos=0, n=0;
 	uint32_t docid=0;
 	int searched_list_size=0,tmp=0;
 	char *tmpstr=NULL;
@@ -2060,7 +2084,6 @@ static void fill_title_and_comment(request_t *req)
 
 		for (k=0; k<mCommentFieldNum; k++) {
 			#define max_comment_bytes 1024
-			char* last_position;
 			tmpstr = NULL;
 
 			ret = sb_run_doc_get_field(doc[j], NULL, mCommentField[k], &tmpstr);
@@ -2079,13 +2102,8 @@ static void fill_title_and_comment(request_t *req)
 			sizeleft = (sizeleft < 0) ? 0:sizeleft;
 
 			// 길이가 너무 길면 좀 자른다. 한글 안다치게...
-			if (strlen(tmpstr) > max_comment_bytes) {
-				for ( last_position = tmpstr+max_comment_bytes;
-						last_position > tmpstr && (unsigned int)(*last_position) > 127;
-						last_position-- ) {
-				}
-				*last_position = '\0';
-			}
+			cut_string( tmpstr, max_comment_bytes );
+
 			strncat(req->comments[j],tmpstr,sizeleft);
 			sizeleft -= strlen(tmpstr);
 			sizeleft = (sizeleft < 0) ? 0:sizeleft;
@@ -2132,20 +2150,8 @@ static void fill_title_and_comment(request_t *req)
 			{
 				memset(szCom, 0x00, 210);
 				sum_pos = getAutoComment(value, req->result_list->doc_hits[i].hits[m].std_hit.position-4);
-				strncpy(szCom, value+sum_pos, 200);
-				len = strlen(szCom);
-				pos = len-1;
-				
-				for(;;)
-				{
-					if ( LEXM_IS_WHITE(szCom[pos]) )
-					{
-						szCom[pos] = 0x00;
-						break;
-					}
-					else
-						pos--;
-				}
+				strncpy(szCom, value+sum_pos, 201);
+				cut_string( szCom, 200 );
 				nCheck = 1;
 				break;
 			}
@@ -2153,20 +2159,8 @@ static void fill_title_and_comment(request_t *req)
 		if (nCheck != 1 ) /*본문에 없는 단어 */
 		{
 			memset(szCom, 0x00, 210);
-			strncpy(szCom, value, 200);
-			len = strlen(szCom);
-			pos = len-1;
-				
-			for(;;)
-			{
-				if ( LEXM_IS_WHITE(szCom[pos]) )
-				{
-					szCom[pos] = 0x00;
-					break;
-				}
-				else
-					pos--;
-			}
+			strncpy(szCom, value, 201);
+			cut_string( szCom, 200 );
 		}
 		
 		strncat(req->comments[j],"SUM",sizeleft);
