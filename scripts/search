@@ -38,7 +38,7 @@ $brief_output = $opt_b;
 
 my $host = $ENV{SB_HOST};
 my $port = $ENV{SB_PORT};
-my $input_query = shift;
+my $input_query = shift || "";
 my $query = parse_query($input_query);
 
 HELP_MESSAGE() unless ($host and $port and $input_query);
