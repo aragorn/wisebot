@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+
+use lib "../lib/perl";
+use lib "./lib/perl";
+use strict;
+use Getopt::Std;
+use SoftWise::SoftBot;
+
+sub BEGIN {
+	$Getopt::Std::STANDARD_HELP_VERSION = 1;
+	our $VERSION = "1.0";
+}
+
+sub HELP_MESSAGE {
+	print <<END;
+Usage: $0 [-b] <QU=...^AT=...^SC=...^PG=...^>
+    QU=..^   - query string
+
+Options:
+    -b       - brief output
+
+Required Environemnt Variables:
+    SB_HOST  - hostname of search server
+    SB_PORT  - port number that softbot use
+END
+	exit;
+}
+
+###################################
+#         options Á¤¸®
+
+my ( $brief_output );
+
+HELP_MESSAGE() unless( getopts( "b" ) );
+our ( $opt_b );
+
+$brief_output = $opt_b;
+
+my $host = $ENV{SB_HOST};
+my $port = $ENV{SB_PORT};
+my $input_query = shift;
+my $query = parse_query($input_query);
+
+HELP_MESSAGE() unless ($host and $port and $input_query);
+
+if (not $brief_output) {
+  print <<END;
+# host: $host, port: $port
+# query: $query
+END
+}
+
+my $sb = new SoftWise::SoftBot($host, $port) or die "cannot connect to softbot: $!\n";
+my $ret = $sb->search( parse_query($input_query) );
+if ( not $ret ) {
+	print STDERR "query failed: $query, ret:$ret\n";
+	exit;
+}
+
+if (not $brief_output) {
+	print <<END;
+# word list: $sb->{wordlist}
+# total count: $sb->{totalcnt}
+# recv count: $sb->{recvcnt}
+END
+}
+
+foreach my $i ( 0..($sb->{recvcnt}-1) ) {
+	printf("NO=%-2d  ", $i+1) unless $brief_output;
+    print_docinfo($sb->{docinfo}[$i], $brief_output);
+}
+
+exit;
+
+sub parse_query {
+  my $query = shift;
+
+  my ($qu, $at, $lc, $sh, $pg) = ("", "", 10, 0, 0);
+  foreach my $exp ( split(/\^/, $query) ) {
+    my ($name, $value) = split(/=/, $exp, 2);
+    $qu = $value if $name eq "QU";
+    $at = $value if $name eq "AT";
+    $lc = $value if $name eq "LC";
+    $sh = $value if $name eq "SH";
+    $pg = $value if $name eq "PG";
+  }
+
+  return "QU=$qu^AT=$at^LC=$lc^SH=$sh^PG=$pg^";
+}
+
+sub print_docinfo {
+  my $docinfo = shift;
+  my $brief_output = shift;
+
+  foreach my $exp ( split(/\^/, $docinfo) ) {
+    my ($name, $value) = split(/=/, $exp, 2);
+    printf("%s=%-6d  ", $name, $value) unless $name eq "CMT";
+    print_comment($value) if $name eq "CMT" and not $brief_output;
+  }
+  print "\n" if $brief_output;
+}
+
+sub print_comment {
+  my $cmt = shift;
+  #print "$cmt\n";
+  print "\n";
+  foreach my $exp ( split(/;;/, $cmt) ) {
+    my ($name, $value) = split(/:/, $exp, 2);
+    printf(" # %-10s : %s\n", $name, $value) if $value;
+  }
+
+}
+
+sub get_brief_docinfo {
+  my $docinfo = shift;
+  return $docinfo;
+}
+
