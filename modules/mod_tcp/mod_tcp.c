@@ -100,7 +100,72 @@ static void sock_enable_linger(int s)
 #endif /* USE_SO_LINGER */
 /*****************************************************************************/
 
-#ifndef AIX5
+#ifdef AIX5
+/*
+   aix5.1 is too stupid to use getaddrinfo, and we don't really need it
+   so here is a version which doesn't use it, but may have problems
+   under weird systems, and ipv6 specifically
+*/
+
+static int tcp_connect(int *sockfd, char *host, char *port)
+{
+	struct sockaddr_in addr;
+	int port_number, n, optval;
+	struct hostent *host_entry;
+
+	*sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if ( *sockfd == -1 ) {
+		error("socket: %s", strerror(errno));
+		return FAIL;
+	}
+
+	memset(&addr, 0x00, sizeof(addr));
+	if ((host_entry=gethostbyname(host)) == NULL) {  // get the host info
+		error("gethostbyname: %s", strerror(errno));
+		return FAIL;
+	}
+
+	port_number = atoi(port);
+
+	/* README connect(2) error occurs on AIX, 2004/08/02. -- aragorn
+     * connect(2) returns error and errno is EEXIST(File exists), but
+     * it's very weird error message.
+     * So I steal codes form old softbot by kjb.
+     */
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port_number);  // short, network byte order
+	memcpy(&addr.sin_addr, *host_entry->h_addr_list, host_entry->h_length);
+	/* below 2 lines are replace by upper one line, memcpy(...).
+	addr.sin_addr = *((struct in_addr *)host_entry->h_addr);
+	memset(&(addr.sin_zero), '\0', 8);  // zero the rest of the struct FIXME: why eight?
+     */
+
+	debug("trying to connect %s:%d...", host, ntohs(addr.sin_port) );
+	n = connect_nonb(*sockfd, (struct sockaddr*)&addr, sizeof(addr), g_client_timeout);
+	//n = connect(*sockfd, (struct sockaddr*)&addr, sizeof(addr));
+
+	if ( n == SUCCESS ) { /* connected */
+		debug("connected to %s:%d...", host, ntohs(addr.sin_port) );
+		optval = 1;
+		setsockopt(*sockfd, IPPROTO_TCP, TCP_NODELAY, (void*)&optval, sizeof(optval));
+	} else {
+		error("unable to connect %s:%d...", host, ntohs(addr.sin_port) );
+		close(*sockfd);
+		return FAIL;
+	}
+
+	return SUCCESS;
+}
+
+#else // AIX5
+#ifdef CYGWIN
+static int tcp_connect(int *sockfd, char *host, char *port)
+{
+
+	return SUCCESS;
+}
+
+#else
 static int tcp_connect(int *sockfd, char *host, char *port)
 {
 	int n, optval;
@@ -163,63 +228,6 @@ static int tcp_connect(int *sockfd, char *host, char *port)
 }
 
 #else
-/*
-   aix5.1 is too stupid to use getaddrinfo, and we don't really need it
-   so here is a version which doesn't use it, but may have problems
-   under weird systems, and ipv6 specifically
-*/
-
-static int tcp_connect(int *sockfd, char *host, char *port)
-{
-	struct sockaddr_in addr;
-	int port_number, n, optval;
-	struct hostent *host_entry;
-
-	*sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if ( *sockfd == -1 ) {
-		error("socket: %s", strerror(errno));
-		return FAIL;
-	}
-
-	memset(&addr, 0x00, sizeof(addr));
-	if ((host_entry=gethostbyname(host)) == NULL) {  // get the host info
-		error("gethostbyname: %s", strerror(errno));
-		return FAIL;
-	}
-
-	port_number = atoi(port);
-
-	/* README connect(2) error occurs on AIX, 2004/08/02. -- aragorn
-     * connect(2) returns error and errno is EEXIST(File exists), but
-     * it's very weird error message.
-     * So I steal codes form old softbot by kjb.
-     */
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port_number);  // short, network byte order
-	memcpy(&addr.sin_addr, *host_entry->h_addr_list, host_entry->h_length);
-	/* below 2 lines are replace by upper one line, memcpy(...).
-	addr.sin_addr = *((struct in_addr *)host_entry->h_addr);
-	memset(&(addr.sin_zero), '\0', 8);  // zero the rest of the struct FIXME: why eight?
-     */
-
-	debug("trying to connect %s:%d...", host, ntohs(addr.sin_port) );
-	n = connect_nonb(*sockfd, (struct sockaddr*)&addr, sizeof(addr), g_client_timeout);
-	//n = connect(*sockfd, (struct sockaddr*)&addr, sizeof(addr));
-
-	if ( n == SUCCESS ) { /* connected */
-		debug("connected to %s:%d...", host, ntohs(addr.sin_port) );
-		optval = 1;
-		setsockopt(*sockfd, IPPROTO_TCP, TCP_NODELAY, (void*)&optval, sizeof(optval));
-	} else {
-		error("unable to connect %s:%d...", host, ntohs(addr.sin_port) );
-		close(*sockfd);
-		return FAIL;
-	}
-
-	return SUCCESS;
-}
-
-#endif // AIX5
 
 static int tcp_local_connect(int *sockfd, char *path)
 {

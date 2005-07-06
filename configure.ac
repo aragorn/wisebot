@@ -57,6 +57,7 @@ AH_VERBATIM([1_NEAR_TOP__],[
 #undef FREEBSD
 #undef SOLARIS
 #undef AIX5
+#undef CYGWIN
 
 /* whether indexer saves forward index or not. default is NOT using it. */
 #define FORWARD_INDEX 0
@@ -134,6 +135,13 @@ case "$host" in
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
     ;;
+  *pc-cygwin* )
+    SHORT_HOST="cygwin"
+    AC_DEFINE(CYGWIN,1)
+    OS_TYPE="unix"
+    THREAD_LIB=""
+    DYN_LIB=""
+    ;;
   *freebsd* )
     SHORT_HOST="freebsd"
     AC_DEFINE(FREEBSD,1)
@@ -164,6 +172,7 @@ dnl    LDFLAGS="-Wl,-brtl"
     ;;
 esac
 AM_CONDITIONAL(LINUX,   test x$SHORT_HOST = xlinux)
+AM_CONDITIONAL(CYGWIN,  test x$SHORT_HOST = xcygwin)
 AM_CONDITIONAL(FREEBSD, test x$SHORT_HOST = xfreebsd)
 AM_CONDITIONAL(SOLARIS, test x$SHORT_HOST = xsolaris)
 AM_CONDITIONAL(AIX5,    test x$SHORT_HOST = xaix5)
