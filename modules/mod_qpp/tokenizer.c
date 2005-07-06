@@ -325,23 +325,21 @@ static int16_t virtualfieldOpCmp(TokenObj *pTkObj,char* src,int32_t *pOpParam){
 	// field search name like "body", "title" matching
 	for (i = 0; i<mVirtualFieldNum; i++){
 		paramLen = prefixCmp(src,mVirtualFieldName[i]);
-		if (paramLen > 0)
-			break;
+		if (paramLen == 0) continue;
+
+		// field operator like ":" matching	
+		for (i = 0; i<m_numFIELD; i++){
+			opLen = operatornCmp(pTkObj,src+paramLen, m_opFIELD[i],FALSE);
+			if (opLen > 0)
+				break;
+		}
+		if (opLen != 0) break;
 	}
 	if (paramLen == 0)
 		return 0;
 	
 	*pOpParam = mVirtualFieldIds[i];
 		
-	// field operator like ":" matching	
-	for (i = 0; i<m_numFIELD; i++){
-		opLen = operatornCmp(pTkObj,src+paramLen, m_opFIELD[i],FALSE);
-		if (opLen > 0)
-			break;
-	}
-	if (opLen == 0)
-		return 0;
-
 	return paramLen + opLen;
 }
 
@@ -355,26 +353,26 @@ static int16_t fieldOpCmp(TokenObj *pTkObj,char* src,int32_t *pOpParam){
 		int len = strlen(mFieldName[i]);
 
 		if (len == 0) continue;
-        if (strncasecmp(src, mFieldName[i], len) == 0 && src[len] == ':') {
+        if (strncasecmp(src, mFieldName[i], len) != 0) continue;
+
+		// field operator like ":" matching	
+		for (i = 0; i<m_numFIELD; i++){
+			opLen = operatornCmp(pTkObj,src+paramLen, m_opFIELD[i],FALSE);
+			if (opLen > 0)
+				break;
+		}
+
+		if (opLen != 0) {
 			INFO("src = [%s], field[%d] = [%s]", src, i, mFieldName[i]);
 			paramLen = len;
 			break;
-        }
+		}
 	}
 	if (paramLen == 0)
 		return 0;
 	
 	*pOpParam = i;
 		
-	// field operator like ":" matching	
-	for (i = 0; i<m_numFIELD; i++){
-		opLen = operatornCmp(pTkObj,src+paramLen, m_opFIELD[i],FALSE);
-		if (opLen > 0)
-			break;
-	}
-	if (opLen == 0)
-		return 0;
-
 	return paramLen + opLen;
 }
 
