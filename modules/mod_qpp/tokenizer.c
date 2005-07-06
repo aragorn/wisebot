@@ -318,7 +318,7 @@ static int16_t operatornCmp(TokenObj *pTkObj,char* src, char* opcodeStr, int isP
 	return 0;
 }
 static int16_t virtualfieldOpCmp(TokenObj *pTkObj,char* src,int32_t *pOpParam){
-	int16_t i = 0;
+	int16_t i, j;
 	int16_t opLen = 0;
 	int16_t paramLen = 0;
 
@@ -328,8 +328,8 @@ static int16_t virtualfieldOpCmp(TokenObj *pTkObj,char* src,int32_t *pOpParam){
 		if (paramLen == 0) continue;
 
 		// field operator like ":" matching	
-		for (i = 0; i<m_numFIELD; i++){
-			opLen = operatornCmp(pTkObj,src+paramLen, m_opFIELD[i],FALSE);
+		for (j = 0; j<m_numFIELD; j++){
+			opLen = operatornCmp(pTkObj,src+paramLen, m_opFIELD[j],FALSE);
 			if (opLen > 0)
 				break;
 		}
@@ -344,7 +344,7 @@ static int16_t virtualfieldOpCmp(TokenObj *pTkObj,char* src,int32_t *pOpParam){
 }
 
 static int16_t fieldOpCmp(TokenObj *pTkObj,char* src,int32_t *pOpParam){
-	int16_t i = 0;
+	int16_t i, j;
 	int16_t opLen = 0;
 	int16_t paramLen = 0;
 
@@ -356,8 +356,8 @@ static int16_t fieldOpCmp(TokenObj *pTkObj,char* src,int32_t *pOpParam){
         if (strncasecmp(src, mFieldName[i], len) != 0) continue;
 
 		// field operator like ":" matching	
-		for (i = 0; i<m_numFIELD; i++){
-			opLen = operatornCmp(pTkObj,src+paramLen, m_opFIELD[i],FALSE);
+		for (j = 0; j<m_numFIELD; j++){
+			opLen = operatornCmp(pTkObj,src+len, m_opFIELD[j],FALSE);
 			if (opLen > 0)
 				break;
 		}
