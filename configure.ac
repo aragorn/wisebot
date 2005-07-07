@@ -54,10 +54,10 @@ AH_BOTTOM([
 AH_VERBATIM([1_NEAR_TOP__],[
 /* checking system environment */
 #undef LINUX
+#undef CYGWIN
 #undef FREEBSD
 #undef SOLARIS
 #undef AIX5
-#undef CYGWIN
 
 /* whether indexer saves forward index or not. default is NOT using it. */
 #define FORWARD_INDEX 0
@@ -130,6 +130,7 @@ SOFTBOTCLI_LDFLAGS=""
 case "$host" in 
   *linux* )
     SHORT_HOST="linux"
+    # sets #define LINUX in auto_config.h
     AC_DEFINE(LINUX,1)
     OS_TYPE="unix"
     THREAD_LIB="-lpthread"
@@ -171,6 +172,8 @@ case "$host" in
 dnl    LDFLAGS="-Wl,-brtl"
     ;;
 esac
+
+# You can use if-condition in Makefile.am
 AM_CONDITIONAL(LINUX,   test x$SHORT_HOST = xlinux)
 AM_CONDITIONAL(CYGWIN,  test x$SHORT_HOST = xcygwin)
 AM_CONDITIONAL(FREEBSD, test x$SHORT_HOST = xfreebsd)

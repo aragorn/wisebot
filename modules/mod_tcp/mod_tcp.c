@@ -100,7 +100,7 @@ static void sock_enable_linger(int s)
 #endif /* USE_SO_LINGER */
 /*****************************************************************************/
 
-#ifdef AIX5
+#if defined(AIX5) || defined(CYGWIN)
 /*
    aix5.1 is too stupid to use getaddrinfo, and we don't really need it
    so here is a version which doesn't use it, but may have problems
@@ -157,14 +157,6 @@ static int tcp_connect(int *sockfd, char *host, char *port)
 	return SUCCESS;
 }
 
-#else // AIX5
-#ifdef CYGWIN
-static int tcp_connect(int *sockfd, char *host, char *port)
-{
-
-	return SUCCESS;
-}
-
 #else
 static int tcp_connect(int *sockfd, char *host, char *port)
 {
@@ -174,7 +166,7 @@ static int tcp_connect(int *sockfd, char *host, char *port)
 
 	res = NULL; // init;
 
-	memset(&hints, 0x00, sizeof(struct addrinfo));   
+	memset(&hints, 0x00, sizeof(hints));   
 	hints.ai_family = AF_INET;   
 	hints.ai_socktype = SOCK_STREAM;   
    
@@ -227,7 +219,7 @@ static int tcp_connect(int *sockfd, char *host, char *port)
 	return SUCCESS;
 }
 
-#else
+#endif // #if defined(AIX5) || defined(CYGWIN)
 
 static int tcp_local_connect(int *sockfd, char *path)
 {
@@ -319,70 +311,7 @@ static int tcp_lingering_close(int sockfd)
 }
 
 
-#ifndef AIX5
-static int 
-tcp_bind_listen (const char *host, const char *port, const int backlog, int *listenfd)
-{
-	int n;
-	const int on = 1;
-	const char *node = host;
-	struct addrinfo hints, *res;
-
-	memset(&hints, 0x00, sizeof(struct addrinfo));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-
-	if (strcmp(host, "*") == 0) {
-		hints.ai_flags = AI_PASSIVE;
-		node = NULL;
-	}
-
-	if ( (n = getaddrinfo(node, port, &hints, &res)) != 0 ) {
-		alert("cannot getaddrinfo for %s:%s", host, port);
-		if ( n == EAI_SYSTEM )
-			error("getaddrinfo: %s - %s", gai_strerror(n), strerror(errno));
-		else error("getaddrinfo: %s, errno:%d, %s", gai_strerror(n), errno, strerror(errno));
-		return FAIL;
-	}
-
-	*listenfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-	if ( *listenfd == -1 ) {
-		error("socket: %s", strerror(errno));
-		return FAIL;
-	}
-
-	if ( setsockopt(*listenfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0 ) {
-		close(*listenfd);
-		alert("setsockopt: %s", strerror(errno));
-		return FAIL;
-	}
-
-	/* XXX Some OSes allow listening socket attributes to be inherited
-	 * by the accept sockets which means this call only needs to be
-	 * made once on the listener.
-	 * or should be called with every accept sockets.
-	 */
-	sock_disable_nagle(*listenfd);
-
-	debug("binding %s:%s", host, port);
-	if ( bind(*listenfd, res->ai_addr, res->ai_addrlen) != 0 ) {
-		close(*listenfd);
-		alert("bind[%s:%s] error: %s", host, port, strerror(errno));
-		return FAIL;
-	}
-
-	if ( listen(*listenfd, backlog) != 0 ) {
-		close(*listenfd);
-		alert("listen: %s", strerror(errno));
-		return FAIL;
-	}
-
-	freeaddrinfo(res);
-
-	return SUCCESS;
-}
-#else
-
+#if defined(AIX5) || defined(CYGWIN)
 /*
    aix5.1 is too stupid to use getaddrinfo, and we don't really need it
    so here is a version which doesn't use it, but may have problems
@@ -452,7 +381,72 @@ tcp_bind_listen (const char *host, const char *port, const int backlog, int *lis
 
 	return SUCCESS;
 }
-#endif // STUPIDAIX
+
+#else
+
+static int 
+tcp_bind_listen (const char *host, const char *port, const int backlog, int *listenfd)
+{
+	int n;
+	const int on = 1;
+	const char *node = host;
+	struct addrinfo hints, *res;
+
+	memset(&hints, 0x00, sizeof(struct addrinfo));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
+	if (strcmp(host, "*") == 0) {
+		hints.ai_flags = AI_PASSIVE;
+		node = NULL;
+	}
+
+	if ( (n = getaddrinfo(node, port, &hints, &res)) != 0 ) {
+		alert("cannot getaddrinfo for %s:%s", host, port);
+		if ( n == EAI_SYSTEM )
+			error("getaddrinfo: %s - %s", gai_strerror(n), strerror(errno));
+		else error("getaddrinfo: %s, errno:%d, %s", gai_strerror(n), errno, strerror(errno));
+		return FAIL;
+	}
+
+	*listenfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if ( *listenfd == -1 ) {
+		error("socket: %s", strerror(errno));
+		return FAIL;
+	}
+
+	if ( setsockopt(*listenfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0 ) {
+		close(*listenfd);
+		alert("setsockopt: %s", strerror(errno));
+		return FAIL;
+	}
+
+	/* XXX Some OSes allow listening socket attributes to be inherited
+	 * by the accept sockets which means this call only needs to be
+	 * made once on the listener.
+	 * or should be called with every accept sockets.
+	 */
+	sock_disable_nagle(*listenfd);
+
+	debug("binding %s:%s", host, port);
+	if ( bind(*listenfd, res->ai_addr, res->ai_addrlen) != 0 ) {
+		close(*listenfd);
+		alert("bind[%s:%s] error: %s", host, port, strerror(errno));
+		return FAIL;
+	}
+
+	if ( listen(*listenfd, backlog) != 0 ) {
+		close(*listenfd);
+		alert("listen: %s", strerror(errno));
+		return FAIL;
+	}
+
+	freeaddrinfo(res);
+
+	return SUCCESS;
+}
+
+#endif // #if defined(AIX5) || defined(CYGWIN)
 
 static int 
 tcp_local_bind_listen (const char *path, const int backlog, int *listenfd)
@@ -582,7 +576,7 @@ static int tcp_recv_nonb (int sockfd, void *data, int len, int timeout)
 
 	while ( 1 ) {
 		int n = 0;
-#ifdef AIX5
+#if defined(AIX5) || defined(CYGWIN)
 		n = recv(sockfd, ptr, size, MSG_NONBLOCK);
 #else
 		n = recv(sockfd, ptr, size, MSG_DONTWAIT);
