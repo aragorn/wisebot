@@ -21,7 +21,6 @@
 /* __sfs_activate() options : do_format */
 #define DO_FORMAT      (1)
 #define DO_NOT_FORMAT  (0)
-#define O_NONE         (0)
 
 typedef struct _local_t {
 	int ifs_fd;

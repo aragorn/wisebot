@@ -136,7 +136,7 @@ int __sfs_all_activate(ifs_t* ifs, int* physical_segment_array, int count, int t
 		p = physical_segment_array[i];
 		if ( p == NOT_USE || p == ifs->shared->append_segment ) continue;
 
-		if ( __sfs_activate( ifs, p, type, DO_NOT_FORMAT, O_NONE ) != SUCCESS ) {
+		if ( __sfs_activate( ifs, p, type, DO_NOT_FORMAT, 0 ) != SUCCESS ) {
 			error("return FAIL");
 			return FAIL;
 		}
@@ -229,7 +229,7 @@ int _ifs_open(ifs_t* ifs, char* root_path, int segment_size, int block_size)
 	else {
 		append_segment = ifs->shared->append_segment;
 
-		if(__sfs_activate(ifs, append_segment, O_MMAP, DO_NOT_FORMAT, O_NONE) != SUCCESS) {
+		if(__sfs_activate(ifs, append_segment, O_MMAP, DO_NOT_FORMAT, 0) != SUCCESS) {
 			error("cannot sfs activate, segment[%d]", append_segment);
 			goto fail;
 		}
