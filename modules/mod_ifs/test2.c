@@ -62,7 +62,7 @@ int main(int argc, char* argv[], char* envp[])
 	info("test enviroment");
 	info("BUFFER_SIZE: %d, REPEAT: %d, FRAG_COUNT: %d", BUFFER_SIZE, REPEAT, FRAG_COUNT);
 	info("FILE_SIZE: %d", BUFFER_SIZE*FRAG_COUNT);
-	info("sizeof(super_block_t): %d", sizeof(super_block_t));
+	info("sizeof(super_block_t): %d", (int) sizeof(super_block_t));
 
 	ifs_init();
 	if ( ifs_open(&indexdb, 0) != SUCCESS ) {
