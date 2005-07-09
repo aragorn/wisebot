@@ -4,6 +4,14 @@
 #include "mod_api/docattr.h"
 #include <inttypes.h>
 
+#if defined(AIX5)
+# define SB_PRIu64 PRIu64
+# define SB_PRIx64 PRIx64
+#else
+# define SB_PRIu64 "%"PRIu64
+# define SB_PRIx64 "%"PRIx64
+#endif
+
 #define MAX_DOCATTR_FIELD 32
 
 typedef long		docattr_integer;

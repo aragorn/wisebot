@@ -390,7 +390,7 @@ static void md5_get_as_string_func(docattr_t* docattr,
 {
 	md5_get_func( docattr, field, value );
 	snprintf( value->my_string, sizeof(value->my_string),
-			"0x%"PRIx64"", value->v.md5 );
+			"0x"SB_PRIx64"", value->v.md5 );
 	value->v.string = value->my_string;
 }
 
@@ -538,7 +538,7 @@ static int docattr_distinct_rid_md5(int id, index_list_t* list)
 		return FAIL;
 	}
 	rid_field->get_func( attr1, rid_field, &value2 );
-	info("md5: %" PRIu64, value2.v.md5);
+	info("md5: " SB_PRIu64, value2.v.md5);
 
 	for ( i = 0; i < list->ndochits; ) {
 		value1.v.md5 = value2.v.md5;
@@ -555,7 +555,7 @@ static int docattr_distinct_rid_md5(int id, index_list_t* list)
 			}
 			
 			rid_field->get_func( attr2, rid_field, &value2 );
-			info("md5: %" PRIu64, value2.v.md5);
+			info("md5: " SB_PRIu64, value2.v.md5);
 
 			if ( value1.v.md5 == 0 || value2.v.md5 == 0 ) break;
 			if ( value1.v.md5 != value2.v.md5 ) break;

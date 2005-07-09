@@ -1,7 +1,12 @@
+/***********************************************************
+ *  이거는 general module 과 기존 module 의 속도를
+ *  비교하려고 만들어 본 module 이다.
+ ***********************************************************/
 #include "softbot.h"
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/docattr.h"
 #include "mod_api/qp.h"
+#include "mod_docattr_general.h" // for SB_PRIu64
 #include "mod_docattr_test.h"
 #include "mod_qp/mod_qp.h"
 
@@ -307,13 +312,13 @@ static int get_docattr_function(void *dest, char *key, char *buf, int buflen)
 		snprintf( buf, buflen, "%d", docattr->cate );
 	}
 	else if ( strcasecmp( key, "rid1" ) == 0 ) {
-		snprintf( buf, buflen, "%" PRIu64, docattr->rid1 );
+		snprintf( buf, buflen, SB_PRIu64, docattr->rid1 );
 	}
 	else if ( strcasecmp( key, "rid2" ) == 0 ) {
-		snprintf( buf, buflen, "%" PRIu64, docattr->rid2 );
+		snprintf( buf, buflen, SB_PRIu64, docattr->rid2 );
 	}
 	else if ( strcasecmp( key, "rid3" ) == 0 ) {
-		snprintf( buf, buflen, "%" PRIu64, docattr->rid3 );
+		snprintf( buf, buflen, SB_PRIu64, docattr->rid3 );
 	}
 	else {
 		warn("no such a field in docattr db: %s", key);
