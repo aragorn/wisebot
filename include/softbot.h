@@ -60,8 +60,6 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #	error
 #endif
 
-#include "dataType.h"   // FIXME: obsolete --jiwon
-#include "errorCode.h"
 #include "constants.h"
 
 /* modules.h depends on registry.h and config.h and the order matters */
@@ -73,7 +71,6 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #include "ipc.h"
 #include "memory.h"
 #include "hook.h"
-#include "message.h"
 
 #include "platform.h" /* include all related files in platform/ directory */
 
@@ -83,5 +80,6 @@ extern SB_DECLARE_DATA char gSoftBotRoot[MAX_PATH_LEN];
 extern SB_DECLARE_DATA char gErrorLogFile[MAX_PATH_LEN];
 extern SB_DECLARE_DATA char gQueryLogFile[MAX_PATH_LEN];
 extern SB_DECLARE_DATA char gRegistryFile[MAX_PATH_LEN];
+extern SB_DECLARE_DATA pid_t gRootPid;
 
 #endif
