@@ -895,8 +895,8 @@ static int pushGenericOperator(StateObj *pStObj,QueryNode *pQuNode){
 			else	
 				nRet = stk_move(&(pStObj->operatorStack),&(pStObj->postfixStack));
 		}
-		else if (mPrecedence[(UInt16)peekNode.operator] <
-				mPrecedence[(UInt16)pQuNode->operator]) {
+		else if (mPrecedence[(uint16_t)peekNode.operator] <
+				mPrecedence[(uint16_t)pQuNode->operator]) {
 			nRet = stk_push(&(pStObj->operatorStack),pQuNode);
 			return nRet;
 		}

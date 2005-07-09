@@ -8,8 +8,8 @@
 #include "softbot.h"
 
 typedef struct{
-	Int8 relType;
-	char word[MAX_WORD_LEN];
+	int8_t relType;
+	char   word[MAX_WORD_LEN];
 } RelatedTerm;
 
 int RT_get(char aWord[], RelatedTerm aRelTerm[], int maxItem);
