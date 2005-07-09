@@ -6,7 +6,7 @@
 // extern variables
 extern unsigned long dwMaxDocNum;
 
-static unsigned long HashFunc(DocId docId) {
+static unsigned long HashFunc(uint32_t docId) {
 //	return docId % dwMaxDocNum;
 	return docId;
 }
@@ -36,7 +36,7 @@ static int GetIndexElement(int fdIndexFile, unsigned long offset,
 	return SUCCESS;
 }
 
-static int HashSearch(int fdIndexFile, DocId docId, IndexFileElement *pIndexElement) {
+static int HashSearch(int fdIndexFile, uint32_t docId, IndexFileElement *pIndexElement) {
 	int iResult;
 	unsigned long currentOffset, firstOffset;
 	
@@ -118,7 +118,7 @@ static int HashInsert(int fdIndexFile, IndexFileElement *pIndexElement) {
 	return SUCCESS;
 }
 
-static int HashDelete(int fdIndexFile, DocId docId) {
+static int HashDelete(int fdIndexFile, uint32_t docId) {
 	int iResult;
 	unsigned long currentOffset, firstOffset;
 	IndexFileElement index = { 0, 0, 0, 0}, ele;
@@ -221,7 +221,7 @@ static int HashDelete(int fdIndexFile, DocId docId) {
  * return		: TRUE -> 문서가 있다.
  *				  FALSE -> 문서가 없다.
  */
-int IsExistDoc(int fdIndexFile, DocId docId) {
+int IsExistDoc(int fdIndexFile, uint32_t docId) {
 	int iResult;
 	IndexFileElement indexElement;
 	
@@ -257,7 +257,7 @@ int InsertIndexElement(int fdIndexFile, IndexFileElement *pIndexFileElement) {
  * return				: SUCCESS -> 지우기 성공
  *						  FAIL -> 지우기 실패
  */
-int DeleteIndexElement(int fdIndexFile, DocId docId) {
+int DeleteIndexElement(int fdIndexFile, uint32_t docId) {
 	int iResult;
 	
 	iResult = HashDelete(fdIndexFile, docId);
@@ -273,7 +273,7 @@ int DeleteIndexElement(int fdIndexFile, DocId docId) {
  * return				: SUCCESS -> 찾는데 성공
  *						  FAIL -> 찾는데 실패
  */
-int SelectIndexElement(int fdIndexFile, DocId docId, IndexFileElement *pIndexElement) {
+int SelectIndexElement(int fdIndexFile, uint32_t docId, IndexFileElement *pIndexElement) {
 	int iResult;
 	IndexFileElement indexElement;
 	

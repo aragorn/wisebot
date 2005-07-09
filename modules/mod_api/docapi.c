@@ -23,7 +23,7 @@ HOOK_STRUCT(
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,doc_put,(DocObject* doc),(doc),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,doc_get,\
-		(DocId docId, DocObject** pdoc),(docId,pdoc),DECLINE)
+		(uint32_t docId, DocObject** pdoc),(docId,pdoc),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,doc_get_abstract, \
 		(int numRetrievedDoc,RetrievedDoc aDoc[],DocObject *docs[]), \
 		(numRetrievedDoc,aDoc,docs),DECLINE)

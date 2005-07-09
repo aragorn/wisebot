@@ -29,7 +29,7 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int,index_one_doc,\
 SB_IMPLEMENT_HOOK_RUN_FIRST(uint32_t,last_indexed_did, (void),(),MINUS_DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,print_forwardidx,\
-	(VariableRecordFile *v,DocId did,\
+	(VariableRecordFile *v,uint32_t did,\
 	 char *field, char bprinthits, FILE* stream),\
 	(v,did,field,bprinthits,stream),DECLINE)
 

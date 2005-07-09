@@ -123,7 +123,7 @@ int sb4_com_get_doc_size(int sockfd, char *arg)
 {
 	int result=0, len=0;
 	char tmpbuf[1024];
-	DocId docid = atol(arg);
+	uint32_t docid = atol(arg);
 
 	result = sb_run_server_canneddoc_get_size(docid);
 	if (result < 0) {
@@ -157,7 +157,7 @@ int sb4_com_get_abstracted_doc(int sockfd, char *arg)
 	char field[MAX_FIELD_NAME_LEN];
 	VariableBuffer var;
 	RetrievedDoc rdoc;
-	DocId docid = 0;
+	uint32_t docid = 0;
 	char tmpbuf[STRING_SIZE];
 
 #ifdef PROCESS_HANDLE
@@ -236,7 +236,7 @@ int sb4_com_get_abstracted_doc(int sockfd, char *arg)
 
 int sb4_com_get_field(int sockfd, char *arg) 
 { 
-	DocId docid; 
+	uint32_t docid; 
 	char fieldname[256], *value; 
 	int n, len=0; 
 	DocObject *doc; 
@@ -551,7 +551,7 @@ int sb4_com_rmas_run(int sockfd, char *arg)
 int sb4_com_undelete (int sockfd, char *arg)
 {
 	int i, j;
-	DocId docid[1024], start=0, finish=0;
+	uint32_t docid[1024], start=0, finish=0;
 	char *comma=arg;
 
 	if (!strlen(arg)) {
@@ -623,7 +623,7 @@ int sb4_com_undelete (int sockfd, char *arg)
 /*int com_delete (char *arg)
 {
 	int i, j;
-	DocId docid[1024], start=0, finish=0;
+	uint32_t docid[1024], start=0, finish=0;
 	char *comma=arg;
 
 	if (!strlen(arg)) {
@@ -695,7 +695,7 @@ int sb4_com_get_new_wordid(int sockfd, char *arg, void* word_db)
 	int count=0;
 
 	char *word;
-	DocId docid;
+	uint32_t docid;
 	word_t lexicon;	
 	char tmpbuf[LONG_STRING_SIZE];
 
@@ -802,7 +802,7 @@ int sb4_com_get_wordid (int sockfd, char *arg, void* word_db)
 int sb4_com_get_docid(int sockfd, char *arg, void* did_db)
 {
 	int ret;
-	DocId docid;
+	uint32_t docid;
 	char tmpbuf[LONG_STRING_SIZE];
 
 	ret = sb_run_get_docid(did_db, arg, &docid);
@@ -1440,7 +1440,7 @@ int sb4_com_del_system_doc (int sockfd, char *arg)
 				/* delete mark to docattr */
 				{
 					docattr_mask_t docmask;
-					DocId docid[1] = { i };
+					uint32_t docid[1] = { i };
 			
 					DOCMASK_SET_ZERO(&docmask);
 					sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");

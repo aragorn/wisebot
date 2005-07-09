@@ -622,7 +622,7 @@ int sb4s_get_doc(int sockfd)
 
 	/* get document */
 	sb_run_buffer_initbuf(&varbuf);
-	rv = sb_run_server_canneddoc_get((DocId)docid, &varbuf);
+	rv = sb_run_server_canneddoc_get((uint32_t)docid, &varbuf);
 	if (rv < 0) {
 		error("cannot get document[%u]", docid);
 		send_nak(sockfd, SB4_ERD_DENY_DEL);
@@ -731,7 +731,7 @@ static int sb4s_set_docattr(int sockfd)
 	char attr[STRING_SIZE], field[SHORT_STRING_SIZE], value[STRING_SIZE];
 	char *next;
 	int n, len;
-	DocId docid;
+	uint32_t docid;
 	docattr_mask_t docmask;
 	/* 1. recv OP code */
 	/* done */
@@ -881,7 +881,7 @@ static void regi_fail_log(char *doc, int doclen)
 	write(regifailfd, doc, doclen);
 }
 
-void print_docid_oid_log(DocId docid, char *oid)
+void print_docid_oid_log(uint32_t docid, char *oid)
 {
 
 }
@@ -895,7 +895,7 @@ static int sb4s_register_doc(int sockfd)
 	char buf[SB4_MAX_SEND_SIZE+1];
 	sb4_dit_t sb4_dit;
 	header_t header;
-	DocId docid = 0;
+	uint32_t docid = 0;
 
 	// 첨부파일을 필터에 넣기 위해 잠시 사용하는 파일 이름들...
 	int fd_filter_in, fd_filter_out;
@@ -1441,7 +1441,7 @@ protocol_cdm:
 	return SUCCESS;
 }
 
-int sb4c_last_docid(int sockfd, DocId *docid)
+int sb4c_last_docid(int sockfd, uint32_t *docid)
 {
 	char buf[STRING_SIZE];
 	int len;
@@ -1489,7 +1489,7 @@ int sb4s_last_docid(int sockfd)
 {
 	char buf[STRING_SIZE];
 	int len, n;
-	DocId docid;
+	uint32_t docid;
 
 	/* 1. receive OP_CODE */
 	/* 2. Send ACK NAK */
@@ -1582,7 +1582,7 @@ int sb4s_delete_oid(int sockfd)
 	char buf[STRING_SIZE];
 	char tmp[STRING_SIZE];
 	int i, len, n, failed;
-	DocId docid;
+	uint32_t docid;
 
 	/* 1. Recv OP_CODE */
 	/* 2. Send ACK NAK */
@@ -1767,7 +1767,7 @@ int sb4s_delete_doc(int sockfd)
 
 		DOCMASK_SET_ZERO(&docmask);
 		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
-		sb_run_docattr_set_array((DocId*)&docid, 1, SC_MASK, &docmask);
+		sb_run_docattr_set_array((uint32_t*)&docid, 1, SC_MASK, &docmask);
 	}
 
 	/* 5. Send OP_ACK for successful delete of Docid */
@@ -1785,7 +1785,7 @@ int sb4s_delete_doc(int sockfd)
 	int len, n;
 	//uint32_t docid;
 	int i, j;
-	DocId docid[1024], start=0, finish=0, last;
+	uint32_t docid[1024], start=0, finish=0, last;
 	char *comma, *arg;
 	
 	/* 1. Send OP_CODE*/

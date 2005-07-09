@@ -42,7 +42,7 @@ extern "C" {
 #endif
 
 SB_DECLARE_HOOK(int,doc_put,(DocObject* doc))
-SB_DECLARE_HOOK(int,doc_get,(DocId docId, DocObject** pdoc))
+SB_DECLARE_HOOK(int,doc_get,(uint32_t docId, DocObject** pdoc))
 SB_DECLARE_HOOK(int,doc_get_abstract, \
 		(int numRetrievedDoc,RetrievedDoc aDoc[], DocObject *docs[]))
 SB_DECLARE_HOOK(int,doc_init,\

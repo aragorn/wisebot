@@ -85,7 +85,7 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4c_search2_doc, \
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4c_status, \
 	(int sockfd, char *cmd, FILE *output), (sockfd, cmd, output), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4c_last_docid, \
-	(int sockfd, DocId *docid), (sockfd, docid), DECLINE)
+	(int sockfd, uint32_t *docid), (sockfd, docid), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,sb4c_remote_morphological_analyze_doc, \
 	(int sockfd, char *meta_data , void *send_data , \
 	 long send_data_size,  void **receive_data, long *receive_data_size), \

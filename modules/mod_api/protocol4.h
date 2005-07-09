@@ -133,7 +133,7 @@ SB_DECLARE_HOOK(int,sb4c_search_doc,(int sockfd, char *query, char *attr, \
 SB_DECLARE_HOOK(int,sb4c_search2_doc,(int sockfd, char *query, char *attr, \
 	int listcount, int page, char *sc, sb4_search_result_t *result))
 SB_DECLARE_HOOK(int,sb4c_status,(int sockfd, char *cmd, FILE *output))
-SB_DECLARE_HOOK(int,sb4c_last_docid,(int sockfd, DocId *docid))
+SB_DECLARE_HOOK(int,sb4c_last_docid,(int sockfd, uint32_t *docid))
 SB_DECLARE_HOOK(int,sb4c_remote_morphological_analyze_doc, \
 	(int sockfd, char *meta_data , void *send_data , \
 	 long send_data_size,  void **receive_data, long *receive_data_size))

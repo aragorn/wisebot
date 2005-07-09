@@ -44,7 +44,7 @@ static int *fdDBFile = NULL;
 
 static struct cdm_shared_t {
 	uint16_t currentDBNo;
-	DocId    lastDocId;
+	uint32_t    lastDocId;
 	int      cdm_stat[6];
 } *cdm_shared = NULL;
 static char cdm_shared_file[MAX_FILE_LEN] = "dat/cdm/cdm.shared";
@@ -59,7 +59,7 @@ static char cdm_shared_file[MAX_FILE_LEN] = "dat/cdm/cdm.shared";
  */
 
 //static SyncInfo syncInfo;
-static int CDM_getWithIndexElement(DocId docId, VariableBuffer *pCannedDoc,
+static int CDM_getWithIndexElement(uint32_t docId, VariableBuffer *pCannedDoc,
 		IndexFileElement *indexElement);
 
 /**
@@ -237,7 +237,7 @@ char *_trim(char *str, int *len)
 	return start;
 }
 
-int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
+int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc) {
 	int iResult, ditNo;
 	long iSize, dwCurrentDBOffset;
 	IndexFileElement indexElement;
@@ -430,7 +430,7 @@ int CDM_put(DocId docId, VariableBuffer *pCannedDoc) {
 	return iResult;
 }
 
-int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc) {
+int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableBuffer *pCannedDoc) {
 	int iResult, ditNo;
 	long iSize, dwCurrentDBOffset;
 	IndexFileElement indexElement;
@@ -614,7 +614,7 @@ int CDM_putWithOid(void* did_db, char *oid, DocId *registeredDocId, VariableBuff
 
 	/* create docid */
 	{
-		DocId docid=0, olddocid=0;
+		uint32_t docid=0, olddocid=0;
 		docattr_mask_t docmask;
 
 		iResult = sb_run_get_new_docid(did_db, oid, &docid, &olddocid); 
@@ -684,7 +684,7 @@ return_fail:
 	return FAIL;
 }
 
-int CDM_getSize(DocId docId)
+int CDM_getSize(uint32_t docId)
 {
 	int iResult;
 	docattr_t attr;
@@ -721,13 +721,13 @@ int CDM_getSize(DocId docId)
  * CDM_get
  * 문서 CannedDoc.doc 참조
  */
-int CDM_get(DocId docId, VariableBuffer *pCannedDoc)
+int CDM_get(uint32_t docId, VariableBuffer *pCannedDoc)
 {
 	IndexFileElement ele;
 	return CDM_getWithIndexElement(docId, pCannedDoc, &ele);
 }
 
-static int CDM_getWithIndexElement(DocId docId, VariableBuffer *pCannedDoc, IndexFileElement *indexElement) {
+static int CDM_getWithIndexElement(uint32_t docId, VariableBuffer *pCannedDoc, IndexFileElement *indexElement) {
 	int iResult;
 /*	IndexFileElement indexElement;*/
 	docattr_t attr;
@@ -830,7 +830,7 @@ static int CDM_getWithIndexElement(DocId docId, VariableBuffer *pCannedDoc, Inde
  * CDM_get_as_pointer
  * VariableBuffer를 사용하지않고 pointer로 바로 받는다.
  */
-int CDM_get_as_pointer(DocId docId, void *pCannedDoc, int size)
+int CDM_get_as_pointer(uint32_t docId, void *pCannedDoc, int size)
 {
 	IndexFileElement ele;
 	IndexFileElement *indexElement = &ele;
@@ -1082,7 +1082,7 @@ CDM_getAbstract(int            numRetrievedDoc,
  * CDM_delete
  * 문서 CannedDoc.doc 참조
  */
-static int CDM_delete(DocId docId) {
+static int CDM_delete(uint32_t docId) {
 	int iResult;
 	IndexFileElement indexElement;
 
@@ -1113,7 +1113,7 @@ static int CDM_delete(DocId docId) {
  * CDM_update
  * 문서 CannedDoc.doc 참조
  */
-static int CDM_update(DocId docId, VariableBuffer *pDoc) {
+static int CDM_update(uint32_t docId, VariableBuffer *pDoc) {
 	int iResult;
 	iResult = CDM_delete(docId);
 	if (iResult != CDM_NOT_EXIST && iResult < 0) {
@@ -1129,7 +1129,7 @@ static int CDM_update(DocId docId, VariableBuffer *pDoc) {
  * 문서 CannedDoc.doc 참조
  */
 #if 0
-static int CDM_print(DocId docId, FILE *pFp) {
+static int CDM_print(uint32_t docId, FILE *pFp) {
 	int iResult;
 	VariableBuffer buf;
 	
@@ -1164,7 +1164,7 @@ static int CDM_printDocList(FILE *pFp) {
 }
 #endif
 
-static DocId CDM_getLastId (void) {
+static uint32_t CDM_getLastId (void) {
 	return cdm_shared->lastDocId;
 }
 

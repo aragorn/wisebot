@@ -55,14 +55,14 @@ struct group_result_t;
 SB_DECLARE_HOOK(int,docattr_open,(void))
 SB_DECLARE_HOOK(int,docattr_close,(void))
 SB_DECLARE_HOOK(int,docattr_synchronize,(void))
-SB_DECLARE_HOOK(int,docattr_get,(DocId docid, void *p_doc_attr))
-SB_DECLARE_HOOK(int,docattr_ptr_get,(DocId docid, docattr_t **p_doc_attr))
-SB_DECLARE_HOOK(int,docattr_set,(DocId docid, void *p_doc_attr))
+SB_DECLARE_HOOK(int,docattr_get,(uint32_t docid, void *p_doc_attr))
+SB_DECLARE_HOOK(int,docattr_ptr_get,(uint32_t docid, docattr_t **p_doc_attr))
+SB_DECLARE_HOOK(int,docattr_set,(uint32_t docid, void *p_doc_attr))
 SB_DECLARE_HOOK(int,docattr_get_array, \
-	(DocId *dest, int destsize, DocId *sour, \
+	(uint32_t *dest, int destsize, uint32_t *sour, \
 	 int soursize, condfunc func, void *cond))
 SB_DECLARE_HOOK(int,docattr_set_array, \
-	(DocId *list, int listsize, maskfunc func, void *mask))
+	(uint32_t *list, int listsize, maskfunc func, void *mask))
 
 SB_DECLARE_HOOK(int,docattr_get_index_list, \
 	(struct index_list_t *dest, struct index_list_t *sour, \

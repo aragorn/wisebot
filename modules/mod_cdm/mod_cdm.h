@@ -25,9 +25,9 @@
 #define MAX_FIELD_NUM				32
 #endif
 
-int CDM_put(DocId docId, VariableBuffer *pCannedDoc);
-int CDM_get(DocId docId, VariableBuffer *pCannedDoc);
-int CDM_get_as_pointer(DocId docId, void *pCannedDoc, int size);
+int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc);
+int CDM_get(uint32_t docId, VariableBuffer *pCannedDoc);
+int CDM_get_as_pointer(uint32_t docId, void *pCannedDoc, int size);
 int
 CDM_getAbstract(int            numRetrievedDoc, 
                 RetrievedDoc   aRetrievedDoc[],

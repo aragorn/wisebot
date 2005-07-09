@@ -196,7 +196,7 @@ static int close_did_db(did_db_t* did_db)
 	return SUCCESS;
 }
 
-static int get_new_doc_id(did_db_t* did_db, char* pKey, DocId* docid, DocId* olddocid)
+static int get_new_doc_id(did_db_t* did_db, char* pKey, uint32_t* docid, uint32_t* olddocid)
 {
 	did_db_custom_t* db;
 	int ret;
@@ -238,7 +238,7 @@ static int get_new_doc_id(did_db_t* did_db, char* pKey, DocId* docid, DocId* old
 	else return DOCID_NEW_REGISTERED;
 }
 
-static int get_doc_id(did_db_t* did_db, char* pKey, DocId* docid)
+static int get_doc_id(did_db_t* did_db, char* pKey, uint32_t* docid)
 {
 	did_db_custom_t* db;
 	int ret;

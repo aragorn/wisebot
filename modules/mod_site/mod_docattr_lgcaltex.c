@@ -115,7 +115,7 @@ static char* _trim(char *str, int *len)
 }
 
 /* vrm add */
-static int put_doc_ac(void* did_db, char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc)
+static int put_doc_ac(void* did_db, char *oid, uint32_t *registeredDocId, VariableBuffer *pCannedDoc)
 {
     parser_t *p;
     field_t *f;
@@ -1294,7 +1294,7 @@ module ac_remake_module = {
 };
 
 static int del_main(slot_t *slot) {
-    DocId docid;
+    uint32_t docid;
     registry_t *reg;
     int last_registered_docid;
     int i, ret;

@@ -31,7 +31,7 @@
  * --- keys.idx ---
  */
 typedef struct _INDEXFILEELEMENT {
-	DocId docId;
+	uint32_t docId;
 	unsigned long dwDBNo;
 	unsigned long offset;
 	unsigned long length;
@@ -46,9 +46,9 @@ typedef struct _INDEXFILEELEMENT {
 //int ParseCannedDoc(const char *aCannedDoc, Element *pElements);
 //int CheckCannedDoc(const char *aCannedDoc);
 
-int IsExistDoc(int fdIndexFile, DocId docId);
+int IsExistDoc(int fdIndexFile, uint32_t docId);
 int InsertIndexElement(int fdIndexFile, IndexFileElement *pIndexFileElement);
-int SelectIndexElement(int fdIndexFile, DocId docId, IndexFileElement *pIndexElement);
-int DeleteIndexElement(int fdIndexFile, DocId docId);
+int SelectIndexElement(int fdIndexFile, uint32_t docId, IndexFileElement *pIndexElement);
+int DeleteIndexElement(int fdIndexFile, uint32_t docId);
 
 #endif

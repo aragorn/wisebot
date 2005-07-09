@@ -52,7 +52,7 @@ DAPI_put (DocObject            *doc) {
 }
 
 int
-DAPI_get (DocId             docId,
+DAPI_get (uint32_t             docId,
 		  DocObject        **pdoc) {
 	DocObject		*doc;
 	int              iResult,

@@ -781,7 +781,7 @@ static int did_hash_find(did_db_custom_t *did_db, char* pKey, uint32_t* docid)
 }
 
 /****** API function ******/ 
-static int get_new_doc_id(did_db_t* did_db, char *pKey, DocId* docid, DocId* olddocid)
+static int get_new_doc_id(did_db_t* did_db, char *pKey, uint32_t* docid, uint32_t* olddocid)
 {
 	int ret;
 	did_db_custom_t* db;
@@ -811,7 +811,7 @@ static int get_new_doc_id(did_db_t* did_db, char *pKey, DocId* docid, DocId* old
 	return ret;
 }
 
-static int get_doc_id(did_db_t* did_db, char *pKey, DocId *docid)
+static int get_doc_id(did_db_t* did_db, char *pKey, uint32_t *docid)
 {
 	int ret;
 	did_db_custom_t* db;

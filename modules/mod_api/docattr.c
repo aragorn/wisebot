@@ -29,18 +29,18 @@ HOOK_STRUCT(
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_open, (void), (), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_close, (void), (), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_synchronize, (void), (), DECLINE)
-SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_get, (DocId docid, void *p_doc_attr), \
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_get, (uint32_t docid, void *p_doc_attr), \
 	(docid, p_doc_attr), DECLINE)
-SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_ptr_get, (DocId docid, docattr_t **p_doc_attr), \
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_ptr_get, (uint32_t docid, docattr_t **p_doc_attr), \
 	(docid, p_doc_attr), DECLINE)
-SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_set, (DocId docid, void *p_doc_attr), \
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_set, (uint32_t docid, void *p_doc_attr), \
 	(docid, p_doc_attr), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_get_array, \
-	(DocId *dest, int destsize, DocId *sour, int soursize, \
+	(uint32_t *dest, int destsize, uint32_t *sour, int soursize, \
 	 condfunc func, void *cond), \
 	(dest, destsize, sour, soursize, func, cond), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_set_array, \
-	(DocId *list, int listsize, maskfunc func, void *mask), \
+	(uint32_t *list, int listsize, maskfunc func, void *mask), \
 	(list, listsize, func, mask), DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_get_index_list, \

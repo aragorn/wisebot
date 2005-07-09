@@ -20,24 +20,24 @@ HOOK_STRUCT(
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_init,(),(),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_close,(),(),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_ALL(int,server_canneddoc_put,\
-		(DocId docId, VariableBuffer *pCannedDoc),(docId, pCannedDoc),SUCCESS,DECLINE)
+		(uint32_t docId, VariableBuffer *pCannedDoc),(docId, pCannedDoc),SUCCESS,DECLINE)
 SB_IMPLEMENT_HOOK_RUN_ALL(int,server_canneddoc_put_with_oid,\
-		(void* did_db, char *oid, DocId *registeredDocId, VariableBuffer *pCannedDoc), \
-		(did_db, oid, registeredDocId, pCannedDoc),SUCCESS,DECLINE)
+		(void* did_db, char *oid, uint32_t *registeredDocid, VariableBuffer *pCannedDoc), \
+		(did_db, oid, registeredDocid, pCannedDoc),SUCCESS,DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_get,\
-		(DocId docId, VariableBuffer *pCannedDoc),(docId, pCannedDoc),DECLINE)
+		(uint32_t docId, VariableBuffer *pCannedDoc),(docId, pCannedDoc),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_get_as_pointer,\
-		(DocId docId, void *pCannedDoc, int size),(docId, pCannedDoc, size),DECLINE)
+		(uint32_t docId, void *pCannedDoc, int size),(docId, pCannedDoc, size),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_get_size,\
-		(DocId docId),(docId),DECLINE)
+		(uint32_t docId),(docId),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_get_abstract, \
 		(int numRetrievedDoc, RetrievedDoc aRetrievedDoc[], \
 		 VariableBuffer aCannedDoc[]), \
 		(numRetrievedDoc, aRetrievedDoc, aCannedDoc),DECLINE)
-SB_IMPLEMENT_HOOK_RUN_FIRST(DocId,server_canneddoc_last_registered_id, \
-		(void),(),((DocId)-1))
-SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_delete,(DocId docId),(docId),DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(uint32_t,server_canneddoc_last_registered_id, \
+		(void),(),((uint32_t)-1))
+SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_delete,(uint32_t docId),(docId),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_update,\
-		(DocId docId, VariableBuffer *pCannedDoc),(docId, pCannedDoc),DECLINE)
+		(uint32_t docId, VariableBuffer *pCannedDoc),(docId, pCannedDoc),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_drop,(void),(),DECLINE)
 

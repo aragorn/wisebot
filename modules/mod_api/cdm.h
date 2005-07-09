@@ -5,6 +5,7 @@
 
 #include "softbot.h"
 #include "mod_api/vbm.h"
+#include "mod_api/did.h"
 
 /* canned document manager status code */
 #define CDM_UNKNOWN_DATABASE		(-1)
@@ -59,20 +60,20 @@ extern "C" {
 SB_DECLARE_HOOK(int,server_canneddoc_init,())
 SB_DECLARE_HOOK(int,server_canneddoc_close,())
 SB_DECLARE_HOOK(int,server_canneddoc_put, \
-	(DocId docid, VariableBuffer* pDocument))
+	(uint32_t docid, VariableBuffer* pDocument))
 SB_DECLARE_HOOK(int,server_canneddoc_put_with_oid, \
-	(void* did_db, char *oid, DocId *registeredDocid, VariableBuffer* pDocument))
+	(void* did_db, char *oid, uint32_t *registeredDocid, VariableBuffer* pDocument))
 SB_DECLARE_HOOK(int,server_canneddoc_get, \
-	(DocId docid, VariableBuffer* pDocument))	
+	(uint32_t docid, VariableBuffer* pDocument))	
 SB_DECLARE_HOOK(int,server_canneddoc_get_as_pointer, \
-	(DocId docid, void* pDocument, int size))	
-SB_DECLARE_HOOK(int,server_canneddoc_get_size, (DocId docid))	
+	(uint32_t docid, void* pDocument, int size))	
+SB_DECLARE_HOOK(int,server_canneddoc_get_size, (uint32_t docid))	
 SB_DECLARE_HOOK(int,server_canneddoc_get_abstract,\
 	(int numRetrievedDoc,RetrievedDoc aDoc[],VariableBuffer* pDocument))
-SB_DECLARE_HOOK(DocId,server_canneddoc_last_registered_id,())
-SB_DECLARE_HOOK(int,server_canneddoc_delete,(DocId docid))
+SB_DECLARE_HOOK(uint32_t,server_canneddoc_last_registered_id,())
+SB_DECLARE_HOOK(int,server_canneddoc_delete,(uint32_t docid))
 SB_DECLARE_HOOK(int,server_canneddoc_update, \
-	(DocId docid, VariableBuffer* pDocument))	
+	(uint32_t docid, VariableBuffer* pDocument))	
 SB_DECLARE_HOOK(int,server_canneddoc_drop,())
 
 

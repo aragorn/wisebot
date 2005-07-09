@@ -33,7 +33,7 @@ SB_DECLARE_HOOK(int,index_one_doc, \
 	(uint32_t did,word_hit_t *wordhit,uint32_t hitsize,uint32_t *hitidx) )
 SB_DECLARE_HOOK(uint32_t,last_indexed_did,(void))
 SB_DECLARE_HOOK(int, print_forwardidx,\
-  (VariableRecordFile *v, DocId did, \
+  (VariableRecordFile *v, uint32_t did, \
    char *field, char bprinthits, FILE* stream))
 
 SB_DECLARE_HOOK(int,get_para_position,(hit_t *hit))
