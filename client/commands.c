@@ -394,7 +394,7 @@ int com_connect(char *arg)
 int com_register_doc(char *arg)
 {
 	int filedes,result,n;
-	DocId docid = 0;
+	uint32_t docid = 0;
 	VariableBuffer var;
 	char canneddoc[MAX_CANNED_DOC], filename[256];
 
@@ -436,7 +436,7 @@ int com_register_doc(char *arg)
 int com_register_doc_i(char *arg)
 {
 	int filedes,result,n,i;
-	static DocId docid = 0;
+	static uint32_t docid = 0;
 	VariableBuffer var;
 	char canneddoc[MAX_CANNED_DOC];
 	char filename[256];
@@ -487,7 +487,7 @@ int com_register_doc_i(char *arg)
 int com_get_doc(char *arg)
 {
 	int result=0;
-	DocId docid = atol(arg);
+	uint32_t docid = atol(arg);
 
 #ifdef GET_FROM_REMOTE
 	int sockfd=0;
@@ -540,7 +540,7 @@ int com_get_doc(char *arg)
 int com_get_doc_size(char *arg)
 {
 	int result=0;
-	DocId docid = atol(arg);
+	uint32_t docid = atol(arg);
 
 	result = sb_run_server_canneddoc_get_size(docid);
 	if (result < 0) {
@@ -558,7 +558,7 @@ int com_get_abstracted_doc(char *arg)
 	char field[MAX_FIELD_NAME_LEN];
 	VariableBuffer var;
 	RetrievedDoc rdoc;
-	DocId docid = 0;
+	uint32_t docid = 0;
 
 	result = sscanf(arg, "%u %s %d %d", &docid, field, &offset, &size);
 	if (result != 4) {
@@ -601,7 +601,7 @@ int com_get_abstracted_doc(char *arg)
 int com_last_regi(char *arg)
 {
 	int sockfd;
-	DocId result = 0;
+	uint32_t result = 0;
 
 	if (sb_run_tcp_connect(&sockfd, mServerAddr, mServerPort) == FAIL) {
 		printf("tcp_connect failed.\n");
@@ -620,7 +620,7 @@ int com_last_regi(char *arg)
 }
 int com_get_field(char *arg) 
 { 
-	DocId docid; 
+	uint32_t docid; 
 	char fieldname[256], *value, filename[256]={0x00,}, buf[STRING_SIZE]; 
 	int n=0, fd=0, iswrite_file=0; 
 	DocObject *doc; 
@@ -690,7 +690,7 @@ int com_get_abstracted_field(char *arg)
 	char field[MAX_FIELD_NAME_LEN], *value;
 	DocObject *doc;
 	RetrievedDoc rdoc;
-	DocId docid = 0;
+	uint32_t docid = 0;
 
 	result = sscanf(arg, "%u %s %d %d", &docid, field, &offset, &size);
 	if (result != 4) {
@@ -1206,7 +1206,7 @@ FINISH:
 int com_forward_index(char *arg)
 {
 #if FORWARD_INDEX==1
-	DocId docid=0;
+	uint32_t docid=0;
 	int ret=0;
 	char bprinthits=1;
 	char *usage="usage: forward_index docid field [bprinthits(0/1)]\n";
@@ -1246,7 +1246,7 @@ int com_forward_index(char *arg)
 int com_get_docattr(char *arg)
 {
     docattr_t attr;
-    DocId docid;
+    uint32_t docid;
     char field[256];
     char buf[STRING_SIZE];
 
@@ -1272,7 +1272,7 @@ int com_get_docattr(char *arg)
 
 int com_set_docattr(char *arg)
 {
-    DocId docid;
+    uint32_t docid;
     char field[SHORT_STRING_SIZE], value[STRING_SIZE];
 
     if (sscanf(arg, "%u %s %s", &docid, field, value) != 3) {
@@ -1325,7 +1325,7 @@ int com_set_docattr_by_oid(char *arg)
 int com_undelete (char *arg)
 {
 	int i, j;
-	DocId docid[1024], start=0, finish=0;
+	uint32_t docid[1024], start=0, finish=0;
 	char *comma=arg;
 
 	if (!strlen(arg)) {
@@ -1392,7 +1392,7 @@ int com_undelete (char *arg)
 int com_delete (char *arg)
 {
 	int i, j;
-	DocId docid[1024], start=0, finish=0;
+	uint32_t docid[1024], start=0, finish=0;
 	char *comma=arg;
 
 	if (!strlen(arg)) {
@@ -1625,7 +1625,7 @@ int com_get_num_of_wordid (char *arg)
 int com_get_docid(char *arg)
 {
 	int ret;
-	DocId docid;
+	uint32_t docid;
 
 	ret = sb_run_get_docid(mDidDb, arg, &docid);
 	if (ret < 0) {
@@ -1640,7 +1640,7 @@ int com_get_docid(char *arg)
 int com_get_new_docid(char *arg)
 {
 	int ret;
-	DocId docid, olddocid;
+	uint32_t docid, olddocid;
 
 	ret = sb_run_get_new_docid(mDidDb, arg, &docid, &olddocid);
 	if (ret < 0) {
@@ -1896,7 +1896,7 @@ int com_rebuild_docattr(char *arg)
         int len, j;
         char *val, value[STRING_SIZE], path[STRING_SIZE];
         field_t *f;
-        DocId docid;
+        uint32_t docid;
 
         docid = i;
         /* setting docmask data */
@@ -1987,7 +1987,7 @@ int com_rebuild_rid(char *arg)
         int len;
         char *val, value[STRING_SIZE], path[STRING_SIZE], rid[STRING_SIZE];  
         field_t *f;
-		DocId docid;
+		uint32_t docid;
 
         /* TYPE2 Check */
         strcpy(path, "/Document/TYPE2");
