@@ -13,22 +13,12 @@
 							*/
 #define MINUS_DECLINE (-99)
 
-/* XXX TRUE/FALSE is already defined at sys/types.h .
- *     isn't this tricky?
- *     --aragorn, 2003/09/10
- */
-#ifdef TRUE
-#undef TRUE
+#ifndef TRUE
+#  define TRUE   (1)
 #endif
 
-#ifdef FALSE
-#undef FALSE
+#ifndef FALSE
+#  define FALSE  (0)
 #endif
-
-#define TRUE		(1)
-#define FALSE		(-1)
-
-
-#define eMemoryAllocation	(-101) /* obsolete? */
 
 #endif
