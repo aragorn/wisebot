@@ -4,13 +4,6 @@
 
 #include "softbot.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-
 SB_DECLARE_HOOK(int,tcp_connect,(int *sockfd, char *host, char *port))
 SB_DECLARE_HOOK(int,tcp_close,(int sockfd))
 SB_DECLARE_HOOK(int,tcp_lingering_close,(int sockfd))

@@ -2,6 +2,13 @@
 #include "softbot.h"
 #include "mod_api/tcp.h"
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>        /* getaddrinfo(3) */
+#include <arpa/inet.h>    /* inet_ntop(3)   */
+#include <netinet/tcp.h>  /* TCP_NODELAY with setsockopt(3) */
+#include <sys/un.h>       /* unix socket    */
+
 #if defined(AF_UNIX) && !defined(SUN_LEN) /* From UNP V1 (2e) R.I.P. Rich Stevens */
 #define SUN_LEN(su) (sizeof(*(su)) - sizeof((su)->sun_path) + strlen((su)->sun_path)) 
 #endif
