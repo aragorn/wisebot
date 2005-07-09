@@ -16,3 +16,4 @@ share
 tags
 .history
 docs
+*.ncb *.opt

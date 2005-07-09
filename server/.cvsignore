@@ -1,3 +1,4 @@
 softbotd
 *.exp
 exports.c export_vars.h
+Release Debug *.plg

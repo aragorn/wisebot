@@ -2,10 +2,18 @@
 #ifndef SOFTBOT_H
 #define SOFTBOT_H 1
 
-#include "auto_config.h" /* autoconf configuration stuffs */
-
-#define DEBUG_SOFTBOTD // undef DEBUG when you release softbotd
-//#undef  DEBUG_SOFTBOTD // undef DEBUG when you release softbotd
+#ifdef WIN32
+# include "win32_config.h"
+# ifdef _DEBUG
+#  define DEBUG_SOFTBOTD  1
+# else
+#  undef  DEBUG_SOFTBOTD
+# endif
+#else // #ifdef WIN32
+# include "auto_config.h" /* autoconf configuration stuffs */
+# define DEBUG_SOFTBOTD // undef DEBUG when you release softbotd
+//# undef  DEBUG_SOFTBOTD // undef DEBUG when you release softbotd
+#endif // #ifdef WIN32
 
 #define SB_DECLARE(type)	type
 #define SB_DECLARE_DATA	
@@ -40,7 +48,9 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <sys/time.h>
+#ifndef WIN32
+# include <sys/time.h>
+#endif
 
 #include <sys/types.h>
 #include <unistd.h>
