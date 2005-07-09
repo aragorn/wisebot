@@ -10,5 +10,5 @@ ifs_defrag_LDADD = ../modules/mod_ifs/mod_ifs_defrag.la ../modules/mod_ifs/mod_i
 				   ../modules/mod_mp/libmp.la ../lib/libplatform.la ../server/libsoftbotserver.la
 ifs_defrag_LDFLAGS = -L../lib -export-dynamic -ldl $(THREAD_LIB)
 
-include ../modules/install-libexec.mk
+include ../modules/install-pkglib.mk
 
