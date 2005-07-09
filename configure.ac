@@ -223,6 +223,9 @@ dnl AC_AIX
 
 CFLAGS="-Wall -g3 -O2"
 
+dnl if test x"$SHORT_HOST" = xcygwin; then
+  AC_LIBTOOL_WIN32_DLL
+dnl fi
 AC_LIBTOOL_DLOPEN
 AC_PROG_LIBTOOL
 
@@ -230,7 +233,7 @@ dnl ---------------------------------------------------------------------------
 
 AC_TYPE_SIGNAL
 
-dnl XXX: should fail configure when followings headers does not exist.
+dnl should fail configure when followings headers does not exist.
 AC_CHECK_HEADERS( \
     inttypes.h string.h stdlib.h unistd.h fcntl.h getopt.h \
     sys/stat.h sys/mman.h sys/times.h ctype.h getopt.h sys/types.h io.h \
@@ -246,6 +249,7 @@ AC_CHECK_FUNCS( \
   alloca \
   mmap \
   mergesort \
+  getaddrinfo \
 )
 
 
