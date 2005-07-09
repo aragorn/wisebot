@@ -12,8 +12,7 @@ struct option {
   int *flag;
   int val;
 };
-#endif
-
+#else
 static struct option opts[] = {
 	{ "help",            0, NULL, 'h' },
 	{ "pause",           0, NULL, 'p' },
@@ -24,6 +23,7 @@ static struct option opts[] = {
 	{ "softbot-root",    1, NULL, 'r' },
 	{ NULL,              0, NULL, 0 }
 };
+#endif
 
 static struct option_help {
 	char *long_opt;

@@ -366,10 +366,7 @@ struct option {
   int *flag;
   int val;
 };
-#endif
-
-#define OPTION_COMMANDS		"hp:g:kltc:v"
-
+#else
 static struct option opts[] = {
 	{ "help",			0, NULL, 'h' },
 	{ "port",			1, NULL, 'p' },
@@ -382,6 +379,9 @@ static struct option opts[] = {
 	{ "version-status",	0, NULL, 1 },
 	{ NULL,				0, NULL, 0 }
 };
+#endif
+
+#define OPTION_COMMANDS		"hp:g:kltc:v"
 
 static struct option_help {
 	char *long_opt, *short_opt, *desc;
