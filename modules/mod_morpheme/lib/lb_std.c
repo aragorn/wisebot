@@ -13,17 +13,9 @@
 #include  <string.h>
 #include  <ctype.h>
 #include  "old_softbot.h"
-#if   defined(FREEBSD)
-#	include  <sys/time.h>
-#elif defined(LINUX)
-#	include <sys/time.h>
-#	include <time.h>
-#elif defined(SOLARIS)
-#	include  <sys/time.h>
-#elif defined(AIX5)
-#	include  <sys/time.h>
-#else
-#	error undefined platform
+#include  <sys/time.h>
+#if defined(LINUX) || defined(CYGWIN)
+#  include <sys/time.h>
 #endif
 
 #include  <stdarg.h>
