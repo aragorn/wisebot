@@ -169,7 +169,7 @@ case "$host" in
     EXTRA_CFLAGS="-fsigned-char"
     SOFTBOTD_LDFLAGS='-Wl,-bdynamic -Wl,-bE:$(top_builddir)/server/softbotd.exp -Wl,-bmaxdata:0x40000000 -L/usr/local/lib -liconv'
     SOFTBOTCLI_LDFLAGS='-Wl,-bdynamic -Wl,-bE:$(top_builddir)/client/softbotcli.exp -Wl,-bmaxdata:0x40000000 -L/usr/local/lib -liconv'
-dnl    LDFLAGS="-Wl,-brtl"
+    LDFLAGS="-Wl,-brtl"
     ;;
 esac
 
