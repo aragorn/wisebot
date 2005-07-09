@@ -77,7 +77,7 @@ void test_structure_array()
 
 void cmp_qsort_msort()
 {
-#define MAX	10000
+#define MAX_VALUE 10000
 #define AR_SIZE 500
 	int a[AR_SIZE];
 	int b[AR_SIZE];
@@ -85,7 +85,7 @@ void cmp_qsort_msort()
 	struct timeval t1,t2;
 
 	for (i=0; i<AR_SIZE; i++) {
-		a[i] = 1+(int) (MAX*rand()/(RAND_MAX+1.0));
+		a[i] = 1+(int) (MAX_VALUE*rand()/(RAND_MAX+1.0));
 	}
 	memcpy(b,a,sizeof(int)*AR_SIZE);
 
