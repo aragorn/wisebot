@@ -100,7 +100,7 @@ static void sock_enable_linger(int s)
 #endif /* USE_SO_LINGER */
 /*****************************************************************************/
 
-#if defined(AIX5) || defined(CYGWIN)
+#if !defined(HAVE_GETADDRINFO) || defined(AIX5)
 /*
    aix5.1 is too stupid to use getaddrinfo, and we don't really need it
    so here is a version which doesn't use it, but may have problems
@@ -219,7 +219,7 @@ static int tcp_connect(int *sockfd, char *host, char *port)
 	return SUCCESS;
 }
 
-#endif // #if defined(AIX5) || defined(CYGWIN)
+#endif // #if !defined(HAVE_GETADDRINFO) || defined(AIX5)
 
 static int tcp_local_connect(int *sockfd, char *path)
 {
@@ -311,7 +311,7 @@ static int tcp_lingering_close(int sockfd)
 }
 
 
-#if defined(AIX5) || defined(CYGWIN)
+#if !defined(HAVE_GETADDRINFO) || defined(AIX5)
 /*
    aix5.1 is too stupid to use getaddrinfo, and we don't really need it
    so here is a version which doesn't use it, but may have problems
@@ -446,7 +446,7 @@ tcp_bind_listen (const char *host, const char *port, const int backlog, int *lis
 	return SUCCESS;
 }
 
-#endif // #if defined(AIX5) || defined(CYGWIN)
+#endif // #if !defined(HAVE_GETADDRINFO) || defined(AIX5)
 
 static int 
 tcp_local_bind_listen (const char *path, const int backlog, int *listenfd)
@@ -564,20 +564,54 @@ tcp_select_accept(int listenfd, int *sockfd,
 	return SUCCESS;
 }
 
+#ifdef CYGWIN
+static int set_non_blocking(int s, int flag)
+{
+  int socket_flags;
+
+  socket_flags = fcntl(s, F_GETFL);
+  if (socket_flags == -1)
+  {
+    error("cannot fcntl(s, F_GETFL): %s", strerror(errno));
+    return FAIL;
+  }
+  
+  if (flag == TRUE)
+    socket_flags |= O_NONBLOCK;
+  else
+    socket_flags &= ~O_NONBLOCK;
+
+  if ( fcntl(s, F_SETFL, socket_flags) == -1 )
+  {
+    error("cannot fcntl(s, F_SETFL, %d): %s", socket_flags, strerror(errno));
+    return FAIL;
+  } else return SUCCESS;
+}
+#endif
+
 static int tcp_recv_nonb (int sockfd, void *data, int len, int timeout)
 {
-	int size = len;
+	int  size = len;
 	char *ptr = data;
-	fd_set		rset;
+	fd_set rset;
 	struct timeval	tval;
 
-	if (len == 0) 
-		return SUCCESS;
+	if (len == 0) return SUCCESS;
+#ifdef CYGWIN
+    if (set_non_blocking(sockfd, TRUE) == FAIL)
+	{
+		error("cannot set socket non-blocking: %s", strerror(errno));
+		return FAIL;
+    }
+#endif
 
 	while ( 1 ) {
 		int n = 0;
-#if defined(AIX5) || defined(CYGWIN)
+#if defined(AIX5)
 		n = recv(sockfd, ptr, size, MSG_NONBLOCK);
+#elif defined(CYGWIN)
+		/* CYGWIN does not seem to have MSG_DONTWAIT flag. */
+		n = recv(sockfd, ptr, size, 0);
 #else
 		n = recv(sockfd, ptr, size, MSG_DONTWAIT);
 #endif
@@ -638,6 +672,14 @@ static int tcp_recv_nonb (int sockfd, void *data, int len, int timeout)
 
 	} // while ( 1 )
 
+#ifdef CYGWIN
+    if (set_non_blocking(sockfd, FALSE) == FAIL)
+	{
+		error("cannot unset socket non-blocking: %s", strerror(errno));
+		return FAIL;
+    }
+#endif
+
 	return SUCCESS;
 }
 
@@ -648,12 +690,22 @@ static int tcp_send_nonb (int sockfd, void *data, int len, int timeout)
 	fd_set		wset;
 	struct timeval	tval;
 
+#ifdef CYGWIN
+    if (set_non_blocking(sockfd, TRUE) == FAIL)
+	{
+		error("cannot set socket non-blocking: %s", strerror(errno));
+		return FAIL;
+    }
+#endif
 
 	while ( 1 ) {
 		int n = 0;
 
-#ifdef AIX5
+#if defined(AIX5)
 		n = send(sockfd, ptr, size, MSG_NONBLOCK);
+#elif defined(CYGWIN)
+		/* CYGWIN does not seem to have MSG_DONTWAIT flag. */
+		n = send(sockfd, ptr, size, 0);
 #else
 		n = send(sockfd, ptr, size, MSG_DONTWAIT);
 #endif
@@ -706,6 +758,13 @@ static int tcp_send_nonb (int sockfd, void *data, int len, int timeout)
 		}
 
 	} // while ( 1 )
+#ifdef CYGWIN
+    if (set_non_blocking(sockfd, FALSE) == FAIL)
+	{
+		error("cannot unset socket non-blocking: %s", strerror(errno));
+		return FAIL;
+    }
+#endif
 
 	return SUCCESS;
 }
