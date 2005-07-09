@@ -1,6 +1,19 @@
 /* $Id$ */
 #include "mod_api/udp.h"
 
+#if !defined(HAVE_GETADDRINFO)
+/*
+ * AIX 5.x and CYGWIN does not support getaddrinfo.
+*/
+
+static int
+udp_connect(int *sockfd, const char *host, const char *port)
+{
+  sb_assert("udp_connect() is not supported on this platform.");
+
+  return SUCCESS;
+}
+#else
 static int
 udp_connect(int *sockfd, const char *host, const char *port)
 {
@@ -42,6 +55,32 @@ udp_connect(int *sockfd, const char *host, const char *port)
 
 	return n;
 }
+#endif // #if !defined(HAVE_GETADDRINFO)
+
+#ifdef CYGWIN
+static int set_non_blocking(int s, int flag)
+{
+  int socket_flags;
+
+  socket_flags = fcntl(s, F_GETFL);
+  if (socket_flags == -1)
+  {
+    error("cannot fcntl(s, F_GETFL): %s", strerror(errno));
+    return FAIL;
+  }
+  
+  if (flag == TRUE)
+    socket_flags |= O_NONBLOCK;
+  else
+    socket_flags &= ~O_NONBLOCK;
+
+  if ( fcntl(s, F_SETFL, socket_flags) == -1 )
+  {
+    error("cannot fcntl(s, F_SETFL, %d): %s", socket_flags, strerror(errno));
+    return FAIL;
+  } else return SUCCESS;
+}
+#endif
 
 static int
 udp_recvfrom(int sockfd, void *buf, size_t len,
@@ -50,11 +89,21 @@ udp_recvfrom(int sockfd, void *buf, size_t len,
 	fd_set rset;
 	struct timeval tval;
 
+#ifdef CYGWIN
+    if (set_non_blocking(sockfd, TRUE) == FAIL)
+	{
+		error("cannot set socket non-blocking: %s", strerror(errno));
+		return FAIL;
+    }
+#endif
+
 	for ( ; ; ) {
 		int n = 0;
 
-#ifdef AIX5
+#if defined(AIX5)
 		n = recvfrom(sockfd, buf, len, MSG_NONBLOCK, from, fromlen);
+#elif defined(CYGWIN)
+		n = recvfrom(sockfd, buf, len, 0, from, fromlen);
 #else
 		n = recvfrom(sockfd, buf, len, MSG_DONTWAIT, from, fromlen);
 #endif
@@ -96,6 +145,14 @@ udp_recvfrom(int sockfd, void *buf, size_t len,
 		}
 	} // for ( ; ; )
 
+#ifdef CYGWIN
+    if (set_non_blocking(sockfd, FALSE) == FAIL)
+	{
+		error("cannot unset socket non-blocking: %s", strerror(errno));
+		return FAIL;
+    }
+#endif
+
 	return SUCCESS;
 }
 
@@ -112,11 +169,21 @@ udp_sendto(int sockfd, const void *buf, size_t len,
 	fd_set wset;
 	struct timeval tval;
 
+#ifdef CYGWIN
+    if (set_non_blocking(sockfd, TRUE) == FAIL)
+	{
+		error("cannot set socket non-blocking: %s", strerror(errno));
+		return FAIL;
+    }
+#endif
+
 	for ( ; ; ) {
 		int n = 0;
 
-#ifdef AIX5
+#if defined(AIX5)
 		n = sendto(sockfd, buf, len, MSG_NONBLOCK, to, tolen);
+#elif defined(CYGWIN)
+		n = sendto(sockfd, buf, len, 0, to, tolen);
 #else
 		n = sendto(sockfd, buf, len, MSG_DONTWAIT, to, tolen);
 #endif
@@ -157,6 +224,14 @@ udp_sendto(int sockfd, const void *buf, size_t len,
 		}
 	} // for ( ; ; )
 
+#ifdef CYGWIN
+    if (set_non_blocking(sockfd, FALSE) == FAIL)
+	{
+		error("cannot unset socket non-blocking: %s", strerror(errno));
+		return FAIL;
+    }
+#endif
+
 	return SUCCESS;
 }
 
@@ -165,6 +240,21 @@ udp_send(int sockfd, const void *buf, size_t len, int timeout)
 {
 	return udp_sendto(sockfd, buf, len, NULL, 0, timeout);
 }
+
+
+#if !defined(HAVE_GETADDRINFO)
+/*
+ * AIX 5.x and CYGWIN does not support getaddrinfo.
+*/
+
+static int 
+udp_bind(int *sockfd, const char *host, const char *port)
+{
+  sb_assert("udp_bind() is not supported on this platform.");
+
+  return SUCCESS;
+}
+#else
 
 static int 
 udp_bind(int *sockfd, const char *host, const char *port)
@@ -210,6 +300,7 @@ udp_bind(int *sockfd, const char *host, const char *port)
 
 	return SUCCESS;
 }
+#endif // #if !defined(HAVE_GETADDRINFO)
 
 /*****************************************************************************/
 
