@@ -10,10 +10,11 @@ libsoftbotserver_la_SOURCES = modules.c hook.c \
 							  util.c memory.c message.c 
 libsoftbotserver_la_LIBADD = ../platform/$(OS_TYPE)/libplatform.la
 if AIX5
-libsoftbotserver_la_LDFLAGS = $(THREAD_LIB) -static -avoid-version
-else
 libsoftbotserver_la_LDFLAGS = -static -avoid-version
+else
+libsoftbotserver_la_LDFLAGS = -shared -avoid-version -no-undefined
 endif
+
 libsoftbotserver_la_DEPENDENCIES = delete-exports exports.c export_vars.h
 
 bin_PROGRAMS = softbotd
