@@ -55,7 +55,7 @@ static void __allocate_test_input(ifs_test_input_t *t)
 	if (t->local.test_order == NULL) {
 		t->local.test_order = (int *)malloc(sizeof(int) * MAX_FILE_ID);
 		if(t->local.test_order == NULL) {
-			error("test_order malloc(%d * %d) failed: %s", sizeof(int), MAX_FILE_ID, strerror(errno));
+			error("test_order malloc(%d * %d) failed: %s", (int) sizeof(int), MAX_FILE_ID, strerror(errno));
 			exit(EXIT_FAILURE);
 		}
 	}

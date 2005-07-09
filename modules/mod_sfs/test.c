@@ -484,14 +484,14 @@ static void allocate_test_input(test_input_t *t)
 	if (t->test_files == NULL)
 		t->test_files = (test_file_t*)malloc(sizeof(test_file_t)*MAX_FILE_ID);
 	if (t->test_files == NULL) {
-		error("test_files malloc(%d * %d) failed: %s", sizeof(test_file_t), MAX_FILE_ID, strerror(errno));
+		error("test_files malloc(%d * %d) failed: %s", (int) sizeof(test_file_t), MAX_FILE_ID, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	if (t->test_order == NULL)
 		t->test_order = (int *)malloc(sizeof(int) * MAX_FILE_ID);
 	if (t->test_order == NULL) {
-		error("test_order malloc(%d * %d) failed: %s", sizeof(int), MAX_FILE_ID, strerror(errno));
+		error("test_order malloc(%d * %d) failed: %s", (int)sizeof(int), MAX_FILE_ID, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
