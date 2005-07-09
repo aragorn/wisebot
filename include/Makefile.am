@@ -5,8 +5,6 @@ MAINTAINERCLEANFILES = Makefile Makefile.in
 
 noinst_HEADERS = config.h \
 					constants.h \
-					dataType.h \
-					errorCode.h \
 					hook.h \
 					ipc.h \
 					log_error.h \

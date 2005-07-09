@@ -3,23 +3,23 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-lib_LTLIBRARIES = libsoftbotserver.la
-libsoftbotserver_la_SOURCES = modules.c hook.c \
-							  log_error.c config.c \
-							  registry.c ipc.c scoreboard.c \
-							  util.c memory.c message.c 
-libsoftbotserver_la_LIBADD = ../platform/$(OS_TYPE)/libplatform.la
+lib_LTLIBRARIES = libsoftbot.la
+libsoftbot_la_SOURCES = softbot.c modules.c hook.c \
+		  			  log_error.c config.c \
+		  			  registry.c ipc.c scoreboard.c \
+		  			  util.c memory.c
+libsoftbot_la_LIBADD = ../platform/$(OS_TYPE)/libplatform.la
 if AIX5
-libsoftbotserver_la_LDFLAGS = -static -avoid-version
+libsoftbot_la_LDFLAGS = -static -avoid-version
 else
-libsoftbotserver_la_LDFLAGS = -shared -avoid-version -no-undefined
+libsoftbot_la_LDFLAGS = -shared -avoid-version -no-undefined
 endif
 
-libsoftbotserver_la_DEPENDENCIES = delete-exports exports.c export_vars.h
+libsoftbot_la_DEPENDENCIES = delete-exports exports.c export_vars.h
 
 bin_PROGRAMS = softbotd
-softbotd_SOURCES = static_modules.c server.c server.h exports.c export_vars.h
-softbotd_LDADD   = libsoftbotserver.la \
+softbotd_SOURCES = static_modules.c server.c exports.c
+softbotd_LDADD   = libsoftbot.la \
 				   ../modules/mod_mp/libmp.la \
 				   ../platform/$(OS_TYPE)/libplatform.la
 softbotd_LDFLAGS = $(SOFTBOTD_LDFLAGS) $(DYN_LIB) $(THREAD_LIB) \

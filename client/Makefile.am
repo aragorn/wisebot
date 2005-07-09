@@ -23,9 +23,9 @@ softbotcli_CFLAGS  = -I../platform/generic/ \
 ### 즉 가장 많이 dependent한 libplatform.la가 제일 뒤로..
 softbotcli_LDADD = -L../lib \
                 ../modules/mod_api/libapi.la \
-                ../server/libsoftbotserver.la \
+                $(libdir)/libsoftbot.la \
                 ../modules/mod_mp/libmp.la \
-                ../platform/$(OS_TYPE)/libplatform.la
+                $(libdir)/libplatform.la
 
 softbotcli_DEPENDENCIES = delete-exports exports.c export_vars.h softbotcli.exp
 
@@ -34,7 +34,7 @@ EXPORT_INCLUDES = -I$(top_builddir)/include -I$(top_builddir)/platform/ \
           -I$(top_builddir)/platform/$(OS_TYPE)/ -I$(top_builddir)/platform/generic/ \
           -I$(top_builddir)/modules/mod_mp/ \
           -I$(top_builddir)/modules/mod_api/ \
-          -I$(top_builddir)/server/ -I$(top_builddir)/client/
+          -I$(top_builddir)/client/
 
 EXPORT_FILES = ../platform/generic/*.h ../platform/$(OS_TYPE)/*.h \
                ../include/*.h \

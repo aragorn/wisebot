@@ -27,7 +27,7 @@ libplatform_la_LDFLAGS = -avoid-version -static
 else
 libplatform_la_LDFLAGS = -avoid-version -shared -no-undefined
 endif
-# libplatform_la_LIBADD = $(top_builddir)/server/libsoftbotserver.la
+# libplatform_la_LIBADD = $(top_builddir)/server/libsoftbot.la
 
 test_msort_SOURCES = test_msort.c ../generic/msort.c
 test_msort_LDFLAGS = $(DYN_LIB)

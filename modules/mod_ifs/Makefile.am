@@ -32,11 +32,11 @@ mod_ifs_test_la_LDFLAGS = -module -avoid-version
 check_PROGRAMS = test_ifs test2_ifs
 
 test_ifs_SOURCES = test.c
-test_ifs_LDADD = $(libdir)/libifs_defrag.la $(libdir)/libifs.la $(libdir)/libsfs.la $(libdir)/libapi.la $(libdir)/libmp.la $(libdir)/libplatform.la $(libdir)/libsoftbotserver.la
+test_ifs_LDADD = $(libdir)/libifs_defrag.la $(libdir)/libifs.la $(libdir)/libsfs.la $(libdir)/libapi.la $(libdir)/libmp.la $(libdir)/libplatform.la $(libdir)/libsoftbot.la
 test_ifs_LDFLAGS = -L$(libdir) -export-dynamic -ldl $(THREAD_LIB)
 
 test2_ifs_SOURCES = test2.c
-test2_ifs_LDADD = $(libdir)/libifs_defrag.la $(libdir)/libifs.la $(libdir)/libsfs.la $(libdir)/libapi.la $(libdir)/libmp.la $(libdir)/libplatform.la $(libdir)/libsoftbotserver.la
+test2_ifs_LDADD = $(libdir)/libifs_defrag.la $(libdir)/libifs.la $(libdir)/libsfs.la $(libdir)/libapi.la $(libdir)/libmp.la $(libdir)/libplatform.la $(libdir)/libsoftbot.la
 test2_ifs_LDFLAGS = -L$(libdir) -export-dynamic -ldl $(THREAD_LIB)
 
 include ../install-pkglib.mk

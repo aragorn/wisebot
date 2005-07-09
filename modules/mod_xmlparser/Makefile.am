@@ -28,18 +28,18 @@ testparser_SOURCES = testparser.c parser.c dh.c stack.c checksum.c
 if SOLARIS
 testparser_LDADD = $(libdir)/libexpat.la \
                    $(libdir)/libiconv.la \
-                   $(libdir)/libsoftbotserver.la
+                   $(libdir)/libsoftbot.la
 else
 if CYGWIN
-testparser_LDADD = $(libdir)/libsoftbotserver.la
+testparser_LDADD = $(libdir)/libsoftbot.la
 else
 testparser_LDADD = $(libdir)/libexpat.la \
-                   $(libdir)/libsoftbotserver.la
+                   $(libdir)/libsoftbot.la
 endif
 endif
 testparser_LDFLAGS = -L../../lib -export-dynamic $(DYN_LIB) $(THREAD_LIB)
 
 teststree_SOURCES = teststree.c simpletree.c
-teststree_LDADD   = $(libdir)/libsoftbotserver.la
+teststree_LDADD   = $(libdir)/libsoftbot.la
 
 include ../install-pkglib.mk
