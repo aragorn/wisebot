@@ -22,7 +22,11 @@ libplatform_la_SOURCES = init_set_proc_title.c \
 					os-aix-dso.c \
 					hash.c \
 					sb_tstat.c
-libplatform_la_LDFLAGS = -all-static
+if AIX5
+libplatform_la_LDFLAGS = -avoid-version -static
+else
+libplatform_la_LDFLAGS = -avoid-version -shared -no-undefined
+endif
 # libplatform_la_LIBADD = $(top_builddir)/server/libsoftbotserver.la
 
 test_msort_SOURCES = test_msort.c ../generic/msort.c
