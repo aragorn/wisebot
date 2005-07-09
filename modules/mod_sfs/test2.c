@@ -101,7 +101,7 @@ int main(int argc, char* argv[], char *envp[])
 	if ( sfs_format(sfs, O_FAT|O_HASH_ROOT_DIR, sfs_size, block_size) == FAIL )
 		return -1;
 
-	if ( sfs_load(sfs, O_MMAP) == FAIL ) return -1;
+	if ( sfs_open(sfs, O_MMAP) == FAIL ) return -1;
 
 	if ( sfs_format(sfs, O_FAT|O_HASH_ROOT_DIR, sfs_size, block_size) == FAIL )
 		return -1;
@@ -176,7 +176,7 @@ int main(int argc, char* argv[], char *envp[])
 
 	/**************************************************/
 
-	if ( sfs_unload(sfs) == FAIL ) return -1;
+	if ( sfs_close(sfs) == FAIL ) return -1;
 	if ( sfs_destroy(sfs) == FAIL ) return -1;
 
 	close_test_file(fd);

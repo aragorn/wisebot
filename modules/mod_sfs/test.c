@@ -163,7 +163,7 @@ static int LOAD (test_input_t *t)
 		return FAIL;
 	}
 
-	if(sfs_load(t->sfs, t->load_option) == FAIL) {
+	if(sfs_open(t->sfs, t->load_option) == FAIL) {
 		error("TEST>can't load sfs");
 		return FAIL;
 	}
@@ -173,7 +173,7 @@ static int LOAD (test_input_t *t)
 
 static int UNLOAD (test_input_t *t)
 {
-	sfs_unload(t->sfs);
+	sfs_close(t->sfs);
 	sfs_destroy(t->sfs);
 
 	return SUCCESS;
