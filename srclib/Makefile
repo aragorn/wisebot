@@ -9,31 +9,18 @@
 prefix = $(shell cd .. && pwd)
 exec_prefix = ${prefix}
 ###############################################################################
-all: install
+all: 
+	@echo "Choose which package to install."
+	@echo "available packages:"
+	@echo " expat-install  - optional"
+	@echo " koma2c-install - required"
+	@echo "ex) make koma2c-install"
+###############################################################################
 cvs-export: expat-export koma2c-export
 build: expat koma2c
 install: expat-install koma2c-install
 clean: expat-clean koma2c-clean
-
-# XXX we don't need w3c-libwww & xmlrpc for supreme-release
-
-#cvs-export: apr-export apr-util-export expat-export w3c-libwww-export xmlrpc-c-export
-#build: apr apr-util expat w3c-libwww xmlrpc-c
-#install: apr-install apr-util-install expat-install w3c-libwww-install xmlrpc-c-install
-#clean: apr-clean apr-util-clean expat-clean w3c-libwww-clean xmlrpc-c-clean
 ###############################################################################
-apr-export:
-	[ -f apr/buildconf ] || (gzip -c -d apr.tar.gz | tar xf -)
-	cd apr && \
-	./buildconf && \
-	./configure --prefix=$(prefix)
-
-apr-util-export:
-	[ -f apr-util/buildconf ] || (gzip -c -d apr-util.tar.gz | tar xf -)
-	cd apr-util && \
-	./buildconf && \
-	./configure --prefix=$(prefix) --with-apr=../apr
-
 expat-export:
 	[ -f expat/configure ] || (gzip -c -d expat.tar.gz | tar xf -)
 	cd expat && \
@@ -56,12 +43,6 @@ koma2c-export:
 	./buildconf && \
 	./configure --prefix=$(prefix) --includedir=$(prefix)/include/koma
 ###############################################################################
-apr: apr-export
-	cd apr && make
-
-apr-util: apr-util-export
-	cd apr-util && make
-
 expat: expat-export
 	cd expat && make
 
@@ -74,12 +55,6 @@ sn2: sn2-export
 koma2c: koma2c-export
 	cd koma2c && make
 ###############################################################################
-apr-install: apr
-	cd apr && make install
-
-apr-util-install: apr-util
-	cd apr-util && make install
-
 expat-install: expat
 	cd expat && make install
 
@@ -92,12 +67,6 @@ sn2-install: sn2
 koma2c-install: koma2c
 	cd koma2c && make install
 ###############################################################################
-apr-clean:
-	rm -rf apr
-
-apr-util-clean:
-	rm -rf apr-util
-
 expat-clean:
 	rm -rf expat
 
