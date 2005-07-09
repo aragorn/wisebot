@@ -18,7 +18,11 @@
 #  include <iconv.h>
 #endif
 
-#include "expat/expat.h"
+#ifdef CYGWIN
+#  include "expat.h"
+#else
+#  include "expat/expat.h"
+#endif
 #include "stack.h"
 #include "dh.h"
 #include "checksum.h"

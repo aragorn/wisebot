@@ -9,7 +9,11 @@
 #include "mod_api/docattr.h"
 #include "mod_api/did.h"
 
+#ifdef CYGWIN
+#include "expat.h"
+#else
 #include "expat/expat.h"
+#endif
 
 #define MAX_FILE_SIZE		250000000
 
