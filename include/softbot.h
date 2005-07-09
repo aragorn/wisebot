@@ -48,7 +48,7 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#ifndef WIN32
+#ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif
 
@@ -57,17 +57,16 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #include <stdarg.h>
 
 #ifdef HAVE_INTTYPES_H /* for uint32_t, int8_t, .., etc supporting */
-#	include <inttypes.h>
+# include <inttypes.h>
 #else
-#	error
+# error
 #endif
 
 #ifdef HAVE_GETOPT_LONG /* for command-line argument supporting */
-#	include <getopt.h>
-#elif HAVE_GETOPT
-#	include <unistd.h>
-#else
-#	error
+# include <getopt.h>
+#endif
+#ifdef HAVE_GETOPT
+# include <unistd.h>
 #endif
 
 #include "constants.h"
