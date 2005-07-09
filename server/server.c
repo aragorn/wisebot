@@ -6,13 +6,6 @@
 
 #include "server.h"
 
-char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
-char gErrorLogFile[MAX_PATH_LEN] = DEFAULT_ERROR_LOG_FILE;
-char gQueryLogFile[MAX_PATH_LEN] = DEFAULT_QUERY_LOG_FILE;
-pid_t gRootPid = 0;
-FILE *tlog_fp = NULL;
-char tlog_file[MAX_PATH_LEN] = "logs/time_log";
-
 static char mConfigFile[MAX_PATH_LEN] = DEFAULT_CONFIG_FILE;
 static char mPidFile[MAX_PATH_LEN] = DEFAULT_PID_FILE;
 static int  *mServerUptime;
@@ -25,8 +18,6 @@ static int clc_log_level=0; /* command line configuration log level */
 static int clc_listen_port=0;
 static int clc_server_root=0; /* command line configuration server root */
 static char debug_module[MAX_MODULE_NAME] = "";
-
-volatile int ipc_act=0;
 
 static void detach()
 {
@@ -238,15 +229,6 @@ int server_main()
 	 */
 
 	open_error_log(gErrorLogFile, gQueryLogFile);
-
-#ifdef TIMELOG
-	/* open time log file */
-	if ((tlog_fp = fopen(tlog_file, "a")) == NULL) {
-		crit("cannot open time log file %s: %s", tlog_file, strerror(errno));
-		exit(1);
-	}
-	setlinebuf(tlog_fp);
-#endif
 
 	save_pid(mPidFile);
 
@@ -651,11 +633,6 @@ static void setListenPort(configValue a)
 	}
 }
 
-static void setTimeLog(configValue a)
-{
-	strncpy(tlog_file, a.argument[0], MAX_PATH_LEN);
-}
-
 static void setName(configValue a)
 {
 	strncpy(proc_name, a.argument[0], STRING_SIZE);
@@ -706,7 +683,6 @@ static config_t config[] = {
 	CONFIG_GET("ServerRoot", setServerRoot, 1, \
 				"server root directory"),
 	CONFIG_GET("Listen", setListenPort, 1, "set global listen port for server"),
-	CONFIG_GET("TimeLog", setTimeLog, 1, "set time log file"),
 	CONFIG_GET("Name", setName, 1, "set engine name"),
 	{NULL}
 };
