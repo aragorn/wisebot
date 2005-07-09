@@ -1987,7 +1987,7 @@ void cut_string(char* text, int maxLen)
 	else textLen = maxLen;
 
 	for ( engIdx = textLen; engIdx >= 0; engIdx-- ) {
-		if ( text[engIdx] >= 0 ) break; // 0~127
+		if ( (signed char)text[engIdx] >= 0 ) break; // 0~127
 
 		korCnt++;
 		continue;
