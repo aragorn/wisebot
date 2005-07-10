@@ -205,22 +205,21 @@ module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, 
 	/* always load executable itself first so that
 	 * subsequent loaded object can resolve symbols
 	 * in executables */
-	if (selfhandle == NULL){
-		/* XXX: not opening self now..
+#if 0 /* XXX: dlopening the executable is not needed, I think. --aragorn */
+	if (selfhandle == NULL) {
 		info("opening executable itself");
 		selfhandle = dlopen(NULL, RTLD_NOW|RTLD_GLOBAL);
 		if (selfhandle == NULL) {
 			error("cannot load itself: %s",dlerror());
-			//return FAIL; XXX: should I return here?
 		}
-		*/
-	} 
+	}
+#endif
 
 	sb_server_root_relative(modulefile, modulename);
 	modhandle = dlopen(modulefile, RTLD_NOW|RTLD_GLOBAL);
 
 	if (modhandle == NULL) {
-		error("cannot load %s into server: %s", modulename, dlerror());
+		error("cannot load(dlopen) %s into server: %s", modulename, dlerror());
 		return NULL;
 	}
 	debug("loaded module %s[%p]", mod_symbol_name, modhandle);
@@ -229,7 +228,7 @@ module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, 
 	 * through the module name */
 	modsym = dlsym(modhandle, mod_symbol_name);
 	if (modsym == NULL && (error = dlerror()) != NULL) {
-		error("cannot locate API module structure symbol `%s' in file %s",
+		error("cannot locate(dlsym) API module structure symbol `%s' in file %s",
 				mod_symbol_name, modulename);
 		error("dlerror: %s", error);
 		return NULL;
