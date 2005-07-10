@@ -235,8 +235,9 @@ AC_TYPE_SIGNAL
 
 dnl should fail configure when followings headers does not exist.
 AC_CHECK_HEADERS( \
-    inttypes.h string.h stdlib.h unistd.h fcntl.h getopt.h \
-    sys/stat.h sys/mman.h sys/times.h ctype.h getopt.h sys/types.h io.h \
+  inttypes.h string.h stdlib.h unistd.h fcntl.h getopt.h \
+  sys/stat.h sys/mman.h \
+  sys/time.h sys/times.h ctype.h getopt.h sys/types.h io.h \
 )
 
 AC_CHECK_FUNCS( \
