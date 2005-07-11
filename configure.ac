@@ -232,6 +232,7 @@ AC_PROG_LIBTOOL
 dnl ---------------------------------------------------------------------------
 
 AC_TYPE_SIGNAL
+AC_TYPE_PID_T
 
 dnl should fail configure when followings headers does not exist.
 AC_CHECK_HEADERS( \
