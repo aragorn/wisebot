@@ -53,20 +53,21 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #endif
 
 #include <sys/types.h>
-#include <unistd.h>
+#ifdef WIN32           /* The windows equivalent to unistd.h is io.h .*/
+# include <io.h>
+#else
+# include <unistd.h>
+#endif
 #include <stdarg.h>
 
 #ifdef HAVE_INTTYPES_H /* for uint32_t, int8_t, .., etc supporting */
 # include <inttypes.h>
 #else
-# error
+# //warn 'no inttypes.h'
 #endif
 
-#ifdef HAVE_GETOPT_LONG /* for command-line argument supporting */
+#ifdef HAVE_GETOPT_H   /* for command-line argument supporting */
 # include <getopt.h>
-#endif
-#ifdef HAVE_GETOPT
-# include <unistd.h>
 #endif
 
 #include "constants.h"
