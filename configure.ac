@@ -180,30 +180,6 @@ AM_CONDITIONAL(FREEBSD, test x$SHORT_HOST = xfreebsd)
 AM_CONDITIONAL(SOLARIS, test x$SHORT_HOST = xsolaris)
 AM_CONDITIONAL(AIX5,    test x$SHORT_HOST = xaix5)
 
-dnl XXX: from apache. LDR_CNTRL is also specified in 
-dnl      http://www.fortran-2000.com/ArnaudRecipes/sharedlib.html#export
-dnl      so.., I just attached it here. --jiwon
-case $host in
-    *aix*)
-        # for 32-bit builds, increase MAXDATA to allow lots of threads
-        if test x$OBJECT_MODE != x64; then
-            OS_SPECIFIC_VARS="LDR_CNTRL=\"MAXDATA=0x80000000\" ; export LDR_CNTRL ;"
-        fi
-        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS AIXTHREAD_SCOPE=S ; export AIXTHREAD_SCOPE"
-        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; AIXTHREAD_MUTEX_DEBUG=OFF ; export AIXTHREAD_MUTEX_DEBUG"
-        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; AIXTHREAD_RWLOCK_DEBUG=OFF ; export AIXTHREAD_RWLOCK_DEBUG"
-        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; AIXTHREAD_COND_DEBUG=OFF ; export AIXTHREAD_COND_DEBUG"
-        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; SPINLOOPTIME=1000 ; export SPINLOOPTIME"
-        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; YIELDLOOPTIME=8 ; export YIELDLOOPTIME"
-        OS_SPECIFIC_VARS="$OS_SPECIFIC_VARS ; MALLOCMULTIHEAP=considersize,heaps:8 ; export MALLOCMULTIHEAP"
-        ;;
-    *os390*)
-        OS_SPECIFIC_VARS="export _CEE_RUNOPTS=\"STACK(,,ANY)\" ; export _EDC_ADD_ERRNO2=1"
-        ;;
-    *)
-        OS_SPECIFIC_VARS=""
-esac
-
 dnl ---------------------------------------------------------------------------
 
 dnl Checks for programs
@@ -239,6 +215,7 @@ AC_CHECK_HEADERS( \
   inttypes.h string.h stdlib.h unistd.h fcntl.h getopt.h \
   sys/stat.h sys/mman.h \
   sys/time.h sys/times.h ctype.h getopt.h sys/types.h io.h \
+  pthread.h \
 )
 
 AC_CHECK_FUNCS( \

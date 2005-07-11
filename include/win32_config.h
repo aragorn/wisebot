@@ -172,6 +172,8 @@
    `char[]'. */
 #define YYTEXT_POINTER 1
 
+/* Define to `int' if <sys/types.h> does not define. */
+#define pid_t int
 
 #endif /* AUTO_CONFIG_H */
 

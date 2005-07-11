@@ -120,7 +120,9 @@ struct slot_t {
 	int id;
 	int generation;
 	int pid;		/* process id or thread id */
+#ifdef HAVE_PTHREAD_H
 	pthread_t pthread;
+#endif
 	volatile int state;
 	time_t start_time;
 	time_t recent_request; /* recent request time */
