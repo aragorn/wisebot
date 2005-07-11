@@ -6,7 +6,7 @@ extern module memory_module;
 extern module error_log_module;
 extern module mp_module;
 
-module *static_modules[] = {
+module *server_static_modules[] = {
 	&server_module,
 	&error_log_module,
 	&memory_module,
@@ -14,11 +14,3 @@ module *static_modules[] = {
 	NULL
 };
 
-module *unittest_modules[] = {
-/*	&lexicon_test_module,*/
-/*	&registry_test_module,*/
-//	&morpheme_test_module,
-/*	&vrf_test_module,*/
-/*	&docattr_test_module,*/
-	NULL
-};

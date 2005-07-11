@@ -382,6 +382,7 @@ main(int argc, char *argv[], char *envp[])
 	atexit(apr_terminate); /* will be called at exit. see "apr_general.h" */
 #endif
 	init_set_proc_title(argc, argv, envp);
+	set_static_modules(server_static_modules);
 
 	/* getopt stuff */
 	opterr = 0;

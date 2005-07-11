@@ -7,8 +7,6 @@
 #include "mod_api/did.h"
 #include "mod_api/cdm.h"
 
-extern const char *current_hooking_module;
-
 char mServerAddr[SHORT_STRING_SIZE] = "localhost";
 char mServerPort[SHORT_STRING_SIZE] = "8605";
 static char mConfigFile[MAX_PATH_LEN] = "etc/softbot.conf";
@@ -449,6 +447,7 @@ main(int argc, char *argv[], char *envp[])
 	set_screen_log();
 
 	init_set_proc_title(argc, argv, envp);
+	set_static_modules(client_static_modules);
 
 	// getopt stuff
 	opterr = 0;

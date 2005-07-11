@@ -188,6 +188,7 @@ struct scoreboard_t {
 
 /* function declaration *******************************************************/
 SB_DECLARE(module *)find_module(const char *mod_name);
+SB_DECLARE(void) set_static_modules(module *list[]);
 SB_DECLARE(int) load_static_modules();
 SB_DECLARE(int) load_dynamic_modules();
 SB_DECLARE(module*) add_dynamic_module(const char *mod_struct_name, 

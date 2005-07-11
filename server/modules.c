@@ -6,7 +6,6 @@
 #  include <dlfcn.h>
 #endif
 
-
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -36,10 +35,10 @@ typedef struct moduleinfo {
  * Currently those twos differs in that ways,
  */
 
+module *first_module = NULL;
+static module *static_modules[] = { NULL };
 static int total_modules = 0;
 static int dynamic_modules = 0;
-module *first_module=NULL;
-extern module *static_modules[];
 static module **loaded_modules = NULL;
 static moduleinfo loaded_dynamic_modules[MAX_DYNAMIC_MODULES+1];
 
@@ -122,6 +121,11 @@ int load_modules(int type)
 	return SUCCESS;
 }
 
+void set_static_modules(module *list[])
+{
+	*static_modules = *list;
+}
+
 int load_static_modules()
 {
 	module **m;
@@ -181,7 +185,7 @@ int load_dynamic_modules()
  */
 module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, char registry_only)
 {
-	static void *selfhandle = NULL; // handle to executable file itself
+	//static void *selfhandle = NULL; // handle to executable file itself
 	char modulefile[MAX_PATH_LEN];
 	void *modhandle;
 	void *modsym;

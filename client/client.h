@@ -16,7 +16,7 @@ char *stripwhite(char *line);
 char *dupstr(char *s);
 int execute_line(char *line);
 
-
+extern module *client_static_modules[];
 extern char mServerAddr[SHORT_STRING_SIZE];
 extern char mServerPort[SHORT_STRING_SIZE];
 
