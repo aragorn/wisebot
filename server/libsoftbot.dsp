@@ -67,18 +67,19 @@ LINK32=link.exe
 # PROP Intermediate_Dir "Debug"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBSOFTBOT_EXPORTS" /YX /FD /GZ  /c
-# ADD CPP /nologo /G6 /MTd /W3 /Gm /GX /ZI /Od /I "../include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBSOFTBOT_EXPORTS" /YX /FD /GZ  /c
+# ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBSOFTBOT_EXPORTS" /YX /FD /GZ /c
+# ADD CPP /nologo /G6 /MTd /W3 /Gm /GX /ZI /Od /I "../include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "LIBSOFTBOT_EXPORTS" /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x412 /d "_DEBUG"
 # ADD RSC /l 0x412 /d "_DEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
-# ADD BSC32 /nologo /o"Debug/libsoftbot.bsc"
+# ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:"Debug/libsoftbot.pdb" /debug /machine:I386 /out:"Debug/libsoftbot.dll" /pdbtype:sept
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
+# SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
 
@@ -133,6 +134,54 @@ SOURCE=.\util.c
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=..\include\config.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\constants.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\hook.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\ipc.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\log_error.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\memory.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\modules.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\registry.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\shm.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\softbot.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\util.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\include\win32_config.h
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 
