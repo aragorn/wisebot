@@ -36,7 +36,7 @@ typedef struct moduleinfo {
  */
 
 module *first_module = NULL;
-static module *static_modules[] = { NULL };
+static module **static_modules = NULL;
 static int total_modules = 0;
 static int dynamic_modules = 0;
 static module **loaded_modules = NULL;
@@ -123,7 +123,7 @@ int load_modules(int type)
 
 void set_static_modules(module *list[])
 {
-	*static_modules = *list;
+	static_modules = list;
 }
 
 int load_static_modules()
