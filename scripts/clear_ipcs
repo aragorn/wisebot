@@ -55,6 +55,8 @@ foreach ( <IPCS> ) {
 		(undef, $id, $key, undef, $owner) = split(/\s+/);
 	} elsif ( $os =~ /AIX 2/ ) { # AIX 5.2
 		(undef, $id, $key, undef, $owner) = split(/\s+/);
+	} elsif ( $os =~ /CYGWIN_NT/ ) { # CYGWIN on NT Kernel
+		(undef, $id, $key, undef, $owner) = split(/\s+/);
 	} else {
 		print stderr "unsupported operating system: $os\n";
 		last;
