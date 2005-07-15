@@ -21,6 +21,7 @@ HOOK_STRUCT(
 
 	HOOK_LINK(sb4s_dispatch)
 	HOOK_LINK(sb4s_register_doc)
+	HOOK_LINK(sb4s_register_doc2)
 	HOOK_LINK(sb4s_get_doc)
 	HOOK_LINK(sb4s_set_docattr)
 	HOOK_LINK(sb4s_delete_doc)
@@ -93,6 +94,7 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int,sb4c_remote_morphological_analyze_doc, \
 	 receive_data_size), DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_register_doc, (int sockfd), (sockfd), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_register_doc2, (int sockfd), (sockfd), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_get_doc, (int sockfd), (sockfd), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_set_docattr, (int sockfd), (sockfd), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_delete_doc, (int sockfd), (sockfd), DECLINE)

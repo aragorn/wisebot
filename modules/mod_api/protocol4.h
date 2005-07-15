@@ -10,6 +10,7 @@
 #include <netdb.h>
 
 #define SB4_OP_REGISTER_DOC			"103"
+#define SB4_OP_REGISTER_DOC2		"107"
 #define SB4_OP_GET_DOC				"106"
 #define SB4_OP_SET_DOCATTR			"110"
 #define SB4_OP_LAST_DOCID			"104"
@@ -139,6 +140,7 @@ SB_DECLARE_HOOK(int,sb4c_remote_morphological_analyze_doc, \
 	 long send_data_size,  void **receive_data, long *receive_data_size))
 
 SB_DECLARE_HOOK(int,sb4s_register_doc,(int sockfd))
+SB_DECLARE_HOOK(int,sb4s_register_doc2,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_get_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_set_docattr,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_delete_doc,(int sockfd))

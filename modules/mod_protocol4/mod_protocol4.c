@@ -35,6 +35,7 @@ static int get_str_item(char *dest, char *dit, char *key, char delimiter, int le
 static int get_int_item (char *dit, char *key, char delimiter);
 static int get_long_item (char *dit, char *key, char delimiter);
 static int send_nak(int sockfd, int error_code);
+static int send_nak_with_message(int sockfd, char* message);
 static char *get_field_and_ma_id_from_meta_data(char *sptr , char* field_name,  int *id);
 
 int TCPSendLongData(int sockfd, long size, void *data, int server_side); // this function is used by RMAS and RMAC
@@ -43,6 +44,16 @@ int TCPRecvLongData(int sockfd, long size , void *data, int server_side); // thi
 static char regifail_file_path[STRING_SIZE] = "dat/cdm/register.fail";
 static int regifailfd = 0;
 static int regifailnum = 0;
+#ifdef PROCESS_HANDLE
+static char *canned_doc = NULL;
+static char *org_doc = NULL;
+static char *meta_doc = NULL;
+#else
+char canned_doc[DOCUMENT_SIZE];
+char org_doc[BIN_DOCUMENT_SIZE];
+char meta_doc[DOCUMENT_SIZE];
+#endif
+
 
 int protocol_open()
 {
@@ -591,16 +602,13 @@ int sb4s_get_doc(int sockfd)
 	VariableBuffer varbuf;
 
 #ifdef PROCESS_HANDLE
-	static char *buf = NULL;
-	if (buf == NULL) {
-		buf = (char *)sb_malloc(DOCUMENT_SIZE);
-		if (buf == NULL) {
+	if (canned_doc == NULL) {
+		canned_doc = (char *)sb_malloc(DOCUMENT_SIZE);
+		if (canned_doc == NULL) {
 			crit("out of memory: %s", strerror(errno));
 			return FAIL;
 		}
 	}
-#else
-	char buf[DOCUMENT_SIZE];
 #endif
 
 	/* 1. receive OP_CODE */
@@ -635,7 +643,7 @@ int sb4s_get_doc(int sockfd)
 		send_nak(sockfd, SB4_ERD_TOO_BIG);
 		return FAIL;
 	}
-	sb_run_buffer_get(&varbuf, 0, docsize, buf);
+	sb_run_buffer_get(&varbuf, 0, docsize, canned_doc);
 
 	/* 4. send ACK */
 	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
@@ -654,12 +662,12 @@ int sb4s_get_doc(int sockfd)
 	}
 
 	/* 6. send data */
-	if ( TCPSendLongData(sockfd, docsize, buf, TRUE) == FAIL ) {
+	if ( TCPSendLongData(sockfd, docsize, canned_doc, TRUE) == FAIL ) {
 		error("cannot send document");
 		return FAIL;
 	}
-	buf[docsize] = '\0';
-//	INFO("document[%u]: %s", docid, buf);
+//	canned_doc[docsize] = '\0';
+//	INFO("document[%u]: %s", docid, canned_doc);
 
 	return SUCCESS;
 }
@@ -904,10 +912,6 @@ static int sb4s_register_doc(int sockfd)
 	int sn2f_result;
 
 #ifdef PROCESS_HANDLE
-	static char *canned_doc = NULL;
-	static char *org_doc = NULL;
-	static char *meta_doc = NULL;
-	
 	if (canned_doc == NULL) {
 		canned_doc = (char *)sb_malloc(DOCUMENT_SIZE);
 		if (canned_doc == NULL) {
@@ -933,10 +937,6 @@ static int sb4s_register_doc(int sockfd)
 			return FAIL;
 		}
 	}
-#else
-	char canned_doc[DOCUMENT_SIZE];
-	char org_doc[BIN_DOCUMENT_SIZE];
-	char meta_doc[DOCUMENT_SIZE];
 #endif
 
 #ifdef DEBUG_REGISTER_DOC
@@ -1436,6 +1436,137 @@ protocol_cdm:
 	diff = timediff(&tv2, &tv1);
 	debug("[%2.2fsec] sent ACK", diff);
 #endif
+	setproctitle("softbotd: mod_softbot4.c(%s:ended)",__FILE__);
+
+	return SUCCESS;
+}
+
+/*#define DEBUG_REGISTER_DOC 1*/
+static int sb4s_register_doc2(int sockfd)
+{
+	int n=0, len=0;
+	VariableBuffer var_buf;
+	char buf[SB4_MAX_SEND_SIZE+1];
+	sb4_dit_t sb4_dit;
+	header_t header;
+	uint32_t docid = 0;
+
+#ifdef PROCESS_HANDLE
+	if (canned_doc == NULL) {
+		canned_doc = (char *)sb_malloc(DOCUMENT_SIZE);
+		if (canned_doc == NULL) {
+			crit("out of memory: %s", strerror(errno));
+			return FAIL;
+		}
+	}
+#endif
+
+	setproctitle("softbotd: mod_softbot4.c(%s: registering started)",__FILE__);
+
+	/* send ACK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+		error("cannot send ACK");
+		return FAIL;
+	}
+
+	while (1) { // 문서 여러개 계속 받음
+		/* recv DIT */
+		n = TCPRecvData(sockfd, buf, &len, TRUE);
+		if ( n != SUCCESS ) {
+			error("cannot recv DIT");
+			send_nak(sockfd, SB4_ERT_RECV_DATA);
+			return FAIL;
+		}
+		buf[len] = '\0';
+
+		// ACK 이 오면 이제 그만~~
+		if ( strncmp( buf, SB4_OP_ACK, 3 ) == 0 ) break;
+
+		/* parse DIT */
+		memset(&sb4_dit, 0, sizeof(sb4_dit_t));
+		n = parse_dit(&sb4_dit, buf);
+		if ( n != SUCCESS ) {
+			error("cannot parse DIT");
+			if ( send_nak_with_message(sockfd, "cannot parse DIT") != SUCCESS ) return FAIL;
+			continue;
+		}
+
+		// register_doc2 는 CDM 만 처리할 수 있다.
+		if (sb4_dit.PT[0] == '\0' || strcmp(sb4_dit.PT, "CDM") != 0) {
+			error("register_doc2 can process CDM doc only");
+			if ( send_nak_with_message(sockfd, "register_doc2 can process CDM doc only") != SUCCESS )
+				return FAIL;
+			continue;
+		}
+
+		if (sb4_dit.OID[0] == '\0') {
+			error("empty oid");
+			if ( send_nak_with_message(sockfd, "empty oid") != SUCCESS ) return FAIL;
+			continue;
+		}
+
+		/* send OP_ACK for successful receiving of DIT */
+		n = TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE);
+		if ( n != SUCCESS ) return FAIL;
+
+		n = sb_run_buffer_initbuf(&var_buf); 
+		if ( n != SUCCESS ) {
+			error("error in buffer_initbuf()");
+			return FAIL;
+		}
+
+		/* recv BODY */
+		do {
+			if ( TCPRecv(sockfd, &header, buf, TRUE) != SUCCESS ) {
+				error("error occur while receiving var_buf");
+				sb_run_buffer_freebuf(&var_buf); 
+				return FAIL;
+			}
+
+			len = atoi(header.size);
+
+			n = sb_run_buffer_append(&var_buf, len, buf); 
+			if ( n < 0 ) {
+				error("out of memory during appending body[error:%d]", n);
+				sb_run_buffer_freebuf(&var_buf); 
+				if ( send_nak_with_message(sockfd, "insufficient memory") != SUCCESS ) return FAIL;
+				break;
+			}
+			memset(buf, 0, (SB4_MAX_SEND_SIZE+1));// 이거 없으면 register script 에 문제발생?
+		} while (header.tag == SB4_TAG_CONT);
+
+		if ( n < 0 ) continue;
+
+		/************** fixed part *************************/
+		
+		n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &var_buf); 
+		sb_run_buffer_freebuf(&var_buf); 
+		if ( n < 0 ) {
+			error("cannot register canned document[%u] because of error(%d)",
+					docid, n);
+			if ( send_nak_with_message(sockfd, "cdm register failed") != SUCCESS ) return FAIL;
+			continue;
+		}
+		
+		if (sb4_dit.RID[0]) {
+			docattr_mask_t docmask;
+
+			DOCMASK_SET_ZERO(&docmask);
+			//INFO("RIO: %s", sb4_dit.RID);
+			sb_run_docattr_set_docmask_function(&docmask, "Rid", sb4_dit.RID);
+			sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
+		}
+		/***************************************************/
+
+		/* send OP_ACK for successful receiving of BODY */
+		n = TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE);
+		if ( n != SUCCESS ) return FAIL;
+		
+		if (docid % 1000 == 0) {
+			info("%u documents is registered.", docid);
+		}
+	} // while(1) // ACK 이 전송될 때까지 등록하려는 문서를 계속 받는다
+
 	setproctitle("softbotd: mod_softbot4.c(%s:ended)",__FILE__);
 
 	return SUCCESS;
@@ -2425,6 +2556,8 @@ static int sb4s_dispatch(int sockfd)
 
 	if ( strncmp(buf, SB4_OP_REGISTER_DOC, 3) == 0 )
 		return sb_run_sb4s_register_doc(sockfd);
+	else if ( strncmp(buf, SB4_OP_REGISTER_DOC2, 3) == 0 )
+		return sb_run_sb4s_register_doc2(sockfd);
 	else if ( strncmp(buf, SB4_OP_GET_DOC, 3) == 0 )
 		return sb_run_sb4s_get_doc(sockfd);
 	else if ( strncmp(buf, SB4_OP_SET_DOCATTR, 3) == 0 )
@@ -3349,6 +3482,19 @@ static int send_nak(int sockfd, int error_code) // used only server side
 	return SUCCESS;
 }
 
+static int send_nak_with_message(int sockfd, char* message)
+{
+	int ret;
+
+	ret = TCPSendData(sockfd, SB4_OP_NAK, 3, TRUE);
+	if( ret != SUCCESS ) return FAIL;
+
+	ret = TCPSendData(sockfd, message, strlen(message), TRUE);
+	if ( ret != SUCCESS ) return FAIL;
+
+	return SUCCESS;
+}
+
 int send_nak_str(int sockfd, char *error_string) // used only server side
 {
 	int ret;
@@ -3554,7 +3700,7 @@ int TCPSend(int sockfd, header_t *header, void *data, int server_side)
 		return FAIL;
 	}
 	if ( sb_run_tcp_send(sockfd, data, atoi(header->size), timeout) != SUCCESS ) {
-		warn("cannot send header");
+		warn("cannot send data");
 		return FAIL;
 	}
 	return SUCCESS;
@@ -3631,6 +3777,7 @@ static void register_hooks(void)
 	sb_hook_sb4s_dispatch(sb4s_dispatch,NULL,NULL,HOOK_MIDDLE);
 
 	sb_hook_sb4s_register_doc(sb4s_register_doc,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_sb4s_register_doc2(sb4s_register_doc2,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_get_doc(sb4s_get_doc,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_set_docattr(sb4s_set_docattr,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_delete_doc(sb4s_delete_doc,NULL,NULL,HOOK_MIDDLE);
