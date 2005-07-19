@@ -18,6 +18,8 @@ static char              rid_field_name[SHORT_STRING_SIZE] = "";
 // dummy, 실제 field가 아니다.
 #define HIT_FIELD_NAME   "<HIT>"
 #define HIT_FIELD        ((docattr_field_t*) 0x11)
+#define DID_FIELD_NAME   "<DID>"
+#define DID_FIELD        ((docattr_field_t*) 0x12)
 
 // zero 를 대표하는 값. 하나 만들어 놓고 두고두고 쓴다...
 docattr_value_t value_zero;
@@ -647,7 +649,7 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 	general_sort_t *sort;
 	docattr_field_t* field;
 
-	if ( general_sort == NULL ) return 1;
+	if ( general_sort == NULL ) return 0;
 
 	sort = &general_sort[((docattr_sort_t*) userdata)->index];
 	if ( !sort->set ) return 0;
@@ -667,6 +669,9 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 		// hit는 docattr field 가 아니다.
 		if ( field == HIT_FIELD ) {
 			diff = ((doc_hit_t*) dest)->hitratio - ((doc_hit_t*) sour)->hitratio;
+		}
+		else if ( field == DID_FIELD ) {
+			diff = ((doc_hit_t*) dest)->id - ((doc_hit_t*) sour)->id;
 		}
 		else { // 일반 docattr field
 			field->get_func( attr1, field, &value1 );
@@ -1116,6 +1121,9 @@ static int build_sort_field()
 
 			if ( strcasecmp( field_name, HIT_FIELD_NAME ) == 0 ) {
 				field = HIT_FIELD;
+			}
+			else if ( strcasecmp( field_name, DID_FIELD_NAME ) == 0 ) {
+				field = DID_FIELD;
 			}
 			else return_docattr_field( field_name, &field );
 
