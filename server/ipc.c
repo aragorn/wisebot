@@ -441,6 +441,7 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 	int fd, ret;
 	off_t off;
 	int offset_correction;
+	char zero = '\0'; // end of file 에 기록할 byte
 
 	if ( ipc->pathname[0] != '/' ) {
 		snprintf(path,STRING_SIZE,"%s/%s",gSoftBotRoot,ipc->pathname);
@@ -474,7 +475,7 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 			return FAIL; 
 		}
 
-		ret = write( fd, &fd, 1 );
+		ret = write( fd, &zero, 1 );
 		if ( ret != 1 ) {
 			error( "error expanding file[%s] to size[%d]: [%s:%s()], %s",
 					ipc->pathname, ipc->size, file, caller, strerror(errno) );
