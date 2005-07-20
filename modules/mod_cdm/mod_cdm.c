@@ -441,9 +441,9 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableB
 	//int idx_paragraph, paralen;
 	int i;
 
-	docattr_t docattr;
 	int len;
 	char *val, value[STRING_SIZE];
+	docattr_mask_t docmask;
 
 #ifdef PROCESS_HANDLE
 	static char *aCannedDoc = NULL;
@@ -567,7 +567,9 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableB
 		warn("sb_run_xmlparser_parselen() returned DECLINE(1)");
 		goto return_fail;
 	}
-	DOCATTR_SET_ZERO(&docattr);
+
+
+	DOCMASK_SET_ZERO(&docmask);
 	for (i=0; i<MAX_FIELD_NUM && docattrFields[i]; i++) {
 		strcpy(path, "/");
 		strcat(path, fieldRootName);
@@ -596,8 +598,8 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableB
 			continue;
 		}
 
-		if(sb_run_docattr_set_docattr_function(&docattr, docattrFields[i],
-					value) == -1) {
+		if ( sb_run_docattr_set_docmask_function(
+					&docmask, docattrFields[i], value) != SUCCESS ) {
 			warn("wrong type of value of field[/%s/%s] of ducument[%s]", 
 					fieldRootName, docattrFields[i], oid);
 		}
@@ -659,7 +661,8 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableB
 
 	un_lock(fdIndexFile, SEEK_SET, 0, 0);
 
-	if (sb_run_docattr_set(*registeredDocId, &docattr) == -1) {
+	if ( sb_run_docattr_set_array(
+				registeredDocId, 1, SC_MASK, &docmask) != SUCCESS ) {
 		warn("cannot insert field[/%s/%s/] into docattr db", fieldRootName,
 				docattrFields[i]);
 	}
