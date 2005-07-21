@@ -1940,7 +1940,6 @@ int operator_not(sb_stack_t *stack, QueryNode *node)
 	index_list_t *operand = stack_pop(stack);
 	if ( operand == NULL ) {
 		error("OP_NOT require 1 operand");
-		stack_push(stack, operand);
 		return FAIL;
 	}
 
