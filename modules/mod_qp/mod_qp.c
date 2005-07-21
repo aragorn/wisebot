@@ -879,6 +879,11 @@ int operator_and_with_not(sb_stack_t *stack, QueryNode *qnode)
 
 	operand_tmp2 = stack_pop(stack);
 	operand_tmp1 = stack_pop(stack);
+	if ( operand_tmp2 == NULL || operand_tmp1 == NULL ) {
+		error("need more operand?");
+		release_list2(operand_tmp2, operand_tmp1);
+		return FAIL;
+	}
 
 	operand2 = read_index_list(operand_tmp2);
 	operand1 = read_index_list(operand_tmp1);
@@ -1933,6 +1938,11 @@ DONE_OPERATE_OR:
 int operator_not(sb_stack_t *stack, QueryNode *node)
 {
 	index_list_t *operand = stack_pop(stack);
+	if ( operand == NULL ) {
+		error("OP_NOT require 1 operand");
+		stack_push(stack, operand);
+		return FAIL;
+	}
 
 	if (node->num_of_operands != 1) {
 		error("OP_NOT should have 1 operand but has (%d)",node->num_of_operands);
