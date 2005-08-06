@@ -41,9 +41,6 @@ static char *get_field_and_ma_id_from_meta_data(char *sptr , char* field_name,  
 int TCPSendLongData(int sockfd, long size, void *data, int server_side); // this function is used by RMAS and RMAC
 int TCPRecvLongData(int sockfd, long size , void *data, int server_side); // this function is used by RMAS and RMAC
 
-static char regifail_file_path[STRING_SIZE] = "dat/cdm/register.fail";
-static int regifailfd = 0;
-static int regifailnum = 0;
 #ifdef PROCESS_HANDLE
 static char *canned_doc = NULL;
 static char *org_doc = NULL;
@@ -54,9 +51,45 @@ char org_doc[BIN_DOCUMENT_SIZE];
 char meta_doc[DOCUMENT_SIZE];
 #endif
 
+// register log
+static int rglog_lock = -1;
+static FILE* rglog_fp = NULL;
+static char rglog_path[MAX_PATH_LEN] = "logs/register_log";
+static void write_register_log(const char* type, const char* format, ...);
+static void (*sighup_handler)(int sig) = NULL;
+
+static int init()
+{
+	ipc_t lock;
+
+	lock.type     = IPC_TYPE_SEM;
+	lock.pid      = 0;
+	lock.pathname = NULL;
+
+	if ( get_sem(&lock) != SUCCESS ) return FAIL;
+	rglog_lock = lock.id;
+
+	return SUCCESS;
+}
+
+static void reopen_rglog(int sig)
+{
+	fclose(rglog_fp);
+
+	rglog_fp = sb_fopen(rglog_path, "a");
+	if ( rglog_fp == NULL ) {
+		error("%s open failed: %s", rglog_path, strerror(errno));
+	}
+	else setlinebuf(rglog_fp);
+
+	if ( sighup_handler != NULL
+			&& sighup_handler != SIG_DFL && sighup_handler != SIG_IGN )
+		sighup_handler(sig);
+}
 
 int protocol_open()
 {
+	struct sigaction act, oldact;
 	int ret;
 	static int errcnt = 0;
 
@@ -67,12 +100,21 @@ int protocol_open()
 		else return SUCCESS;
 	}
 
+	/* register HUP signal handler */
+	memset(&act, 0x0, sizeof(act));
+	act.sa_flags = SA_RESTART;
+	sigfillset(&act.sa_mask);
+	act.sa_handler = reopen_rglog;
+	sigaction(SIGHUP, &act, &oldact);
+	sighup_handler = oldact.sa_handler;
+
 	/* open file */
-	regifailfd = sb_open(regifail_file_path, O_RDWR | O_CREAT | O_APPEND, 0666);
-	if (regifailfd == -1) {
-		error("cannot open file[%s]", regifail_file_path);
+	rglog_fp = sb_fopen(rglog_path, "a");
+	if ( rglog_fp == NULL ) {
+		error("%s open failed: %s", rglog_path, strerror(errno));
 		errcnt++;
 	}
+	else setlinebuf(rglog_fp);
 
 	ret = sb_run_open_did_db( &did_db, did_set );
 	if ( ret != SUCCESS && ret != DECLINE ) {
@@ -116,9 +158,11 @@ int protocol_close()
 	if ( ret != SUCCESS && ret != DECLINE )
 		error("word db close failed");
 
-	ret = close(regifailfd);
+	ret = fclose(rglog_fp);
 	if ( ret != 0 )
-		error("close regifailfd[%d] failed", regifailfd);
+		error("%s close failed: %s", rglog_path, strerror(errno));
+
+	rglog_fp = NULL;
 
 	return SUCCESS;
 }
@@ -877,18 +921,6 @@ static int sb4c_register_doc(int sockfd, char *dit, char *body, int body_size)
 	return SUCCESS;
 }
 
-static void regi_fail_log(char *doc, int doclen)
-{
-	static char split[STRING_SIZE] = "\n===========================================================\n";
-	static char buf[STRING_SIZE];
-
-	sprintf(buf, "%d th fail document\n\n", regifailnum);
-
-	write(regifailfd, split, strlen(split));
-	write(regifailfd, buf, strlen(buf));
-	write(regifailfd, doc, doclen);
-}
-
 void print_docid_oid_log(uint32_t docid, char *oid)
 {
 
@@ -1083,23 +1115,15 @@ static int sb4s_register_doc(int sockfd)
 		body_size = sb_run_buffer_getsize(&var_buf); 
 		if (body_size > DOCUMENT_SIZE-1) {
 			error("too big document");
-#ifdef DEBUG_SOFTBOTD
-			{
-				char *tmpbuf = NULL;
-				tmpbuf = (char *)sb_malloc(body_size);
-				if (tmpbuf != NULL) {
-					sb_run_buffer_get(&var_buf, 0, body_size, tmpbuf);
-					regi_fail_log(tmpbuf, body_size);
-				}
-				sb_free(tmpbuf);
-			}
-#endif
+			write_register_log("error", "too big document. OID[%s]", sb4_dit.OID);
 			sb_run_buffer_freebuf(&var_buf);
 			return FAIL;
 		}
 		n = sb_run_buffer_get(&var_buf, 0, body_size, canned_doc); 
 		if ( n < 0 ) {
 			error("cannot get var_buf from variable buffer");
+			write_register_log("error",
+					"cannot get var_buf from variable buffer. OID [%s]", sb4_dit.OID);
 			sb_run_buffer_freebuf(&var_buf);
 			return FAIL;
 		}
@@ -1329,10 +1353,17 @@ protocol_cdm:
 	
 	sb_run_buffer_freebuf(&var_buf); 
 
-	//debug("transformed canned doc(%d):%s", strlen(canned_doc), canned_doc);
+	if (!sb4_dit.OID[0]) {
+		warn("empty other id(key of docid)");
+		sb_run_buffer_freebuf(&var_buf); 
+		return FAIL;
+	}
+
 	n = sb_run_buffer_append(&var_buf, strlen(canned_doc), canned_doc); 
 	if ( n < 0 ) {
 		error("out of memory during regiter transformed canned document");
+		write_register_log("error",
+				"out of memory during register document. OID[%s]", sb4_dit.OID);
 		sb_run_buffer_freebuf(&var_buf); 
 		return FAIL;
 	}
@@ -1341,12 +1372,6 @@ protocol_cdm:
 	diff = timediff(&tv2, &tv1);
 	debug("[%2.2fsec] canned doc is ready", diff);
 #endif
-
-	if (!sb4_dit.OID[0]) {
-		warn("empty other id(key of docid)");
-		sb_run_buffer_freebuf(&var_buf); 
-		return FAIL;
-	}
 
 #if 0 
 	/* the point of creating docid is inserted into cdm */
@@ -1406,10 +1431,12 @@ protocol_cdm:
 	n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &var_buf); 
 	sb_run_buffer_freebuf(&var_buf); 
 	if ( n < 0 ) {
-		error("cannot register canned document[%u] because of error(%d)",
-				docid, n);
+		error("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
+		write_register_log("error",
+				"cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
 		return FAIL;
 	}
+	else write_register_log("info", "OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
 	
 	if (sb4_dit.RID[0]) {
 		docattr_mask_t docmask;
@@ -1519,6 +1546,8 @@ static int sb4s_register_doc2(int sockfd)
 		do {
 			if ( TCPRecv(sockfd, &header, buf, TRUE) != SUCCESS ) {
 				error("error occur while receiving var_buf");
+				write_register_log("error", "error occur while receiving var_buf. OID[%s]",
+						sb4_dit.OID);
 				sb_run_buffer_freebuf(&var_buf); 
 				return FAIL;
 			}
@@ -1528,6 +1557,8 @@ static int sb4s_register_doc2(int sockfd)
 			n = sb_run_buffer_append(&var_buf, len, buf); 
 			if ( n < 0 ) {
 				error("out of memory during appending body[error:%d]", n);
+				write_register_log("error", "out of memory during append body. OID[%s]",
+						sb4_dit.OID);
 				sb_run_buffer_freebuf(&var_buf); 
 				if ( send_nak_with_message(sockfd, "insufficient memory") != SUCCESS ) return FAIL;
 				break;
@@ -1542,11 +1573,13 @@ static int sb4s_register_doc2(int sockfd)
 		n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &var_buf); 
 		sb_run_buffer_freebuf(&var_buf); 
 		if ( n < 0 ) {
-			error("cannot register canned document[%u] because of error(%d)",
-					docid, n);
+			error("cannot register document[%s] because of error(%d)", sb4_dit.OID, n);
+			write_register_log("error", "cannot register document[%s] because of error(%d)",
+					sb4_dit.OID, n);
 			if ( send_nak_with_message(sockfd, "cdm register failed") != SUCCESS ) return FAIL;
 			continue;
 		}
+		else write_register_log("info", "OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
 		
 		if (sb4_dit.RID[0]) {
 			docattr_mask_t docmask;
@@ -2181,6 +2214,26 @@ static void write_query_log(const char* buf)
 	if ( !b_log_query ) return;
 
 	log_query(buf);
+}
+
+static void write_register_log(const char* type, const char* format, ...)
+{
+	va_list args;
+	time_t now;
+	time(&now);
+
+	if ( acquire_lock(rglog_lock) != SUCCESS ) {
+		error("register_log lock failed.");
+		return;
+	}
+
+	va_start(args, format);
+	fprintf(rglog_fp, "[%.24s] [%s] p.c r() ", ctime(&now), type);
+	vfprintf(rglog_fp, format, args);
+	fputc('\n', rglog_fp);
+	va_end(args);
+
+	release_lock(rglog_lock);
 }
 
 static int sb4s_search_doc(int sockfd) 
@@ -3847,7 +3900,7 @@ module protocol4_module = {
 	STANDARD_MODULE_STUFF,
 	config,                 /* config */
 	NULL,					/* registry */
-	NULL,					/* initialize */
+	init,					/* initialize */
 	NULL,					/* child_main */
 	NULL,					/* scoreboard */
 	register_hooks			/* register hook api */

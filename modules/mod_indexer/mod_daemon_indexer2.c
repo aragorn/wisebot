@@ -67,6 +67,31 @@ static int recv_from_rmac(int sockfd, void **data, uint32_t *docid, int *size);
 int save_to_indexdb(index_db_t* indexdb, word_db_t* word_db,
 		int docid, word_hit_t* wordhits, int wordhit_len, void* data, int size);
 
+// indexer log
+static FILE* idxlog_fp = NULL;
+static char idxlog_path[MAX_PATH_LEN] = "logs/indexer_log";
+static void write_indexer_log(const char* type, const char* format, ...);
+static void (*sighup_handler)(int sig) = NULL;
+#define ERROR_INDEXER_LOG(format, ...) \
+	error(format, ##__VA_ARGS__); \
+	write_indexer_log("error", format, ##__VA_ARGS__);
+#define INFO_INDEXER_LOG(format, ...) \
+	info(format, ##__VA_ARGS__); \
+	write_indexer_log("info", format, ##__VA_ARGS__);
+
+static void write_indexer_log(const char* type, const char* format, ...)
+{
+	va_list args;
+	time_t now;
+	time(&now);
+
+	va_start(args, format);
+	fprintf(idxlog_fp, "[%.24s] [%s] i.c m() ", ctime(&now), type);
+	vfprintf(idxlog_fp, format, args);
+	fputc('\n', idxlog_fp);
+	va_end(args);
+}
+
 /*** signal handler **********************************************************/
 static RETSIGTYPE _do_nothing(int sig) { return; }
 
@@ -101,6 +126,21 @@ static RETSIGTYPE _graceful_shutdown(int sig)
 	sigaction(SIGINT, &act, NULL);
 
 	scoreboard->graceful_shutdown++;
+}
+
+static RETSIGTYPE reopen_idxlog(int sig)
+{
+	fclose(idxlog_fp);
+
+	idxlog_fp = sb_fopen(idxlog_path, "a");
+	if ( idxlog_fp == NULL ){
+		error("%s open failed: %s", idxlog_path, strerror(errno));
+	}
+	else setlinebuf(idxlog_fp);
+
+	if ( sighup_handler != NULL
+			&& sighup_handler != SIG_DFL && sighup_handler != SIG_IGN )
+		sighup_handler(sig);
 }
 
 int init_wordhits_storage()
@@ -297,6 +337,9 @@ static int indexer_main(slot_t *slot)
 	double index_time;
 	struct timeval start_time, end_time;
 
+	/* hup signal handler */
+	struct sigaction act, oldact;
+
 	slot->state = SLOT_PROCESS;
 
 	if ( init_wordhits_storage() == FAIL ) {
@@ -321,6 +364,22 @@ static int indexer_main(slot_t *slot)
 	}
 
 	open_error_documents_file();
+
+	/* open indexer_log */
+	idxlog_fp = sb_fopen(idxlog_path, "a");
+	if ( idxlog_fp == NULL ) {
+		error("%s open failed: %s", idxlog_path, strerror(errno));
+		goto error_return;
+	}
+	else setlinebuf(idxlog_fp);
+
+	/* register HUP signal handler */
+	memset(&act, 0x0, sizeof(act));
+	act.sa_flags = SA_RESTART;
+	sigfillset(&act.sa_mask);
+	act.sa_handler = reopen_idxlog;
+	sigaction(SIGHUP, &act, &oldact);
+	sighup_handler = oldact.sa_handler;
 
 	if (sb_run_tcp_local_bind_listen(mSocketFile, BACKLOG, &listenfd) != SUCCESS) {
    		error("tcp_local_bind_listen: %s", strerror(errno));
@@ -347,7 +406,7 @@ static int indexer_main(slot_t *slot)
 		ret = recv_from_rmac(sockfd, &data, &docid, &size);
 		if (ret == SKIP_DOCUMENT) 
 		{
-			error("document skip, docid = %d", docid);
+			ERROR_INDEXER_LOG("document skip, docid[%d]", docid);
 			ADD_AND_SEND_AND_CLOSE(ret);
 			continue;
 		}
@@ -367,7 +426,7 @@ static int indexer_main(slot_t *slot)
 		}
 
 		if ( indexer_shared->last_indexed_docid >= docid ) {
-			error("last_indexed_docid[%d] is greater than docid[%d]", indexer_shared->last_indexed_docid, docid);
+			ERROR_INDEXER_LOG("last_indexed_docid[%d] is greater than docid[%d]", indexer_shared->last_indexed_docid, docid);
 		    SEND_RET_AND_CLOSE(ret);
 			continue;
 		}
@@ -376,14 +435,14 @@ static int indexer_main(slot_t *slot)
 		ret = save_to_indexdb( indexdb, word_db, docid, wordhits_storage, max_word_hit, data, size );
 
 		if (ret != SUCCESS) {
-			error("save_to_indexdb() error, docid=%d", docid);
+			ERROR_INDEXER_LOG("save_to_indexdb() error, docid[%d]", docid);
 			ADD_AND_SEND_AND_CLOSE(ret);
 			continue;
 		}
 		else { /* SUCCESS */
 			/* every saving time, word db is also saved */
 //			sb_run_sync_word_db(&gWordDB);  // lexicon 전체가 mmap을 쓰기 때문에 일단은..
-			info("docid[%d] indexed", docid);
+			INFO_INDEXER_LOG("docid[%d] indexed", docid);
 			add_result_document(docid, SUCCESS);
 		    SEND_RET_AND_CLOSE(ret);
 		}
@@ -432,6 +491,7 @@ static int indexer_main(slot_t *slot)
 
 	close(mErrorFileFd);
 	close(mDocFileFd);
+	fclose(idxlog_fp);
 	
 	free_wordhits_storage();
 	if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
@@ -444,6 +504,7 @@ static int indexer_main(slot_t *slot)
 error_return:
 	if ( word_db ) sb_run_close_word_db( word_db );
 	if ( indexdb ) sb_run_indexdb_close( indexdb );
+	if ( idxlog_fp ) fclose(idxlog_fp);
 	free_wordhits_storage();
 	slot->state = SLOT_FINISH;
 	return -1;

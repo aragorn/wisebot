@@ -13,7 +13,7 @@ then
 	cd lexicon/wordtoid && rm -f *; cd $dir
 	cd lexicon/idtoword && rm -f *; cd $dir
 	cd indexer && rm -f * ; cd $dir
-	cd ../logs && rm -f error_log softbotd.pid ; cd $dir
+	cd ../logs && rm -f * ; cd $dir
 	rm -f softbotd*.reg ; cd $dir
 	cd crawler && rm -f * ; cd $dir
 else
