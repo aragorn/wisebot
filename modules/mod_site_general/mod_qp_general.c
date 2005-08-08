@@ -429,13 +429,11 @@ int expr_bitnot_int(docattr_expr_t* expr)
 
 int expr_bitnot_set(docattr_operand_t* operand)
 {
-	if ( OPERAND1->value_type == VALUE_INTEGER
-			&& OPERAND2->value_type == VALUE_INTEGER ) {
+	if ( OPERAND1->value_type == VALUE_INTEGER ) {
 		operand->o.expr.exec_func = expr_bitnot_int;
 	}
 	else {
 		print_operand(OPERAND1);
-		print_operand(OPERAND2);
 		error("operator BIT_NOT doesn't support above types");
 		return FAIL;
 	}
