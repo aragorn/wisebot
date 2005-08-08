@@ -28,6 +28,10 @@ extern int expr_lteq_set(docattr_operand_t* operand);
 extern int expr_bitand_set(docattr_operand_t* operand);
 extern int expr_bitor_set(docattr_operand_t* operand);
 extern int expr_bitnot_set(docattr_operand_t* operand);
+extern int expr_plus_set(docattr_operand_t* operand);
+extern int expr_minus_set(docattr_operand_t* operand);
+extern int expr_multiply_set(docattr_operand_t* operand);
+extern int expr_divide_set(docattr_operand_t* operand);
 
 extern int expr_logical_and(docattr_expr_t* expr);
 extern int expr_logical_or(docattr_expr_t* expr);

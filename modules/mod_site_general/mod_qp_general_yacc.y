@@ -1,10 +1,13 @@
 %token EQ NEQ GT GT_EQ LT LT_EQ BIT_AND BIT_OR BIT_NOT
+%token PLUS MINUS MULTIPLY DIVIDE
 %token LOGICAL_AND LOGICAL_OR LOGICAL_NOT
 %token LPAREN RPAREN NAME VALUE NOT
 %token OPERAND_ERROR
 %left LOGICAL_OR
 %left LOGICAL_AND
 %nonassoc LOGICAL_NOT
+%left PLUS MINUS
+%left MULTIPLY DIVIDE
 %left BIT_OR
 %left BIT_AND
 %nonassoc BIT_NOT
@@ -100,6 +103,30 @@ calc_expr:	calc_expr BIT_AND calc_expr {
 				$$ = $1;
 				$$->o.expr.operand1 = $2;
 				if ( expr_bitnot_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr PLUS calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_plus_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr MINUS calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_minus_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr MULTIPLY calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_multiply_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr DIVIDE calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_divide_set($$) != SUCCESS ) YYERROR;
 			}
 			| LPAREN calc_expr RPAREN { $$ = $2; }
 			| operand { $$ = $1; }

@@ -38,15 +38,19 @@
      BIT_AND = 264,
      BIT_OR = 265,
      BIT_NOT = 266,
-     LOGICAL_AND = 267,
-     LOGICAL_OR = 268,
-     LOGICAL_NOT = 269,
-     LPAREN = 270,
-     RPAREN = 271,
-     NAME = 272,
-     VALUE = 273,
-     NOT = 274,
-     OPERAND_ERROR = 275
+     PLUS = 267,
+     MINUS = 268,
+     MULTIPLY = 269,
+     DIVIDE = 270,
+     LOGICAL_AND = 271,
+     LOGICAL_OR = 272,
+     LOGICAL_NOT = 273,
+     LPAREN = 274,
+     RPAREN = 275,
+     NAME = 276,
+     VALUE = 277,
+     NOT = 278,
+     OPERAND_ERROR = 279
    };
 #endif
 #define EQ 258
@@ -58,15 +62,19 @@
 #define BIT_AND 264
 #define BIT_OR 265
 #define BIT_NOT 266
-#define LOGICAL_AND 267
-#define LOGICAL_OR 268
-#define LOGICAL_NOT 269
-#define LPAREN 270
-#define RPAREN 271
-#define NAME 272
-#define VALUE 273
-#define NOT 274
-#define OPERAND_ERROR 275
+#define PLUS 267
+#define MINUS 268
+#define MULTIPLY 269
+#define DIVIDE 270
+#define LOGICAL_AND 271
+#define LOGICAL_OR 272
+#define LOGICAL_NOT 273
+#define LPAREN 274
+#define RPAREN 275
+#define NAME 276
+#define VALUE 277
+#define NOT 278
+#define OPERAND_ERROR 279
 
 
 

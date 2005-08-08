@@ -40,6 +40,10 @@ T [tT]
 &				{ SET_YYLVAL; SET_EXPR; return BIT_AND; }
 \|				{ SET_YYLVAL; SET_EXPR; return BIT_OR; }
 !				{ SET_YYLVAL; SET_EXPR; return BIT_NOT; }
+\+				{ SET_YYLVAL; SET_EXPR; return PLUS; }
+\-				{ SET_YYLVAL; SET_EXPR; return MINUS; }
+\*				{ SET_YYLVAL; SET_EXPR; return MULTIPLY; }
+\/				{ SET_YYLVAL; SET_EXPR; return DIVIDE; }
 (&&|{A}{N}{D})	{ SET_YYLVAL; SET_EXPR; return LOGICAL_AND; }
 (\|\||{O}{R})	{ SET_YYLVAL; SET_EXPR; return LOGICAL_OR; }
 (!!|{N}{O}{T})	{ SET_YYLVAL; SET_EXPR; return LOGICAL_NOT; }
@@ -61,7 +65,7 @@ T [tT]
 	else return OPERAND_ERROR;
 }
 
-[^=\>\<&\|!\(\)\t\r\n\" ]+ 	{
+[^=\>\<&\|!\+\-\*\/\(\)\t\r\n\" ]+ 	{
 	SET_YYLVAL;
 
 	// field 이름과 같은 게 있으면 NAME 아니면 VALUE

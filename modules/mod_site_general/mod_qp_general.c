@@ -442,6 +442,110 @@ int expr_bitnot_set(docattr_operand_t* operand)
 	return SUCCESS;
 }
 
+int expr_plus_int_int(docattr_expr_t* expr)
+{
+	GET_RESULT1; GET_RESULT2;
+
+	RESULT.integer = ( RESULT1.integer + RESULT2.integer );
+
+	return SUCCESS;
+}
+
+int expr_plus_set(docattr_operand_t* operand)
+{
+	if ( OPERAND1->value_type == VALUE_INTEGER
+			&& OPERAND2->value_type == VALUE_INTEGER ) {
+		operand->o.expr.exec_func = expr_plus_int_int;
+	}
+	else {
+		print_operand(OPERAND1);
+		print_operand(OPERAND2);
+		error("operand PLUS doesn't support above types");
+		return FAIL;
+	}
+
+	operand->value_type = VALUE_INTEGER;
+	return SUCCESS;
+}
+
+int expr_minus_int_int(docattr_expr_t* expr)
+{
+	GET_RESULT1; GET_RESULT2;
+
+	RESULT.integer = ( RESULT1.integer - RESULT2.integer );
+
+	return SUCCESS;
+}
+
+int expr_minus_set(docattr_operand_t* operand)
+{
+	if ( OPERAND1->value_type == VALUE_INTEGER
+			&& OPERAND2->value_type == VALUE_INTEGER ) {
+		operand->o.expr.exec_func = expr_minus_int_int;
+	}
+	else {
+		print_operand(OPERAND1);
+		print_operand(OPERAND2);
+		error("operand MINUS doesn't support above types");
+		return FAIL;
+	}
+
+	operand->value_type = VALUE_INTEGER;
+	return SUCCESS;
+}
+
+int expr_multiply_int_int(docattr_expr_t* expr)
+{
+	GET_RESULT1; GET_RESULT2;
+
+	RESULT.integer = ( RESULT1.integer * RESULT2.integer );
+
+	return SUCCESS;
+}
+
+int expr_multiply_set(docattr_operand_t* operand)
+{
+	if ( OPERAND1->value_type == VALUE_INTEGER
+			&& OPERAND2->value_type == VALUE_INTEGER ) {
+		operand->o.expr.exec_func = expr_multiply_int_int;
+	}
+	else {
+		print_operand(OPERAND1);
+		print_operand(OPERAND2);
+		error("operand MULTIPLY doesn't support above types");
+		return FAIL;
+	}
+
+	operand->value_type = VALUE_INTEGER;
+	return SUCCESS;
+}
+
+int expr_divide_int_int(docattr_expr_t* expr)
+{
+	GET_RESULT1; GET_RESULT2;
+
+	RESULT.integer = ( RESULT1.integer / RESULT2.integer );
+
+	return SUCCESS;
+}
+
+int expr_divide_set(docattr_operand_t* operand)
+{
+	if ( OPERAND1->value_type == VALUE_INTEGER
+			&& OPERAND2->value_type == VALUE_INTEGER ) {
+		operand->o.expr.exec_func = expr_divide_int_int;
+	}
+	else {
+		print_operand(OPERAND1);
+		print_operand(OPERAND2);
+		error("operand DIVIDE doesn't support above types");
+		return FAIL;
+	}
+
+	operand->value_type = VALUE_INTEGER;
+	return SUCCESS;
+}
+
 int expr_logical_and(docattr_expr_t* expr)
 {
 	GET_RESULT1;
