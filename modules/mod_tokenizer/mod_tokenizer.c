@@ -26,9 +26,9 @@ static uint8_t special_char_table[128] =
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,    // 0
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,    // 1
   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,    // 2
-  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,    // 3
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,    // 4
-  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,    // 5
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,    // 3
+  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,    // 4
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,    // 5
   1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,    // 6
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0     // 7
 };
@@ -178,15 +178,14 @@ static int add_token(token_t *token, unsigned char *c, int *pass)
 			if (i >= MAX_ALPHABET_LEN || i+1 >= MAX_WORD_LEN)
 				break;
 
-//			if (i < MAX_ALPHABET_LEN && i+1 < MAX_WORD_LEN) {
-				token->string[i] = *c;
-				token->string[i+1] = '\0';
-				token->len += 1;
-//			}
+			token->string[i] = *c;
+			token->len += 1;
+
 			*pass+=1;
 			i+=1;
 			c+=1;
 		}
+		token->string[i] = '\0';
 	}
 	else if (IS_NUMBER(*c)) {
 		token->type = TOKEN_NUMBER;
@@ -210,15 +209,14 @@ static int add_token(token_t *token, unsigned char *c, int *pass)
 			if (i >= MAX_SPECIALCHAR_LEN || i+1 >= MAX_WORD_LEN)
 				break;
 
-//			if (i < MAX_SPECIALCHAR_LEN && i+1 < MAX_WORD_LEN) {
-				token->string[i] = *c;
-				token->string[i+1] = '\0';
-				token->len += 1;
-//			}
+			token->string[i] = *c;
+			token->len += 1;
+
 			*pass+=1;
 			i+=1;
 			c+=1;
 		}
+		token->string[i] = '\0';
 	}
 	else { // XXX: unknown euc-kr code
 		if (*(c+1) != '\0' && ((*c) & 0x80) ) {
