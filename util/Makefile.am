@@ -9,7 +9,7 @@ ifs_defrag_LDADD = $(libdir)/libifs_defrag.la $(libdir)/libifs.la \
                    $(libdir)/libsfs.la $(libdir)/libapi.la \
 				   $(libdir)/libmp.la $(libdir)/libplatform.la \
 				   $(libdir)/libsoftbot.la
-ifs_defrag_LDFLAGS = -L../lib -export-dynamic $(DYN_LIB) $(THREAD_LIB)
+ifs_defrag_LDFLAGS = -L../lib -export-dynamic $(DYN_LIB) $(THREAD_LIB) $(SOFTBOTD_LDFLAGS)
 
 include ../modules/install-pkglib.mk
 
