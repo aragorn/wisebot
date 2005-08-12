@@ -1456,7 +1456,7 @@ protocol_cdm:
 		error("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
 		return FAIL;
 	}
-	else write_register_log("info", "OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+	else info("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
 	
 	if (sb4_dit.RID[0]) {
 		docattr_mask_t docmask;
