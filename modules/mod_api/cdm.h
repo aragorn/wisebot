@@ -9,12 +9,13 @@
 
 /* canned document manager status code */
 #define CDM_UNKNOWN_DATABASE		(-1)
-#define CDM_STORAGE_FULL			(-2)
-#define CDM_NOT_WELL_FORMED_DOC		(-3)
+#define CDM_STORAGE_FULL			(-2) // put
+#define CDM_NOT_WELL_FORMED_DOC		(-3) // put
 #define CDM_ALREADY_EXIST			(-4)
 #define CDM_NOT_EXIST				(-5)
 #define CDM_TRY_AGAIN				(-6)
 #define CDM_DELETED					(-7)
+#define CDM_DELETE_OLD				(2) // put
 
 #define MAX_NUM_RETRIEVED_DOC		COMMENT_LIST_SIZE
 //#define MAX_FIELD_NUM				32
@@ -23,9 +24,6 @@
 #ifndef PARAGRAPH_POSITION
 #define PARAGRAPH_POSITION 1
 #endif
-//#ifdef PARAGRAPH_POSITION
-//#undef PARAGRAPH_POSITION
-//#endif
 
 /* 
  * if size is -1, return whole data of field 
@@ -62,7 +60,8 @@ SB_DECLARE_HOOK(int,server_canneddoc_close,())
 SB_DECLARE_HOOK(int,server_canneddoc_put, \
 	(uint32_t docid, VariableBuffer* pDocument))
 SB_DECLARE_HOOK(int,server_canneddoc_put_with_oid, \
-	(void* did_db, char *oid, uint32_t *registeredDocid, VariableBuffer* pDocument))
+	(void* did_db, char *oid, uint32_t *registeredDocid,
+	 uint32_t *deletedDocid, VariableBuffer* pDocument))
 SB_DECLARE_HOOK(int,server_canneddoc_get, \
 	(uint32_t docid, VariableBuffer* pDocument))	
 SB_DECLARE_HOOK(int,server_canneddoc_get_as_pointer, \

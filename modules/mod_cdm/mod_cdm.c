@@ -430,16 +430,16 @@ int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc) {
 	return iResult;
 }
 
-int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableBuffer *pCannedDoc) {
+// 성공할 경우 CDM_DELETE_OLD, SUCCESS 2가지이다.
+int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId,
+		uint32_t *deletedDocid, VariableBuffer *pCannedDoc) {
 	int iResult, ditNo;
 	long iSize, dwCurrentDBOffset;
 	IndexFileElement indexElement;
 	char path[STRING_SIZE];
 	parser_t *p;
 	field_t *f;
-	//char *paragraph;
-	//int idx_paragraph, paralen;
-	int i;
+	int i, suc_ret = SUCCESS, err_ret = FAIL;
 
 	int len;
 	char *val, value[STRING_SIZE];
@@ -524,6 +524,7 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableB
 
 		if (ditNo == dwMaxDBFileNum) {
 			error("database is full! (dit file number needs to modified)");
+			err_ret = CDM_STORAGE_FULL;
 		    goto return_fail;
 		}
 
@@ -561,6 +562,7 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableB
 	p = sb_run_xmlparser_parselen("CP949", aCannedDoc, iSize);
 	if (p == NULL) {
 		error("2. cannot parse document[%s]", oid);
+		err_ret = CDM_NOT_WELL_FORMED_DOC;
 	    goto return_fail;
 	}
 	else if (p == (parser_t*)1) {
@@ -633,6 +635,8 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableB
 			DOCMASK_SET_ZERO(&docmask);
 			sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 			sb_run_docattr_set_array(&olddocid, 1, SC_MASK, &docmask);
+			suc_ret = CDM_DELETE_OLD;
+			*deletedDocid = olddocid;
 		}
 		else {
 			info("OID[%s] is registered by docid[%u]", oid, docid);
@@ -675,7 +679,7 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId, VariableB
 	}
 	*/
 #endif
-	return iResult;
+	return suc_ret;
 
 return_fail:
 #ifdef PROCESS_HANDLE
@@ -684,7 +688,7 @@ return_fail:
 		aCannedDoc = 0x00;
 	} */
 #endif
-	return FAIL;
+	return err_ret;
 }
 
 int CDM_getSize(uint32_t docId)

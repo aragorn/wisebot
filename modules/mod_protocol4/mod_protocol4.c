@@ -935,7 +935,7 @@ static int sb4s_register_doc(int sockfd)
 	char buf[SB4_MAX_SEND_SIZE+1];
 	sb4_dit_t sb4_dit;
 	header_t header;
-	uint32_t docid = 0;
+	uint32_t docid = 0, olddocid = 0;
 
 	// 첨부파일을 필터에 넣기 위해 잠시 사용하는 파일 이름들...
 	int fd_filter_in, fd_filter_out;
@@ -1428,12 +1428,32 @@ protocol_cdm:
 
 	/************** fixed part *************************/
 	
-	n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &var_buf); 
+	n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &olddocid, &var_buf); 
 	sb_run_buffer_freebuf(&var_buf); 
+	switch ( n ) {
+		case CDM_NOT_WELL_FORMED_DOC:
+			write_register_log("error",
+					"cannot register canned document[%s]. not well formed document", sb4_dit.OID);
+			break;
+		case CDM_STORAGE_FULL:
+			write_register_log("error",
+					"cdm storage is full. document[%s] is not registered", sb4_dit.OID);
+			break;
+		case CDM_DELETE_OLD:
+			write_register_log("info",
+					"doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
+			break;
+		case SUCCESS:
+			write_register_log("info", "OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+			break;
+		default:
+			write_register_log("error",
+					"cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
+			break;
+	}
+
 	if ( n < 0 ) {
 		error("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
-		write_register_log("error",
-				"cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
 		return FAIL;
 	}
 	else write_register_log("info", "OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
@@ -1476,7 +1496,7 @@ static int sb4s_register_doc2(int sockfd)
 	char buf[SB4_MAX_SEND_SIZE+1];
 	sb4_dit_t sb4_dit;
 	header_t header;
-	uint32_t docid = 0;
+	uint32_t docid = 0, olddocid = 0;
 
 #ifdef PROCESS_HANDLE
 	if (canned_doc == NULL) {
@@ -1570,16 +1590,37 @@ static int sb4s_register_doc2(int sockfd)
 
 		/************** fixed part *************************/
 		
-		n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &var_buf); 
+		n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &olddocid, &var_buf); 
 		sb_run_buffer_freebuf(&var_buf); 
+
+		switch ( n ) {
+			case CDM_NOT_WELL_FORMED_DOC:
+				write_register_log("error",
+						"cannot register canned document[%s]. not well formed document", sb4_dit.OID);
+				break;
+			case CDM_STORAGE_FULL:
+				write_register_log("error",
+						"cdm storage is full. document[%s] is not registered", sb4_dit.OID);
+				break;
+			case CDM_DELETE_OLD:
+				write_register_log("info",
+						"doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
+				break;
+			case SUCCESS:
+				write_register_log("info", "OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+				break;
+			default:
+				write_register_log("error",
+						"cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
+				break;
+		}
+
 		if ( n < 0 ) {
 			error("cannot register document[%s] because of error(%d)", sb4_dit.OID, n);
-			write_register_log("error", "cannot register document[%s] because of error(%d)",
-					sb4_dit.OID, n);
 			if ( send_nak_with_message(sockfd, "cdm register failed") != SUCCESS ) return FAIL;
 			continue;
 		}
-		else write_register_log("info", "OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+		else info("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
 		
 		if (sb4_dit.RID[0]) {
 			docattr_mask_t docmask;

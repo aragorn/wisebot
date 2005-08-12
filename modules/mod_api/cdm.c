@@ -22,8 +22,9 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_close,(),(),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_ALL(int,server_canneddoc_put,\
 		(uint32_t docId, VariableBuffer *pCannedDoc),(docId, pCannedDoc),SUCCESS,DECLINE)
 SB_IMPLEMENT_HOOK_RUN_ALL(int,server_canneddoc_put_with_oid,\
-		(void* did_db, char *oid, uint32_t *registeredDocid, VariableBuffer *pCannedDoc), \
-		(did_db, oid, registeredDocid, pCannedDoc),SUCCESS,DECLINE)
+		(void* did_db, char *oid, uint32_t *registeredDocid,
+		 uint32_t *deletedDocid, VariableBuffer *pCannedDoc), \
+		(did_db, oid, registeredDocid, deletedDocid, pCannedDoc),SUCCESS,DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_get,\
 		(uint32_t docId, VariableBuffer *pCannedDoc),(docId, pCannedDoc),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,server_canneddoc_get_as_pointer,\
