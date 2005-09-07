@@ -65,10 +65,10 @@ koma2c-install: koma2c
 	cd koma2c && make install
 
 iconv-install: iconv
-	cd libiconv-1.9.1 && make
+	cd libiconv-1.9.1 && make install
 
 readline-install: readline
-	cd readline-5.0 && make
+	cd readline-5.0 && make install
 
 ###############################################################################
 expat-clean:
