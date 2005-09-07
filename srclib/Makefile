@@ -14,6 +14,8 @@ all:
 	@echo "available packages:"
 	@echo " expat-install  - optional"
 	@echo " koma2c-install - required"
+	@echo " iconv-install - optional"
+	@echo " readline-install - optional"
 	@echo "ex) make koma2c-install"
 ###############################################################################
 cvs-export: expat-export koma2c-export
@@ -26,58 +28,61 @@ expat-export:
 	cd expat && \
 	./configure --prefix=$(prefix) --includedir=$(prefix)/include/expat
 
-bdb-export:
-	[ -f db-4.3.27.NC/dist/configure ] || (gzip -c -d db-4.3.27.NC.tar.gz | tar xf -)
-	cd db-4.3.27.NC/build_unix && \
-	../dist/configure --prefix=$(prefix) --includedir=$(prefix)/include/db
-
-sn2-export:
-	[ -f SynapNext2/configure ] || (gzip -c -d SynapNext2.tar.gz | tar xf -)
-	cd SynapNext2 && \
-	./buildconf && \
-	./configure --prefix=$(prefix) --includedir=$(prefix)/include/sn2
-
 koma2c-export:
 	[ -f koma2c/buildconf ] || (cvs co koma2c)
 	cd koma2c && \
 	./buildconf && \
 	./configure --prefix=$(prefix) --includedir=$(prefix)/include/koma
+
+iconv-export:
+	[ -f libiconv-1.9.1/configure ] || (gzip -c -d libiconv-1.9.1.tar.gz | tar xf -)
+	cd libiconv-1.9.1 && \
+	./configure --prefix=$(prefix) --includedir=$(prefix)/include/iconv
+
+readline-export:
+	[ -f readline-5.0/configure ] || (gzip -c -d readline-5.0.tar.gz | tar xf -)
+	cd readline-5.0 && \
+	./configure --prefix=$(prefix) --includedir=$(prefix)/include/readline
+
 ###############################################################################
 expat: expat-export
 	cd expat && make
 
-bdb: bdb-export
-	cd db-4.3.27.NC/build_unix && make
-
-sn2: sn2-export
-	cd SynapNext2 && make
-
 koma2c: koma2c-export
 	cd koma2c && make
+
+iconv: iconv-export
+	cd libiconv-1.9.1 && make
+
+readline: readline-export
+	cd readline-5.0 && make
+
 ###############################################################################
 expat-install: expat
 	cd expat && make install
 
-bdb-install: bdb
-	cd db-4.3.27.NC/build_unix && make install
-
-sn2-install: sn2
-	cd SynapNext2 && make install
-
 koma2c-install: koma2c
 	cd koma2c && make install
+
+iconv-install: iconv
+	cd libiconv-1.9.1 && make
+
+readline-install: readline
+	cd readline-5.0 && make
+
 ###############################################################################
 expat-clean:
 	rm -rf expat
 
-bdb-clean:
-	rm -rf db-4.3.27.NC
-
-sn2-clean:
-	rm -rf SynapNext2
-
 koma2c-clean:
 	rm -rf koma2c
+
+iconv-clean:
+	rm -rf libiconv-1.9.1
+
+readline-clean:
+	rm -rf readline-5.0
+
 ###############################################################################
 test:
 	-echo "Not Supported Yet"
