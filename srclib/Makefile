@@ -42,7 +42,7 @@ iconv-export:
 readline-export:
 	[ -f readline-5.0/configure ] || (gzip -c -d readline-5.0.tar.gz | tar xf -)
 	cd readline-5.0 && \
-	./configure --prefix=$(prefix) --includedir=$(prefix)/include/readline
+	./configure --prefix=$(prefix)
 
 ###############################################################################
 expat: expat-export
