@@ -4,12 +4,12 @@
 
 #if defined(AIX5)
 /* XXX iconv libary in /usr/lib has fatal error.
- *     be sure to link /usr/local/lib/libiconv.a and
- *     include /usr/local/include/iconv.h.
+ *     be sure to link lib/libiconv.a (install from srclib : make iconv-install)
+ *     include include/iconv/iconv.h.
  *     see AIXPorting wiki page for more information.
  *     --aragorn, 2004/02/10
  */
-#  include "/usr/local/include/iconv.h"
+#  include "iconv/iconv.h"
 #elif defined (SOLARIS)
 /* this will include $(top_builddir)/include/iconv.h
  */

@@ -23,13 +23,13 @@
 /* XXX AIX Porting FAQ 등을 좀 더 찾아볼 것. */
 //#define UNIX98  /* this makes _XOPEN_SOURCE defined as 500 */
 
-/* XXX check /usr/local/include/iconv.h 
+/* XXX install iconv library from srclib : make iconv-install
  *     we declare some iconv functions to be exported in server/sb.exp .
  */
-#include "/usr/local/include/iconv.h"
-SB_DECLARE(iconv_t) libiconv_open (const char* tocode, const char* fromcode);
-SB_DECLARE(size_t) libiconv(iconv_t cd,  char* * inbuf, size_t *inbytesleft, char* * outbuf, size_t *outbytesleft);
-SB_DECLARE(int) libiconv_close(iconv_t cd);
+#include "iconv/iconv.h"
+SB_DECLARE(iconv_t) iconv_open (const char* tocode, const char* fromcode);
+SB_DECLARE(size_t) iconv(iconv_t cd,  char* * inbuf, size_t *inbytesleft, char* * outbuf, size_t *outbytesleft);
+SB_DECLARE(int) iconv_close(iconv_t cd);
 
 #include <pthread.h>
 SB_DECLARE(int) pthread_mutex_init (pthread_mutex_t *, const pthread_mutexattr_t *);
