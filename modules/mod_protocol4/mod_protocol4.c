@@ -1171,9 +1171,9 @@ static int sb4s_register_doc(int sockfd)
 		char filter_err_path[MAX_PATH_LEN];
 
 		snprintf(filter_path    , MAX_PATH_LEN, "%s/dat/filter"   , gSoftBotRoot);
-		snprintf(filter_in_path , MAX_PATH_LEN, "%s/filter.in.%d" , filter_path, getpid());
-		snprintf(filter_out_path, MAX_PATH_LEN, "%s/filter.out.%d", filter_path, getpid());
-		snprintf(filter_err_path, MAX_PATH_LEN, "%s/filter.err.%d", filter_path, getpid());
+		snprintf(filter_in_path , MAX_PATH_LEN, "%s/filter.in.%d" , filter_path, (int)getpid());
+		snprintf(filter_out_path, MAX_PATH_LEN, "%s/filter.out.%d", filter_path, (int)getpid());
+		snprintf(filter_err_path, MAX_PATH_LEN, "%s/filter.err.%d", filter_path, (int)getpid());
 		snprintf(sn2f_command   , MAX_PATH_LEN, "%s/%s %s %s",
 				 gSoftBotRoot, SN2_FILTER_EXEC, filter_in_path, filter_out_path);
 		
