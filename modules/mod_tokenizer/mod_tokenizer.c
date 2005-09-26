@@ -11,6 +11,7 @@
 #define MAX_SPECIALCHAR_LEN	4
 
 #define IS_WHITE(c)		((c == ' ') || (c == '\t') || (c == '\r') || (c == '\n'))
+#define IS_COMMA(c)		(c==',')
 #define IS_KOREAN(c)	IS_KOREAN_FIRST_BYTE(c)
 #define IS_KOREAN_FIRST_BYTE(c)	((c >= 0xb0) && (c <= 0xc8) )
 #define IS_ALPHABET(c)	(((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')))
@@ -64,11 +65,11 @@ int get_tokens(tokenizer_t *tokenizer, token_t tokens[], int maxtokens)
 		if (idx >= maxtokens) {
 			break;
 		}
-		else if (IS_WHITE(c)) {
+		else if (IS_WHITE(c) || IS_COMMA(c)) {
 			add_statustoken(&tokens[idx],TOKEN_END_OF_WORD);
 			idx++;
 
-			while( IS_WHITE(*tokenizer->current) ) tokenizer->current++;
+			while( IS_WHITE(*tokenizer->current) || IS_COMMA(*tokenizer->current) ) tokenizer->current++;
 
 		}
 		else if (IS_END_OF_DOCUMENT(c)) {
