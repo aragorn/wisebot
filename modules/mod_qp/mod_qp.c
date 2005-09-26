@@ -1702,7 +1702,7 @@ static void operate_phrase_each_list(index_list_t *l1, index_list_t *l2,
 	//debug_show_dochitlist(result->doc_hits, 0, result->ndochits, stderr);
 }
 
-#define PHRASE_DISTANCE 2
+#define PHRASE_DISTANCE 1
 static int operate_phrase(sb_stack_t *stack, QueryNode *phrase)
 {
 	int num_of_operands = 0;

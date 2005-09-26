@@ -105,7 +105,7 @@ int QPP_postfixPrint(QueryNode postfix[],int numNode) {
 
 	for ( i=0; i<numNode; i++) {
 		if (postfix[i].type == OPERAND) {
-			info("word: %s(field:%s)(wordid:%u)(opParam:%d)\n",
+			info("word: %s(field:%s)(wordid:%u)(opParam:%d)",
 						postfix[i].word_st.string,
 						sb_strbin(postfix[i].field,sizeof(postfix[i].field)),
 						postfix[i].word_st.id,
@@ -113,7 +113,7 @@ int QPP_postfixPrint(QueryNode postfix[],int numNode) {
 		}
 		else {
 			opNum = postfix[i].operator;
-			info("operator: %s (num_operands:%d,param:%d)\n",operatorName[opNum-1],\
+			info("operator: %s (num_operands:%d,param:%d)",operatorName[opNum-1],\
 						postfix[i].num_of_operands,postfix[i].opParam);
 		}
 	}
