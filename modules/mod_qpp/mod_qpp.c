@@ -306,9 +306,9 @@ static void initPrecedence() {
 	// everything after parenthesis must be pushed
 	mPrecedence[QPP_OP_BEG_PAREN] = 0;	
 
-	mPrecedence[QPP_OP_NOT] = 11;
-	mPrecedence[QPP_OP_FIELD] = 10;
-	mPrecedence[QPP_OP_VIRTUAL_FIELD] = 10;
+	mPrecedence[QPP_OP_FIELD] = 11;
+	mPrecedence[QPP_OP_VIRTUAL_FIELD] = 11;
+	mPrecedence[QPP_OP_NOT] = 10;
 		
 	mPrecedence[QPP_OP_WITHIN] = 8;
 	mPrecedence[QPP_OP_PARA] = 8;

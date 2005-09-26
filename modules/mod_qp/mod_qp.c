@@ -308,15 +308,23 @@ void stack_push(sb_stack_t *stack, index_list_t *this)
 
 index_list_t *stack_peek(sb_stack_t *stack)
 {
-	index_list_t *this;
-	
-	this = stack->last;
-
 	if ( stack->size == 0 ) {
 		warn("empty stack");
 		return NULL;
 	}
-	return this;
+
+	return stack->last;
+}
+
+// 맨 마지막 바로 앞을 가져온다... 쯥...
+index_list_t *stack_peek_1(sb_stack_t *stack)
+{
+	if ( stack->size <= 1 ) {
+		warn("not enough stack size");
+		return NULL;
+	}
+
+	return stack->last->prev;
 }
 
 index_list_t *stack_pop(sb_stack_t *stack)
@@ -1127,8 +1135,9 @@ static int operate_and(sb_stack_t *stack, QueryNode *and)
 	index_list_t *operand1=NULL, *operand2=NULL;
 
 	operand2 = stack_peek(stack);
-	operand1 = stack_peek(stack);
-	if (operand1->list_type == EXCLUDE || operand2->list_type == EXCLUDE) {
+	operand1 = stack_peek_1(stack);
+	if ( operand2 != NULL && operand1 != NULL
+			&& (operand1->list_type == EXCLUDE || operand2->list_type == EXCLUDE) ) {
 		return operator_and_with_not(stack, and);
 	}
 	
