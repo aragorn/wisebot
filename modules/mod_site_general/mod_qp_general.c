@@ -525,7 +525,10 @@ int expr_divide_int_int(docattr_expr_t* expr)
 	GET_RESULT1; GET_RESULT2;
 
 	// 0 으로 나눌 경우는 그냥 답이 0이라고 하고 넘어간다.
-	if ( RESULT2.integer == 0 ) RESULT.integer = 0;
+	if ( RESULT2.integer == 0 ) {
+		error("divide 0!! ignore and regard result as 0");
+		RESULT.integer = 0;
+	}
 	else RESULT.integer = ( RESULT1.integer / RESULT2.integer );
 
 	return SUCCESS;
