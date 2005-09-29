@@ -187,7 +187,14 @@ int bigram_generator(bigram_t *handle, index_word_t index_word[], int32_t max_in
 						is_index_word = 0; 
 				} 
 
-				if(is_index_word)  
+				/* bigram 에서 특수하게 사용하는 \< \> 는 홀로 색인하지 않는다. */
+				if ( current_token->len == 2
+						&& ( strcmp(current_token->string, "\\<") == 0
+							|| strcmp(current_token->string, "\\>") == 0 ) ) {
+					is_index_word = 0;
+				}
+
+				if( is_index_word )
 				{ 
 					add_index_word( &index_word[index_word_idx] , current_token , *pos);
 				    if(++index_word_idx >= max_index_word)
