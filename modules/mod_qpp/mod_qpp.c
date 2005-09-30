@@ -949,13 +949,11 @@ static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_q
 		return SUCCESS;
 	}
 
-	if (num_of_words > 0) {
-		char tmp_string[MAX_WORD_LEN];
-		bigram_word_copy(tmp_string, indexwords[num_of_words-1].word,
-						MAX_WORD_LEN, 2);
-		snprintf(indexwords[num_of_words].word, MAX_WORD_LEN, "%s%s", tmp_string, "\\>");
-		indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
-	}
+	char tmp_string[MAX_WORD_LEN];
+	bigram_word_copy(tmp_string, indexwords[num_of_words-1].word,
+					MAX_WORD_LEN, 2);
+	snprintf(indexwords[num_of_words].word, MAX_WORD_LEN, "%s%s", tmp_string, "\\>");
+	indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
 
 	for (i=0; i<num_of_words+1; i++) {
 		strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN);
@@ -969,17 +967,19 @@ static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_q
 			pushOperandEmptyWord(word_db, state, &qnode);
 	}
 
-	if (num_of_words >= 1) {
-		within.type = OPERATOR;
-		within.operator = QPP_OP_WITHIN;
-		within.num_of_operands = num_of_words+1;
-		within.opParam = 0;
+	within.type = OPERATOR;
+	within.operator = QPP_OP_WITHIN;
+	within.num_of_operands = num_of_words+1; // \> added
+	within.opParam = 0;
 
-		rv = stk_push(&(state->postfixStack), &within);
-		if (rv < 0) {
-			error("error while pushing within operator into stack");
-			return FAIL;
-		}
+	rv = stk_push(&(state->postfixStack), &within);
+	if (rv < 0) {
+		error("error while pushing within operator into stack");
+		return FAIL;
+	}
+
+	if (state->posWithinPhrase == TRUE) {
+		state->numPhraseOperand++;
 	}
 
 	state->nextTurn = TURN_BINARY_OPERATOR;
@@ -1012,12 +1012,10 @@ static int pushLeftEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 		return SUCCESS;
 	}
 
-	if (num_of_words > 0) {
-		char tmp_string[MAX_WORD_LEN];
-		bigram_word_copy(tmp_string, indexwords[0].word, MAX_WORD_LEN, 0);
-		snprintf(indexwords[num_of_words].word, MAX_WORD_LEN, "%s%s", "\\<", tmp_string);
-		indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
-	}
+	char tmp_string[MAX_WORD_LEN];
+	bigram_word_copy(tmp_string, indexwords[0].word, MAX_WORD_LEN, 0);
+	snprintf(indexwords[num_of_words].word, MAX_WORD_LEN, "%s%s", "\\<", tmp_string);
+	indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
 
 	for (i=0; i<num_of_words+1; i++) {
 		strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN);
@@ -1031,17 +1029,19 @@ static int pushLeftEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 			pushOperandEmptyWord(word_db, state, &qnode);
 	}
 
-	if (num_of_words >= 1) { /* dirty hack, if num_of_words is larger than 1, \< added is num_of_words+1 */
-		within.type = OPERATOR;
-		within.operator = QPP_OP_WITHIN;
-		within.num_of_operands = num_of_words+1;
-		within.opParam = 0;
+	within.type = OPERATOR;
+	within.operator = QPP_OP_WITHIN;
+	within.num_of_operands = num_of_words+1; // \< added
+	within.opParam = 0;
 
-		rv = stk_push(&(state->postfixStack), &within);
-		if (rv < 0) {
-			error("error while pushing within operator into stack");
-			return FAIL;
-		}
+	rv = stk_push(&(state->postfixStack), &within);
+	if (rv < 0) {
+		error("error while pushing within operator into stack");
+		return FAIL;
+	}
+
+	if (state->posWithinPhrase == TRUE) {
+		state->numPhraseOperand++;
 	}
 
 	state->nextTurn = TURN_BINARY_OPERATOR;
@@ -1078,17 +1078,15 @@ static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 
 	DEBUG("num_of_words:%d", num_of_words);
 
-	if (num_of_words > 0) {
-		char tmp_string[MAX_WORD_LEN];
-		bigram_word_copy(tmp_string, indexwords[0].word, MAX_WORD_LEN, 0);
-		snprintf(indexwords[num_of_words].word, MAX_WORD_LEN, "%s%s", "\\<", tmp_string);
-		indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
+	char tmp_string[MAX_WORD_LEN];
+	bigram_word_copy(tmp_string, indexwords[0].word, MAX_WORD_LEN, 0);
+	snprintf(indexwords[num_of_words].word, MAX_WORD_LEN, "%s%s", "\\<", tmp_string);
+	indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
 
-		bigram_word_copy(tmp_string, indexwords[num_of_words-1].word,
-						MAX_WORD_LEN, 2);
-		snprintf(indexwords[num_of_words+1].word, MAX_WORD_LEN, "%s%s", tmp_string, "\\>");
-		indexwords[num_of_words+1].len = strlen(indexwords[num_of_words+1].word);
-	}
+	bigram_word_copy(tmp_string, indexwords[num_of_words-1].word,
+					MAX_WORD_LEN, 2);
+	snprintf(indexwords[num_of_words+1].word, MAX_WORD_LEN, "%s%s", tmp_string, "\\>");
+	indexwords[num_of_words+1].len = strlen(indexwords[num_of_words+1].word);
 
 	for (i=0; i<num_of_words+2; i++) {
 		strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN);
@@ -1102,17 +1100,19 @@ static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 			pushOperandEmptyWord(word_db, state, &qnode);
 	}
 
-	if (num_of_words >= 1) { /* dirty hack, if num_of_words is larger than 1, \< added is num_of_words+1 */
-		within.type = OPERATOR;
-		within.operator = QPP_OP_WITHIN;
-		within.num_of_operands = num_of_words+2;
-		within.opParam = 0;
+	within.type = OPERATOR;
+	within.operator = QPP_OP_WITHIN;
+	within.num_of_operands = num_of_words+2; // \< , \> added
+	within.opParam = 0;
 
-		rv = stk_push(&(state->postfixStack), &within);
-		if (rv < 0) {
-			error("error while pushing within operator into stack");
-			return FAIL;
-		}
+	rv = stk_push(&(state->postfixStack), &within);
+	if (rv < 0) {
+		error("error while pushing within operator into stack");
+		return FAIL;
+	}
+
+	if (state->posWithinPhrase == TRUE) {
+		state->numPhraseOperand++;
 	}
 
 	state->nextTurn = TURN_BINARY_OPERATOR;
