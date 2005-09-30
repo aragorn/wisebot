@@ -167,6 +167,15 @@ int bigram_generator(bigram_t *handle, index_word_t index_word[], int32_t max_in
 			case TOKEN_NUMBER:         
 			case TOKEN_SPECIAL_CHAR : 
 
+				// 이전 단어와의 조합 
+				if(!IS_WHITE_TOKEN(prev_token))
+				{
+					merge_two_tokens( prev_token , current_token , &tmp_token1);
+					add_index_word( &(index_word[index_word_idx]), &tmp_token1, *pos);  
+				    if(++index_word_idx >= max_index_word)
+						goto END_OF_EXTRACTING_INDEX_WORDS; 
+				}
+
 				if (current_token->len >= minimum_token_length)
 				/* 길이가 minimum_token_length byte 이상인 경우 bigram 방식의   
 				 * 조합과는 별도로 홑 Token을 색인어로 추가한다. */
@@ -201,15 +210,6 @@ int bigram_generator(bigram_t *handle, index_word_t index_word[], int32_t max_in
 						goto END_OF_EXTRACTING_INDEX_WORDS; 
 					
 				}     
-
-				// 이전 단어와의 조합 
-				if(!IS_WHITE_TOKEN(prev_token))
-				{
-					merge_two_tokens( prev_token , current_token , &tmp_token1);
-					add_index_word( &(index_word[index_word_idx]), &tmp_token1, *pos);  
-				    if(++index_word_idx >= max_index_word)
-						goto END_OF_EXTRACTING_INDEX_WORDS; 
-				}
 
 				break; 
 
