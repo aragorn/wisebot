@@ -115,7 +115,7 @@ static char* _trim(char *str, int *len)
 }
 
 /* vrm add */
-static int put_doc_ac(void* did_db, char *oid, uint32_t *registeredDocId, VariableBuffer *pCannedDoc)
+static int put_doc_ac(void* did_db, char *oid, uint32_t *registeredDocId, uint32_t *deletedDocId, VariableBuffer *pCannedDoc)
 {
     parser_t *p;
     field_t *f;
