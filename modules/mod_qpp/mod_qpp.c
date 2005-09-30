@@ -970,7 +970,7 @@ static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_q
 			pushOperandEmptyWord(word_db, state, &qnode);
 	}
 
-	if (num_of_words > 1) {
+	if (num_of_words >= 1) {
 		within.type = OPERATOR;
 		within.operator = QPP_OP_WITHIN;
 		within.num_of_operands = num_of_words+1;
