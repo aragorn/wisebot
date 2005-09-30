@@ -1845,6 +1845,8 @@ int sb4s_delete_oid(int sockfd)
 				sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 				sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
 
+				write_register_log("info", "document [%u], OID[%s] is deleted", docid, tmp);
+
 				continue;
 			}
 			else if (n == DOCID_NOT_REGISTERED) {
@@ -1855,6 +1857,9 @@ int sb4s_delete_oid(int sockfd)
 				return FAIL;
 			}
 		}
+
+		if ( i == failed ) 
+			write_register_log("warn", "document OID[%s] is not deleted", docid, buf);
 	}
 	/* delete mark to docattr */
 	else {
@@ -1863,6 +1868,8 @@ int sb4s_delete_oid(int sockfd)
 		DOCMASK_SET_ZERO(&docmask);
 		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
 		sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
+
+		write_register_log("info", "document [%u], OID[%s] is deleted", docid, buf);
 	}
 
 	/* 5. Send ACK NAK */
@@ -2083,9 +2090,9 @@ int sb4s_delete_doc(int sockfd)
 	debug("you can delete upto %d document.\n",1024);
 
 	debug("you want to delete document");
-	debug("%u", docid[0]);
-	for (i=1; i<j; i++) {
-		debug(", %u", docid[i]);
+	for (i=0; i<j; i++) {
+		debug("%u", docid[i]);
+		write_register_log("info", "document [%u] is deleted", docid[i]);
 	}
 
 	{
