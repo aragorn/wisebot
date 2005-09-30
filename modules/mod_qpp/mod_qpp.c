@@ -503,6 +503,10 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 	index_word_t indexwords[ENOUGH_INDEXWORD_NUM];
 	int morp_id=0, indexwordnum=0;
 
+	nRet = pushDefaultOperator(pStObj);
+	DEBUG(" nRet of pushDefaultOperator is [%d] ",nRet);
+	if ( nRet < 0 ) return nRet;
+
 	if (is_both_end_bigram_truncation(pQuNode->original_word) == TRUE) {
 		int len = strlen(pQuNode->original_word);
 		pQuNode->original_word[len-1] = '\0';
@@ -522,11 +526,6 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 		DEBUG("original_word for word> : %s", pQuNode->original_word);
 		return pushRightEndBigram(word_db, pStObj, pQuNode);
 	}
-
-	nRet = pushDefaultOperator(pStObj);
-	DEBUG(" nRet of pushDefaultOperator is [%d] ",nRet);
-	if (nRet < 0)
-		return nRet;		
 
 	morp_id = mMorpAnalyzerId[pStObj->searchField]; 
 	if (pStObj->posWithinPhrase == TRUE) {
