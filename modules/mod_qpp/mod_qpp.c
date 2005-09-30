@@ -693,7 +693,7 @@ static int pushOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode) {
 		pQuNode->field = mDefaultPhraseField;
 	}
 	else if (pStObj->searchField == -1 && pStObj->truncated == 1) {
-		pQuNode->field = 0xffffffff;
+//		pQuNode->field = 0xffffffff;
 		pStObj->truncated = 0;
 	}
 
@@ -750,7 +750,7 @@ static int pushStarHackedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuN
 		pQuNode->field = mDefaultPhraseField;
 	}
 	else if (pStObj->searchField == -1 && pStObj->truncated == 1) {
-		pQuNode->field = 0xffffffff;
+//		pQuNode->field = 0xffffffff;
 		pStObj->truncated = 0;
 	}
 
@@ -810,7 +810,7 @@ static int pushOperandEmptyWord(void* word_db, StateObj *pStObj,QueryNode *pQuNo
 		pQuNode->field = mDefaultPhraseField;
 	}
 	else if (pStObj->searchField == -1 && pStObj->truncated == 1) {
-		pQuNode->field = 0xffffffff;
+//		pQuNode->field = 0xffffffff;
 		pStObj->truncated = 0;
 	}
 
