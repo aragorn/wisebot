@@ -146,6 +146,12 @@ sub process_data_file {
 			};
 		}
 		if ($state == 1) {
+			# 구분선이 연속으로 오는 경우도 그냥 처리
+			/^-{78,82}$/ and do {
+				$state = 1;
+				next;
+			};
+
 			$dit = $_;
 			chomp $dit;
 			$body = "";
