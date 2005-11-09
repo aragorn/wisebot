@@ -6,6 +6,7 @@
 #include "mod_api/indexer.h"
 #include "mod_api/tcp.h"
 #include "mod_api/protocol4.h"
+#include "mod_indexer/hit.h" // MAX_STD_FIELD
 
 #define MAX_SERVERS			16
 #define MAX_PROCESSES		64
@@ -37,7 +38,8 @@ static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(MAX_PROCESSES) };
 
 static server_t rmas_addr[MAX_SERVERS];
 static int      num_of_rmas = 0;
-static char     meta_data[STRING_SIZE];
+static char*    meta_data = NULL;
+static int      meta_data_size = 0; // buffer length
 static int      needed_processes=1;
 static int      rmas_retry=10; // 0이면 무조건 계속 시도
 
@@ -748,16 +750,38 @@ static void set_ip_and_port(configValue v)
 static void set_meta_data(configValue v)
 {
 	char buf[STRING_SIZE];
-	int left;
+	int buflen, left;
 
 	if (strcmp("yes", v.argument[2]) != 0) return;
-	sprintf(buf, "%s#%s:%s^", v.argument[1], v.argument[0], v.argument[3]);
-	left = STRING_SIZE - strlen(meta_data);
-	if (left < 0) left = 0;
+	buflen = sprintf(buf, "%s#%s:%s^", v.argument[1], v.argument[0], v.argument[3]);
+
+	if ( atoi(v.argument[0]) >= MAX_STD_FIELD ) {
+		error("max indexable fieldid is %d. field[%s, id:%s] would not be indexed.",
+				MAX_STD_FIELD-1, v.argument[1], v.argument[0]);
+		return;
+	}
+
+	if ( meta_data == NULL ) {
+		meta_data_size = STRING_SIZE;
+		meta_data = (char*) sb_malloc(meta_data_size*sizeof(char));
+		meta_data[0] = '\0';
+	}
+	left = meta_data_size - strlen(meta_data);
+	if (left < buflen+1) {
+		meta_data_size += STRING_SIZE;
+		// mod_protocol4.c 의 한계다. 꼭 검사해야 한다.
+		// sb4c_remote_morphological_analyze_doc() 참고
+		if ( meta_data_size >= SB4_MAX_SEND_SIZE ) {
+			error("too long meta_data. field[%s, id:%s] would not be indexed.",
+					v.argument[1], v.argument[0]);
+			meta_data_size -= STRING_SIZE;
+			return;
+		}
+		meta_data = (char*) sb_realloc(meta_data, meta_data_size*sizeof(char));
+		left += STRING_SIZE;
+	}
 	strncat(meta_data, buf, left);
 
-//	strncpy(meta_data, v.argument[0], STRING_SIZE);
-//	meta_data[STRING_SIZE-1] = '\0';
 	info("meta data: %s", meta_data);
 }
 

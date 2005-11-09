@@ -4,8 +4,8 @@
 
 #include "softbot.h"
 
-#define MAX_STD_FIELD	20
-#define MAX_EXT_FIELD	128 /* XXX: obsolete? no, it's used in mod_qpp/tokenizer.c FIXME*/
+#define MAX_STD_FIELD	32
+#define MAX_EXT_FIELD	64 /* XXX: obsolete? no, it's used in mod_qpp/tokenizer.c FIXME*/
 #define MAX_FIELD_STRING SHORT_STRING_SIZE
 
 /* typedef of hit_t */

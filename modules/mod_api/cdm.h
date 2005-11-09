@@ -6,6 +6,7 @@
 #include "softbot.h"
 #include "mod_api/vbm.h"
 #include "mod_api/did.h"
+#include "../mod_indexer/hit.h" // MAX_EXT_FIELD
 
 /* canned document manager status code */
 #define CDM_UNKNOWN_DATABASE		(-1)
@@ -18,7 +19,6 @@
 #define CDM_DELETE_OLD				(2) // put
 
 #define MAX_NUM_RETRIEVED_DOC		COMMENT_LIST_SIZE
-//#define MAX_FIELD_NUM				32
 #define MAX_FIELD_NAME_LEN			STRING_SIZE
 
 #ifndef PARAGRAPH_POSITION
@@ -29,10 +29,6 @@
  * if size is -1, return whole data of field 
  */
 
-
-
-
-
 typedef struct {
     char field[MAX_FIELD_NAME_LEN];
 #ifdef PARAGRAPH_POSITION
@@ -42,13 +38,12 @@ typedef struct {
     long size;
 }  CdAbstractInfo;
 
-#define QP_MAX_NUM_ABSTRACT_INFO    32
 typedef struct {
     unsigned long docId;
     int rank;
     float rsv;
     int numAbstractInfo;
-    CdAbstractInfo cdAbstractInfo[QP_MAX_NUM_ABSTRACT_INFO];
+    CdAbstractInfo cdAbstractInfo[MAX_EXT_FIELD];
 }  RetrievedDoc;
 
 #if defined (__cplusplus)

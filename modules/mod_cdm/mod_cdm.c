@@ -936,7 +936,7 @@ struct comments {
 static void init_comment(struct comments cmts[])
 {
 	int i;
-	for (i=0; i<QP_MAX_NUM_ABSTRACT_INFO; i++) {
+	for (i=0; i<MAX_EXT_FIELD; i++) {
 		cmts[i].field[0] = '\0';
 		cmts[i].buf[0] = '\0';
 		cmts[i].iscdata = 0;
@@ -947,7 +947,7 @@ static void append_comment(struct comments cmts[], char *name,
 		char *str, int len, int iscdata)
 {
 	int i;
-	for (i=0; i<QP_MAX_NUM_ABSTRACT_INFO && cmts[i].field[0]!='\0'; i++) {
+	for (i=0; i<MAX_EXT_FIELD && cmts[i].field[0]!='\0'; i++) {
 		if (strcmp(cmts[i].field, name) == 0) {
 			strcat(cmts[i].buf, "...");
 			strncat(cmts[i].buf, str, 
@@ -957,7 +957,7 @@ static void append_comment(struct comments cmts[], char *name,
 			break;
 		}
 	}
-	if (i<QP_MAX_NUM_ABSTRACT_INFO && cmts[i].field[0] == '\0') {
+	if (i<MAX_EXT_FIELD && cmts[i].field[0] == '\0') {
 		strcpy(cmts[i].field, name);
 		strncat(cmts[i].buf, str, LONG_LONG_STRING_SIZE>len?len:LONG_LONG_STRING_SIZE);
 		cmts[i].iscdata = iscdata;
@@ -970,7 +970,7 @@ static void make_abstracted_cdm(char *buf, struct comments cmts[])
 	strcpy(buf, "<");
 	strcat(buf, fieldRootName);
 	strcat(buf, ">");
-	for (i=0; i<QP_MAX_NUM_ABSTRACT_INFO && cmts[i].field[0]!='\0'; i++) {
+	for (i=0; i<MAX_EXT_FIELD && cmts[i].field[0]!='\0'; i++) {
 		strcat(buf, "<");
 		strcat(buf, cmts[i].field);
 		strcat(buf, ">");
@@ -997,7 +997,7 @@ CDM_getAbstract(int            numRetrievedDoc,
 	char *tmpstr;
 /*	char tmpstr[DOCUMENT_SIZE];*/
 	struct comments *comments;
-/*	struct comments comments[QP_MAX_NUM_ABSTRACT_INFO];*/
+/*	struct comments comments[MAX_EXT_FIELD];*/
 	VariableBuffer buf;
 	parser_t *p;
 	field_t *f;
@@ -1008,7 +1008,7 @@ CDM_getAbstract(int            numRetrievedDoc,
 	size = 0;
 
 	tmpstr = (char*)sb_calloc(DOCUMENT_SIZE, sizeof(char));
-	comments = (struct comments *)sb_calloc(QP_MAX_NUM_ABSTRACT_INFO,sizeof(struct comments));
+	comments = (struct comments *)sb_calloc(MAX_EXT_FIELD,sizeof(struct comments));
 
 	for (iDoc = 0; iDoc<numRetrievedDoc; iDoc++) {
 		if (aRetrievedDoc[iDoc].docId == 0) {
