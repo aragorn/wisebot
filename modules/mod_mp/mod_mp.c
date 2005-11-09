@@ -397,7 +397,7 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 	int timeslot = 0;
 	int errors = 0;
 	int now = 0;
-	int save_registry = 0;
+//	int save_registry = 0;
 	proc_node *proc_list = NULL, *proc_node;
 	int slot_id;
 
@@ -408,10 +408,10 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 		scoreboard->period = 3;
 	}
 
-	if ( mod != NULL ) {
-		/* mod is not NULL when called by server.c */
-		save_registry = 1;
-	}
+//	if ( mod != NULL ) {
+//		/* mod is not NULL when called by server.c */
+//		save_registry = 1;
+//	}
 
 	//debug("scoreboard slot size:%d",scoreboard->size);
 
@@ -439,7 +439,7 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 		set_proc_desc(NULL, "softbotd: monitoring %s",scoreboard->name);
 
 		/* save registry file periodically */
-		if (save_registry) save_registry_file(gRegistryFile);
+		//if (save_registry) save_registry_file(gRegistryFile);
 
 		/* monitor child processes */
 		pid = waitpid(-1, &status, WNOHANG);
