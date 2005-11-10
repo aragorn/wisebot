@@ -59,6 +59,7 @@ int table_swap_logical_segment(table_t* table, int l1, int l2);
 int table_get_read_segments(table_t* table, int* arr_read_seg);
 int table_get_append_segment(table_t* table, int* p);
 int table_clear_tmp_segment(table_t* table, int state);
+int table_fix_physical_segment_state(table_t* table);
 void table_print(table_t* table);
 
 #endif

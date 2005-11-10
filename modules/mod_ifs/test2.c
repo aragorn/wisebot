@@ -18,9 +18,10 @@ module *static_modules;
 //#define REPEAT      (26790)
 //#define FRAG_COUNT  (5)
 
-#define BUFFER_SIZE (846*4)
-#define REPEAT      (16790)
-#define FRAG_COUNT  (5)
+#define BUFFER_SIZE  (6*4)
+#define REPEAT       (700000)
+#define FRAG_COUNT   (5)
+#define DEFRAG_GROUP (3)
 
 int main(int argc, char* argv[], char* envp[])
 {
@@ -145,7 +146,7 @@ readfull: // 1번 파일은 0부터 읽고 2번 파일은 4~ 부터 읽고...
 
 defrag:
 	defrag_mode = DEFRAG_MODE_COPY;
-	defrag_group_size = 5;
+	defrag_group_size = DEFRAG_GROUP;
 
 	if ( (arg & 0x08) == 0 ) goto end;
 

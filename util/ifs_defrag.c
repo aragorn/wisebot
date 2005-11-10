@@ -3,7 +3,7 @@
 
 #define DEFAULT_PATH ""
 static char path[MAX_PATH_LEN] = DEFAULT_PATH;
-static char* optstring = "hpg:m:t:sr:";
+static char* optstring = "hfpg:m:t:sr:";
 
 #ifndef HAVE_GETOPT_LONG
 struct option {
@@ -15,6 +15,7 @@ struct option {
 #else
 static struct option opts[] = {
 	{ "help",            0, NULL, 'h' },
+	{ "fix",             0, NULL, 'f' },
 	{ "pause",           0, NULL, 'p' },
 	{ "group-size",      1, NULL, 'g' },
 	{ "defrag-mode",     1, NULL, 'm' },
@@ -31,6 +32,7 @@ static struct option_help {
 	char *desc;
 } opts_help[] = {
 	{ "--help", "-h", "Display program usage" },
+	{ "--fix", "-f", "Fix physical segment state (not execute defrag)" },
 	{ "--pause", "-p", "Pause before defrag start" },
 	{ "--group-size", "-g", "Set defrag group size (>1)" },
 	{ "--defrag-mode", "-m", "Set defrag mode [bubble|copy]" },
@@ -70,7 +72,7 @@ int main(int argc, char* argv[], char* envp[])
 	int arg;
 	int exit_value = 0;
 	char* defrag_mode_str[] = { "BUBBLE", "COPY" };
-	int pause = 0, show_state = 0;
+	int pause = 0, show_state = 0, fix = 0;
     ifs_set_t local_ifs_set[MAX_INDEXDB_SET];
 
 	init_set_proc_title(argc, argv, envp);
@@ -91,6 +93,10 @@ int main(int argc, char* argv[], char* envp[])
 			case 'h':
 				show_usage( argv[0] );
 				return 0;
+				break;
+
+			case 'f':
+				fix++;
 				break;
 
 			case 'p':
@@ -190,6 +196,14 @@ int main(int argc, char* argv[], char* envp[])
 	ifs = (ifs_t*) indexdb->db;
 
 	table_print( &ifs->shared->mapping_table );
+
+	if ( fix ) {
+		if ( table_fix_physical_segment_state( &ifs->shared->mapping_table ) > 0 ) {
+			crit("table fixed");
+			table_print( &ifs->shared->mapping_table );
+		}
+		goto end;
+	}
 
     if ( !show_state && ifs_defrag(ifs, NULL) != SUCCESS ) {
 	    error("defragment fail");

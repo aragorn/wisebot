@@ -296,6 +296,44 @@ int table_get_logical_segment(table_t* table, int p1)
 	return -1;
 }
 
+/******************************************************************************
+ * Bug20051110-1 의 내용을 수정하기 위해 만든다.
+ * physical segment 의 상태가 ALLOCATED 이지만 logical segment list 에 없으면
+ * 해당 physical segment 를 TEMP 상태로 수정한다.
+ *
+ * 성공하면 수정된 segment 수를 리턴한다 (>=0)
+ * 실패는 FAIL (-1)
+ ******************************************************************************/
+int table_fix_physical_segment_state(table_t* table)
+{
+	int l, p, fix_count = 0;
+	segment_info_t p_info;
+
+	// logical segment list 에 연결되지 않은 alocated physical segment 를 찾는다.
+	// 중대한 오류를 찾아내려고 하는 거다.
+	for ( p_info.sector = 0; p_info.sector < MAX_SECTOR_COUNT; p_info.sector++ ) {
+		for ( p_info.segment = 0; p_info.segment < table->segment_count_in_sector; p_info.segment++ ) {
+			int state = table->physical_sector[p_info.sector].segment[p_info.segment];
+			if ( state != ALLOCATED ) continue;
+
+			// ALLOCATED 상태이면서 logical segment 에 없다는 것은 이상한 것이다.
+			p = table_get_index(&p_info, table->segment_count_in_sector);
+			l = table_get_logical_segment(table, p);
+			if ( l < 0 ) {
+				warn("physical segment[%d] is not exists in logical segment list. fix it.", p);
+				// 실패할 리가 없지만 실패하면 아주 치명적이다.
+				if ( table_update_physical_segment(table, p, TEMP) != SUCCESS ) {
+					error("update physical segment[%d] to TEMP failed", p);
+					return FAIL;
+				}
+				fix_count++;
+			}
+		} // for segment
+	} // for sector
+
+	return fix_count;
+}
+
 void table_print(table_t* table)
 {
 	int p, l;
