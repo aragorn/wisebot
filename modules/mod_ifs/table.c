@@ -280,9 +280,26 @@ int table_clear_tmp_segment(table_t* table, int state)
 	return SUCCESS;
 }
 
+// physical segment 의 sector, segment 로 logical segment 번호를 찾는다.
+// 없으면 -1
+int table_get_logical_segment(table_t* table, int p1)
+{
+	int l, p2;
+
+	for ( l = 0; l < MAX_LOGICAL_COUNT; l++ ) {
+		p2 = table->logical_index[l];
+
+		if ( p2 == p1 ) return l;
+		else if ( p2 == EMPTY ) break;
+	}
+
+	return -1;
+}
+
 void table_print(table_t* table)
 {
 	int p, l;
+	int index_count = 0, defragment_count = 0, temp_count = 0;
 	segment_info_t p_info;
 	char str_state[5][16] = {"EMPTY", "INDEX", "ALLOCATED", "DEFRAGMENT", "TEMP"};
 
@@ -304,6 +321,37 @@ void table_print(table_t* table)
 		}
 
 	}
+	debug("=============== MAPPING TABLE END ===================");
+
+	// logical segment list 에 연결되지 않은 alocated physical segment 를 찾는다.
+	// 중대한 오류를 찾아내려고 하는 거다.
+	for ( p_info.sector = 0; p_info.sector < MAX_SECTOR_COUNT; p_info.sector++ ) {
+		for ( p_info.segment = 0; p_info.segment < table->segment_count_in_sector; p_info.segment++ ) {
+			int state = table->physical_sector[p_info.sector].segment[p_info.segment];
+
+			switch (state) {
+				case INDEX: index_count++; break;
+				case DEFRAGMENT: defragment_count++; break;
+				case TEMP: temp_count++; break;
+			}
+
+			if ( state != ALLOCATED ) continue;
+
+			// ALLOCATED 상태이면서 logical segment 에 없다는 것은 이상한 것이다.
+			p = table_get_index(&p_info, table->segment_count_in_sector);
+			l = table_get_logical_segment(table, p);
+			if ( l < 0 ) {
+				warn("physical segment[%d] is not exists in logical segment list", p);
+			}
+		} // for segment
+	} // for sector
+
+	if ( index_count > 0 )
+		warn("physical segment in state[INDEX] : %d", index_count);
+	if ( defragment_count > 0 )
+		warn("physical segment in state[DEFRAGMENT] : %d", defragment_count);
+	if ( temp_count > 0 )
+		warn("physical segment in state[TEMP] : %d", temp_count);
 
 	return;
 }
