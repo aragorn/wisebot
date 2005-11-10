@@ -198,7 +198,7 @@ int main(int argc, char* argv[], char* envp[])
 	table_print( &ifs->shared->mapping_table );
 
 	if ( fix ) {
-		if ( table_fix_physical_segment_state( &ifs->shared->mapping_table ) > 0 ) {
+		if ( _ifs_fix_physical_segment_state( ifs ) > 0 ) {
 			crit("table fixed");
 			table_print( &ifs->shared->mapping_table );
 		}

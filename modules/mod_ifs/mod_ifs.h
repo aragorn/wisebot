@@ -71,6 +71,7 @@ int ifs_close(index_db_t* indexdb);
 int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf);
 int ifs_read(index_db_t* indexdb, int file_id, int offset, int size, void* buf);
 int ifs_getsize(index_db_t* indexdb, int file_id);
+int _ifs_fix_physical_segment_state(ifs_t* ifs);
 
 int __sfs_activate(ifs_t* ifs, int p, int type, int do_format, int format_option);
 int __sfs_all_activate(ifs_t* ifs, int* physical_segment_array, int count, int type);

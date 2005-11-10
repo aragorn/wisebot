@@ -564,6 +564,19 @@ retry:
 	return file_size;
 }
 
+// table.c 의 table_fix_physical_segment_state() 를 참고한다.
+// 리턴값도 같다
+int _ifs_fix_physical_segment_state(ifs_t* ifs)
+{
+	int ret;
+
+	ACQUIRE_LOCK();
+	ret = table_fix_physical_segment_state(&ifs->shared->mapping_table);
+	RELEASE_LOCK();
+	
+	return ret;
+}
+
 /*
  *     seg = segment array
  *     count = segment(seg) 개수

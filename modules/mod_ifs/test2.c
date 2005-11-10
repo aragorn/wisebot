@@ -20,7 +20,7 @@ module *static_modules;
 
 #define BUFFER_SIZE  (6*4)
 #define REPEAT       (700000)
-#define FRAG_COUNT   (5)
+#define FRAG_COUNT   (10)
 #define DEFRAG_GROUP (3)
 
 int main(int argc, char* argv[], char* envp[])
