@@ -885,6 +885,26 @@ static int set_docmask_function(void *dest, char *key, char *value)
 		docmask->SC = (uint8_t)atoi(value);
 		docmask->set_SC = 1;
 	}
+	else if (strcasecmp(key, "Structure") == 0) {
+		if (strlen(value) > 0 ) docmask->StrYN = 1;
+		else docmask->StrYN = 0;
+		docmask->set_StrYN = 1;
+	}
+	else if (strcasecmp(key, "Duty") == 0) {
+		if (strlen(value) > 0 ) docmask->DutyYN = 1;
+		else docmask->DutyYN = 0;
+		docmask->set_DutyYN = 1;
+	}
+	else if (strcasecmp(key, "Person") == 0) {
+		if (strlen(value) > 0 ) docmask->PerYN = 1;
+		else docmask->PerYN = 0;
+		docmask->set_PerYN = 1;
+	}
+	else if (strcasecmp(key, "TFT") == 0) {
+		if (strlen(value) > 0 ) docmask->TFTYN = 1;
+		else docmask->TFTYN = 0;
+		docmask->set_TFTYN = 1;
+	}
 	else if (strcasecmp(key, "StrYN") == 0) {
 		docmask->StrYN = (uint8_t)atoi(value);
 		docmask->set_StrYN = 1;
