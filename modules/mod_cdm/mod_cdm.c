@@ -244,9 +244,6 @@ int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc) {
 	char path[STRING_SIZE];
 	parser_t *p;
 	field_t *f;
-	//Paragraph para;
-	//char *paragraph;
-	//int idx_paragraph, paralen;
     int i;
 
 #ifdef PROCESS_HANDLE
@@ -312,11 +309,11 @@ int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc) {
 	}
 
 	{ /* insert some field into docattr db */
-		docattr_t docattr;
 		int len;
 		char *val, value[STRING_SIZE];
+		docattr_mask_t docmask;
 
-		DOCATTR_SET_ZERO(&docattr);
+		DOCMASK_SET_ZERO(&docmask);
 		for (i=0; i<MAX_FIELD_NUM && docattrFields[i]; i++) {
 			strcpy(path, "/");
 			strcat(path, fieldRootName);
@@ -341,15 +338,15 @@ int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc) {
 				continue;
 			}
 
-			if(sb_run_docattr_set_docattr_function(&docattr, docattrFields[i],
-						value) == -1) {
+			if ( sb_run_docattr_set_docmask_function(
+						&docmask, docattrFields[i], value) != SUCCESS ) {
 				warn("wrong type of value of field[/%s/%s] of ducument[%u]", 
-						fieldRootName, 
-						docattrFields[i], docId);
+						fieldRootName, docattrFields[i], docId);
 			}
 		}
 
-		if (sb_run_docattr_set(docId, &docattr) == -1) {
+		if ( sb_run_docattr_set_array(
+					&docId, 1, SC_MASK, &docmask) != SUCCESS ) {
 			warn("cannot insert field[/%s/%s/] into docattr db", fieldRootName,
 					docattrFields[i]);
 		}
@@ -665,6 +662,7 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId,
 
 	un_lock(fdIndexFile, SEEK_SET, 0, 0);
 
+	// 이건 왜 이 아래쪽에 있을 까... 괜히 헷갈리게..
 	if ( sb_run_docattr_set_array(
 				registeredDocId, 1, SC_MASK, &docmask) != SUCCESS ) {
 		warn("cannot insert field[/%s/%s/] into docattr db", fieldRootName,
