@@ -14,14 +14,15 @@
 #include <unistd.h>
 
 #define DOCATTR_ELEMENT_SIZE			docattr_size
-
+#define MAX_FIL					8
 static uint32_t max_doc_num = 1000000;
 static uint32_t docattr_size = MAX_DOCATTR_ELEMENT_SIZE;
 static char docattr_db_file_path[MAX_PATH_LEN] = "dat/cdm/docattr.db";
 static int docattr_db_fd = -1;
 static void *docattr_array = NULL;
-
-
+static int STDgetTotElement(char *Src, char Brk);
+static int STDgetElement(char *Src, char Brk, int Order, char *Buf);
+static int checkDevice(index_list_t *sour, int listcnt, int device_TotCnt, int *nQuDV);
 /********************************************************************************/
 static int docattr_open() 
 {
@@ -199,6 +200,119 @@ static int docattr_get_index_list(index_list_t *dest, index_list_t *sour,
 	return TRUE;
 }
 
+//device - khy
+static int docattr_device_filter(index_list_t *dest, index_list_t *sour, char *device_string)
+{
+        int i, j, listsize;
+        char buf[STRING_SIZE];
+        int device_TotCnt, nLoop;
+	int nQuDV[256];
+	
+        device_TotCnt = STDgetTotElement(device_string, ':');
+	for ( nLoop=0; nLoop<device_TotCnt ; nLoop++ )
+	{
+	       int nRetElement=0;
+	       nRetElement = STDgetElement(device_string,':',nLoop,buf);
+	       if ( nRetElement == 0 )
+	       		continue;
+	       nQuDV[nLoop] = atoi(buf);
+        }
+        listsize = sour->ndochits;
+        for (i=0, j=0; i<listsize; i++) 
+	{
+		if( checkDevice(sour, i, device_TotCnt, nQuDV) == TRUE )
+		{
+			dest->doc_hits[j] = sour->doc_hits[i];
+		        j++;
+		}
+        }
+	dest->ndochits= j;
+	return TRUE;
+}
+static int checkDevice(index_list_t *sour, int listcnt, int device_TotCnt, int *nQuDV)
+{
+	void *ele=NULL;
+	char buf[STRING_SIZE];
+	char szTemp[STRING_SIZE];
+	int nFIL[8], nOp, nLoop;
+	int j, k, l;
+
+        ele = docattr_array +
+              (sour->doc_hits[listcnt].id-1) * DOCATTR_ELEMENT_SIZE;
+        for (j=0; j < 8; j++)
+ 	{
+		sprintf(szTemp, "FIL%d", j+1);
+               	if (sb_run_docattr_get_docattr_function(ele, szTemp, buf, STRING_SIZE) == -1) 
+		{
+       			error("cannot get value");                          
+       			return FALSE;             
+		}
+		nFIL[j] = atoi(buf);
+	}
+	if (sb_run_docattr_get_docattr_function(ele, "BW18", buf, STRING_SIZE) == -1) 
+	{
+                error("cannot get value");
+              	return FALSE;
+        }
+	nOp = atoi(buf);
+  	if ( nOp == 1 )  // AND ¿¬»ê 
+	{
+		for (l=0; l<MAX_FIL ; l++)
+       		{
+			if( nFIL[l] != 0 )
+			{
+				if ( device_TotCnt != 0 )
+				{
+					for ( k=0; k<MAX_FIL ; k++ ) 
+					{
+						if ( nFIL[k] == 0 )
+							continue;
+
+						for ( nLoop=0; nLoop<device_TotCnt ; nLoop++ ) 
+						{
+							if ( nQuDV[nLoop] == nFIL[k] ) 
+								break;
+						}
+						if ( nLoop == device_TotCnt )
+							return FALSE;
+						if ( nLoop < device_TotCnt )
+							continue;
+					}
+				}
+				break;
+			}
+		}
+	}
+	else
+	{
+		for (l=0; l<MAX_FIL ; l++)
+		{
+			if( nFIL[l] != 0 )
+			{
+				if ( device_TotCnt != 0 )
+				{
+					for ( k=0; k<MAX_FIL ; k++ ) 
+					{
+						for ( nLoop=0; nLoop<device_TotCnt ; nLoop++ ) 
+						{
+							if ( nQuDV[nLoop] == nFIL[k] ) 
+								break;
+						}
+						if ( nLoop != 0 && nLoop == device_TotCnt )
+							continue;
+						if ( nLoop < device_TotCnt )
+							break;
+					}
+					if ( k == MAX_FIL)
+						return FALSE;
+				}
+				break;
+			}
+		}
+	}	
+	return TRUE;
+}
+
 // FIXME ???
 static int docattr_set_index_list(index_list_t *list, maskfunc func, void *mask)
 {
@@ -248,6 +362,73 @@ static void get_docattr_size(configValue v) {
 	}
 }
 
+//khy
+/* *************************************************************** */
+static int STDgetTotElement(char *Src, char Brk)
+{
+	int	i, nLen, nCnt=0;
+
+	nLen = strlen(Src);
+	if ( nLen == 0 )
+ 		return 0;
+		
+	if ( Src[nLen - 1] != Brk )
+		nCnt = 1;
+					
+	for ( i = 0; i < nLen; i++ )
+	{
+		if ( Src[i] == Brk )
+		{
+			if ( i != 0 )
+				nCnt++;
+		}
+	}
+	return nCnt;
+}
+
+/* *************************************************************** */
+static int STDgetElement(char *Src, char Brk, int Order, char *Buf)
+{
+	int	i, j, nLen, nCnt=0;
+	char	*pSrt, *pEnd;
+
+	nLen = strlen(Src);
+	if ( nLen == 0 )
+		return 0;
+				
+	for ( i = 0; i < nLen; i++ )
+	{
+		if ( Src[i] == Brk )
+		{
+			if ( i != 0 )
+				nCnt++;
+			i++;
+
+		}
+		if ( nCnt == Order )
+			break;
+	}
+	pSrt = &(Src[i]);
+	for ( j = i; j < nLen; j++ )
+	{
+		if ( Src[j] == Brk )
+			break;
+	}
+	pEnd = &(Src[j]);
+	nLen = pEnd - pSrt;
+	if ( nLen == 0 )
+		return 0;
+	for ( i = 0; i < nLen; i++ )
+		Buf[i] = *(pSrt + i);
+	Buf[i] = 0x00;
+	return nLen;
+}
+
+//khy - end
+
+
+
+
 static config_t config[] = {
 	CONFIG_GET("MaxDocNum", get_max_doc_num, 1, "document maximun number"),
 	CONFIG_GET("DocAttrSize", get_docattr_size, 1, "document data size"),
@@ -271,6 +452,9 @@ static void register_hooks(void)
 			NULL,NULL,HOOK_MIDDLE);
 	sb_hook_docattr_index_list_sortby(docattr_index_list_sortby,
 			NULL,NULL,HOOK_MIDDLE);
+	//device - khy
+        sb_hook_docattr_device_filter(docattr_device_filter,
+                        NULL,NULL,HOOK_MIDDLE);
 }
 
 module docattr_module = {

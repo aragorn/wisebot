@@ -93,4 +93,7 @@ SB_DECLARE_HOOK(int,docattr_set_docmask_function, \
 
 SB_DECLARE_HOOK(int,docattr_modify_index_list, \
 		(int id, struct index_list_t *list))
+SB_DECLARE_HOOK(int,docattr_device_filter, \
+        (struct index_list_t *dest, struct index_list_t *sour, \
+        char *device_string))
 #endif

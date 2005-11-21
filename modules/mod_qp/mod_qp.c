@@ -47,7 +47,6 @@ static char mCommentField[MAX_EXT_FIELD][SHORT_STRING_SIZE];
 static int Body_Field_No=-1;
 static int Title_Field_No=-1;
 static int mNeedSum=TRUE; // TRUE(1), FALSE(-1)
-
 enum DbType {
 	TYPE_VRFI,
 	TYPE_INDEXDB
@@ -2431,7 +2430,6 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 {
 	docattr_cond_t cond;
 	int rv=0;
-
 	// AT
 	if (sb_run_qp_docattr_query_process(&cond, req->attr_string) == FAIL)
 		return FAIL;
@@ -2444,10 +2442,21 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 	if (sb_run_qp_docattr_group_query_process(&cond, req->group_string) == FAIL)
 		return FAIL;
 
+
 	CRIT("before filter: %d", list->ndochits);
 	if (sb_run_docattr_get_index_list(list, list, SC_COMP, &cond) == -1) {  /* ¹®¼­ filitering */
 		return FAIL;
 	}
+
+	//device filtering(NATE)
+	CRIT("before filter(device): %d", list->ndochits);
+    CRIT("device string : %s", req->device_string);
+	if (req->device_string != NULL && strlen(req->device_string) != 0)
+	{
+    	if (sb_run_docattr_device_filter(list, list, req->device_string) == FAIL)
+			return FAIL;
+    }
+	// device - khy - end
 
 	if (list->ndochits == 0) {
 		return SUCCESS;

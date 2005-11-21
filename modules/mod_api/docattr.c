@@ -24,6 +24,7 @@ HOOK_STRUCT(
 	HOOK_LINK(docattr_set_doccond_function)
 	HOOK_LINK(docattr_set_docmask_function)
 	HOOK_LINK(docattr_modify_index_list)
+	HOOK_LINK(docattr_device_filter)
 )
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_open, (void), (), DECLINE)
@@ -84,3 +85,7 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int,docattr_set_docmask_function, \
 SB_IMPLEMENT_HOOK_RUN_ALL(int,docattr_modify_index_list, \
 	(int id, struct index_list_t *list), \
 	(id, list), SUCCESS, DECLINE)
+
+SB_IMPLEMENT_HOOK_RUN_FIRST(int,docattr_device_filter, \
+        (struct index_list_t *dest, struct index_list_t *sour, char *device_string), (dest,sour,device_string), MINUS_DECLINE)
+

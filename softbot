@@ -2,16 +2,16 @@
 # Start/stop the softbotd daemon.
 
 # XXX change SOFTBOT_ROOT path
-SOFTBOT_ROOT=
+SOFTBOT_ROOT=/home/local1/wisebot
 
 ##############################################################################
 SOFTBOTD=bin/softbotd
-SOFTBOTD_CONF=etc/softbot.conf
+SOFTBOTD_CONF=etc/softbot.nate.conf
 SOFTBOTD_PID_FILE=logs/softbotd.pid
 SOFTBOTD_LOG_FILE=logs/error_log
 
 # set WITH_RMAS=1 when you use rmas daemon
-WITH_RMAS=0
+WITH_RMAS=1
 
 RMAS=bin/softbotd
 RMAS_CONF=etc/softbot.rmas.conf

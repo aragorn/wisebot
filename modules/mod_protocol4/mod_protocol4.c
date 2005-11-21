@@ -2325,6 +2325,7 @@ static int sb4s_search_doc(int sockfd)
     get_str_item(req.attr_string, buf, "AT=", '^', MAX_ATTR_STRING_SIZE);
 	get_str_item(req.attr2_string, buf, "AT2=", '^', MAX_ATTR_STRING_SIZE);
 	get_str_item(req.group_string, buf, "GR=", '^', MAX_GROUP_STRING_SIZE);
+        get_str_item(req.device_string, buf, "DV=", '^', MAX_ATTR_STRING_SIZE);
     get_str_item(req.sort_string, buf, "SH=", '^', MAX_SORT_STRING_SIZE);
     req.filtering_id = get_int_item(buf, "FT=", '^');
 
@@ -2333,6 +2334,7 @@ static int sb4s_search_doc(int sockfd)
 	DEBUG("req.attr_string:[%s]",req.attr_string);
 	DEBUG("req.attr2_string:[%s]",req.attr2_string);
 	DEBUG("req.group_string:[%s]",req.group_string);
+	CRIT("req.device_string:[%s]",req.device_string);
 	DEBUG("req.sort_string:[%s]",req.sort_string);
 	DEBUG("req.list_size:%d",req.list_size);
 	DEBUG("req.first_result:%d",req.first_result);
@@ -2502,6 +2504,7 @@ static int sb4s_search2_doc(int sockfd)
     get_str_item(req.attr_string, buf, "AT=", '^', MAX_ATTR_STRING_SIZE);
 	get_str_item(req.attr2_string, buf, "AT2=", '^', MAX_ATTR_STRING_SIZE);
 	get_str_item(req.group_string, buf, "GR=", '^', MAX_GROUP_STRING_SIZE);
+	get_str_item(req.device_string, buf, "DV=", '^', MAX_ATTR_STRING_SIZE);
     get_str_item(req.sort_string, buf, "SH=", '^', MAX_SORT_STRING_SIZE);
     req.filtering_id = get_int_item(buf, "FT=", '^');
 
@@ -2510,6 +2513,7 @@ static int sb4s_search2_doc(int sockfd)
 	DEBUG("req.attr_string:[%s]",req.attr_string);
 	DEBUG("req.attr2_string:[%s]",req.attr2_string);
 	DEBUG("req.group_string:[%s]",req.group_string);
+	CRIT("req.device_string:[%s]",req.device_string);
 	DEBUG("req.sort_string:[%s]",req.sort_string);
 	DEBUG("req.list_size:%d",req.list_size);
 	DEBUG("req.first_result:%d",req.first_result);
