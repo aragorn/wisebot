@@ -2,11 +2,11 @@
 # Start/stop the softbotd daemon.
 
 # XXX change SOFTBOT_ROOT path
-SOFTBOT_ROOT=/home/local1/wisebot
+SOFTBOT_ROOT=
 
 ##############################################################################
 SOFTBOTD=bin/softbotd
-SOFTBOTD_CONF=etc/softbot.nate.conf
+SOFTBOTD_CONF=etc/softbot.conf
 SOFTBOTD_PID_FILE=logs/softbotd.pid
 SOFTBOTD_LOG_FILE=logs/error_log
 
