@@ -69,7 +69,6 @@ struct request_t{
 	char attr_string[MAX_ATTR_STRING_SIZE];
 	char attr2_string[MAX_ATTR_STRING_SIZE];
 	char group_string[MAX_GROUP_STRING_SIZE];
-	char device_string[MAX_ATTR_STRING_SIZE];
 	char sort_string[MAX_SORT_STRING_SIZE];
 	uint32_t first_result; /* first_result = result page number*list_size + 1*/
 	int  list_size;    /* size of result list */
