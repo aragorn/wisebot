@@ -739,6 +739,7 @@ int expr_in_set(docattr_operand_t* operand)
 		print_operand(OPERAND1);
 		print_operand(OPERAND2);
 		error("operator<in> should have list operands");
+		return FAIL;
 	}
 	
 	list1 = operand->o.expr.operand1->o.list;
@@ -752,6 +753,7 @@ int expr_in_set(docattr_operand_t* operand)
 		print_operand(list1->operands[i]);
 		error("that operand has diffent type. expected[%s]",
 				get_value_type_name( value_type ));
+		return FAIL;
 	}
 	for ( i = 0; i < list2->count; i++ ) {
 		if ( value_type == list2->operands[i]->value_type ) continue;
@@ -759,6 +761,7 @@ int expr_in_set(docattr_operand_t* operand)
 		print_operand(list2->operands[i]);
 		error("that operand has diffent type. expected[%s]",
 				get_value_type_name( value_type ));
+		return FAIL;
 	}
 
 	if ( value_type == VALUE_INTEGER ) {
@@ -853,6 +856,7 @@ int expr_common_set(docattr_operand_t* operand)
 		print_operand(OPERAND1);
 		print_operand(OPERAND2);
 		error("operator<common> should have list operands");
+		return FAIL;
 	}
 	
 	list1 = operand->o.expr.operand1->o.list;
