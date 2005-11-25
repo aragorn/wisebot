@@ -608,7 +608,7 @@ SB_DECLARE(void) print_hashstatus(hash_t *hash) {
 	debug("# of slot prer bucket : %d",HASH_SLOT_NUM);
 	debug("final hashtable depth : %d",shrdat->nDepth);
 
-	debug("\nstored slot : %d",shrdat->nSlot);
+	debug("stored slot : %d",shrdat->nSlot);
 	debug("actually allocated bucket : %d",shrdat->nBucket);
 	debug("slot / bucket : %.1f%% (%.1f/%d)",
 			(float)shrdat->nSlot/shrdat->nBucket/HASH_SLOT_NUM*100,
