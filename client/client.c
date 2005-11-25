@@ -72,6 +72,7 @@ COMMAND commands[] = {
 	{ "search",	com_search,	"search document by query string" },
 	{ "search_setting",com_search_setting,"setting LC,PG.default LC:15,PG:0"},
 	{ "query_test",com_query_test,"test query from file"},
+	{ "docattr_query_test", com_docattr_query_test, "test docattr query (not search). valid when using general docattr module"},
 	{ BLANKLINE, NULL, ""},
 
 	{ RESET GREEN"Indexer"HIDE, NULL, RESET},

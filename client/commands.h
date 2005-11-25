@@ -58,6 +58,7 @@ int com_repeat(char *);
 int com_xrepeat(char *);
 int com_search_setting(char *);
 int com_query_test(char *arg);
+int com_docattr_query_test(char *arg);
 int com_forward_index(char *);
 int com_log_level(char *);
 

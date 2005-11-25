@@ -1094,6 +1094,14 @@ int com_query_test(char *arg)
 	return SUCCESS;
 }
 
+int com_docattr_query_test(char *arg)
+{
+	docattr_cond_t cond;
+
+	int ret = sb_run_qp_docattr_query_process(&cond, arg);
+	return ret;
+}
+
 int com_rmas_run(char *arg)
 {
 	int field=0, morpid=0;
