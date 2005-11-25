@@ -717,7 +717,8 @@ int expr_in_string(docattr_expr_t* expr)
 		for ( j = 0; j < list2->count; j++ ) {
 			operand2 = list2->operands[j];
 
-			if ( strcmp( operand1->result->v.string, operand2->result->v.string ) == 0 ) break;
+			if ( hangul_strncmp( operand1->result->v.string,
+						operand2->result->v.string, SHORT_STRING_SIZE ) == 0 ) break;
 		} // for j
 
 		if ( j == list2->count ) break;
@@ -834,7 +835,8 @@ int expr_common_string(docattr_expr_t* expr)
 		for ( j = 0; j < list2->count; j++ ) {
 			operand2 = list2->operands[j];
 
-			if ( strcmp( operand1->result->v.string, operand2->result->v.string ) == 0 ) break;
+			if ( hangul_strncmp( operand1->result->v.string,
+						operand2->result->v.string, SHORT_STRING_SIZE ) == 0 ) break;
 		} // for j
 
 		if ( j != list2->count ) break;
