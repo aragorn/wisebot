@@ -3,9 +3,11 @@
 %token LOGICAL_AND LOGICAL_OR LOGICAL_NOT
 %token LPAREN RPAREN NAME VALUE NOT
 %token OPERAND_ERROR
+%token LLIST RLIST COMMA IN COMMON
 %left LOGICAL_OR
 %left LOGICAL_AND
 %nonassoc LOGICAL_NOT
+%left COMMA
 %left PLUS MINUS
 %left MULTIPLY DIVIDE
 %left BIT_OR
@@ -49,41 +51,98 @@ logi_expr:  logi_expr LOGICAL_AND logi_expr {
 			| cmp_expr { parser_result.root_operand = $1; $$ = $1; }
 			;
 
-cmp_expr: calc_expr EQ calc_expr {
-			$$ = $2;
-			$$->o.expr.operand1 = $1;
-			$$->o.expr.operand2 = $3;
-			if ( expr_eq_set($$) != SUCCESS ) YYERROR;
+cmp_expr:	calc_expr EQ calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_eq_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr NEQ calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_neq_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr GT calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_gt_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr GT_EQ calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_gteq_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr LT calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_lt_set($$) != SUCCESS ) YYERROR;
+			}
+			| calc_expr LT_EQ calc_expr {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_lteq_set($$) != SUCCESS ) YYERROR;
+			}
+			| list IN list {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_in_set($$) != SUCCESS ) YYERROR;
+			}
+			| list COMMON list {
+				$$ = $2;
+				$$->o.expr.operand1 = $1;
+				$$->o.expr.operand2 = $3;
+				if ( expr_common_set($$) != SUCCESS ) YYERROR;
+			}
+			;
+
+list:	LLIST _list RLIST { $$ = $2; }
+		| calc_expr {
+			$$ = get_new_operand();
+			if ( $$ == NULL ) {
+				error("error while making list");
+				YYERROR;
+			}
+
+			$$->operand_type = OPERAND_LIST;
+			$$->value_type = VALUE_LIST;
+			$$->o.list = get_new_list();
+			if ( $$->o.list == NULL ) {
+				error("error while making list");
+				YYERROR;
+			}
+			$$->result = NULL; // obsolete. already NULL;
+
+			append_to_list($$->o.list, $1);
 		}
-		| calc_expr NEQ calc_expr {
-			$$ = $2;
-			$$->o.expr.operand1 = $1;
-			$$->o.expr.operand2 = $3;
-			if ( expr_neq_set($$) != SUCCESS ) YYERROR;
+		;
+
+_list:	_list COMMA calc_expr {
+			$$ = $1;
+			append_to_list($$->o.list, $3);
 		}
-		| calc_expr GT calc_expr {
-			$$ = $2;
-			$$->o.expr.operand1 = $1;
-			$$->o.expr.operand2 = $3;
-			if ( expr_gt_set($$) != SUCCESS ) YYERROR;
-		}
-		| calc_expr GT_EQ calc_expr {
-			$$ = $2;
-			$$->o.expr.operand1 = $1;
-			$$->o.expr.operand2 = $3;
-			if ( expr_gteq_set($$) != SUCCESS ) YYERROR;
-		}
-		| calc_expr LT calc_expr {
-			$$ = $2;
-			$$->o.expr.operand1 = $1;
-			$$->o.expr.operand2 = $3;
-			if ( expr_lt_set($$) != SUCCESS ) YYERROR;
-		}
-		| calc_expr LT_EQ calc_expr {
-			$$ = $2;
-			$$->o.expr.operand1 = $1;
-			$$->o.expr.operand2 = $3;
-			if ( expr_lteq_set($$) != SUCCESS ) YYERROR;
+		| calc_expr {
+			$$ = get_new_operand();
+			if ( $$ == NULL ) {
+				error("error while making list");
+				YYERROR;
+			}
+
+			$$->operand_type = OPERAND_LIST;
+			$$->value_type = VALUE_LIST;
+			$$->o.list = get_new_list();
+			if ( $$->o.list == NULL ) {
+				error("error while making list");
+				YYERROR;
+			}
+			$$->result = NULL; // obsolete. already NULL;
+
+			append_to_list($$->o.list, $1);
 		}
 		;
 
@@ -132,10 +191,10 @@ calc_expr:	calc_expr BIT_AND calc_expr {
 			| operand { $$ = $1; }
 			;
 
-operand:  NAME { $$ = $1; }
-		| VALUE { $$ = $1; }
-		| OPERAND_ERROR	{ YYERROR; }
-		;
+operand: NAME { $$ = $1; }
+	   | VALUE { $$ = $1; }
+	   | OPERAND_ERROR	{ YYERROR; }
+	   ;
 
 %%
 

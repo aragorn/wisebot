@@ -3,8 +3,15 @@
 #include "mod_qp/mod_qp.h"
 #include <ctype.h>
 
-static docattr_operand_t operands[MAX_OPERAND_NUM];
+// operand pool
+static docattr_operand_t* operands = NULL;
+static int max_operand_count = 100;
 static int current_operand_index = 0;
+
+// list pool
+static docattr_list_t* lists = NULL;
+static int max_list_count = 10;
+static int current_list_index = 0;
 
 general_at_t parser_result; // yacc의 결과는 여기에 들어간다.
 
@@ -17,43 +24,74 @@ docattr_field_t* group_field_list[MAX_GROUP_FIELD]; // GR=
 docattr_integer group_field_limit[MAX_GROUP_FIELD];
 docattr_integer group_field_count[MAX_GROUP_FIELD][MAX_GROUP_FIELD_VALUE]; // 통합검색 결과저장
 
-void init_operands()
+static void init_operands()
 {
+	if ( operands == NULL && max_operand_count > 0 ) {
+		/* 처음 한 번만 실행되고 free 하지 않는다 
+		 * mod_softbot4.c process 에서만 alloc 하게 될 것이다 */
+		operands = (docattr_operand_t*)
+			sb_malloc(sizeof(docattr_operand_t)*max_operand_count);
+	}
+
 	current_operand_index = 0;
 	memset( &parser_result, 0, sizeof(general_at_t) );
-	memset( operands, 0, sizeof(operands) );
+	memset( operands, 0, sizeof(docattr_operand_t)*max_operand_count );
 }
 
 docattr_operand_t* get_new_operand()
 {
-	if ( current_operand_index >= MAX_OPERAND_NUM ) {
-		error("too many operands. MAX is %d", MAX_OPERAND_NUM);
+	if ( current_operand_index >= max_operand_count ) {
+		error("too many operands. MAX is %d. "
+			  "modify config: <mod_qp_general.c> - MaxOperandsCount", max_operand_count);
 		return NULL;
 	}
 	return &operands[current_operand_index++];
 }
 
-char* get_value_type_name(docattr_value_type_t type)
+static char* get_value_type_name(docattr_value_type_t type)
 {
-	static char name[][20] = { "INTEGER", "STRING", "MD5", "BOOLEAN", "UNKNOWN" };
+	static char name[][20] = { "UNKNOWN", "INTEGER", "STRING", "MD5", "BOOLEAN", "LIST" };
 
 	switch( type ) {
 		case VALUE_INTEGER:
-			return name[0];
-		case VALUE_STRING:
 			return name[1];
-		case VALUE_MD5:
+		case VALUE_STRING:
 			return name[2];
-		case VALUE_BOOLEAN:
+		case VALUE_MD5:
 			return name[3];
+		case VALUE_BOOLEAN:
+			return name[4];
+		case VALUE_LIST:
+			return name[5];
 	}
 
-	return name[4];
+	return name[0];
 }
 
-void print_operand(docattr_operand_t* operand)
+static char* get_operand_type_name(docattr_operand_type_t type)
+{
+	static char name[][20] = { "UNKNOWN", "VALUE", "FIELD", "EXPR", "LIST" };
+
+	switch( type ) {
+		case OPERAND_VALUE:
+			return name[1];
+		case OPERAND_FIELD:
+			return name[2];
+		case OPERAND_EXPR:
+			return name[3];
+		case OPERAND_LIST:
+			return name[4];
+	}
+
+	return name[0];
+}
+
+static void print_operand(docattr_operand_t* operand)
 {
 	char* value_type;
+	char* operand_type;
+	char buf[STRING_SIZE];
+	int i, remain_buf;
 
 	switch( operand->operand_type ) {
 		case OPERAND_VALUE:
@@ -69,10 +107,79 @@ void print_operand(docattr_operand_t* operand)
 			info("OPERAND[%s]: expr[%s]",
 					get_value_type_name( operand->value_type ), operand->o.expr.operator_string);
 			break;
+		case OPERAND_LIST:
+			operand_type = get_operand_type_name( operand->o.list->operands[0]->operand_type );
+			snprintf(buf, sizeof(buf), "OPERAND[%s]: list[%s",
+					get_value_type_name( operand->value_type ), operand_type);
+			remain_buf = (int)sizeof(buf) - strlen(buf);
+
+
+			for ( i = 1; i < operand->o.list->count; i++ ) {
+				operand_type = get_operand_type_name( operand->o.list->operands[i]->operand_type );
+
+				strncat( buf, ",", remain_buf-1 );
+				remain_buf = (int)sizeof(buf) - strlen(buf);
+				if ( remain_buf <= 1 ) break;
+
+				strncat( buf, operand_type, remain_buf-1 );
+				remain_buf = (int)sizeof(buf) - strlen(buf);
+				if ( remain_buf <= 1 ) break;
+			}
+			if ( remain_buf > 1 ) strncat( buf, "]", remain_buf-1 );
+			info( buf );
+			break;
 		default:
 			info("OPERAND[%s]: unknown", get_value_type_name( operand->value_type ));
 			break;
 	}
+}
+
+static void init_lists()
+{
+	if ( lists == NULL && max_list_count > 0 ) {
+		/* 처음 한 번만 실행되고 free 하지 않는다 
+		 * mod_softbot4.c process 에서만 alloc 하게 될 것이다 */
+		lists = (docattr_list_t*)
+			sb_calloc(1, sizeof(docattr_list_t)*max_list_count);
+	}
+
+	current_list_index = 0;
+}
+
+/*
+ * list.operands[] 는 재활용되기 때문에 memset 으로 초기화하면 안된다
+ * list.size 도 건드리면 안된다.
+ * list.count 만 0으로 만들어주자.
+ */
+docattr_list_t* get_new_list()
+{
+	if ( current_list_index >= max_list_count ) {
+		error("too many lists. MAX is %d. "
+			  "modify config: <mod_qp_general.c> - MaxListCount", max_list_count);
+		return NULL;
+	}
+
+	lists[current_list_index].count = 0;
+	return &lists[current_list_index++];
+}
+
+#define LIST_EXPAND_SIZE 10
+
+void append_to_list(docattr_list_t* list, docattr_operand_t* operand)
+{
+	if ( list->count == list->size ) {
+		/*
+		 * list->operands 는 allocation 만 되고 free 하지 않는다.
+		 * 한번 allocation 된 것을 계속 재활용한다
+		 */
+		list->size = list->size + LIST_EXPAND_SIZE;
+		list->operands = (docattr_operand_t**)
+			sb_realloc(list->operands, sizeof(docattr_operand_t*) * (list->size));
+		// realloc 이 실패하지 않겠지?
+	}
+
+	list->operands[list->count] = operand;
+	list->count++;
 }
 
 // parser_result 에 query에 나타난 field list를 저장해둔다
@@ -89,7 +196,7 @@ void add_field_to_cond(docattr_field_t* field)
 }
 
 // parser_result 에서 field를 찾아보고 없으면 NULL
-docattr_field_t* find_field_from_cond(const char* name)
+static docattr_field_t* find_field_from_cond(const char* name)
 {
 	docattr_field_t* field;
 	int i;
@@ -113,13 +220,17 @@ docattr_field_t* find_field_from_cond(const char* name)
 #define OPERAND1 (operand->o.expr.operand1)
 #define OPERAND2 (operand->o.expr.operand2)
 
-#define GET_RESULT1 \
-	if ( expr->operand1->operand_type == OPERAND_EXPR ) \
-		expr->operand1->o.expr.exec_func( &expr->operand1->o.expr );
-#define GET_RESULT2 \
-	if ( expr->operand2->operand_type == OPERAND_EXPR ) \
-		expr->operand2->o.expr.exec_func( &expr->operand2->o.expr );
+/*
+ * operand 가 expr 인 경우 계산해서 결과를 저장한다.
+ * value, field 인 경우라면 이미 result 에 값을 가지고 있다.
+ */
+#define GET_RESULT(operand) \
+	if ( operand->operand_type == OPERAND_EXPR ) \
+		operand->o.expr.exec_func( &operand->o.expr );
+#define GET_RESULT1 GET_RESULT(expr->operand1)
+#define GET_RESULT2 GET_RESULT(expr->operand2)
 
+// 이 RESULT는 위의 GET_RESULT() 와 전혀 상관없음.
 #define RESULT  (expr->result.v)
 #define RESULT1 (expr->operand1->result->v)
 #define RESULT2 (expr->operand2->result->v)
@@ -460,7 +571,7 @@ int expr_plus_set(docattr_operand_t* operand)
 	else {
 		print_operand(OPERAND1);
 		print_operand(OPERAND2);
-		error("operand PLUS doesn't support above types");
+		error("operator PLUS doesn't support above types");
 		return FAIL;
 	}
 
@@ -486,7 +597,7 @@ int expr_minus_set(docattr_operand_t* operand)
 	else {
 		print_operand(OPERAND1);
 		print_operand(OPERAND2);
-		error("operand MINUS doesn't support above types");
+		error("operator MINUS doesn't support above types");
 		return FAIL;
 	}
 
@@ -512,7 +623,7 @@ int expr_multiply_set(docattr_operand_t* operand)
 	else {
 		print_operand(OPERAND1);
 		print_operand(OPERAND2);
-		error("operand MULTIPLY doesn't support above types");
+		error("operator MULTIPLY doesn't support above types");
 		return FAIL;
 	}
 
@@ -543,11 +654,241 @@ int expr_divide_set(docattr_operand_t* operand)
 	else {
 		print_operand(OPERAND1);
 		print_operand(OPERAND2);
-		error("operand DIVIDE doesn't support above types");
+		error("operator DIVIDE doesn't support above types");
 		return FAIL;
 	}
 
 	operand->value_type = VALUE_INTEGER;
+	return SUCCESS;
+}
+
+int expr_in_int(docattr_expr_t* expr)
+{
+	docattr_list_t *list1, *list2;
+	docattr_operand_t *operand1, *operand2;
+	int i, j;
+
+	list1 = expr->operand1->o.list;
+	list2 = expr->operand2->o.list;
+
+	// loop 안에서 하면 중복 노가다가 되므로 미리 계산해둔다.
+	for ( j = 0; j < list2->count; j++ ) {
+		operand2 = list2->operands[j];
+		GET_RESULT(operand2);
+	}
+
+	for ( i = 0; i < list1->count; i++ ) {
+		operand1 = list1->operands[i];
+		GET_RESULT(operand1);
+
+		for ( j = 0; j < list2->count; j++ ) {
+			operand2 = list2->operands[j];
+
+			if ( operand1->result->v.integer == operand2->result->v.integer ) break;
+		} // for j
+
+		if ( j == list2->count ) break;
+	} // for i
+
+	// 없는 게 있었으면 i loop 중간에 break 당했다.
+	RESULT.boolean = ( i == list1->count );
+	return SUCCESS;
+}
+
+int expr_in_string(docattr_expr_t* expr)
+{
+	docattr_list_t *list1, *list2;
+	docattr_operand_t *operand1, *operand2;
+	int i, j;
+
+	list1 = expr->operand1->o.list;
+	list2 = expr->operand2->o.list;
+
+	// loop 안에서 하면 중복 노가다가 되므로 미리 계산해둔다.
+	for ( j = 0; j < list2->count; j++ ) {
+		operand2 = list2->operands[j];
+		GET_RESULT(operand2);
+	}
+
+	for ( i = 0; i < list1->count; i++ ) {
+		operand1 = list1->operands[i];
+		GET_RESULT(operand1);
+
+		for ( j = 0; j < list2->count; j++ ) {
+			operand2 = list2->operands[j];
+
+			if ( strcmp( operand1->result->v.string, operand2->result->v.string ) == 0 ) break;
+		} // for j
+
+		if ( j == list2->count ) break;
+	} // for i
+
+	// 없는 게 있었으면 i loop 중간에 break 당했다.
+	RESULT.boolean = ( i == list1->count );
+	return SUCCESS;
+}
+
+int expr_in_set(docattr_operand_t* operand)
+{
+	docattr_value_type_t value_type;
+	docattr_list_t *list1, *list2;
+	int i;
+
+	if ( OPERAND1->value_type != VALUE_LIST
+			|| OPERAND2->value_type != VALUE_LIST ) {
+		print_operand(OPERAND1);
+		print_operand(OPERAND2);
+		error("operator<in> should have list operands");
+	}
+	
+	list1 = operand->o.expr.operand1->o.list;
+	list2 = operand->o.expr.operand2->o.list;
+
+	// 나머지 모든 operand 들도 같은 value_type 이어야 한다.
+	value_type = list1->operands[0]->value_type;
+	for ( i = 1; i < list1->count; i++ ) {
+		if ( value_type == list1->operands[i]->value_type ) continue;
+
+		print_operand(list1->operands[i]);
+		error("that operand has diffent type. expected[%s]",
+				get_value_type_name( value_type ));
+	}
+	for ( i = 0; i < list2->count; i++ ) {
+		if ( value_type == list2->operands[i]->value_type ) continue;
+
+		print_operand(list2->operands[i]);
+		error("that operand has diffent type. expected[%s]",
+				get_value_type_name( value_type ));
+	}
+
+	if ( value_type == VALUE_INTEGER ) {
+		operand->o.expr.exec_func = expr_in_int;
+	}
+	else if ( value_type == VALUE_STRING ) {
+		operand->o.expr.exec_func = expr_in_string;
+	}
+	else {
+		error("operator <in> doesn't support %s type", get_value_type_name( value_type ));
+		return FAIL;
+	}
+
+	operand->value_type = VALUE_BOOLEAN;
+	return SUCCESS;
+}
+
+int expr_common_int(docattr_expr_t* expr)
+{
+	docattr_list_t *list1, *list2;
+	docattr_operand_t *operand1, *operand2;
+	int i, j;
+
+	list1 = expr->operand1->o.list;
+	list2 = expr->operand2->o.list;
+
+	// loop 안에서 하면 중복 노가다가 되므로 미리 계산해둔다.
+	for ( j = 0; j < list2->count; j++ ) {
+		operand2 = list2->operands[j];
+		GET_RESULT(operand2);
+	}
+
+	for ( i = 0; i < list1->count; i++ ) {
+		operand1 = list1->operands[i];
+		GET_RESULT(operand1);
+
+		for ( j = 0; j < list2->count; j++ ) {
+			operand2 = list2->operands[j];
+
+			if ( operand1->result->v.integer == operand2->result->v.integer ) break;
+		} // for j
+
+		if ( j != list2->count ) break;
+	} // for i
+
+	// 하나라도 있었으면 i loop 중간에 break 당했다.
+	RESULT.boolean = ( i != list1->count );
+	return SUCCESS;
+}
+
+int expr_common_string(docattr_expr_t* expr)
+{
+	docattr_list_t *list1, *list2;
+	docattr_operand_t *operand1, *operand2;
+	int i, j;
+
+	list1 = expr->operand1->o.list;
+	list2 = expr->operand2->o.list;
+
+	// loop 안에서 하면 중복 노가다가 되므로 미리 계산해둔다.
+	for ( j = 0; j < list2->count; j++ ) {
+		operand2 = list2->operands[j];
+		GET_RESULT(operand2);
+	}
+
+	for ( i = 0; i < list1->count; i++ ) {
+		operand1 = list1->operands[i];
+		GET_RESULT(operand1);
+
+		for ( j = 0; j < list2->count; j++ ) {
+			operand2 = list2->operands[j];
+
+			if ( strcmp( operand1->result->v.string, operand2->result->v.string ) == 0 ) break;
+		} // for j
+
+		if ( j != list2->count ) break;
+	} // for i
+
+	// 하나라도 있었으면 i loop 중간에 break 당했다.
+	RESULT.boolean = ( i != list1->count );
+	return SUCCESS;
+}
+
+int expr_common_set(docattr_operand_t* operand)
+{
+	docattr_value_type_t value_type;
+	docattr_list_t *list1, *list2;
+	int i;
+
+	if ( OPERAND1->value_type != VALUE_LIST
+			|| OPERAND2->value_type != VALUE_LIST ) {
+		print_operand(OPERAND1);
+		print_operand(OPERAND2);
+		error("operator<common> should have list operands");
+	}
+	
+	list1 = operand->o.expr.operand1->o.list;
+	list2 = operand->o.expr.operand2->o.list;
+
+	// 나머지 모든 operand 들도 같은 value_type 이어야 한다.
+	value_type = list1->operands[0]->value_type;
+	for ( i = 1; i < list1->count; i++ ) {
+		if ( value_type == list1->operands[i]->value_type ) continue;
+
+		print_operand(list1->operands[i]);
+		error("that operand has diffent type. expected[%s]",
+				get_value_type_name( value_type ));
+		return FAIL;
+	}
+	for ( i = 0; i < list2->count; i++ ) {
+		if ( value_type == list2->operands[i]->value_type ) continue;
+
+		print_operand(list2->operands[i]);
+		error("that operand has diffent type. expected[%s]",
+				get_value_type_name( value_type ));
+		return FAIL;
+	}
+
+	if ( value_type == VALUE_INTEGER ) {
+		operand->o.expr.exec_func = expr_common_int;
+	}
+	else if ( value_type == VALUE_STRING ) {
+		operand->o.expr.exec_func = expr_common_string;
+	}
+	else {
+		error("operator <common> doesn't support %s type", get_value_type_name( value_type ));
+		return FAIL;
+	}
+
+	operand->value_type = VALUE_BOOLEAN;
 	return SUCCESS;
 }
 
@@ -598,6 +939,7 @@ int expr_logical_not(docattr_expr_t* expr)
 #undef OPERAND1
 #undef OPERAND2
 
+#undef GET_RESULT
 #undef GET_RESULT1
 #undef GET_RESULT2
 
@@ -806,6 +1148,7 @@ static int docattr_qpp(docattr_cond_t *cond, char* attrquery)
 
 retry:
 	init_operands();
+	init_lists();
 	__yy_scan_string( attrquery );
 
 	ret = __yyparse();
@@ -919,6 +1262,24 @@ static int docattr_qpp_group(docattr_cond_t *cond, char* groupquery)
 	return SUCCESS;
 }
 
+static void set_max_operand_count(configValue v)
+{
+	max_operand_count = atoi( v.argument[0] );
+}
+
+static void set_max_list_count(configValue v)
+{
+	max_list_count = atoi( v.argument[0] );
+}
+
+static config_t config[] = {
+	CONFIG_GET("MaxOperandCount", set_max_operand_count, 1,
+			"maximum operand count in AT + AT2"),
+	CONFIG_GET("MaxListCount", set_max_list_count, 1,
+			"maximum list count (not list size)"),
+	{NULL}
+};
+
 static void register_hooks(void)
 {
 	sb_hook_docattr_compare_function(compare_function,NULL,NULL,HOOK_MIDDLE);
@@ -931,7 +1292,7 @@ static void register_hooks(void)
 
 module qp_general_module = {
 	STANDARD_MODULE_STUFF,
-	NULL,                   /* config */
+	config,                 /* config */
 	NULL,                   /* registry */
 	init,                   /* initialize */
 	NULL,                   /* child_main */

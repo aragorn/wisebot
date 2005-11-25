@@ -11,11 +11,10 @@ typedef docattr_operand_t* yystype;
 extern int __yyparse(void);
 extern void __yy_scan_string(const char* str);
 
-#define MAX_OPERAND_NUM 100
-
 extern general_at_t parser_result;
-extern void init_operands();
 extern docattr_operand_t* get_new_operand();
+extern docattr_list_t* get_new_list();
+extern void append_to_list(docattr_list_t* list, docattr_operand_t* operand);
 extern void add_field_to_cond(docattr_field_t* field);
 
 // expr->exec_func 와 관련있는 것들...
@@ -32,6 +31,8 @@ extern int expr_plus_set(docattr_operand_t* operand);
 extern int expr_minus_set(docattr_operand_t* operand);
 extern int expr_multiply_set(docattr_operand_t* operand);
 extern int expr_divide_set(docattr_operand_t* operand);
+extern int expr_in_set(docattr_operand_t* operand);
+extern int expr_common_set(docattr_operand_t* operand);
 
 extern int expr_logical_and(docattr_expr_t* expr);
 extern int expr_logical_or(docattr_expr_t* expr);

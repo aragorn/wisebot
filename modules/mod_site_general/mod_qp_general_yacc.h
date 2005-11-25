@@ -50,7 +50,12 @@
      NAME = 276,
      VALUE = 277,
      NOT = 278,
-     OPERAND_ERROR = 279
+     OPERAND_ERROR = 279,
+     LLIST = 280,
+     RLIST = 281,
+     COMMA = 282,
+     IN = 283,
+     COMMON = 284
    };
 #endif
 #define EQ 258
@@ -75,6 +80,11 @@
 #define VALUE 277
 #define NOT 278
 #define OPERAND_ERROR 279
+#define LLIST 280
+#define RLIST 281
+#define COMMA 282
+#define IN 283
+#define COMMON 284
 
 
 

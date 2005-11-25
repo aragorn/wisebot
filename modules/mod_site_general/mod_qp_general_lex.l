@@ -9,7 +9,7 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 #define SET_YYLVAL \
 	yylval = get_new_operand(); \
 	if ( yylval == NULL ) { \
-		error("error while processing [%s], MAX_OPERAND_NUM[%d]", yytext, MAX_OPERAND_NUM); \
+		error("error while processing [%s]", yytext); \
 		return OPERAND_ERROR; \
 	}
 
@@ -18,13 +18,21 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 	yylval->result = &yylval->o.expr.result; \
 	strncpy( yylval->o.expr.operator_string, yytext, sizeof(yylval->o.expr.operator_string) );
 
+/* 아래 연산자는 9자 이하로 해야 한다
+ * docattr_expr_t 의 operator_string[] 이 10 의 크기를 가지기 때문이다.
+ */
 %}
 A [aA]
+C [cC]
 D [dD]
+I [iI]
+L [lL]
+M [mM]
 N [nN]
 O [oO]
 R [rR]
 T [tT]
+Y [yY]
 
 %START ESC
 %option nounput
@@ -49,6 +57,11 @@ T [tT]
 (!!|{N}{O}{T})	{ SET_YYLVAL; SET_EXPR; return LOGICAL_NOT; }
 \(				{ return LPAREN; }
 \)				{ return RPAREN; }
+,				{ return COMMA; }
+\[				{ return LLIST; }
+\]				{ return RLIST; }
+\<{I}{N}\>		{ SET_YYLVAL; SET_EXPR; return IN; }
+\<{C}{O}{M}{M}{O}{N}\> { SET_YYLVAL; SET_EXPR; return COMMON; }
 \"[^\"\\]*\"	{
 	SET_YYLVAL;
 
@@ -65,7 +78,7 @@ T [tT]
 	else return OPERAND_ERROR;
 }
 
-[^=\>\<&\|!\+\-\*\/\(\)\t\r\n\" ]+ 	{
+[^=\>\<&\|!\+\-\*\/\(\)\t\r\n\",\[\] ]+ 	{
 	SET_YYLVAL;
 
 	// field 이름과 같은 게 있으면 NAME 아니면 VALUE

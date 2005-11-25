@@ -33,7 +33,14 @@ typedef enum {
 	FIELD_STRING
 } docattr_field_type_t;
 
+/*
+ * VALUE_LIST
+ *   docattr_operand_t 의 value_type 에 있을 수 있는 값이다.
+ *   list 니까 일반적인 value type 이 아니라는 것을 표시한다
+ */
+
 typedef enum {
+	VALUE_LIST = -1,
 	VALUE_INTEGER = 1,
 	VALUE_MD5,
 	VALUE_STRING,
@@ -99,10 +106,24 @@ struct _docattr_expr_t {
 	docattr_value_t result;
 };
 
+typedef struct _docattr_list_t {
+	docattr_operand_t** operands; 
+	int size;  // operands array 의 크기
+	int count; // list 에 실제로 들어간 operand 개수
+} docattr_list_t;
+
+/*
+ * OPERAND_LIST
+ *   <in>, <common> operator 일 때 list 인 operand 를 가진다.
+ *   list operand 는 특정한 값이 없으므로
+ *   value_type = VALUE_LIST, result = NULL 이 되며 사용하지 않는다.
+ */
+
 typedef enum {
 	OPERAND_VALUE = 1,
 	OPERAND_FIELD,
-	OPERAND_EXPR
+	OPERAND_EXPR,
+	OPERAND_LIST
 } docattr_operand_type_t;
 
 struct _docattr_operand_t {
@@ -113,10 +134,12 @@ struct _docattr_operand_t {
 		docattr_value_t value;
 		docattr_field_t* field;
 		docattr_expr_t expr;
+		docattr_list_t* list;
 	} o;
 
 	docattr_value_t* result; // operand 계산 결과(즉, exec_func의 결과)
 	                         // query 컴파일 할 때, value, field->value, expr->value중 하나와 연결
+	                         // list 일 때는 NULL 이다.
 };
 
 typedef struct {
