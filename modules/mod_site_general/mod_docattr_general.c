@@ -101,16 +101,44 @@ char* return_enum_name(docattr_integer value)
 
 // 제대로된 숫자인지 판별해서 저장
 // 앞뒤 공백문자 같은 건 없다고 간주한다. SUCCESS/FAIL
+//
+// 보통 00234 와 같이 앞에 0이 오면 8진수로 간주하지만
+// 여기서는 그냥 10진수로 한다.
 int isNumber(const char* string, docattr_integer* number)
 {
+	char string_copy[SHORT_STRING_SIZE];
 	char* end_of_string;
 	long result;
 
+	strncpy( string_copy, string, sizeof(string_copy) );
+
+	{
+		// 001234 같이 전부 숫자고 앞에 0으로 시작하면 0을 제거한다
+		int is_digit = (1<0);
+		int is_zero = (1>0);
+
+		for ( end_of_string = string_copy; *end_of_string != '\0'; end_of_string++ ) {
+			is_digit = (*end_of_string >= '0' && *end_of_string <= '9');
+			if ( !is_digit ) break;
+
+			is_zero = is_zero && *end_of_string == '0';
+		}
+
+		if ( is_digit && !is_zero ) {
+			for ( end_of_string = string_copy; *end_of_string == '0'; end_of_string++ ) {
+				*end_of_string = ' ';
+			}
+		}
+
+		warn("isdigit[%d], iszero[%d]", is_digit, is_zero);
+		warn("converted number is [%s]", string_copy);
+	}
+
 	errno = 0; // strtol 함수가 errno 값을 제대로 setting하지 않는다.
-	result = strtol( string, &end_of_string, 0 );
+	result = strtol( string_copy, &end_of_string, 0 );
 
 	if ( *end_of_string != '\0' ) {
-		result = (long) return_enum_value( string );
+		result = (long) return_enum_value( string_copy );
 		if ( result == 0 ) return FAIL;
 	}
 	else if ( errno != 0 ) return FAIL;
