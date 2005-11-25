@@ -129,9 +129,6 @@ int isNumber(const char* string, docattr_integer* number)
 				*end_of_string = ' ';
 			}
 		}
-
-		warn("isdigit[%d], iszero[%d]", is_digit, is_zero);
-		warn("converted number is [%s]", string_copy);
 	}
 
 	errno = 0; // strtol 함수가 errno 값을 제대로 setting하지 않는다.
