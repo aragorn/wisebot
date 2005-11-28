@@ -47,6 +47,7 @@ static char mCommentField[MAX_EXT_FIELD][SHORT_STRING_SIZE];
 static int Body_Field_No=-1;
 static int Title_Field_No=-1;
 static int mNeedSum=TRUE; // TRUE(1), FALSE(-1)
+
 enum DbType {
 	TYPE_VRFI,
 	TYPE_INDEXDB
