@@ -47,7 +47,6 @@ static char mCommentField[MAX_EXT_FIELD][SHORT_STRING_SIZE];
 static int Body_Field_No=-1;
 static int Title_Field_No=-1;
 static int mNeedSum=TRUE; // TRUE(1), FALSE(-1)
-
 enum DbType {
 	TYPE_VRFI,
 	TYPE_INDEXDB
@@ -2431,7 +2430,7 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 {
 	docattr_cond_t cond;
 	int rv=0;
-
+	
 	// AT
 	if (sb_run_qp_docattr_query_process(&cond, req->attr_string) == FAIL)
 		return FAIL;
