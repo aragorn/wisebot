@@ -2,7 +2,7 @@
 # Start/stop the softbotd daemon.
 
 # XXX change SOFTBOT_ROOT path
-SOFTBOT_ROOT=/home/local2/wisebot
+SOFTBOT_ROOT=
 
 ##############################################################################
 SOFTBOTD=bin/softbotd
