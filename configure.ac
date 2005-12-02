@@ -58,6 +58,7 @@ AH_VERBATIM([1_NEAR_TOP__],[
 #undef FREEBSD
 #undef SOLARIS
 #undef AIX5
+#undef HPUX
 
 /* whether indexer saves forward index or not. default is NOT using it. */
 #define FORWARD_INDEX 0
@@ -171,6 +172,11 @@ case "$host" in
     SOFTBOTCLI_LDFLAGS='-Wl,-bdynamic -Wl,-bE:$(top_builddir)/client/softbotcli.exp -Wl,-bmaxdata:0x40000000 -L/usr/local/lib -liconv'
     LDFLAGS="-Wl,-brtl"
     ;;
+  *-hpux* )
+    SHORT_HOST="hpux"
+    AC_DEFINE(HPUX,1)
+    OS_TYPE="unix"
+    ;;
 esac
 
 # You can use if-condition in Makefile.am
@@ -179,6 +185,7 @@ AM_CONDITIONAL(CYGWIN,  test x$SHORT_HOST = xcygwin)
 AM_CONDITIONAL(FREEBSD, test x$SHORT_HOST = xfreebsd)
 AM_CONDITIONAL(SOLARIS, test x$SHORT_HOST = xsolaris)
 AM_CONDITIONAL(AIX5,    test x$SHORT_HOST = xaix5)
+AM_CONDITIONAL(HPUX,    test x$SHORT_HOST = xhpux)
 
 dnl ---------------------------------------------------------------------------
 

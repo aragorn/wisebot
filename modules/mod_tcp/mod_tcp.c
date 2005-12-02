@@ -619,6 +619,8 @@ static int tcp_recv_nonb (int sockfd, void *data, int len, int timeout)
 #elif defined(CYGWIN)
 		/* CYGWIN does not seem to have MSG_DONTWAIT flag. */
 		n = recv(sockfd, ptr, size, 0);
+#elif defined(HPUX)
+		n = recv(sockfd, ptr, size, O_NONBLOCK);
 #else
 		n = recv(sockfd, ptr, size, MSG_DONTWAIT);
 #endif
@@ -713,6 +715,8 @@ static int tcp_send_nonb (int sockfd, void *data, int len, int timeout)
 #elif defined(CYGWIN)
 		/* CYGWIN does not seem to have MSG_DONTWAIT flag. */
 		n = send(sockfd, ptr, size, 0);
+#elif defined(HPUX)
+		n = send(sockfd, ptr, size, O_NONBLOCK);
 #else
 		n = send(sockfd, ptr, size, MSG_DONTWAIT);
 #endif

@@ -57,7 +57,7 @@ udp_connect(int *sockfd, const char *host, const char *port)
 }
 #endif // #if !defined(HAVE_GETADDRINFO)
 
-#ifdef CYGWIN
+#if defined(CYGWIN) || defined(HPUX)
 static int set_non_blocking(int s, int flag)
 {
   int socket_flags;
@@ -80,6 +80,8 @@ static int set_non_blocking(int s, int flag)
     return FAIL;
   } else return SUCCESS;
 }
+#else
+#  define set_non_blocking(s,flag) SUCCESS
 #endif
 
 static int
@@ -89,20 +91,18 @@ udp_recvfrom(int sockfd, void *buf, size_t len,
 	fd_set rset;
 	struct timeval tval;
 
-#ifdef CYGWIN
     if (set_non_blocking(sockfd, TRUE) == FAIL)
 	{
 		error("cannot set socket non-blocking: %s", strerror(errno));
 		return FAIL;
     }
-#endif
 
 	for ( ; ; ) {
 		int n = 0;
 
 #if defined(AIX5)
 		n = recvfrom(sockfd, buf, len, MSG_NONBLOCK, from, fromlen);
-#elif defined(CYGWIN)
+#elif defined(CYGWIN) || defined(HPUX)
 		n = recvfrom(sockfd, buf, len, 0, from, fromlen);
 #else
 		n = recvfrom(sockfd, buf, len, MSG_DONTWAIT, from, fromlen);
@@ -145,13 +145,11 @@ udp_recvfrom(int sockfd, void *buf, size_t len,
 		}
 	} // for ( ; ; )
 
-#ifdef CYGWIN
     if (set_non_blocking(sockfd, FALSE) == FAIL)
 	{
 		error("cannot unset socket non-blocking: %s", strerror(errno));
 		return FAIL;
     }
-#endif
 
 	return SUCCESS;
 }
@@ -169,20 +167,18 @@ udp_sendto(int sockfd, const void *buf, size_t len,
 	fd_set wset;
 	struct timeval tval;
 
-#ifdef CYGWIN
     if (set_non_blocking(sockfd, TRUE) == FAIL)
 	{
 		error("cannot set socket non-blocking: %s", strerror(errno));
 		return FAIL;
     }
-#endif
 
 	for ( ; ; ) {
 		int n = 0;
 
 #if defined(AIX5)
 		n = sendto(sockfd, buf, len, MSG_NONBLOCK, to, tolen);
-#elif defined(CYGWIN)
+#elif defined(CYGWIN) || defined(HPUX)
 		n = sendto(sockfd, buf, len, 0, to, tolen);
 #else
 		n = sendto(sockfd, buf, len, MSG_DONTWAIT, to, tolen);
@@ -224,13 +220,11 @@ udp_sendto(int sockfd, const void *buf, size_t len,
 		}
 	} // for ( ; ; )
 
-#ifdef CYGWIN
     if (set_non_blocking(sockfd, FALSE) == FAIL)
 	{
 		error("cannot unset socket non-blocking: %s", strerror(errno));
 		return FAIL;
     }
-#endif
 
 	return SUCCESS;
 }
