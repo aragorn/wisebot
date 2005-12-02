@@ -61,7 +61,7 @@ void open_error_log(const char* error_log, const char* query_log) {
 	if ((fpqlog = sb_fopen(query_log,"a")) == NULL){
 		crit("cannot open query log file %s: %s", query_log, strerror(errno));
 	}
-	setlinebuf(fpqlog);
+	setvbuf(fpqlog, (char*)NULL, _IOLBF, 0);
 
 	/* screen_log > 0이면 파일을 열지 않는다. 열지 않으면 기본으로 stderr로 찍음. */
 	if (screen_log) return;
@@ -71,7 +71,7 @@ void open_error_log(const char* error_log, const char* query_log) {
 		crit("server exits(1)");
 		exit(1);
 	}
-	setlinebuf(stderr);
+	setvbuf(stderr, (char*)NULL, _IOLBF, 0);
 
     return;
 }
@@ -103,7 +103,7 @@ void reopen_error_log(const char* error_log, const char* query_log)
 	if ((fpqlog = sb_fopen(query_log,"a")) == NULL){
 		crit("cannot open query log file %s: %s", query_log, strerror(errno));
 	}
-	setlinebuf(fpqlog);
+	setvbuf(fpqlog, (char*)NULL, _IOLBF, 0);
 
 	if (screen_log) return;
 
@@ -117,7 +117,7 @@ void reopen_error_log(const char* error_log, const char* query_log)
 		crit("server exits(1)");
 		exit(1);
 	}
-	setlinebuf(stderr);
+	setvbuf(stderr, (char*)NULL, _IOLBF, 0);
 
 	return;
 }
