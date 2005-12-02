@@ -16,6 +16,7 @@ all:
 	@echo " koma2c-install - required"
 	@echo " iconv-install - optional"
 	@echo " readline-install - optional"
+	@echo " ncurses-install - optional"
 	@echo "ex) make koma2c-install"
 ###############################################################################
 cvs-export: expat-export koma2c-export
@@ -44,6 +45,11 @@ readline-export:
 	cd readline-5.0 && \
 	./configure --prefix=$(prefix)
 
+ncurses-export:
+	[ -f ncurses-5.5/configure ] || (gzip -c -d ncurses-5.5.tar.gz | tar xf -)
+	cd ncurses-5.5 && \
+	./configure --prefix=$(prefix)
+
 ###############################################################################
 expat: expat-export
 	cd expat && make
@@ -56,6 +62,9 @@ iconv: iconv-export
 
 readline: readline-export
 	cd readline-5.0 && make
+
+ncurses: ncurses-export
+	cd ncurses-5.5 && make
 
 ###############################################################################
 expat-install: expat
@@ -70,6 +79,9 @@ iconv-install: iconv
 readline-install: readline
 	cd readline-5.0 && make install
 
+ncurses-install: ncurses
+	cd ncurses-5.5 && make install
+
 ###############################################################################
 expat-clean:
 	rm -rf expat
@@ -82,6 +94,9 @@ iconv-clean:
 
 readline-clean:
 	rm -rf readline-5.0
+
+ncurses-clean:
+	rm -rf ncurses-5.5
 
 ###############################################################################
 test:
