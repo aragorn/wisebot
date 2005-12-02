@@ -20,6 +20,25 @@ extern char proc_name[STRING_SIZE];
 SB_DECLARE(void) setproctitle(char *fmt, ...);
 #endif
 
+#if PF_ARGV_TYPE == PF_ARGV_PSTAT
+# ifdef HAVE_SYS_PSTAT_H
+#  include <sys/pstat.h>
+# else
+#  undef PF_ARGV_TYPE
+#  define PF_ARGV_TYPE PF_ARGV_WRITEABLE
+# endif /* HAVE_SYS_PSTAT_H */
+#endif /* PF_ARGV_PSTAT */
+
+#if PF_ARGV_TYPE == PF_ARGV_PSSTRINGS
+# ifndef HAVE_SYS_EXEC_H
+#  undef PF_ARGV_TYPE
+#  define PF_ARGV_TYPE PF_ARGV_WRITEABLE
+# else
+#  include <machine/vmparam.h>
+#  include <sys/exec.h>
+# endif /* HAVE_SYS_EXEC_H */
+#endif /* PF_ARGV_PSSTRINGS */
+
 SB_DECLARE_DATA extern char **g_argv;
 SB_DECLARE_DATA extern char *g_lastArgv;
 SB_DECLARE(void) init_set_proc_title(int argc, char *argv[], char *envp[]);
