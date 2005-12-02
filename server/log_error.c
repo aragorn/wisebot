@@ -45,6 +45,13 @@ static int  debug_module_policy=NO_POLICY;
 static int  debug_module_number=0;
 static char debug_module_name[DEBUG_MODULE_NUM][STRING_SIZE];
 
+#ifndef HAVE_SETLINEBUF
+void setlinebuf(FILE *stream)
+{
+	setvbuf(stream, (char*)NULL, _IOLBF, 0);
+}
+#endif
+
 #define DEBUG_LOG_ERROR
 //#undef DEBUG_LOG_ERROR
 

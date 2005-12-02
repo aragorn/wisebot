@@ -236,6 +236,7 @@ AC_CHECK_FUNCS( \
   mmap \
   mergesort \
   getaddrinfo \
+  setlinebuf \
 )
 
 
