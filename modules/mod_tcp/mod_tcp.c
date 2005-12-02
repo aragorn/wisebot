@@ -571,7 +571,7 @@ tcp_select_accept(int listenfd, int *sockfd,
 	return SUCCESS;
 }
 
-#ifdef CYGWIN
+#if defined(CYGWIN) || defined(HPUX)
 static int set_non_blocking(int s, int flag)
 {
   int socket_flags;
@@ -594,6 +594,8 @@ static int set_non_blocking(int s, int flag)
     return FAIL;
   } else return SUCCESS;
 }
+#else
+#  define set_non_blocking(s,flag) SUCCESS
 #endif
 
 static int tcp_recv_nonb (int sockfd, void *data, int len, int timeout)
@@ -604,23 +606,20 @@ static int tcp_recv_nonb (int sockfd, void *data, int len, int timeout)
 	struct timeval	tval;
 
 	if (len == 0) return SUCCESS;
-#ifdef CYGWIN
+
     if (set_non_blocking(sockfd, TRUE) == FAIL)
 	{
 		error("cannot set socket non-blocking: %s", strerror(errno));
 		return FAIL;
     }
-#endif
 
 	while ( 1 ) {
 		int n = 0;
 #if defined(AIX5)
 		n = recv(sockfd, ptr, size, MSG_NONBLOCK);
-#elif defined(CYGWIN)
+#elif defined(CYGWIN) || defined(HPUX)
 		/* CYGWIN does not seem to have MSG_DONTWAIT flag. */
 		n = recv(sockfd, ptr, size, 0);
-#elif defined(HPUX)
-		n = recv(sockfd, ptr, size, O_NONBLOCK);
 #else
 		n = recv(sockfd, ptr, size, MSG_DONTWAIT);
 #endif
@@ -681,13 +680,11 @@ static int tcp_recv_nonb (int sockfd, void *data, int len, int timeout)
 
 	} // while ( 1 )
 
-#ifdef CYGWIN
     if (set_non_blocking(sockfd, FALSE) == FAIL)
 	{
 		error("cannot unset socket non-blocking: %s", strerror(errno));
 		return FAIL;
     }
-#endif
 
 	return SUCCESS;
 }
@@ -699,24 +696,20 @@ static int tcp_send_nonb (int sockfd, void *data, int len, int timeout)
 	fd_set		wset;
 	struct timeval	tval;
 
-#ifdef CYGWIN
     if (set_non_blocking(sockfd, TRUE) == FAIL)
 	{
 		error("cannot set socket non-blocking: %s", strerror(errno));
 		return FAIL;
     }
-#endif
 
 	while ( 1 ) {
 		int n = 0;
 
 #if defined(AIX5)
 		n = send(sockfd, ptr, size, MSG_NONBLOCK);
-#elif defined(CYGWIN)
+#elif defined(CYGWIN) || defined(HPUX)
 		/* CYGWIN does not seem to have MSG_DONTWAIT flag. */
 		n = send(sockfd, ptr, size, 0);
-#elif defined(HPUX)
-		n = send(sockfd, ptr, size, O_NONBLOCK);
 #else
 		n = send(sockfd, ptr, size, MSG_DONTWAIT);
 #endif
@@ -769,13 +762,12 @@ static int tcp_send_nonb (int sockfd, void *data, int len, int timeout)
 		}
 
 	} // while ( 1 )
-#ifdef CYGWIN
+
     if (set_non_blocking(sockfd, FALSE) == FAIL)
 	{
 		error("cannot unset socket non-blocking: %s", strerror(errno));
 		return FAIL;
     }
-#endif
 
 	return SUCCESS;
 }
