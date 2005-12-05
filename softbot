@@ -109,8 +109,10 @@ wait_for()
 
 send_signal_all()
 {
-	local PID=$1 && shift
-	local SIGNAL=$2 && shift
+	local PID=$1
+	local SIGNAL=$2
+
+	shift; shift;
 	local NAME=$@
 
 	local COUNT=0
