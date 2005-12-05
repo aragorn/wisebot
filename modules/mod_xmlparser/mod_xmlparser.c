@@ -2,19 +2,24 @@
 #include "softbot.h"
 #include "mod_api/xmlparser.h"
 
+static int init_unicode_name = 0;
+
 static int init()
 {
-#if defined(AIX5) || defined(SOLARIS)
-	strcpy( unicode_name, "UTF-16LE" );
+	if ( !init_unicode_name ) {
+#if defined(AIX5) || defined(SOLARIS) || defined(HPUX)
+		strcpy( unicode_name, "UTF-16LE" );
 #else
-	strcpy( unicode_name, "UNICODE" );
+		strcpy( unicode_name, "UNICODE" );
 #endif
+	}
 	return SUCCESS;
 }
 
 static void get_unicode_name(configValue v)
 {
 	strncpy( unicode_name, v.argument[0], sizeof(unicode_name) );
+	init_unicode_name = 1;
 }
 
 static config_t config[] = {
