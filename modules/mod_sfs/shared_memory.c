@@ -16,7 +16,7 @@ int unmmap_memory(void* base_address, int size)
 	}
 #else
 	if(munmap(base_address, size) == -1) {
-		error("fail unmap");
+		error("fail unmap: %s", strerror(errno));
 		return FAIL;
 	}
 #endif

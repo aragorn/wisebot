@@ -195,9 +195,8 @@ int sfs_close(sfs_t* sfs)
 		info("sfs[%d] unload with [O_MMAP]", sfs->seq);
         unmmap_memory(sfs->base_ptr, sfs->super_block->size);
 		sfs->base_ptr = NULL;
-    }
-
-	unmmap_memory(sfs->super_block, sizeof(super_block_t));
+    } 
+	else unmmap_memory(sfs->super_block, sizeof(super_block_t));
 
 	sfs->type = O_UNLOAD;
 	sfs->super_block = (super_block_t*)sb_calloc(1, sizeof(super_block_t));
@@ -722,7 +721,14 @@ static int __mmap_sfs(sfs_t* sfs)
 		return SUCCESS;
 	}
 	else {
+		// HP-UX 에서 같은 영역을 2번이상 mmap 하게 되면 에러나는 문제가 있다.
+		// super_block 은 base_ptr 의 맨 앞 sizeof(super_block_t) byte 니까
+		// 이렇게 하자.
+		if ( unmmap_memory(sfs->super_block, sizeof(super_block_t)) != SUCCESS ) 
+			warn("unmmap failed. but continue...");
 		sfs->base_ptr = (char*)get_shared_memory(sfs->seq, sfs->fd, sfs->base_offset, sfs->super_block->size);
+		sfs->super_block = (super_block_t*) sfs->base_ptr;
+
 		if(sfs->base_ptr == NULL) {
 			error("get shared memory fail, sfs->seq[%d], sfs->fd[%d], sfs->base_offset[%d], sfs->super_block->size[%d]",
 					sfs->seq, sfs->fd, sfs->base_offset, sfs->super_block->size);
