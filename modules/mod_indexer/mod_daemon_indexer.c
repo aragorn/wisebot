@@ -217,7 +217,7 @@ static int is_full(mem_index_t *mem_index)
 	if (mem_index->idx >= max_doc_hit_list_num - max_word_hit_len)
 		return TRUE;
 
-	return FAIL;
+	return FALSE;
 }
 
 #define DOCUMENT_LOGGING_SIZE MAX_LOGGING_SKIP_DOCUMENTS * 16 /* sizeof("error 123456\n") ~= 16 */
@@ -491,7 +491,7 @@ static int indexer_main(slot_t *slot)
 		gettimeofday(&ts,NULL);
 		
 		// mem_index가 full이 될때까지 loop를 돈다.
-		while (is_full(&mem_index) == FALSE)
+		while (is_full(&mem_index) != TRUE)
 		{
 			if ( scoreboard->shutdown || scoreboard->graceful_shutdown) 
 				break;
