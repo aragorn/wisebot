@@ -544,7 +544,7 @@ static int wait_until_minimum_docid(slot_t *slot)
 		ret = acquire_lockn(rmac_semid, RMAC_LOCK); // 실패해도 good
 		slot->userptr = NOT_INDEXER_WAITING;
 		if ( ret != SUCCESS ) {
-			error( "lock acquire failed. but it's alright." );
+			warn( "lock acquire failed. but it's alright." );
 			continue;
 		}
 
