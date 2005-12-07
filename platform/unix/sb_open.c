@@ -24,7 +24,11 @@ SB_DECLARE(int) sb_open(const char *path, int flags, ...)
 	}
 
 	va_start(ap, flags);
+#ifdef HPUX
+	mode = (mode_t) va_arg(ap, int);
+#else
 	mode = va_arg(ap, mode_t);
+#endif
 	va_end(ap);
 
 	if ( O_CREAT&flags ) /* see end of open(2) DESCRIPTION */

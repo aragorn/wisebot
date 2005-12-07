@@ -230,7 +230,13 @@ module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, 
 
 	/* retrive the pointer to the module structure symbol 
 	 * through the module name */
+#ifdef HPUX
+	// HPUX 는 modhandle 로 dlsym() 을 호출하면 멈춰버린다.
+	// 이걸로 문제를 덮어둔다.
+	modsym = dlsym(RTLD_NEXT, mod_symbol_name);
+#else
 	modsym = dlsym(modhandle, mod_symbol_name);
+#endif
 	if (modsym == NULL && (error = dlerror()) != NULL) {
 		error("cannot locate(dlsym) API module structure symbol `%s' in file %s",
 				mod_symbol_name, modulename);
