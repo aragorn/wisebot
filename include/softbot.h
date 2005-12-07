@@ -26,7 +26,13 @@
 /* XXX install iconv library from srclib : make iconv-install
  *     we declare some iconv functions to be exported in server/sb.exp .
  */
-#include "iconv/iconv.h"
+#  ifdef SRCLIB_ICONV
+#    include "iconv/iconv.h"
+#  elif defined(USR_LOCAL_INCLUDE_ICONV)
+#    include "/usr/local/include/iconv.h"
+#  else
+#    include <iconv.h>
+#  endif
 SB_DECLARE(iconv_t) iconv_open (const char* tocode, const char* fromcode);
 SB_DECLARE(size_t) iconv(iconv_t cd,  const char** inbuf, size_t *inbytesleft, char* * outbuf, size_t *outbytesleft);
 SB_DECLARE(int) iconv_close(iconv_t cd);
