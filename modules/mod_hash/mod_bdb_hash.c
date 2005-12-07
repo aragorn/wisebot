@@ -478,7 +478,7 @@ static void _shutdown(int sig)
 
 	memset(&act, 0x00, sizeof(act));
 
-	act.sa_flags = SA_RESTART;
+//	act.sa_flags = SA_RESTART;
 	sigfillset(&act.sa_mask);
 
 	act.sa_handler = _do_nothing;
@@ -496,7 +496,7 @@ static void _graceful_shutdown(int sig)
 
 	memset(&act, 0x00, sizeof(act));
 
-	act.sa_flags = SA_RESTART;
+//	act.sa_flags = SA_RESTART;
 	sigfillset(&act.sa_mask);
 
 	act.sa_handler = _do_nothing;

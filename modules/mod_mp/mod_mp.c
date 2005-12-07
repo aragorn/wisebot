@@ -47,7 +47,7 @@ SB_DECLARE(int) sb_set_sighandlers(
 	struct sigaction act;
 
 	memset(&act, 0x00, sizeof(act));
-	act.sa_flags = SA_RESTART;
+//	act.sa_flags = SA_RESTART;
 	sigfillset(&act.sa_mask);
 
 	act.sa_handler = handler;
@@ -62,7 +62,7 @@ SB_DECLARE(int) sb_set_default_sighandlers(
 	struct sigaction act;
 
 	memset(&act, 0x00, sizeof(act));
-	act.sa_flags = SA_RESTART;
+//	act.sa_flags = SA_RESTART;
 	sigfillset(&act.sa_mask);
 	/* see set_sigaction() of server.c */
 	// We need to do sigfillset(act.sa_mask) for signal deferring.
