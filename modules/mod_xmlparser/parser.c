@@ -2,27 +2,26 @@
 #include "softbot.h"
 #include "parser.h"
 
-#if defined(AIX5)
-/* XXX iconv libary in /usr/lib has fatal error.
+/* XXX iconv libary in /usr/lib has fatal error on AIX.
  *     be sure to link lib/libiconv.a (install from srclib : make iconv-install)
  *     include include/iconv/iconv.h.
  *     see AIXPorting wiki page for more information.
  *     --aragorn, 2004/02/10
  */
+#ifdef SRCLIB_ICONV
 #  include "iconv/iconv.h"
-#elif defined (SOLARIS)
-/* this will include $(top_builddir)/include/iconv.h
- */
-#  include "iconv.h"
+#elif defined(USR_LOCAL_INCLUDE_ICONV)
+#  include "/usr/local/include/iconv.h"
 #else
 #  include <iconv.h>
 #endif
 
-#ifdef CYGWIN
-#  include "expat.h"
-#else
+#ifdef SRCLIB_EXPAT
 #  include "expat/expat.h"
+#else
+#  include <expat.h>
 #endif
+
 #include "stack.h"
 #include "dh.h"
 #include "checksum.h"

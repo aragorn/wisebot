@@ -60,6 +60,10 @@ AH_VERBATIM([1_NEAR_TOP__],[
 #undef AIX5
 #undef HPUX
 
+#undef SRCLIB_EXPAT
+#undef SRCLIB_ICONV
+#undef USR_LOCAL_INCLUDE_ICONV
+
 /* whether indexer saves forward index or not. default is NOT using it. */
 #define FORWARD_INDEX 0
 
@@ -186,6 +190,27 @@ AM_CONDITIONAL(FREEBSD, test x$SHORT_HOST = xfreebsd)
 AM_CONDITIONAL(SOLARIS, test x$SHORT_HOST = xsolaris)
 AM_CONDITIONAL(AIX5,    test x$SHORT_HOST = xaix5)
 AM_CONDITIONAL(HPUX,    test x$SHORT_HOST = xhpux)
+
+#########################################
+# srclib installation
+
+if test -f "include/expat/expat.h"; then
+	AC_DEFINE(SRCLIB_EXPAT,1)
+fi
+
+if test -f "include/iconv/iconv.h"; then
+	AC_DEFINE(SRCLIB_ICONV,1)
+fi
+
+if test -f "/usr/local/include/iconv.h"; then
+	AC_DEFINE(USR_LOCAL_INCLUDE_ICONV,1)
+fi
+
+AM_CONDITIONAL(SRCLIB_EXPAT, test -f "include/expat/expat.h")
+AM_CONDITIONAL(SRCLIB_ICONV, test -f "include/iconv/iconv.h")
+AM_CONDITIONAL(USR_LOCAL_LIB_ICONV, test -f "/usr/local/lib/libiconv.la")
+
+#########################################
 
 dnl ---------------------------------------------------------------------------
 

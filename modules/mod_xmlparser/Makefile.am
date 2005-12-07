@@ -7,15 +7,24 @@ pkglib_LTLIBRARIES = mod_xmlparser.la
 mod_xmlparser_la_SOURCES = mod_xmlparser.c parser.c \
 						   dh.c stack.c checksum.c \
 						   checksum.h dh.h parser.h stack.h
-if SOLARIS
-mod_xmlparser_la_LIBADD = $(libdir)/libexpat.la /usr/local/lib/libiconv.la
+
+if SRCLIB_ICONV
+LIBICONV_LA = $(libdir)/libiconv.la
 else
-if CYGWIN
-mod_xmlparser_la_LIBADD = 
+if USR_LOCAL_LIB_ICONV
+LIBICONV_LA = /usr/local/lib/libiconv.la
 else
-mod_xmlparser_la_LIBADD = $(libdir)/libexpat.la
+LIBICONV_LA =
 endif
 endif
+
+if SRCLIB_EXPAT
+LIBEXPAT_LA = $(libdir)/libexpat.la
+else
+LIBEXPAT_LA =
+endif
+
+mod_xmlparser_la_LIBADD = $(LIBEXPAT_LA) $(LIBICONV_LA)
 mod_xmlparser_la_LDFLAGS =-module -avoid-version
 mod_xmlparser_la_CFLAGS = $(EXPAT_INCLUDES) -fno-strict-aliasing
 
