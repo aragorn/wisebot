@@ -323,7 +323,7 @@ static int indexer_main(slot_t *slot)
 	socklen_t len;
 
 	/* data */
-	void *data; int size;
+	void *data = NULL; int size;
 	uint32_t last_registered_docid = 0, docid;
 
 	/* word db */
@@ -520,7 +520,7 @@ static int test_indexer_main(slot_t *slot)
 	socklen_t len;
 
 	/* data */
-	void *data; int size;
+	void *data = NULL; int size;
 	uint32_t last_registered_docid = 0, docid;
 
 	/* Ελ°θ */
