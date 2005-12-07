@@ -67,7 +67,7 @@ module *static_modules;
 
 int main(int argc, char* argv[], char* envp[])
 {
-	index_db_t* indexdb;
+	index_db_t* indexdb = NULL;
 	ifs_t* ifs;
 	int arg;
 	int exit_value = 0;
@@ -211,7 +211,7 @@ int main(int argc, char* argv[], char* envp[])
 	}
 
 end:
-	ifs_close(indexdb);
+	if ( indexdb != NULL ) ifs_close(indexdb);
 	free_ipcs();
 
 	return exit_value; 

@@ -324,6 +324,10 @@ int ifs_close(index_db_t* indexdb)
 		return DECLINE;
 
 	ifs = (ifs_t*) indexdb->db;
+	if ( ifs == NULL ) {
+		sb_free( indexdb );
+		return SUCCESS;
+	}
 
     for(i = 0; i < MAX_SEGMENT_COUNT*MAX_SECTOR_COUNT; i++) {
 		if(ifs->local.sfs[i] != NULL) {
