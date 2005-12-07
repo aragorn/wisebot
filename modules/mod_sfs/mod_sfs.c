@@ -724,9 +724,10 @@ static int __mmap_sfs(sfs_t* sfs)
 		// HP-UX 에서 같은 영역을 2번이상 mmap 하게 되면 에러나는 문제가 있다.
 		// super_block 은 base_ptr 의 맨 앞 sizeof(super_block_t) byte 니까
 		// 이렇게 하자.
+		int sfs_size = sfs->super_block->size;
 		if ( unmmap_memory(sfs->super_block, sizeof(super_block_t)) != SUCCESS ) 
 			warn("unmmap failed. but continue...");
-		sfs->base_ptr = (char*)get_shared_memory(sfs->seq, sfs->fd, sfs->base_offset, sfs->super_block->size);
+		sfs->base_ptr = (char*)get_shared_memory(sfs->seq, sfs->fd, sfs->base_offset, sfs_size);
 		sfs->super_block = (super_block_t*) sfs->base_ptr;
 
 		if(sfs->base_ptr == NULL) {
