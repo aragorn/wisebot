@@ -894,7 +894,7 @@ static void character_handler(void *data, const char *s, int len)
 	iconv_t iconv_handle = d->iconv_utf8_to_unknown;
 	size_t ibuflen, obuflen, ret;
 	char obuf[CONVERTING_UNIT_BYTE];
-#if defined (SOLARIS)
+#ifdef SRCLIB_ICONV
 	const char *iptr;
 #else
 	char *iptr;
@@ -940,7 +940,7 @@ static int convert_charset(void *data, const char *str)
 {
 	iconv_t iconv_handle = *(iconv_t *)data;
 	size_t ibuflen = 2, obuflen=4, done_count;
-#if defined (SOLARIS)
+#ifdef SRCLIB_ICONV
 	const char* iptr = str;
 #else
 	char *iptr = (char *)str;
