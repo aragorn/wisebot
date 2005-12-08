@@ -539,7 +539,7 @@ static int wait_until_minimum_docid(slot_t *slot)
 		usleep( INDEXER_WAIT_TIME );
 			
 		// NOT_INDEXER_WAITING은 lock을 가지고 setting해야 한다.
-		// signal_if_minimum_is_waiting()의 동작과 관련있다.
+		// signal_if_minimum_is_wait()의 동작과 관련있다.
 
 		ret = acquire_lockn(rmac_semid, RMAC_LOCK); // 실패해도 good
 		slot->userptr = NOT_INDEXER_WAITING;
