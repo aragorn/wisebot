@@ -7,7 +7,7 @@
 #include "mod_api/qp.h"
 #include "mod_api/tcp.h"
 #include "mod_api/rmas.h"
-
+#include "mod_api/docapi.h"
 #include "mod_vbm/mod_vbm.h"
 #include "mod_cdm/mod_cdm.h"
 #include "mod_qp/mod_qp.h"
@@ -28,6 +28,10 @@ static int word_db_set = -1;
 static word_db_t* word_db = NULL;
 static int b_log_query = 0; // != 0 이면 logs/query_log 에 검색쿼리 저장
 
+static int mCommentFieldNum=0;
+static char mCommentField[MAX_EXT_FIELD][SHORT_STRING_SIZE];
+static int Body_Field_No=-1;
+static int Title_Field_No=-1;
 /*****************************************************************************/
 static void make_querystr(char *formatted, int size, char *query, char *docAttr, int listcount, int page, char *sh);
 static int parse_dit(sb4_dit_t *sb4_dit, char *dit);
@@ -40,7 +44,7 @@ static char *get_field_and_ma_id_from_meta_data(char *sptr , char* field_name,  
 
 int TCPSendLongData(int sockfd, long size, void *data, int server_side); // this function is used by RMAS and RMAC
 int TCPRecvLongData(int sockfd, long size , void *data, int server_side); // this function is used by RMAS and RMAC
-
+void cut_string(char* text, int maxLen);
 #ifdef PROCESS_HANDLE
 static char *canned_doc = NULL;
 static char *org_doc = NULL;
@@ -2648,7 +2652,6 @@ static int sb4s_dispatch(int sockfd)
 {
 	int len, n;
 	char buf[SB4_MAX_SEND_SIZE+1];
-
 	n =  TCPRecvData(sockfd, buf, &len, TRUE);
 	if ( n != SUCCESS ) {
 		error("cannot recv opcode");
@@ -2716,7 +2719,9 @@ static int sb4s_dispatch(int sockfd)
 		return sb_run_sb4s_del_system_doc(sockfd);	
 	else if ( strncmp(buf, SB4_OP_SYSTEMDOC_COUNT, 3) == 0 )
 		return sb_run_sb4s_systemdoc_count(sockfd);
-			
+	/* add nate - khy */
+	else if ( strncmp(buf, SB4_OP_REQ_COMMENT, 3) == 0 )
+		return sb_run_sb4s_req_comment(sockfd);			
 	else {
 		warn("no handler for opcode[%s]", buf);
 		if ( TCPSendData(sockfd, SB4_OP_NAK, 3, TRUE) == FAIL ) {
@@ -3565,6 +3570,117 @@ int sb4s_del_system_doc(int sockfd)
 	
 	return SUCCESS;	
 }
+/****************************************************************************/
+static int sb4s_req_comment(int sockfd) 
+{
+	uint32_t docid;
+	int k, ret,  sizeleft, len, n;
+	char tmpbuf[STRING_SIZE], *tmpstr=NULL;
+	char comments[LONG_LONG_STRING_SIZE];
+	DocObject *doc;
+	
+	/* 1. receive OP_CODE */
+	// done
+	
+	/* 2. send ACK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+		error("cannot send ACK");
+		return FAIL;
+	}
+	/* 3. receive docid */
+	if ( TCPRecvData(sockfd, tmpbuf, &len, TRUE) == FAIL ) {
+		error("cannot recv docid");
+		return FAIL;
+	}
+	tmpbuf[len] = '\0';
+	docid = (uint32_t)atol(tmpbuf);
+
+	/* get comment */
+	ret = sb_run_doc_get(docid, &doc); 	
+	if (ret < 0) { 		
+	        sprintf(tmpbuf,"cannot get document object of document[%u]\n", docid);
+		send_nak_str(sockfd, tmpbuf); 
+		return FAIL;
+	} 
+
+        comments[0]='\0'; /* ready for strcat */
+	sizeleft = LONG_LONG_STRING_SIZE-1;
+	for (k=0; k<mCommentFieldNum; k++) {
+		#define max_comment_bytes 1024
+		tmpstr = NULL;
+		
+		ret = sb_run_doc_get_field(doc, NULL, mCommentField[k], &tmpstr);
+		if (ret < 0) {
+			error("doc_get_field error for doc[%d], field[%s]", docid, mCommentField[k]);
+			send_nak_str(sockfd, "doc_get_field error"); //리턴값수성
+			return FAIL;
+		}
+
+		strncat(comments,mCommentField[k],sizeleft);
+		sizeleft -= strlen(mCommentField[k]);
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+
+		strncat(comments,":",sizeleft);
+		sizeleft -= 1;
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+
+		// 길이가 너무 길면 좀 자른다. 한글 안다치게...
+		cut_string( tmpstr, max_comment_bytes );
+
+		strncat(comments,tmpstr,sizeleft);
+		sizeleft -= strlen(tmpstr);
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+		sb_free(tmpstr);
+
+		strncat(comments,";;",sizeleft);
+		sizeleft -= 2;
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+
+		if (sizeleft <= 0) {
+			error("comments size lack while pushing comment(field:%s, doc:%u)",
+			mCommentField[k], docid);
+			comments[LONG_LONG_STRING_SIZE-1] = '\0';
+			error("%s", comments);
+			send_nak_str(sockfd, "comments size lack while pushing comment");
+			break;
+		}
+	}
+	/* 4. send ACK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+		error("cannot send ACK");
+		return FAIL;
+	}
+	
+	/* 5. send data */
+	n = TCPSendData(sockfd, comments, strlen(comments), TRUE);
+	if ( n != SUCCESS ) {
+	       send_nak_str(sockfd,"cannot send comments");
+	       return FAIL;
+	}
+        INFO("GetDit:%s", comments);
+	return SUCCESS;
+}
+
+void cut_string(char* text, int maxLen){
+	int korCnt = 0, engIdx;
+	int textLen = strlen( text );	
+	if ( textLen <= maxLen )
+		return;
+	else 
+		textLen = maxLen;	
+	for ( engIdx = textLen; engIdx >= 0; engIdx-- ) {
+		if ( (signed char)text[engIdx] >= 0 ) 
+			break; // 0~127		
+		korCnt++;
+		continue;	
+	}	
+	if ( korCnt == 0 || korCnt % 2 == 1 )
+		text[textLen] = '\0';	
+	else 
+		text[textLen-1] = '\0';
+	return;
+}
+
 
 /****************************************************************************/
 static int send_nak(int sockfd, int error_code) // used only server side
@@ -3898,7 +4014,9 @@ static void register_hooks(void)
 	sb_hook_sb4s_set_log(sb4s_set_log, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_help(sb4s_help, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_rmas(sb4s_rmas, NULL, NULL, HOOK_MIDDLE);
-	
+	/* add nate -khy */
+	sb_hook_sb4s_req_comment(sb4s_req_comment, NULL, NULL, HOOK_MIDDLE);
+
 	sb_hook_sb4s_indexwords(sb4s_indexwords, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_tokenizer(sb4s_tokenizer, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_qpp(sb4s_qpp, NULL, NULL, HOOK_MIDDLE);
@@ -3937,10 +4055,47 @@ static void get_log_query(configValue v)
 	b_log_query = ( strcasecmp( v.argument[0], "true" ) == 0 );
 }
 
+static void get_commentfield(configValue v)
+{
+	int idx=0;
+
+	if (strncasecmp("Body",v.argument[1],SHORT_STRING_SIZE) == 0) {
+		Body_Field_No = atoi(v.argument[0]);
+
+	}
+	
+	if (strncasecmp("Title",v.argument[1],SHORT_STRING_SIZE) == 0) {
+		Title_Field_No = atoi(v.argument[0]);
+
+	}
+	
+	if (v.argNum < 7) return;
+
+	if (mCommentFieldNum >= MAX_EXT_FIELD) {
+		error("mCommentFieldNum(%d) >= MAX_EXT_FIELD(%d).",
+				mCommentFieldNum,MAX_EXT_FIELD);
+		error("Increase MAX_EXT_FIELD and recompile");
+		return;
+	}
+
+	if (strncasecmp("RETURN",v.argument[6],SHORT_STRING_SIZE) != 0) {
+		error("Field: %s %s, 5th column should RETURN or blank.. not [%s]",
+				v.argument[0],v.argument[1],v.argument[5]);
+		return;
+	}
+
+	idx = mCommentFieldNum;
+	strncpy(mCommentField[idx], v.argument[1], SHORT_STRING_SIZE);
+
+
+	mCommentFieldNum++;
+}
+
 static config_t config[] = {
 	CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
 	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDb Set 0~..."),
 	CONFIG_GET("LogQuery", get_log_query, 1, "if True, write query log to server.c/QueryLog"),
+	CONFIG_GET("Field",get_commentfield,VAR_ARG, "Field which needs to be shown in result"),
 	{NULL}
 };
 
