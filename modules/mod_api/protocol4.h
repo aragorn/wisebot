@@ -50,7 +50,8 @@
 #define SB4_OP_INDEX_LIST		"922"		// index list send
 #define SB4_OP_WORD_LIST		"923"		// word list send
 #define SB4_OP_SYSTEMDOC_COUNT		"924"   	//system doc count info
-#define SB4_OP_REQ_COMMENT		"925"   	//docid get comment
+#define SB4_OP_DID_REQ_COMMENT		"925"   	//docid get comment
+#define SB4_OP_OID_REQ_COMMENT		"926"   	//oid get comment
 
 #define SB4_OP_ACK		"ACK"
 #define SB4_OP_NAK		"NAK"
@@ -174,7 +175,8 @@ SB_DECLARE_HOOK(int,sb4s_index_list,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_word_list,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_del_system_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_systemdoc_count,(int sockfd))	
-SB_DECLARE_HOOK(int,sb4s_req_comment,(int sockfd))
+SB_DECLARE_HOOK(int,sb4s_did_req_comment,(int sockfd))
+SB_DECLARE_HOOK(int,sb4s_oid_req_comment,(int sockfd))
 
 int TCPSendData(int sockfd, void *data, int len, int server_side);
 int TCPRecvData(int sockfd, void *data, int *len, int server_side);

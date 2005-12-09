@@ -2720,8 +2720,10 @@ static int sb4s_dispatch(int sockfd)
 	else if ( strncmp(buf, SB4_OP_SYSTEMDOC_COUNT, 3) == 0 )
 		return sb_run_sb4s_systemdoc_count(sockfd);
 	/* add nate - khy */
-	else if ( strncmp(buf, SB4_OP_REQ_COMMENT, 3) == 0 )
-		return sb_run_sb4s_req_comment(sockfd);			
+	else if ( strncmp(buf, SB4_OP_DID_REQ_COMMENT, 3) == 0 )
+		return sb_run_sb4s_did_req_comment(sockfd);			
+	else if ( strncmp(buf, SB4_OP_OID_REQ_COMMENT, 3) == 0 )
+		return sb_run_sb4s_oid_req_comment(sockfd);	
 	else {
 		warn("no handler for opcode[%s]", buf);
 		if ( TCPSendData(sockfd, SB4_OP_NAK, 3, TRUE) == FAIL ) {
@@ -3570,8 +3572,9 @@ int sb4s_del_system_doc(int sockfd)
 	
 	return SUCCESS;	
 }
+
 /****************************************************************************/
-static int sb4s_req_comment(int sockfd) 
+static int sb4s_did_req_comment(int sockfd) 
 {
 	uint32_t docid;
 	int k, ret,  sizeleft, len, n;
@@ -3661,6 +3664,107 @@ static int sb4s_req_comment(int sockfd)
 	return SUCCESS;
 }
 
+/****************************************************************************/
+static int sb4s_oid_req_comment(int sockfd) 
+{
+	uint32_t docid;
+	char oid[STRING_SIZE];
+	int k, ret,  sizeleft, len, n;
+	char tmpbuf[STRING_SIZE], *tmpstr=NULL;
+	char comments[LONG_LONG_STRING_SIZE];
+	DocObject *doc;
+	
+	/* 1. receive OP_CODE */
+	// done
+	
+	/* 2. send ACK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+		error("cannot send ACK");
+		return FAIL;
+	}
+	/* 3. receive oid */
+	if ( TCPRecvData(sockfd, oid, &len, TRUE) == FAIL ) {
+		error("cannot recv docid");
+		return FAIL;
+	}
+	oid[len] = '\0';
+	
+
+	/* get docid */
+	ret = sb_run_get_docid(did_db, oid, &docid);
+	if (ret < 0) {
+		sprintf(tmpbuf,"cannot get document id: error[%d]\n", ret);
+		send_nak_str(sockfd, tmpbuf);
+		return FAIL;
+	}
+
+	/* get comment */
+	ret = sb_run_doc_get(docid, &doc); 	
+	if (ret < 0) { 		
+	        sprintf(tmpbuf,"cannot get document object of document[%u]\n", docid);
+		send_nak_str(sockfd, tmpbuf); 
+		return FAIL;
+	} 
+
+        comments[0]='\0'; /* ready for strcat */
+	sizeleft = LONG_LONG_STRING_SIZE-1;
+	for (k=0; k<mCommentFieldNum; k++) {
+		#define max_comment_bytes 1024
+		tmpstr = NULL;
+		
+		ret = sb_run_doc_get_field(doc, NULL, mCommentField[k], &tmpstr);
+		if (ret < 0) {
+			error("doc_get_field error for doc[%d], field[%s]", docid, mCommentField[k]);
+			send_nak_str(sockfd, "doc_get_field error"); //리턴값수성
+			return FAIL;
+		}
+
+		strncat(comments,mCommentField[k],sizeleft);
+		sizeleft -= strlen(mCommentField[k]);
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+
+		strncat(comments,":",sizeleft);
+		sizeleft -= 1;
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+
+		// 길이가 너무 길면 좀 자른다. 한글 안다치게...
+		cut_string( tmpstr, max_comment_bytes );
+
+		strncat(comments,tmpstr,sizeleft);
+		sizeleft -= strlen(tmpstr);
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+		sb_free(tmpstr);
+
+		strncat(comments,";;",sizeleft);
+		sizeleft -= 2;
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+
+		if (sizeleft <= 0) {
+			error("comments size lack while pushing comment(field:%s, doc:%u)",
+			mCommentField[k], docid);
+			comments[LONG_LONG_STRING_SIZE-1] = '\0';
+			error("%s", comments);
+			send_nak_str(sockfd, "comments size lack while pushing comment");
+			break;
+		}
+	}
+	/* 4. send ACK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+		error("cannot send ACK");
+		return FAIL;
+	}
+	
+	/* 5. send data */
+	n = TCPSendData(sockfd, comments, strlen(comments), TRUE);
+	if ( n != SUCCESS ) {
+	       send_nak_str(sockfd,"cannot send comments");
+	       return FAIL;
+	}
+        INFO("GetDit:%s", comments);
+	return SUCCESS;
+}
+
+/****************************************************************************/
 void cut_string(char* text, int maxLen){
 	int korCnt = 0, engIdx;
 	int textLen = strlen( text );	
@@ -4015,7 +4119,9 @@ static void register_hooks(void)
 	sb_hook_sb4s_help(sb4s_help, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_rmas(sb4s_rmas, NULL, NULL, HOOK_MIDDLE);
 	/* add nate -khy */
-	sb_hook_sb4s_req_comment(sb4s_req_comment, NULL, NULL, HOOK_MIDDLE);
+	sb_hook_sb4s_did_req_comment(sb4s_did_req_comment, NULL, NULL, HOOK_MIDDLE);
+	sb_hook_sb4s_oid_req_comment(sb4s_oid_req_comment, NULL, NULL, HOOK_MIDDLE);
+
 
 	sb_hook_sb4s_indexwords(sb4s_indexwords, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_tokenizer(sb4s_tokenizer, NULL, NULL, HOOK_MIDDLE);
