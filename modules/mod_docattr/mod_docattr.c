@@ -119,6 +119,11 @@ static int docattr_ptr_get(uint32_t docid, docattr_t **p_doc_attr)
 
 static int docattr_set(uint32_t docid, void *p_doc_attr)
 {
+	if ( docid >= max_doc_num ) {
+		error("docid[%u] is bigger than max_doc_num[%u]. modify config <mod_docattr.c> - MaxDocNum", docid, max_doc_num);
+		return FALSE;
+	}
+
 	memcpy(docattr_array+((int)docid-1)*DOCATTR_ELEMENT_SIZE,
 			p_doc_attr, DOCATTR_ELEMENT_SIZE);
 
@@ -157,6 +162,11 @@ static int docattr_set_array(uint32_t *did_list, int listsize,
 	void *ele;
 
 	for (i=0; i<listsize; i++) {
+		if ( did_list[i] >= max_doc_num ) {
+			error("docid[%u] is bigger than max_doc_num[%u]. modify config <mod_docattr.c> - MaxDocNum", did_list[i], max_doc_num);
+			return FALSE;
+		}
+
 		ele = docattr_array + (did_list[i]-1) * DOCATTR_ELEMENT_SIZE;
 		if ((ret = func(ele, mask)) < 0) {
 			continue;
