@@ -52,6 +52,7 @@
 #define SB4_OP_SYSTEMDOC_COUNT		"924"   	//system doc count info
 #define SB4_OP_DID_REQ_COMMENT		"925"   	//docid get comment
 #define SB4_OP_OID_REQ_COMMENT		"926"   	//oid get comment
+#define SB4_OP_GET_OID_FIELD		"927"   	//oid get txt
 
 #define SB4_OP_ACK		"ACK"
 #define SB4_OP_NAK		"NAK"
@@ -177,6 +178,7 @@ SB_DECLARE_HOOK(int,sb4s_del_system_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_systemdoc_count,(int sockfd))	
 SB_DECLARE_HOOK(int,sb4s_did_req_comment,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_oid_req_comment,(int sockfd))
+SB_DECLARE_HOOK(int,sb4s_get_oid_field,(int sockfd))
 
 int TCPSendData(int sockfd, void *data, int len, int server_side);
 int TCPRecvData(int sockfd, void *data, int *len, int server_side);

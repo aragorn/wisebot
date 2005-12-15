@@ -55,6 +55,7 @@ HOOK_STRUCT(
 	HOOK_LINK(sb4s_systemdoc_count)
 	HOOK_LINK(sb4s_did_req_comment)
 	HOOK_LINK(sb4s_oid_req_comment)
+	HOOK_LINK(sb4s_get_oid_field)
 )
 
 SB_IMPLEMENT_HOOK_RUN_ALL(int, protocol_open, (), (), SUCCESS, DECLINE)
@@ -133,3 +134,4 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_systemdoc_count,(int sockfd), (sockfd), DE
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_did_req_comment,(int sockfd), (sockfd), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_oid_req_comment,(int sockfd), (sockfd), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, sb4s_get_oid_field,(int sockfd), (sockfd), DECLINE)

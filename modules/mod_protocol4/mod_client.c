@@ -297,6 +297,64 @@ int sb4_com_get_field(int sockfd, char *arg)
 	return SUCCESS; 
 } 
 
+int sb4_com_get_oid_field(int sockfd, char *arg, void* did_db) 
+{ 
+	uint32_t docid; 
+	char oid[256]; 
+	char fieldname[256], *value; 
+	int n, ret,  len=0; 
+	DocObject *doc; 
+	char tmpbuf[LONG_STRING_SIZE];
+ 
+	// get argument 
+	n = sscanf(arg, "%s %s", oid, fieldname); 
+	if (n != 2) { 
+		printf("usage: getfield oid fieldname\n"); 
+		send_nak_str(sockfd, "usage: getfield oid fieldname\n");
+		return FAIL; 
+	} 
+	/* get docid */
+	ret = sb_run_get_docid(did_db, oid, &docid);
+	if (ret < 0) {
+		sprintf(tmpbuf,"cannot get document id: error[%d]\n", ret);
+		send_nak_str(sockfd, tmpbuf);
+		return FAIL;
+	}
+	n = sb_run_doc_get(docid, &doc); 
+	if (n < 0) { 
+		sprintf(tmpbuf,"cannot get document object of document[%u]\n", docid); 
+		send_nak_str(sockfd, tmpbuf); 
+		return FAIL; 
+	} 
+
+	n = sb_run_doc_get_field(doc, NULL, fieldname, &value); 
+	if (n < 0) { 
+		sprintf(tmpbuf, "cannot get field[%s] from document object\n", fieldname); 
+		send_nak_str(sockfd, tmpbuf);
+		return FAIL; 
+	} 
+
+ 	/* 4. send ACK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+		error("cannot send ACK");
+		sb_free(value);
+		return FAIL;
+	}
+
+	/* 5. send field data */
+	value[SB4_MAX_SEND_SIZE-1] = '\0';
+
+	if ( TCPSendData(sockfd, value, strlen(value), FALSE) == FAIL ) {
+		error("cannot send field size");
+		sb_free(value);
+		return FAIL;
+	}
+
+	sb_free(value); 
+	sb_run_doc_free(doc); 
+	
+	return SUCCESS; 
+} 
 
 int sb4_com_tokenizer (int sockfd, char *arg)
 {

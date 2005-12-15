@@ -24,6 +24,7 @@ int sb4_com_index_list(int sockfd, char *arg, char *field, int count);
 int sb4_com_get_word_by_wordid (int sockfd, char *arg, void* word_db);
 int sb4_com_del_system_doc (int sockfd, char *arg);
 int sb4_com_doc_count(int sockfd);
+int sb4_com_get_oid_field(int sockfd, char *arg, void* did_db); 
 static int get_str_item(char *dest, char *dit, char *key, char delimiter, int len);
 
 #endif

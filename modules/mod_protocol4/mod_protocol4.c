@@ -2657,7 +2657,6 @@ static int sb4s_dispatch(int sockfd)
 		error("cannot recv opcode");
 		return FAIL;
 	}
-
 	if ( strncmp(buf, SB4_OP_REGISTER_DOC, 3) == 0 )
 		return sb_run_sb4s_register_doc(sockfd);
 	else if ( strncmp(buf, SB4_OP_REGISTER_DOC2, 3) == 0 )
@@ -2724,6 +2723,8 @@ static int sb4s_dispatch(int sockfd)
 		return sb_run_sb4s_did_req_comment(sockfd);			
 	else if ( strncmp(buf, SB4_OP_OID_REQ_COMMENT, 3) == 0 )
 		return sb_run_sb4s_oid_req_comment(sockfd);	
+	else if ( strncmp(buf, SB4_OP_GET_OID_FIELD, 3) == 0 )
+		return sb_run_sb4s_get_oid_field(sockfd);			
 	else {
 		warn("no handler for opcode[%s]", buf);
 		if ( TCPSendData(sockfd, SB4_OP_NAK, 3, TRUE) == FAIL ) {
@@ -3287,6 +3288,32 @@ int sb4s_get_field(int sockfd)
 	return SUCCESS;		
 }
 
+int sb4s_get_oid_field(int sockfd)
+{
+	int len, nRet;
+	char tmpbuf[STRING_SIZE];
+
+	/* 1. receive OP_CODE */
+	// done
+	
+	/* 2. send ACK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+		error("cannot send ACK");
+		return FAIL;
+	}
+
+	/* 3. receive oid, field¸í */
+	if ( TCPRecvData(sockfd, tmpbuf, &len, TRUE) == FAIL ) {
+		error("cannot recv docid, field¸í");
+		return FAIL;
+	}
+	tmpbuf[len] = '\0';
+	/* get field */
+	nRet = sb4_com_get_oid_field(sockfd, tmpbuf, did_db);
+
+	return SUCCESS;		
+}
+
 int sb4s_undel_doc(int sockfd)
 {
 	int len, nRet;
@@ -3660,7 +3687,7 @@ static int sb4s_did_req_comment(int sockfd)
 	       send_nak_str(sockfd,"cannot send comments");
 	       return FAIL;
 	}
-        INFO("GetDit:%s", comments);
+       // INFO("GetDit:%s", comments);
 	return SUCCESS;
 }
 
@@ -3760,7 +3787,7 @@ static int sb4s_oid_req_comment(int sockfd)
 	       send_nak_str(sockfd,"cannot send comments");
 	       return FAIL;
 	}
-        INFO("GetDit:%s", comments);
+        //INFO("GetDit:%s", comments);
 	return SUCCESS;
 }
 
@@ -4121,6 +4148,8 @@ static void register_hooks(void)
 	/* add nate -khy */
 	sb_hook_sb4s_did_req_comment(sb4s_did_req_comment, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_oid_req_comment(sb4s_oid_req_comment, NULL, NULL, HOOK_MIDDLE);
+	sb_hook_sb4s_get_oid_field(sb4s_get_oid_field, NULL, NULL, HOOK_MIDDLE);
+	
 
 
 	sb_hook_sb4s_indexwords(sb4s_indexwords, NULL, NULL, HOOK_MIDDLE);
