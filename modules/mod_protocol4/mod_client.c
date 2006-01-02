@@ -340,14 +340,29 @@ int sb4_com_get_oid_field(int sockfd, char *arg, void* did_db)
 		sb_free(value);
 		return FAIL;
 	}
-
-	/* 5. send field data */
 	value[SB4_MAX_SEND_SIZE-1] = '\0';
+	if ( strlen(value) == 0 )
+	{
+          	sprintf(tmpbuf, "cannot get field[%s] from document object-size zero!!\n", fieldname);
+		send_nak_str(sockfd, tmpbuf);
+	}
+	else
+	{
+  	        /* 4. send ACK */
+	        if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+	                error("cannot send ACK");
+			sb_run_doc_free(doc);
+	                sb_free(value);
+	                return FAIL;
+	        }
 
-	if ( TCPSendData(sockfd, value, strlen(value), FALSE) == FAIL ) {
-		error("cannot send field size");
-		sb_free(value);
-		return FAIL;
+	        /* 5. send field data */
+		if ( TCPSendData(sockfd, value, strlen(value), FALSE) == FAIL ) {
+			error("cannot send field size");
+			sb_free(value);
+			sb_run_doc_free(doc);
+			return FAIL;
+		}
 	}
 
 	sb_free(value); 
@@ -1580,4 +1595,3 @@ module client_module = {
 	NULL,					/* scoreboard */
 	NULL					/* register hook api */
 };
-
