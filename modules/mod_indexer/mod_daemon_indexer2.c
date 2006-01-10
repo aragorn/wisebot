@@ -72,10 +72,10 @@ static FILE* idxlog_fp = NULL;
 static char idxlog_path[MAX_PATH_LEN] = "logs/indexer_log";
 static void write_indexer_log(const char* type, const char* format, ...);
 static void (*sighup_handler)(int sig) = NULL;
-#define ERROR_INDEXER_LOG(format, ...) \
+#define IDXLOG_ERROR(format, ...) \
 	error(format, ##__VA_ARGS__); \
 	write_indexer_log("error", format, ##__VA_ARGS__);
-#define INFO_INDEXER_LOG(format, ...) \
+#define IDXLOG_INFO(format, ...) \
 	info(format, ##__VA_ARGS__); \
 	write_indexer_log("info", format, ##__VA_ARGS__);
 
@@ -406,7 +406,7 @@ static int indexer_main(slot_t *slot)
 		ret = recv_from_rmac(sockfd, &data, &docid, &size);
 		if (ret == SKIP_DOCUMENT) 
 		{
-			ERROR_INDEXER_LOG("document skip, docid[%d]", docid);
+			IDXLOG_ERROR("document skip, docid[%d]", docid);
 			ADD_AND_SEND_AND_CLOSE(ret);
 			continue;
 		}
@@ -426,7 +426,7 @@ static int indexer_main(slot_t *slot)
 		}
 
 		if ( indexer_shared->last_indexed_docid >= docid ) {
-			ERROR_INDEXER_LOG("last_indexed_docid[%d] is greater than docid[%d]", indexer_shared->last_indexed_docid, docid);
+			IDXLOG_ERROR("last_indexed_docid[%d] is greater than docid[%d]", indexer_shared->last_indexed_docid, docid);
 		    SEND_RET_AND_CLOSE(ret);
 			continue;
 		}
@@ -435,14 +435,14 @@ static int indexer_main(slot_t *slot)
 		ret = save_to_indexdb( indexdb, word_db, docid, wordhits_storage, max_word_hit, data, size );
 
 		if (ret != SUCCESS) {
-			ERROR_INDEXER_LOG("save_to_indexdb() error, docid[%d]", docid);
+			IDXLOG_ERROR("save_to_indexdb() error, docid[%d]", docid);
 			ADD_AND_SEND_AND_CLOSE(ret);
 			continue;
 		}
 		else { /* SUCCESS */
 			/* every saving time, word db is also saved */
 //			sb_run_sync_word_db(&gWordDB);  // lexicon 전체가 mmap을 쓰기 때문에 일단은..
-			INFO_INDEXER_LOG("docid[%d] indexed", docid);
+			IDXLOG_INFO("docid[%d] indexed", docid);
 			add_result_document(docid, SUCCESS);
 		    SEND_RET_AND_CLOSE(ret);
 		}

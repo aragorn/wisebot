@@ -59,8 +59,18 @@ char meta_doc[DOCUMENT_SIZE];
 static int rglog_lock = -1;
 static FILE* rglog_fp = NULL;
 static char rglog_path[MAX_PATH_LEN] = "logs/register_log";
-static void write_register_log(const char* type, const char* format, ...);
 static void (*sighup_handler)(int sig) = NULL;
+
+static void write_register_log(const char* type, const char* format, ...);
+#define RGLOG_INFO(format, ...) \
+	info(format, ##__VA_ARGS__); \
+	write_register_log("info", format, ##__VA_ARGS__);
+#define RGLOG_WARN(format, ...) \
+	warn(format, ##__VA_ARGS__); \
+	write_register_log("warn", format, ##__VA_ARGS__);
+#define RGLOG_ERROR(format, ...) \
+	error(format, ##__VA_ARGS__); \
+	write_register_log("error", format, ##__VA_ARGS__);
 
 static int init()
 {
@@ -1118,16 +1128,13 @@ static int sb4s_register_doc(int sockfd)
 	if (sb4_dit.PT[0] != '\0' && strcmp(sb4_dit.PT, "CDM") == 0) {
 		body_size = sb_run_buffer_getsize(&var_buf); 
 		if (body_size > DOCUMENT_SIZE-1) {
-			error("too big document");
-			write_register_log("error", "too big document. OID[%s]", sb4_dit.OID);
+			RGLOG_ERROR("too big document. OID[%s]", sb4_dit.OID);
 			sb_run_buffer_freebuf(&var_buf);
 			return FAIL;
 		}
 		n = sb_run_buffer_get(&var_buf, 0, body_size, canned_doc); 
 		if ( n < 0 ) {
-			error("cannot get var_buf from variable buffer");
-			write_register_log("error",
-					"cannot get var_buf from variable buffer. OID [%s]", sb4_dit.OID);
+			RGLOG_ERROR("cannot get var_buf from variable buffer. OID [%s]", sb4_dit.OID);
 			sb_run_buffer_freebuf(&var_buf);
 			return FAIL;
 		}
@@ -1365,9 +1372,7 @@ protocol_cdm:
 
 	n = sb_run_buffer_append(&var_buf, strlen(canned_doc), canned_doc); 
 	if ( n < 0 ) {
-		error("out of memory during regiter transformed canned document");
-		write_register_log("error",
-				"out of memory during register document. OID[%s]", sb4_dit.OID);
+		RGLOG_ERROR("out of memory during register document. OID[%s]", sb4_dit.OID);
 		sb_run_buffer_freebuf(&var_buf); 
 		return FAIL;
 	}
@@ -1436,23 +1441,19 @@ protocol_cdm:
 	sb_run_buffer_freebuf(&var_buf); 
 	switch ( n ) {
 		case CDM_NOT_WELL_FORMED_DOC:
-			write_register_log("error",
-					"cannot register canned document[%s]. not well formed document", sb4_dit.OID);
+			RGLOG_ERROR("cannot register canned document[%s]. not well formed document", sb4_dit.OID);
 			break;
 		case CDM_STORAGE_FULL:
-			write_register_log("error",
-					"cdm storage is full. document[%s] is not registered", sb4_dit.OID);
+			RGLOG_ERROR("cdm storage is full. document[%s] is not registered", sb4_dit.OID);
 			break;
 		case CDM_DELETE_OLD:
-			write_register_log("info",
-					"doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
+			RGLOG_INFO("doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
 			break;
 		case SUCCESS:
-			write_register_log("info", "OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+			RGLOG_INFO("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
 			break;
 		default:
-			write_register_log("error",
-					"cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
+			RGLOG_ERROR("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
 			break;
 	}
 
@@ -1569,9 +1570,7 @@ static int sb4s_register_doc2(int sockfd)
 		/* recv BODY */
 		do {
 			if ( TCPRecv(sockfd, &header, buf, TRUE) != SUCCESS ) {
-				error("error occur while receiving var_buf");
-				write_register_log("error", "error occur while receiving var_buf. OID[%s]",
-						sb4_dit.OID);
+				RGLOG_ERROR("error occur while receiving var_buf. OID[%s]", sb4_dit.OID);
 				sb_run_buffer_freebuf(&var_buf); 
 				return FAIL;
 			}
@@ -1580,9 +1579,7 @@ static int sb4s_register_doc2(int sockfd)
 
 			n = sb_run_buffer_append(&var_buf, len, buf); 
 			if ( n < 0 ) {
-				error("out of memory during appending body[error:%d]", n);
-				write_register_log("error", "out of memory during append body. OID[%s]",
-						sb4_dit.OID);
+				RGLOG_ERROR("out of memory during append body. OID[%s]", sb4_dit.OID);
 				sb_run_buffer_freebuf(&var_buf); 
 				if ( send_nak_with_message(sockfd, "insufficient memory") != SUCCESS ) return FAIL;
 				break;
@@ -1599,23 +1596,19 @@ static int sb4s_register_doc2(int sockfd)
 
 		switch ( n ) {
 			case CDM_NOT_WELL_FORMED_DOC:
-				write_register_log("error",
-						"cannot register canned document[%s]. not well formed document", sb4_dit.OID);
+				RGLOG_ERROR("cannot register canned document[%s]. not well formed document", sb4_dit.OID);
 				break;
 			case CDM_STORAGE_FULL:
-				write_register_log("error",
-						"cdm storage is full. document[%s] is not registered", sb4_dit.OID);
+				RGLOG_ERROR("cdm storage is full. document[%s] is not registered", sb4_dit.OID);
 				break;
 			case CDM_DELETE_OLD:
-				write_register_log("info",
-						"doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
+				RGLOG_INFO("doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
 				break;
 			case SUCCESS:
-				write_register_log("info", "OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+				RGLOG_INFO("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
 				break;
 			default:
-				write_register_log("error",
-						"cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
+				RGLOG_ERROR("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
 				break;
 		}
 
@@ -1785,13 +1778,71 @@ int sb4c_delete_oid(int sockfd, char *oid)
 	return SUCCESS;
 }
 
-#define MAX_DOC_SPLIT			64
+#define MAX_DOC_SPLIT 64
+static int delete_with_oid(char* oid)
+{
+	uint32_t docid;
+	int n, i, failed;
+	char tmp[STRING_SIZE];
+
+	/* get document id */
+	warn("del oid = %s", oid);
+	if ((n = sb_run_get_docid(did_db, oid, &docid)) < 0 &&
+			n != DOCID_NOT_REGISTERED) {
+		RGLOG_ERROR("cannot get docid of OID[%s]", oid);
+		return FAIL;
+	}
+
+	if (n == DOCID_NOT_REGISTERED) {
+		failed = 0;
+		for (i=1; i<=MAX_DOC_SPLIT; i++) {
+			if (failed == 3) break;
+
+			/* generate new docid (oid if document is splitted) */
+			sprintf(tmp, "%s-%d", oid, i);
+
+			/* get document id */
+			if ((n = sb_run_get_docid(did_db, tmp, &docid)) > 0) {
+				docattr_mask_t docmask;
+
+				DOCMASK_SET_ZERO(&docmask);
+				sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
+				sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
+
+				RGLOG_INFO("document [%u], OID[%s] is deleted", docid, tmp);
+
+				continue;
+			}
+			else if (n == DOCID_NOT_REGISTERED) {
+				failed++;
+			}
+			else {
+				RGLOG_ERROR("cannot get docid of OID[%s]", oid);
+				return FAIL;
+			}
+		}
+
+		if ( i == failed ) 
+			RGLOG_WARN("document OID[%s] is not deleted", oid);
+	}
+	/* delete mark to docattr */
+	else {
+		docattr_mask_t docmask;
+
+		DOCMASK_SET_ZERO(&docmask);
+		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
+		sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
+
+		RGLOG_INFO("document [%u], OID[%s] is deleted", docid, oid);
+	}
+
+	return SUCCESS;
+}
+
 int sb4s_delete_oid(int sockfd)
 {
 	char buf[STRING_SIZE];
-	char tmp[STRING_SIZE];
-	int i, len, n, failed;
-	uint32_t docid;
+	int len, n;
 
 	/* 1. Recv OP_CODE */
 	/* 2. Send ACK NAK */
@@ -1809,77 +1860,70 @@ int sb4s_delete_oid(int sockfd)
 	}
 	buf[len] = '\0';
 
-	/* get document id */
-	warn("del oid = %s", buf);
-	if ((n = sb_run_get_docid(did_db, buf, &docid)) < 0 &&
-			n != DOCID_NOT_REGISTERED) {
-		error("cannot get_docid from oid[%s]", buf);
-		send_nak(sockfd, SB4_ERT_RECV_DATA);
-		return FAIL;
-	}
-
 	/* 4. Send OP_ACK for successful receiving of docid */
 	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) == FAIL ) {
 		error("cannot send OP_ACK");
 		return FAIL;
 	}
 
-	/* delte doc of cdm */
-#if 0
-	n = sb_run_server_canneddoc_delete(docid);
-	if ( n < 0 ) {
+	n = delete_with_oid(buf);
+	if ( n != SUCCESS ) {
+		send_nak(sockfd, SB4_ERT_RECV_DATA);
 		return FAIL;
-	}
-#endif
-
-	/* if no docid */
-	if (n == DOCID_NOT_REGISTERED) {
-		failed = 0;
-		for (i=1; i<=MAX_DOC_SPLIT; i++) {
-			if (failed == 3) break;
-
-			/* generate new docid (oid if document is splitted) */
-			sprintf(tmp, "%s-%d", buf, i);
-
-			/* get document id */
-			if ((n = sb_run_get_docid(did_db, tmp, &docid)) > 0) {
-				docattr_mask_t docmask;
-
-				DOCMASK_SET_ZERO(&docmask);
-				sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
-				sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
-
-				write_register_log("info", "document [%u], OID[%s] is deleted", docid, tmp);
-
-				continue;
-			}
-			else if (n == DOCID_NOT_REGISTERED) {
-				failed++;
-			}
-			else {
-				error("cannot get new docid");
-				return FAIL;
-			}
-		}
-
-		if ( i == failed ) 
-			write_register_log("warn", "document OID[%s] is not deleted", docid, buf);
-	}
-	/* delete mark to docattr */
-	else {
-		docattr_mask_t docmask;
-
-		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
-		sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
-
-		write_register_log("info", "document [%u], OID[%s] is deleted", docid, buf);
 	}
 
 	/* 5. Send ACK NAK */
 	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) == FAIL ) {
 		error("cannot send OP_ACK");
 		return FAIL;
+	}
+	
+	return SUCCESS;
+}
+
+int sb4s_delete_oid2(int sockfd)
+{
+	char buf[STRING_SIZE];
+	int len, n, oid_count;
+
+	/* 1. Recv OP_CODE */
+	/* 2. Send ACK NAK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) == FAIL ) {
+		error("cannot send OP_ACK");
+		return FAIL;
+	}
+
+	/* 3. Recv OID count*/
+	n = TCPRecvData(sockfd, buf, &len, TRUE);
+	if ( n != SUCCESS ) {
+		error("cannot recv OID count");
+		send_nak(sockfd, SB4_ERT_RECV_DATA);
+		return FAIL;
+	}
+	buf[len] = '\0';
+	oid_count = atoi(buf);
+
+	while ( oid_count-- ) {
+		/* 4. Recv OID */
+		n = TCPRecvData(sockfd, buf, &len, TRUE);
+		if ( n != SUCCESS ) {
+			error("cannot recv OID");
+			send_nak(sockfd, SB4_ERT_RECV_DATA);
+			return FAIL;
+		}
+		buf[len] = '\0';
+
+		n = delete_with_oid(buf);
+		if ( n != SUCCESS ) {
+			send_nak(sockfd, SB4_ERT_RECV_DATA);
+			return FAIL;
+		}
+
+		/* 5. Send ACK NAK */
+		if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) == FAIL ) {
+			error("cannot send OP_ACK");
+			return FAIL;
+		}
 	}
 	
 	return SUCCESS;
@@ -2096,7 +2140,7 @@ int sb4s_delete_doc(int sockfd)
 	debug("you want to delete document");
 	for (i=0; i<j; i++) {
 		debug("%u", docid[i]);
-		write_register_log("info", "document [%u] is deleted", docid[i]);
+		RGLOG_INFO("document [%u] is deleted", docid[i]);
 	}
 
 	{
@@ -2669,6 +2713,8 @@ static int sb4s_dispatch(int sockfd)
 		return sb_run_sb4s_delete_doc(sockfd);
 	else if ( strncmp(buf, SB4_OP_DELETE_OID, 3) == 0 )
 		return sb_run_sb4s_delete_oid(sockfd);
+	else if ( strncmp(buf, SB4_OP_DELETE_OID2, 3) == 0 )
+		return sb_run_sb4s_delete_oid2(sockfd);
 /*	else if ( strncmp(buf, SB4_OP_REGISTER_DOCS, 3) == 0 )*/
 /*		return sb_run_sb4s_register_docs(sockfd); */
 	else if ( strncmp(buf, SB4_OP_SEARCH_DOC, 3) == 0 )
@@ -4130,6 +4176,7 @@ static void register_hooks(void)
 	sb_hook_sb4s_set_docattr(sb4s_set_docattr,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_delete_doc(sb4s_delete_doc,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_delete_oid(sb4s_delete_oid,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_sb4s_delete_oid2(sb4s_delete_oid2,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_search_doc(sb4s_search_doc,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_search2_doc(sb4s_search2_doc,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_sb4s_last_docid(sb4s_last_docid,NULL,NULL,HOOK_MIDDLE);

@@ -19,7 +19,8 @@
 #define SB4_OP_EXTRACT_FOREIGN_ID	"205"
 #define SB4_OP_DELETE_DOC			"402"
 #define SB4_OP_DELETE_OID			"404"
-#define SB4_OP_DELETE_SYSTEM_DOC		"405"
+#define SB4_OP_DELETE_SYSTEM_DOC	"405"
+#define SB4_OP_DELETE_OID2			"406"	// 여러개의 문서삭제
 #define SB4_OP_SEARCH_DOC			"700"
 #define SB4_OP_SEARCH2_DOC          "701"
 #define SB4_OP_EXTRACT_BODY			"903"
@@ -27,15 +28,15 @@
 #define SB4_OP_RMA_DOC				"800"
 
 
-#define SB4_OP_LOG 			"901"  	// log
-#define SB4_OP_HELP 			"902"		// help
-#define SB4_OP_RMAS 			"903"   	// rmas
-#define SB4_OP_INDEXWORDS		"904"    	// indexwords
-#define SB4_OP_TOKENIZER 		"905"    	// tokenizer
-#define SB4_OP_QPP			"906"    	// qpp
-#define SB4_OP_CLIENT_MEMSTAT		"907"    	// client_memstat
-#define SB4_OP_DEL_SPOOL_FRONT		"908"	    	// delete_spool_front
-#define SB4_OP_SHOW_SPOOL		"909"    	// showspool
+#define SB4_OP_LOG 					"901"  	// log
+#define SB4_OP_HELP 				"902"	// help
+#define SB4_OP_RMAS 				"903"   // rmas
+#define SB4_OP_INDEXWORDS			"904"   // indexwords
+#define SB4_OP_TOKENIZER 			"905"   // tokenizer
+#define SB4_OP_QPP					"906"   // qpp
+#define SB4_OP_CLIENT_MEMSTAT		"907"   // client_memstat
+#define SB4_OP_DEL_SPOOL_FRONT		"908"	// delete_spool_front
+#define SB4_OP_SHOW_SPOOL			"909"   // showspool
 #define SB4_OP_GET_DOCATTR		"910"    	// documentdatabase_docattr_get
 #define SB4_OP_GET_CDM_SIZE		"911"    	// getsize
 #define SB4_OP_GET_ABSTRACT		"912"    	// getabstract
@@ -148,6 +149,7 @@ SB_DECLARE_HOOK(int,sb4s_get_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_set_docattr,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_delete_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_delete_oid,(int sockfd))
+SB_DECLARE_HOOK(int,sb4s_delete_oid2,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_search_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_search2_doc,(int sockfd))
 SB_DECLARE_HOOK(int,sb4s_dispatch,(int sockfd))

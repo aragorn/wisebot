@@ -302,7 +302,7 @@ int sb4_com_get_oid_field(int sockfd, char *arg, void* did_db)
 	uint32_t docid; 
 	char oid[256]; 
 	char fieldname[256], *value; 
-	int n, ret,  len=0; 
+	int n, ret; 
 	DocObject *doc; 
 	char tmpbuf[LONG_STRING_SIZE];
  
