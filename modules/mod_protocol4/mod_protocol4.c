@@ -2771,6 +2771,8 @@ static int sb4s_dispatch(int sockfd)
 		return sb_run_sb4s_oid_req_comment(sockfd);	
 	else if ( strncmp(buf, SB4_OP_GET_OID_FIELD, 3) == 0 )
 		return sb_run_sb4s_get_oid_field(sockfd);			
+	else if ( strncmp(buf, SB4_OP_INDEXWORDS2, 3) == 0 )
+		return sb_run_sb4s_indexwords2(sockfd);
 	else {
 		warn("no handler for opcode[%s]", buf);
 		if ( TCPSendData(sockfd, SB4_OP_NAK, 3, TRUE) == FAIL ) {
@@ -3123,6 +3125,40 @@ int sb4s_indexwords(int sockfd)
 
 	return SUCCESS;
 	
+}
+
+int sb4s_indexwords2(int sockfd)
+{
+	int len, nRet;
+	char tmpbuf[STRING_SIZE];
+
+	/* 1. receive OP_CODE */
+	// done
+	
+	/* 2. send ACK */
+	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+                error("cannot send ACK");
+                return FAIL;
+        }
+
+	/* 3. receive command(morpid, string) */
+        if ( TCPRecvData(sockfd, tmpbuf, &len, TRUE) == FAIL ) {
+                error("cannot recv command");
+                return FAIL;
+        }
+        tmpbuf[len] = '\0';
+
+	/* 4. send ACK */
+        if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
+                error("cannot send ACK");
+                return FAIL;
+        }
+
+        /* get indexwords */
+        nRet = sb4_com_index_word_extractor2(sockfd, tmpbuf);
+
+        return SUCCESS;
+
 }
 
 int sb4s_tokenizer(int sockfd)
@@ -4196,6 +4232,7 @@ static void register_hooks(void)
 	sb_hook_sb4s_did_req_comment(sb4s_did_req_comment, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_oid_req_comment(sb4s_oid_req_comment, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sb4s_get_oid_field(sb4s_get_oid_field, NULL, NULL, HOOK_MIDDLE);
+	sb_hook_sb4s_indexwords2(sb4s_indexwords2, NULL, NULL, HOOK_MIDDLE);
 	
 
 

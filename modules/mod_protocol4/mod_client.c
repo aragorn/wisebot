@@ -517,6 +517,65 @@ int sb4_com_index_word_extractor (int sockfd, char *arg)
 	return 0;
 }
 
+int sb4_com_index_word_extractor2 (int sockfd, char *arg)
+{
+        char *text=NULL,*idstr=NULL;
+        index_word_t indexwords[100];
+        index_word_extractor_t *extractor=NULL;
+        int i=0, n=0, id=0, len = 0;
+        char tmpbuf[LONG_STRING_SIZE];
+
+        if (strlen(arg) == 0) {
+                send_nak_str(sockfd,"Non Format");
+                return FAIL;
+        }
+
+        idstr = arg;
+        text = strchr(arg,' ');
+        if (text == NULL)  {
+                send_nak_str(sockfd,"Non Format");
+                return FAIL;
+        }
+        *text = '\0';
+        text++;
+
+        id = atoi(idstr);
+
+        info("id:%d, text:%s \n", id, text);
+
+        extractor = sb_run_new_index_word_extractor(id);
+        if ( extractor == NULL || extractor == (index_word_extractor_t*)MINUS_DECLINE ) return FAIL;
+        sb_run_index_word_extractor_set_text(extractor, text);
+
+        n=sb_run_get_index_words(extractor, indexwords, 100);
+        info("n:%d", n);
+	
+
+        /* 5. send word cnt */
+/*        sprintf(tmpbuf, "%d", n);
+        len = strlen(tmpbuf);
+
+        if ( TCPSendData(sockfd, tmpbuf, len, FALSE) == FAIL ) {
+               error("cannot send word cnt");
+               return FAIL;
+        }
+*/
+        memset(tmpbuf, 0x00, LONG_STRING_SIZE);
+        for (i=0; i<n; i++) {
+                strcat(tmpbuf, indexwords[i].word);
+		strcat(tmpbuf, "^");
+        }
+	/* 6. send word info */
+	len = strlen(tmpbuf);
+	if ( TCPSendData(sockfd, tmpbuf, len, FALSE) == FAIL ) {
+		error("cannot send word info");
+		return FAIL;
+	}
+
+        sb_run_delete_index_word_extractor(extractor);
+
+        return 0;
+}
 
 int sb4_com_qpp (int sockfd, char *arg, void* word_db)
 {
