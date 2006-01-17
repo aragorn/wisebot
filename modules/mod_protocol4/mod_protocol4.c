@@ -942,6 +942,8 @@ void print_docid_oid_log(uint32_t docid, char *oid)
 
 
 /*#define DEBUG_REGISTER_DOC 1*/
+/* socket error 받으면 shutdown signal 을 받은 경우일거고
+ * NAK 보내지 않고 바로 끊어버린다 */
 static int sb4s_register_doc(int sockfd)
 {
 	int n=0, len=0, body_size=0, meta_size=0;
@@ -1010,7 +1012,7 @@ static int sb4s_register_doc(int sockfd)
 	n = TCPRecvData(sockfd, buf, &len, TRUE);
 	if ( n != SUCCESS ) {
 		error("cannot recv DIT");
-		send_nak(sockfd, SB4_ERT_RECV_DATA);
+		//send_nak(sockfd, SB4_ERT_RECV_DATA);
 		return FAIL;
 	}
 	buf[len] = '\0';
@@ -1032,7 +1034,7 @@ static int sb4s_register_doc(int sockfd)
 	/* send OP_ACK for successful receiving of DIT */
 	n = TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE);
 	if ( n != SUCCESS ) {
-		send_nak(sockfd, SB4_ERT_SEND_ACK);
+		//send_nak(sockfd, SB4_ERT_SEND_ACK);
 		return FAIL;
 	}
 #ifdef DEBUG_REGISTER_DOC
@@ -1052,7 +1054,7 @@ static int sb4s_register_doc(int sockfd)
 		do {
 			if ( TCPRecv(sockfd, &header, buf, TRUE) != SUCCESS ) {
 				error("error occur while receiving meta_buf");
-				send_nak(sockfd, SB4_ERT_RECV_DATA);
+				//send_nak(sockfd, SB4_ERT_RECV_DATA);
 				return FAIL;
 			}
 	
@@ -1070,7 +1072,7 @@ static int sb4s_register_doc(int sockfd)
 		/* send OP_ACK for successful receiving of metainfo */
 		n = TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE);
 		if ( n != SUCCESS ) {
-			send_nak(sockfd, SB4_ERT_SEND_ACK);
+			//send_nak(sockfd, SB4_ERT_SEND_ACK);
 			sb_run_buffer_freebuf(&meta_buf); 
 			return FAIL;
 		}
@@ -1081,7 +1083,7 @@ static int sb4s_register_doc(int sockfd)
 	do {
 		if ( TCPRecv(sockfd, &header, buf, TRUE) != SUCCESS ) {
 			error("error occur while receiving var_buf");
-			send_nak(sockfd, SB4_ERT_RECV_DATA);
+			//send_nak(sockfd, SB4_ERT_RECV_DATA);
 			return FAIL;
 		}
 
@@ -1107,7 +1109,7 @@ static int sb4s_register_doc(int sockfd)
 	/* send OP_ACK for successful receiving of BODY */
 	n = TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE);
 	if ( n != SUCCESS ) {
-		send_nak(sockfd, SB4_ERT_SEND_ACK);
+		//send_nak(sockfd, SB4_ERT_SEND_ACK);
 		sb_run_buffer_freebuf(&var_buf); 
 		return FAIL;
 	}
@@ -1457,11 +1459,7 @@ protocol_cdm:
 			break;
 	}
 
-	if ( n < 0 ) {
-		error("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
-		return FAIL;
-	}
-	else info("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+	if ( n < 0 ) return FAIL;
 	
 	if (sb4_dit.RID[0]) {
 		docattr_mask_t docmask;
@@ -1494,6 +1492,8 @@ protocol_cdm:
 }
 
 /*#define DEBUG_REGISTER_DOC 1*/
+/* socket error 받으면 shutdown signal 을 받은 경우일거고
+ * NAK 보내지 않고 바로 끊어버린다 */
 static int sb4s_register_doc2(int sockfd)
 {
 	int n=0, len=0;
@@ -1526,7 +1526,7 @@ static int sb4s_register_doc2(int sockfd)
 		n = TCPRecvData(sockfd, buf, &len, TRUE);
 		if ( n != SUCCESS ) {
 			error("cannot recv DIT");
-			send_nak(sockfd, SB4_ERT_RECV_DATA);
+			//send_nak(sockfd, SB4_ERT_RECV_DATA);
 			return FAIL;
 		}
 		buf[len] = '\0';
@@ -1559,7 +1559,10 @@ static int sb4s_register_doc2(int sockfd)
 
 		/* send OP_ACK for successful receiving of DIT */
 		n = TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE);
-		if ( n != SUCCESS ) return FAIL;
+		if ( n != SUCCESS ) {
+			error("cannot send DIT ACK");
+			return FAIL;
+		}
 
 		n = sb_run_buffer_initbuf(&var_buf); 
 		if ( n != SUCCESS ) {
@@ -1568,6 +1571,7 @@ static int sb4s_register_doc2(int sockfd)
 		}
 
 		/* recv BODY */
+		sb_assert( n == SUCCESS );
 		do {
 			if ( TCPRecv(sockfd, &header, buf, TRUE) != SUCCESS ) {
 				RGLOG_ERROR("error occur while receiving var_buf. OID[%s]", sb4_dit.OID);
@@ -1575,19 +1579,27 @@ static int sb4s_register_doc2(int sockfd)
 				return FAIL;
 			}
 
-			len = atoi(header.size);
+			/* 다른 문서는 계속 등록해야 하니까
+			 * 일단 받을 건 다 받고 에러를 출력해야 한다. */
+			if ( n == SUCCESS ) {
+				len = atoi(header.size);
 
-			n = sb_run_buffer_append(&var_buf, len, buf); 
-			if ( n < 0 ) {
-				RGLOG_ERROR("out of memory during append body. OID[%s]", sb4_dit.OID);
-				sb_run_buffer_freebuf(&var_buf); 
-				if ( send_nak_with_message(sockfd, "insufficient memory") != SUCCESS ) return FAIL;
-				break;
+				n = sb_run_buffer_append(&var_buf, len, buf); 
+				if ( n < 0 ) {
+					RGLOG_ERROR("out of memory during append body. OID[%s]", sb4_dit.OID);
+					break;
+				}
 			}
-			memset(buf, 0, (SB4_MAX_SEND_SIZE+1));// 이거 없으면 register script 에 문제발생?
+
+			// 이거 없으면 register script 에 문제발생?
+			memset(buf, 0, (SB4_MAX_SEND_SIZE+1));
 		} while (header.tag == SB4_TAG_CONT);
 
-		if ( n < 0 ) continue;
+		if ( n < 0 ) {
+			sb_run_buffer_freebuf(&var_buf); 
+			if ( send_nak_with_message(sockfd, "insufficient memory") != SUCCESS ) return FAIL;
+			continue;
+		}
 
 		/************** fixed part *************************/
 		
@@ -1613,11 +1625,9 @@ static int sb4s_register_doc2(int sockfd)
 		}
 
 		if ( n < 0 ) {
-			error("cannot register document[%s] because of error(%d)", sb4_dit.OID, n);
 			if ( send_nak_with_message(sockfd, "cdm register failed") != SUCCESS ) return FAIL;
 			continue;
 		}
-		else info("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
 		
 		if (sb4_dit.RID[0]) {
 			docattr_mask_t docmask;
