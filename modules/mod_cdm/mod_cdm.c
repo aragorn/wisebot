@@ -369,11 +369,10 @@ int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc) {
 	while (dwCurrentDBOffset + iSize > dwMaxDBFileSize) {
 		un_lock(fdDBFile[ditNo], SEEK_SET, 0, 0);
 
-		cdm_shared->currentDBNo++;
-		ditNo = cdm_shared->currentDBNo;
+		ditNo = cdm_shared->currentDBNo + 1;
 
 		if (ditNo == dwMaxDBFileNum) {
-			error("database is full! (dit file number needs to modified)");
+			error("database is full! (<mod_cdm.c> max_db_file_num needs to modified)");
 			return FAIL;
 		}
 
@@ -388,6 +387,8 @@ int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc) {
 			un_lock(fdDBFile[ditNo], SEEK_SET, 0, 0);
 			return FAIL;
 		}
+
+		cdm_shared->currentDBNo = ditNo;
 	}
 	/* insert infomation about this document to index file */
 	indexElement.docId = docId;
@@ -516,11 +517,10 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId,
 	while (dwCurrentDBOffset + iSize > dwMaxDBFileSize) {
 		un_lock(fdDBFile[ditNo], SEEK_SET, 0, 0);
 
-		cdm_shared->currentDBNo++;
-		ditNo = cdm_shared->currentDBNo;
+		ditNo = cdm_shared->currentDBNo + 1;
 
-		if (ditNo == dwMaxDBFileNum) {
-			error("database is full! (dit file number needs to modified)");
+		if (ditNo >= dwMaxDBFileNum) {
+			error("database is full! (<mod_cdm.c> max_db_file_num needs to modified)");
 			err_ret = CDM_STORAGE_FULL;
 		    goto return_fail;
 		}
@@ -536,6 +536,8 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId,
 			un_lock(fdDBFile[ditNo], SEEK_SET, 0, 0);
 		    goto return_fail;
 		}
+
+		cdm_shared->currentDBNo = ditNo;
 	}
 	/* insert infomation about this document to index file */
 	indexElement.dwDBNo = ditNo;
