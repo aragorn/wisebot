@@ -1907,7 +1907,7 @@ int sb4s_delete_oid2(int sockfd)
 	n = TCPRecvData(sockfd, buf, &len, TRUE);
 	if ( n != SUCCESS ) {
 		error("cannot recv OID count");
-		send_nak(sockfd, SB4_ERT_RECV_DATA);
+		//send_nak(sockfd, SB4_ERT_RECV_DATA);
 		return FAIL;
 	}
 	buf[len] = '\0';
@@ -1918,7 +1918,7 @@ int sb4s_delete_oid2(int sockfd)
 		n = TCPRecvData(sockfd, buf, &len, TRUE);
 		if ( n != SUCCESS ) {
 			error("cannot recv OID");
-			send_nak(sockfd, SB4_ERT_RECV_DATA);
+			//send_nak(sockfd, SB4_ERT_RECV_DATA);
 			return FAIL;
 		}
 		buf[len] = '\0';
