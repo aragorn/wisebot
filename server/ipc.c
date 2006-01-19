@@ -80,13 +80,17 @@ static int is_really_allocated_ipc(ipc_t *ipc, const char *file, char *caller)
 int _acquire_lock(int semid,int idx,const char *file,const char* caller)
 {
 	struct sembuf semopt;
+	int n;
 
 	semopt.sem_num = idx;
 	semopt.sem_op = -1;
 
 	/* process exit시에 kernel이 sem value를 adjusting할 수 있게 */
 	semopt.sem_flg = SEM_UNDO;
-	if (semop(semid,&semopt,1) == -1) {
+	/* interrupt 는 무시하고 계속 기다린다 */
+	while ( (n=semop(semid,&semopt,1)) == -1 && errno == EINTR );
+
+	if (n == -1) {
 		error("semop failed while acquiring lock(file=%s,caller=%s): %s",
 				file, caller, strerror(errno));
 		return FAIL;
