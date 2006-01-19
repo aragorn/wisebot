@@ -170,29 +170,18 @@ int log_setlevelstr(const char* levelstr)
 
 static void acquire_loglock(int semid)
 {
-	struct sembuf semopt;
-
 	if ((screen_log > 0) || (semid < 0)) return;
 
-	semopt.sem_num = 0;
-	semopt.sem_op = -1;
-	semopt.sem_flg = SEM_UNDO;
-	if (semop(semid,&semopt,1) == -1) {
-		perror("acquire_loglock error. semop(semid=%d) returned -1: ");
+	if (acquire_lock(semid) != SUCCESS) {
+		perror("acquire_loglock error: ");
 	}
 }
 static void release_loglock(int semid)
 {
-	struct sembuf semopt;
-
 	if ((screen_log > 0) || (semid < 0)) return;
 
-	semopt.sem_num = 0;
-	semopt.sem_op = 1;
-	semopt.sem_flg = SEM_UNDO;
-
-	if (semop(semid,&semopt,1) == -1) {
-		perror("release_loglock error. semop(semid=%d) returned -1: ");
+	if (release_lock(semid) != SUCCESS) {
+		perror("release_loglock error: ");
 	}
 }
 
