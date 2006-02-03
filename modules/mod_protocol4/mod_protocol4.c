@@ -1587,8 +1587,8 @@ static int sb4s_register_doc2(int sockfd)
 				n = sb_run_buffer_append(&var_buf, len, buf); 
 				if ( n < 0 ) {
 					RGLOG_ERROR("out of memory during append body. OID[%s]", sb4_dit.OID);
-					break;
 				}
+				else n = SUCCESS;
 			}
 
 			// 이거 없으면 register script 에 문제발생?
