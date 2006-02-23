@@ -41,6 +41,7 @@ static int get_long_item (char *dit, char *key, char delimiter);
 static int send_nak(int sockfd, int error_code);
 static int send_nak_with_message(int sockfd, char* message);
 static char *get_field_and_ma_id_from_meta_data(char *sptr , char* field_name,  int *id);
+static int delete_with_oid(char* oid);
 
 int TCPSendLongData(int sockfd, long size, void *data, int server_side); // this function is used by RMAS and RMAC
 int TCPRecvLongData(int sockfd, long size , void *data, int server_side); // this function is used by RMAS and RMAC
@@ -1533,6 +1534,24 @@ static int sb4s_register_doc2(int sockfd)
 
 		// ACK 이 오면 이제 그만~~
 		if ( strncmp( buf, SB4_OP_ACK, 3 ) == 0 ) break;
+
+		// DEL- 이면 삭제처리
+		if ( strncmp( buf, "DEL-", 4 ) == 0 ) {
+			n = delete_with_oid(buf+4);
+			if ( n != SUCCESS ) {
+				if ( send_nak_with_message(sockfd, "delete failed") != SUCCESS ) return FAIL;
+				continue;
+			}
+
+			/* 삭제 끝나고 ACK */
+			n = TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE);
+			if ( n != SUCCESS ) {
+				error("cannot send DEL ACK");
+				return FAIL;
+			}
+
+			continue;
+		}
 
 		/* parse DIT */
 		memset(&sb4_dit, 0, sizeof(sb4_dit_t));
