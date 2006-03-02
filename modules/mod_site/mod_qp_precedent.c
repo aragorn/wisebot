@@ -144,6 +144,14 @@ static int docattr_filtering(docattr_cond_t *cond, char *attrquery)
 			}
 		}
 
+		get_str_item(buf, query, "MIGANOPEN:", '&', STRING_SIZE);
+		if (buf[0]) {
+			sprintf(key, "%d:%s", i, "MIGANOPEN");
+			if (sb_run_docattr_set_doccond_function(cond, key, buf) == -1) {
+				break;
+			}
+		}
+
 		get_str_item(buf, query, "DEL:", '&', STRING_SIZE);
 		if (buf[0]) {
 			sprintf(key, "%d:%s", i, "DEL");

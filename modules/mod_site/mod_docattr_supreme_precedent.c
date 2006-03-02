@@ -49,6 +49,8 @@ static int compare_function(void *dest, void *cond, uint32_t docid) {  /* °Ë»ö½Ã
                 continue;
             if (doccond->rows[i].won != 0 && docattr->won != doccond->rows[i].won)
                 continue;
+			if (doccond->rows[i].miganopen != 0 && docattr->miganopen != doccond->rows[i].miganopen)
+				continue;
             if (doccond->rows[i].del != 0 && docattr->del != doccond->rows[i].del)
                 continue;
             if (doccond->rows[i].close != 0 && docattr->close != doccond->rows[i].close)
@@ -212,6 +214,10 @@ static int mask_function(void *dest, void *mask) {
         docattr->won = docmask->won;
     }
 
+	if (docmask->set_miganopen) {
+		docattr->miganopen = docmask->miganopen;
+	}
+
     if (docmask->set_del) {
         docattr->del = docmask->del;
     }
@@ -280,6 +286,10 @@ static int set_docattr_function(void *dest, char *key, char *value)
         docattr->won =
             (uint8_t)return_constants_value(value, strlen(value));
     }
+    else if (strcasecmp(key, "MIGANOPEN") == 0) {
+        docattr->miganopen =
+            (uint8_t)return_constants_value(value, strlen(value));
+    }
     else if (strcasecmp(key, "DEL") == 0) {
         docattr->del =
             (uint8_t)return_constants_value(value, strlen(value));
@@ -331,6 +341,9 @@ static int get_docattr_function(void *dest, char *key, char *buf, int buflen)
     }
     else if (strcasecmp(key, "WON") == 0) {
         snprintf(buf, buflen, "%u",docattr->won);
+    }
+    else if (strcasecmp(key, "MIGANOPEN") == 0) {
+        snprintf(buf, buflen, "%u",docattr->miganopen);
     }
     else if (strcasecmp(key, "DEL") == 0) {
         snprintf(buf, buflen, "%u",docattr->del);
@@ -426,6 +439,10 @@ static int set_doccond_function(void *dest, char *key, char *value)
         doccond->rows[row-1].won =
             return_constants_value(value, strlen(value));
     }
+    else if (strcmp(key, "MIGANOPEN") == 0) {
+        doccond->rows[row-1].miganopen =
+            return_constants_value(value, strlen(value));
+    }
     else if (strcmp(key, "DEL") == 0) {
         doccond->rows[row-1].del =
             return_constants_value(value, strlen(value));
@@ -448,8 +465,8 @@ static int set_doccond_function(void *dest, char *key, char *value)
 #ifdef DEBUG_SOFTBOTD
     { int i;
     for (i=0; i<doccond->rownum; i++) {
-        CRIT("[%d]CourtType: %d, Gan: %d Won: %d Del: %d Close: %d", doccond->rownum, doccond->rows[i].courttype,
-              doccond->rows[i].gan, doccond->rows[i].won, doccond->rows[i].del, doccond->rows[i].close);
+        CRIT("[%d]CourtType: %d, Gan: %d Won: %d MiganOpen: %d Del: %d Close: %d", doccond->rownum, doccond->rows[i].courttype,
+              doccond->rows[i].gan, doccond->rows[i].won, doccond->rows[i].miganopen, doccond->rows[i].del, doccond->rows[i].close);
         CRIT("\t[%d]LawType:%d", doccond->rows[i].nlawtype, doccond->rows[i].lawtype[0]);
     }
     }
@@ -513,6 +530,11 @@ static int set_docmask_function(void *dest, char *key, char *value)
         docmask->won =
             (uint8_t)return_constants_value(value, strlen(value));
         docmask->set_won = 1;
+    }
+    else if (strcasecmp(key, "MIGANOPEN") == 0) {
+        docmask->miganopen =
+            (uint8_t)return_constants_value(value, strlen(value));
+        docmask->set_miganopen = 1;
     }
     else if (strcasecmp(key, "DEL") == 0) {
         docmask->del =

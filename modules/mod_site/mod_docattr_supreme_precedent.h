@@ -15,13 +15,15 @@ typedef struct {
 	uint8_t won:2; 
 	uint8_t del:2; 
 	uint8_t close:2; 
-	uint32_t court:32;
-	int32_t pronouncedate:32; 
-	uint16_t casenum1:16;
-	uint32_t casenum3:32;
+	uint32_t court;
+	int32_t pronouncedate; 
+	uint16_t casenum1;
+	uint32_t casenum3;
 	char casenum2[16];
 	char casename[16];
-	char rsv2[16];
+	uint8_t miganopen:2; // 2006/02 미간행 공개판결
+	uint8_t rsv:6;
+	char rsv2[15];
 } __attribute__((packed)) supreme_court_attr_t;
 
 #define MAX_LAWTYPE_NUM		8
@@ -29,6 +31,7 @@ typedef struct _supreme_row{
 	uint8_t courttype;
 	uint8_t gan; 
 	uint8_t won; 
+	uint8_t miganopen;
 	uint8_t del; 
 	uint8_t close; 
 	uint32_t court;
@@ -72,6 +75,9 @@ typedef struct {
 
 	uint8_t set_won;
 	uint8_t won; 
+
+	uint8_t set_miganopen;
+	uint8_t miganopen;
 
 	uint8_t set_del;
 	uint8_t del; 
