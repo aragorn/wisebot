@@ -992,6 +992,7 @@ static int pushLeftEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 	index_word_t indexwords[MAX_QPP_INDEXED_WORDS+1];/* dirty hack */
 	QueryNode within, qnode;
 	int num_of_words=0, i=0, rv=0;
+	char tmp_string[MAX_WORD_LEN];
 
 	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN);
 
@@ -1012,7 +1013,6 @@ static int pushLeftEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 		return SUCCESS;
 	}
 
-	char tmp_string[MAX_WORD_LEN];
 	bigram_word_copy(tmp_string, indexwords[0].word, MAX_WORD_LEN, 0);
 	snprintf(indexwords[num_of_words].word, MAX_WORD_LEN, "%s%s", "\\<", tmp_string);
 	indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
@@ -1054,6 +1054,7 @@ static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 	index_word_t indexwords[MAX_QPP_INDEXED_WORDS+2];/* dirty hack */
 	QueryNode within, qnode;
 	int num_of_words=0, i=0, rv=0;
+	char tmp_string[MAX_WORD_LEN];
 
 	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN);
 	DEBUG("original_word:%s, MAX_QPP_INDEXED_WORDS:%d",
@@ -1078,7 +1079,6 @@ static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 
 	DEBUG("num_of_words:%d", num_of_words);
 
-	char tmp_string[MAX_WORD_LEN];
 	bigram_word_copy(tmp_string, indexwords[0].word, MAX_WORD_LEN, 0);
 	snprintf(indexwords[num_of_words].word, MAX_WORD_LEN, "%s%s", "\\<", tmp_string);
 	indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
