@@ -221,9 +221,11 @@ int table_move_logical_segment(table_t* table, int lstart, int ldest)
 	if ( lstart > ldest ) {
 		for ( i = ldest; i < lstart; i++ ) {
 			int p = table->logical_index[i];
+			int state;
+
 			if ( p < 0 ) continue;
 
-			int state = table_get_physical_segment_state(table, p);
+			state = table_get_physical_segment_state(table, p);
 			if ( state != ALLOCATED ) {
 				warn("physical segment[%d] is in wrong state[%d], expected[%d]",
 						p, state, ALLOCATED);
