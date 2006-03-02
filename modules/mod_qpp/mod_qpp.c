@@ -930,6 +930,7 @@ static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_q
 	int num_of_words=0, i=0, rv=0;
 	index_word_t indexwords[MAX_QPP_INDEXED_WORDS];
 	QueryNode within, qnode;
+	char tmp_string[MAX_WORD_LEN];
 
 	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN);
 	extractor = sb_run_new_index_word_extractor(20);
@@ -949,7 +950,6 @@ static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_q
 		return SUCCESS;
 	}
 
-	char tmp_string[MAX_WORD_LEN];
 	bigram_word_copy(tmp_string, indexwords[num_of_words-1].word,
 					MAX_WORD_LEN, 2);
 	snprintf(indexwords[num_of_words].word, MAX_WORD_LEN, "%s%s", tmp_string, "\\>");
