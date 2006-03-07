@@ -4326,9 +4326,15 @@ static void get_commentfield(configValue v)
 		return;
 	}
 
+	if (strncasecmp("SUM",v.argument[6],SHORT_STRING_SIZE) == 0 ||
+	    strncasecmp("SUM_OR_FIRST",v.argument[6],SHORT_STRING_SIZE) == 0 ) {
+		info("Field: %s %s, 5th column is same blank option. [%s]", v.argument[0],v.argument[1],v.argument[6]);
+		return;
+	}
+
 	if (strncasecmp("RETURN",v.argument[6],SHORT_STRING_SIZE) != 0) {
 		error("Field: %s %s, 5th column should RETURN or blank.. not [%s]",
-				v.argument[0],v.argument[1],v.argument[5]);
+				v.argument[0],v.argument[1],v.argument[6]);
 		return;
 	}
 
