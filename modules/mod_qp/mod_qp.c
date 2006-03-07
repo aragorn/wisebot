@@ -42,10 +42,13 @@ static void show_dochitlist(doc_hit_t dochits[], uint32_t start, uint32_t nelm,
 }
 #endif
 
-static int mCommentFieldNum=0;
-static char mCommentField[MAX_EXT_FIELD][SHORT_STRING_SIZE];
-static int Body_Field_No=-1;
-static int Title_Field_No=-1;
+
+///////////////////////////////////////////////////////////
+// field의 갯수 
+static int field_count = 0;
+static field_info_t field_info[MAX_EXT_FIELD];
+///////////////////////////////////////////////////////////
+
 static int mNeedSum=TRUE; // TRUE(1), FALSE(-1)
 
 enum DbType {
@@ -590,6 +593,7 @@ static index_list_t *read_index_list(index_list_t *list)
 					{
 						nWordHit ++;
 						
+#if 0 //정시욱 - 사용하지 않는다.
 #ifdef _TITLE_HIT_						
 printf("doc(%ld):%s  %ld\n", list->doc_hits[i].id, sb_strbin(list->doc_hits[i].hits[j].std_hit.field,sizeof(uint32_t)), list->doc_hits[i].hits[j].std_hit.field );
 						
@@ -597,6 +601,7 @@ printf("doc(%ld):%s  %ld\n", list->doc_hits[i].id, sb_strbin(list->doc_hits[i].h
 							Title_hit = Title_hit + 100;
 printf("Title_hit:%d(%d)\n", Title_hit, field);		
 #endif					
+#endif
 					}
 					
 					
@@ -2021,16 +2026,9 @@ void cut_string(char* text, int maxLen)
 #define COMMENT_SIZE 10 /* words */
 static void fill_title_and_comment(request_t *req)
 {
-	int i=0,j=0,k=0,ret=0, last=0, m=0, nCheck=0, sum_pos=0, n=0;
+	int i=0, j=0, k=0, last=0;
 	uint32_t docid=0;
-	int searched_list_size=0,tmp=0;
-	char *tmpstr=NULL;
-	char szCom[210];
-	DocObject *docBody; 
-	char *value; 
-
-	RetrievedDoc rdoc[MAX_NUM_RETRIEVED_DOC];
-	DocObject    *doc[MAX_NUM_RETRIEVED_DOC] = {NULL};
+	int searched_list_size=0;
 
 	if ( req->result_list == NULL || req->result_list->ndochits == 0) {
 		info("no searched result");
@@ -2040,9 +2038,10 @@ static void fill_title_and_comment(request_t *req)
 	if ( req->result_list->ndochits <  req->first_result ) {
 		searched_list_size = 0;
 	} else {
+        int tmp = 0;
 		tmp = req->result_list->ndochits - req->first_result;
 
-		searched_list_size = (tmp > req->list_size) ? req->list_size:tmp;
+		searched_list_size = (tmp > req->list_size) ? req->list_size : tmp;
 	}
 
 	if (searched_list_size > COMMENT_LIST_SIZE) {
@@ -2054,153 +2053,112 @@ static void fill_title_and_comment(request_t *req)
 	// make up request of abstracted document
 	last = req->first_result + searched_list_size;
 	
-	//XXX: rdoc index(i) and result_list->doc_hit index(j) differs.
-	for (i = req->first_result,j=0; i < last; i++,j++) {
-		docid = req->result_list->doc_hits[i].id;
-
-		rdoc[j].docId = docid;
-		rdoc[j].rank = 0;
-		rdoc[j].rsv = 0;
-
-		rdoc[j].numAbstractInfo = mCommentFieldNum;
-
-		for (k=0; k<mCommentFieldNum; k++) {
-			strncpy(rdoc[j].cdAbstractInfo[k].field,mCommentField[k],
-					SHORT_STRING_SIZE);
-#ifdef PARAGRAPH_POSITION 
-			/* FIXME: should be made to be modifiable per each site */
-			rdoc[j].cdAbstractInfo[k].paragraph_position = 0;
-#endif
-			rdoc[j].cdAbstractInfo[k].position = 0;
-			rdoc[j].cdAbstractInfo[k].size = -1; 
-			/* -1 for whole text retrival */
-		}
-	}
-
 	DEBUG("req->first_result:%d, last:%d",req->first_result,last);
-
-	ret = sb_run_doc_get_abstract((int)searched_list_size, rdoc, doc);
-	info("searched_list_size, searched_list_size = %d", searched_list_size);
-	if (ret < 0) {
-		error("canneddoc get abstract error.");
-		release_list(req->result_list);
-		req->result_list = NULL;
-		goto DONE_COMMENTING;
-	}
 
 	//XXX: result_list->doc_hit index and other index differs.
 	for (i = req->first_result,j=0; i < last; i++,j++) {
-		int sizeleft;
+		DocObject *docBody = 0x00; 
+		char *field_value = 0x00; 
+		int sizeleft = 0;
+        int ret = 0;
+
 		docid = req->result_list->doc_hits[i].id; //XXX -- for debug
 		if (docid == 0) {
 			crit("docid(%u) < 0",(uint32_t)docid);
 			continue;
 		}
 
+        // 여기서 문서를 한번 가져온다
+		ret = sb_run_doc_get( req->result_list->doc_hits[i].id, &docBody); 
+		if (ret < 0) { 
+			warn("cannot get document object of document[%u]\n", docid); 
+			continue; 
+		} 
+
 		req->comments[j][0]='\0'; /* ready for strcat */
 		sizeleft = LONG_LONG_STRING_SIZE-1;
 
-		for (k=0; k<mCommentFieldNum; k++) {
-			#define max_comment_bytes 1024
-			tmpstr = NULL;
+		for (k = 0; k < field_count; k++) {
+            int ret = 0;
 
-			ret = sb_run_doc_get_field(doc[j], NULL, mCommentField[k], &tmpstr);
+            if(field_info[k].type == NONE) { // enum field_type 참조.
+               continue;
+            }
+
+			#define max_comment_bytes 1024
+			field_value = NULL;
+
+			ret = sb_run_doc_get_field(docBody, NULL, field_info[k].name, &field_value);
 			if (ret < 0) {
-				error("doc_get_field error for doc[%d], field[%s]", 
-												docid, mCommentField[k]);
+				error("doc_get_field error for doc[%d], field[%s]", docid, field_info[k].name);
 				continue;
 			}
 
-			strncat(req->comments[j],mCommentField[k],sizeleft);
-			sizeleft -= strlen(mCommentField[k]);
+            // 구성 : FIELD_NAME:
+			strncat(req->comments[j], field_info[k].name, sizeleft);
+			sizeleft -= strlen(field_info[k].name);
 			sizeleft = (sizeleft < 0) ? 0:sizeleft;
 
 			strncat(req->comments[j],":",sizeleft);
 			sizeleft -= 1;
 			sizeleft = (sizeleft < 0) ? 0:sizeleft;
 
-			// 길이가 너무 길면 좀 자른다. 한글 안다치게...
-			cut_string( tmpstr, max_comment_bytes );
+            // 구성 : VALUE;;
+            switch(field_info[k].type) {
+                case RETURN:
+					// 길이가 너무 길면 좀 자른다. 한글 안다치게...
+					cut_string( field_value, max_comment_bytes );
 
-			strncat(req->comments[j],tmpstr,sizeleft);
-			sizeleft -= strlen(tmpstr);
-			sizeleft = (sizeleft < 0) ? 0:sizeleft;
-			sb_free(tmpstr);
+					strncat(req->comments[j], field_value, sizeleft);
+					sizeleft -= strlen(field_value);
+					sizeleft = (sizeleft < 0) ? 0:sizeleft;
+                break;
+                case SUM:
+                case SUMANY:
+                    {
+                        char summary[210];
+                        int exist_summary = 0;
+                        int m = 0;
 
+						for(m = 0; m < req->result_list->doc_hits[i].nhits; m++) {
+							if ( field_info[k].id == req->result_list->doc_hits[i].hits[m].std_hit.field ) {
+                                int summary_pos = 0;
+								memset(summary, 0x00, 210);
+
+								summary_pos = getAutoComment(field_value, req->result_list->doc_hits[i].hits[m].std_hit.position-4);
+								strncpy(summary, field_value + summary_pos, 201);
+								cut_string( summary, 200 );
+								exist_summary = 1;
+								break;
+							}
+						}
+						
+						/* 본문에 단어가  없을경우 */
+						if(field_info[k].type == SUMANY && exist_summary == 0) {
+							memset(summary, 0x00, 210);
+							strncpy(summary, field_value, 201);
+							cut_string( summary, 200 );
+						}
+
+						strncat(req->comments[j], summary, sizeleft);
+						sizeleft -= strlen(summary);
+						sizeleft = (sizeleft < 0) ? 0:sizeleft;
+                    }
+                break;
+            }
 			strncat(req->comments[j],";;",sizeleft);
 			sizeleft -= 2;
 			sizeleft = (sizeleft < 0) ? 0:sizeleft;
+	        sb_free(field_value);
 
 			if (sizeleft <= 0) {
-				error("req->comments size lack while pushing comment(field:%s, doc:%u)",
-															mCommentField[k], docid);
+				error("req->comments size lack while pushing comment(field:%s, doc:%u)", field_info[k].name, docid);
 				req->comments[j][LONG_LONG_STRING_SIZE-1] = '\0';
 				error("%s", req->comments[j]);
 				break;
 			}
 		}
 
-		if ( mNeedSum != TRUE ) continue;
-
-		/* 요약정보, SUM */
-		nCheck = 0;
-		
-		n = sb_run_doc_get( req->result_list->doc_hits[i].id, &docBody); 
-		if (n < 0) { 
-			warn("cannot get document object of document[%u]\n", docid); 
-			continue; 
-		} 
-
-		n = sb_run_doc_get_field(docBody, NULL, "Body", &value); 
-		if (n < 0) { 
-			notice("cannot get field[%s] from document object\n", "Body"); 
-			sb_run_doc_free(docBody);
-			continue;
-		} 
-				
-		for(m=0; m < req->result_list->doc_hits[i].nhits; m++)
-		{
-			//printf("position:%d(did:%d)\n", req->result_list->doc_hits[i].hits[m].std_hit.position, req->result_list->doc_hits[i].id);
-			//printf("doc_hits[%d].hits[%d].std_hit.field:%d\n", i,m, req->result_list->doc_hits[i].hits[m].std_hit.field);
-			//printf("doc_hits[%d].field:%d\n", i, req->result_list->doc_hits[i].field);
-			
-			if ( Body_Field_No == req->result_list->doc_hits[i].hits[m].std_hit.field )
-			{
-				memset(szCom, 0x00, 210);
-				sum_pos = getAutoComment(value, req->result_list->doc_hits[i].hits[m].std_hit.position-4);
-				strncpy(szCom, value+sum_pos, 201);
-				cut_string( szCom, 200 );
-				nCheck = 1;
-				break;
-			}
-		}
-		if (nCheck != 1 ) /*본문에 없는 단어 */
-		{
-			memset(szCom, 0x00, 210);
-			strncpy(szCom, value, 201);
-			cut_string( szCom, 200 );
-		}
-		
-		strncat(req->comments[j],"SUM",sizeleft);
-		sizeleft -= strlen("SUM");
-		sizeleft = (sizeleft < 0) ? 0:sizeleft;
-
-		strncat(req->comments[j],":",sizeleft);
-		sizeleft -= 1;
-		sizeleft = (sizeleft < 0) ? 0:sizeleft;
-		
-		strncat(req->comments[j],szCom,sizeleft);
-		sizeleft -= strlen(szCom);
-		sizeleft = (sizeleft < 0) ? 0:sizeleft;
-
-		strncat(req->comments[j],";;",sizeleft);
-		sizeleft -= 2;
-		sizeleft = (sizeleft < 0) ? 0:sizeleft;	
-
-		DEBUG("doc[%d] (title: %s)",docid,req->titles[j]);
-		DEBUG("comments> \n   %s",req->comments[j]);
-		
-		sb_free(value);
 		sb_run_doc_free(docBody);
 	}
 
@@ -2211,16 +2169,52 @@ static void fill_title_and_comment(request_t *req)
 		req->result_list->relevancy[j] = req->result_list->relevancy[i];
 		req->result_list->doc_hits[j].hitratio = req->result_list->doc_hits[i].hitratio;
 	}
-	
-
-DONE_COMMENTING:
-	for (i = 0; i < searched_list_size; i++) {
-		sb_run_doc_free(doc[i]);
-	}
 }
 
-
 /*********************************************************/
+// 시욱 변경 2006/03/06 - 굳이 바꿀필요가 없어서 바꾸지 않는다.
+/*
+int getAutoComment(char *txt, int position) {
+    int pos = 0;
+    int isword = 0, word_count = 0, found = 0;
+
+    if (txt == NULL) return 0;
+
+    while(1) {
+        char ch = txt[pos];
+        switch(ch) {
+            case ' ':
+            case '\t':
+            case '\r':
+            case '\n':
+            case ':':
+            case ',':
+            case '?':
+            case '!':
+            case ';':
+              if(isword == 1) {
+                  word_count++;
+
+                  if(word_count == position) {
+                      found = 1; // 찾은 위치부터 시작 단어 사이에 쓰레기 문자를 제거하기 위해
+                  }
+              }
+              isword = 0;
+              break;
+            default:
+              isword = 1;
+              if(found == 1) {
+                  return pos; //실제 단어의 처음을 리턴한다.
+              }
+              break;
+        }
+        pos++;
+        if(txt[pos] == 0x00) return 0;
+    }
+
+    return 0;
+}
+*/
 int	getAutoComment(char *pszStr, int lPosition)
 {
 	
@@ -2284,7 +2278,6 @@ START:
 
 	return 0;
 }
-
 
 int full_search (void* word_db, request_t *req)
 {
@@ -2783,39 +2776,32 @@ static void setIndexDbSet(configValue v)
 
 static void get_commentfield(configValue v)
 {
-	int idx=0;
-
-	if (strncasecmp("Body",v.argument[1],SHORT_STRING_SIZE) == 0) {
-		Body_Field_No = atoi(v.argument[0]);
-
-	}
-	
-	if (strncasecmp("Title",v.argument[1],SHORT_STRING_SIZE) == 0) {
-		Title_Field_No = atoi(v.argument[0]);
-
-	}
-	
 	if (v.argNum < 7) return;
 
-	if (mCommentFieldNum >= MAX_EXT_FIELD) {
-		error("mCommentFieldNum(%d) >= MAX_EXT_FIELD(%d).",
-				mCommentFieldNum,MAX_EXT_FIELD);
+	if (field_count >= MAX_EXT_FIELD) {
+		error("field_count(%d) >= MAX_EXT_FIELD(%d).", field_count,MAX_EXT_FIELD);
 		error("Increase MAX_EXT_FIELD and recompile");
 		return;
 	}
 
-	if (strncasecmp("RETURN",v.argument[6],SHORT_STRING_SIZE) != 0) {
-		error("Field: %s %s, 5th column should RETURN or blank.. not [%s]",
-				v.argument[0],v.argument[1],v.argument[5]);
-		return;
-	}
 
-	idx = mCommentFieldNum;
-	strncpy(mCommentField[idx], v.argument[1], SHORT_STRING_SIZE);
+    // 필드정보 저장. 
+    field_info[field_count].id = atoi(v.argument[0]);
+    strncpy(field_info[field_count].name, v.argument[1], SHORT_STRING_SIZE);
 
-	INFO("commentfield:[%s] set",mCommentField[idx]);
+	if (strncasecmp("RETURN",v.argument[6],SHORT_STRING_SIZE) == 0) {
+        field_info[field_count].type = RETURN;
+    } else if (strncasecmp("SUM",v.argument[6],SHORT_STRING_SIZE) == 0) {
+        field_info[field_count].type = SUM;
+    } else if (strncasecmp("SUMANY",v.argument[6],SHORT_STRING_SIZE) == 0) {
+        field_info[field_count].type = SUMANY;
+    } else {
+        field_info[field_count].type = NONE;
+    }
 
-	mCommentFieldNum++;
+	INFO("commentfield:[%s] set", field_info[field_count].name);
+
+	field_count++;
 }
 
 static void get_FieldSortingOrder(configValue v)

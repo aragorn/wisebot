@@ -5,15 +5,12 @@ MAINTAINERCLEANFILES = Makefile Makefile.in
 
 ## AM_CFLAGS = `glib-config --cflags`
 
-pkglib_LTLIBRARIES = mod_qp.la \
-                     mod_qp2.la
+pkglib_LTLIBRARIES = mod_qp.la
+
 #mod_qp_cdmi.la
 
 mod_qp_la_SOURCES = mod_qp.c mod_qp.h
 mod_qp_la_LDFLAGS = -module -avoid-version -lm
-
-mod_qp2_la_SOURCES = mod_qp2.c mod_qp.h
-mod_qp2_la_LDFLAGS = -module -avoid-version -lm
 
 #mod_qp_cdmi_la_SOURCES = mod_qp_cdmi.c mod_qp.h
 #mod_qp_cdmi_la_LDFLAGS = -module -avoid-version
