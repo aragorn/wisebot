@@ -6,6 +6,7 @@
 #include "listen.h"
 #include "conf.h" /* ugly workaround for name collision */
 #include "apr_hooks.h" /* for apr_global_hook_pool */
+#include "apr_poll.h"
 /*#include "util.h"*/
 
 /*#include "apr.h"*/
@@ -231,7 +232,8 @@ static int thread_main (slot_t *slot)
 			if ( scoreboard->shutdown
 					|| scoreboard->graceful_shutdown ) break;
 
-			ret = apr_poll(pollset, &n, -1);
+			//ret = apr_poll(pollset, &n, -1);
+			ret = apr_poll(pollset, &n, 0, -1);
 			if (ret != APR_SUCCESS) {
 				if (APR_STATUS_IS_EINTR(ret)) continue;
 
