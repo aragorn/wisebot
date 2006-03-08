@@ -22,7 +22,9 @@ SOURCE_FILES = mod_api.c mod_api.h \
 			   docattr.c docattr.h \
 			   index_word_extractor.h \
                indexdb.c indexdb.h \
-			   hash.c hash.h
+			   hash.c hash.h \
+			   http_client.c \
+			   httpd.c 
 
 
 lib_LTLIBRARIES = libapi.la
