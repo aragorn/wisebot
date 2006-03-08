@@ -20,7 +20,9 @@ SUBDIRS = mod_api \
 	mod_frm \
 	mod_site \
 	mod_site_general \
-	mod_sfs mod_ifs 
+	mod_sfs mod_ifs \
+	mod_httpd \
+	mod_http_client 
 #	mod_hash
 	
 #	mod_spool \
@@ -31,7 +33,6 @@ SUBDIRS = mod_api \
 #	mod_filter \
 #	mod_cdmi \
 #	mod_crawler
-#	mod_httpd \
 #	mod_sbcdm_tcp \
 #	mod_cdmclt \
 #
