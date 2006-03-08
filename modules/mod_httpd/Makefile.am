@@ -12,8 +12,8 @@ gen_test_char_SOURCES = gen_test_char.c
 gen_test_char_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
 
 pkglib_LTLIBRARIES = mod_httpd.la mod_httpd_test_handler.la
-mod_httpd_la_LDFLAGS = -module -avoid-version
-mod_httpd_la_LIBADD = $(APR_LDFLAGS) $(APU_LDFLAGS)
+mod_httpd_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)
+mod_httpd_la_LIBADD = $(APR_LIBS) $(APU_LIBS)
 mod_httpd_la_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
 mod_httpd_la_SOURCES = mod_httpd.c core.c \
 					log.c config.c listen.c \
@@ -31,8 +31,8 @@ mod_httpd_la_SOURCES = mod_httpd.c core.c \
 					mod_httpd.h protocol.h request.h \
 					util_cfgtree.h util_filter.h util_time.h
 
-mod_httpd_test_handler_la_LDFLAGS = -module -avoid-version
-mod_httpd_test_handler_la_LIBADD = $(APR_LDFLAGS) $(APU_LDFLAGS)
+mod_httpd_test_handler_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)
+mod_httpd_test_handler_la_LIBADD = $(APR_LIBS) $(APU_LIBS)
 mod_httpd_test_handler_la_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
 mod_httpd_test_handler_la_SOURCES = mod_httpd_test_handler.c \
 					mod_httpd_test_handler.h 
