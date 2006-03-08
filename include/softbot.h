@@ -87,6 +87,7 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #include "ipc.h"
 #include "memory.h"
 #include "hook.h"
+#include "timelog.h"
 
 #include "platform.h" /* include all related files in platform/ directory */
 

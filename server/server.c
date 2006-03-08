@@ -8,6 +8,9 @@
 
 static char mConfigFile[MAX_PATH_LEN] = DEFAULT_CONFIG_FILE;
 static char mPidFile[MAX_PATH_LEN] = DEFAULT_PID_FILE;
+#ifdef USE_TIMELOG
+static char mTimeLogFile[MAX_PATH_LEN] = DEFAULT_TIME_LOG_FILE;
+#endif
 static int  *mServerUptime;
 
 static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(10) };
@@ -230,6 +233,11 @@ int server_main()
 	 */
 
 	open_error_log(gErrorLogFile, gQueryLogFile);
+#ifdef USE_TIMELOG
+    if(sb_tstat_log_init(mTimeLogFile) != SUCCESS) {
+        exit(1);
+    }
+#endif
 
 	save_pid(mPidFile);
 
@@ -308,6 +316,10 @@ STOP:
 			gRegistryFile, strerror(errno));
 	free_ipcs(); /* release shared memory and semaphore */
 	close_error_log(); /* close error_log file and semaphore */
+
+#ifdef USE_TIMELOG
+    sb_tstat_log_destroy();
+#endif
 
 	return SUCCESS;
 }
