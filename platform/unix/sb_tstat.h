@@ -20,10 +20,12 @@ typedef struct {
 	struct timeval tv_s, tv_f;
 } tstat_t;
 
-SB_DECLARE(int) sb_tstat_start(tstat_t *tstat);
-SB_DECLARE(int) sb_tstat_finish(tstat_t *tstat);
+SB_DECLARE(int)  sb_tstat_start(tstat_t *tstat);
+SB_DECLARE(int)  sb_tstat_finish(tstat_t *tstat);
 SB_DECLARE(void) sb_tstat_print(tstat_t *tstat);
-SB_DECLARE(void) sb_tstat_log(FILE *, char *);
+SB_DECLARE(int)  sb_tstat_log_init(const char* file_name);
+SB_DECLARE(void) sb_tstat_log_destroy();
+SB_DECLARE(void) sb_tstat_log(char* tag);
 
 #endif
 

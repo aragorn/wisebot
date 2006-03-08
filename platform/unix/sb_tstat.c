@@ -40,22 +40,45 @@ void sb_tstat_print(tstat_t *tstat) {
 			(float)(tstat->tms_f.tms_stime - tstat->tms_s.tms_stime) / clock_per_second);
 }
 
+static FILE *fp_log = NULL;
+
+int sb_tstat_log_init(const char* file_name) {
+    if ((fp_log = fopen(file_name, "a")) == NULL) {
+        crit("cannot open time log file %s: %s", file_name, strerror(errno));
+        return FAIL;
+    }
+    setlinebuf(fp_log);
+
+    return SUCCESS;
+}
+
+void sb_tstat_log_destroy() {
+    if(fp_log != NULL) {
+        fclose(fp_log);
+    }
+}
+
+
+
 /* pid tag gettimeofday(ms) times(ms) usertime(ms) systemtime(ms) */
-void sb_tstat_log(FILE *tlog, char *tag) {
+void sb_tstat_log(char *tag) {
 	clock_t c;
 	struct timeval tv;
 	struct tms t;
+
+	if (fp_log == NULL) return;
 
 	const float clock_per_millisecond = (float)sysconf(_SC_CLK_TCK) / 1000.;
 
 	gettimeofday(&tv, NULL);
 	c = times(&t);
 
-	fprintf(tlog, "%d %s %.3f ",
+	fprintf(fp_log, "%d %s %.3f ",
 			getpid(), tag, (float)tv.tv_sec * 1000. + (float)tv.tv_usec / 1000.);
 
-	fprintf(tlog, "%.3f %.3f %.3f\n",
+	fprintf(fp_log, "%.3f %.3f %.3f\n",
 			(float)c           / clock_per_millisecond,
 			(float)t.tms_utime / clock_per_millisecond,
 			(float)t.tms_stime / clock_per_millisecond);
 }
+
