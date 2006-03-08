@@ -10,8 +10,6 @@ AC_PREREQ(2.50)
 AC_COPYRIGHT([Copyright 2001-2005 SoftWise Inc.])
 AC_REVISION([$Revision$])
 
-
-#AC_CONFIG_SRCDIR([server/server.c])
 AC_CONFIG_AUX_DIR([build])
 
 AC_CANONICAL_HOST()
@@ -21,11 +19,50 @@ AC_CANONICAL_HOST()
 # --aragorn, 2005/02/22
 AM_INIT_AUTOMAKE(SoftBot, 6.0.0, no-define)
 AM_CONFIG_HEADER([include/auto_config.h])
-# AC_CONFIG_HEADERS([include/auto_config.h])
+dnl AC_CONFIG_HEADER(include/auto_config.h)
 
 dnl XXX setting default prefix to `pwd` is not a good idea. --jiwon
 dnl but, we can't avoid this for a time being. --aragorn
 AC_PREFIX_DEFAULT(`pwd`)
+
+dnl ---------------------------------------------------------------------------
+dnl  APR and APU Stuff
+dnl ---------------------------------------------------------------------------
+
+  
+echo $ac_n "${nl}Configuring Apache Portable Runtime library ...${nl}"
+
+apr_found=`apr-config --version`
+echo apr version: $apr_found
+
+if test "x$apr_found" != "x0.9.6"; then
+  AC_MSG_ERROR([APR not found. Please read the documentation.])
+fi
+
+APR_LIBS=`apr-config --link-libtool --libs`
+APR_INCLUDES=`apr-config --includes`
+APR_CFLAGS=`apr-config --cflags`
+APR_LDFLAGS=`apr-config --ldflags`
+dnl APR_BINDIR=`apr-config --bindir`
+dnl SHLIBPATH_VAR=`apr-config --shlib-path-var`
+
+
+echo $ac_n "${nl}Configuring Apache Portable Runtime Utility library...${nl}"
+
+apu_found=`apu-config --version`
+echo apu version: $apu_found
+
+if test "x$apu_found" != "x0.9.6"; then
+  AC_MSG_ERROR([APR-util not found.  Please read the documentation.])
+fi
+
+dnl XXX to test with new iconv
+APU_LIBS=`apu-config --link-libtool --libs`
+APU_LDFLAGS=`apu-config --ldflags`
+APU_INCLUDES=`apu-config --includes`
+APU_BINDIR=`apu-config --bindir`
+
+dnl  APR and APU Stuff end.
 
 dnl ---------------------------------------------------------------------------
 dnl header template, include/auto_config.h.in
@@ -38,6 +75,7 @@ AH_TOP([#ifndef AUTO_CONFIG_H
 #define DEFAULT_CONFIG_FILE     "etc/softbot.conf"
 #define DEFAULT_ERROR_LOG_FILE  "logs/error_log"
 #define DEFAULT_QUERY_LOG_FILE  "logs/query_log"
+#define DEFAULT_TIME_LOG_FILE   "logs/time_log"
 #define DEFAULT_PID_FILE        "logs/softbotd.pid"
 #define DEFAULT_REGISTRY_FILE   "dat/softbotd.reg"
 
@@ -68,11 +106,14 @@ AH_VERBATIM([1_NEAR_TOP__],[
 #define FORWARD_INDEX 0
 
 /* whether to use apr, apr-util or not. default is NOT using it. */
-/* do not use APR anymore. 2004/08/03 */
-/* #define USE_APR 0 */
+#define USE_APR 0
 
 /* hit size of hits of doc_hit_t. default size is 4 */
 #define HIT_SIZE 4
+
+/* whether to use timelog() or not.
+   see include/timelog.h, platform/unix/sb_tstat.[ch]. */
+#define USE_TIMELOG 0
 
 /* If you don't have setproctitle, SB_ARGV_TYPE needs to be set to either
 * SB_ARGV_NEW (replace argv[] arguments), SB_ARGV_WRITEABLE (overwrite
@@ -92,6 +133,10 @@ AH_VERBATIM([1_NEAR_TOP__],[
 
 ])
 
+
+
+
+
 dnl ---------------------------------------------------------------------------
 
 AC_ARG_WITH(forwardidx,
@@ -107,6 +152,26 @@ fi
 AC_ARG_WITH(hitsize,
 [  --with-hitsize          build with specified hit size,  [default=4]], [
 AC_DEFINE_UNQUOTED(HIT_SIZE,$withval)
+])
+
+AC_ARG_ENABLE(apr,
+[  --enable-apr            build with apr, apr-util support [default=no]], [
+if test "$enableval" != yes
+then
+    AC_DEFINE(USE_APR,0)
+else
+    AC_DEFINE(USE_APR,1)
+fi
+])
+
+AC_ARG_ENABLE(timelog,
+[  --enable-timelog        use timelog().                  [default=no]], [
+if test "$enableval" != yes
+then
+    AC_DEFINE(USE_TIMELOG,0)
+else
+    AC_DEFINE(USE_TIMELOG,1)
+fi
 ])
 
 dnl ---------------------------------------------------------------------------
@@ -356,6 +421,15 @@ AC_SUBST(SOFTBOTCLI_LDFLAGS)
 AC_SUBST(ac_aux_dir)
 AC_SUBST(am_aux_dir)
 
+AC_SUBST(APR_LIBS)
+AC_SUBST(APR_INCLUDES)
+AC_SUBST(APR_CFLAGS)
+AC_SUBST(APR_LDFLAGS)
+AC_SUBST(APU_LIBS)
+AC_SUBST(APU_INCLUDES)
+AC_SUBST(APU_CFLAGS)
+AC_SUBST(APU_LDFLAGS)
+
 AC_CONFIG_FILES([
     include/auto_defines.h
 
@@ -404,6 +478,9 @@ AC_CONFIG_FILES([
 
     modules/mod_site/Makefile
 	modules/mod_site_general/Makefile
+
+    modules/mod_httpd/Makefile
+    modules/mod_http_client/Makefile
 
     platform/Makefile
     platform/unix/Makefile
