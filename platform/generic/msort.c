@@ -61,7 +61,6 @@ static char sccsid[] = "@(#)merge.c	8.2 (Berkeley) 2/14/94";
 #include <string.h>
 
 #include "msort.h" // jiwon added this. (the only modification)
-#include "proto.h"
 
 static void setup __P((u_char *, u_char *, size_t, size_t, int (*)()));
 static void insertionsort __P((u_char *, size_t, size_t, int (*)()));
@@ -127,7 +126,7 @@ mergesort(base, nmemb, size, cmp)
 	if (!(size % ISIZE) && !(((char *)base - (char *)0) % ISIZE))
 		iflag = 1;
 
-	if ((list2 = malloc(nmemb * size + PSIZE)) == NULL)
+	if ((list2 = sb_malloc(nmemb * size + PSIZE)) == NULL)
 		return (-1);
 
 	list1 = base;
@@ -233,7 +232,7 @@ COPY:	    			b = t;
 		memmove(list2, list1, nmemb*size);
 		list2 = list1;
 	}
-	free(list2);
+	sb_free(list2);
 	return (0);
 }
 
