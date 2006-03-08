@@ -23,6 +23,7 @@ typedef struct {
 SB_DECLARE(int) sb_tstat_start(tstat_t *tstat);
 SB_DECLARE(int) sb_tstat_finish(tstat_t *tstat);
 SB_DECLARE(void) sb_tstat_print(tstat_t *tstat);
+SB_DECLARE(void) sb_tstat_log(FILE *, char *);
 
 #endif
 
