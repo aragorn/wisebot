@@ -7,6 +7,7 @@
 #include "conf.h" /* ugly workaround for name collision */
 #include "apr_hooks.h" /* for apr_global_hook_pool */
 #include "apr_poll.h"
+#include "apr_lib.h"
 /*#include "util.h"*/
 
 /*#include "apr.h"*/
@@ -154,12 +155,6 @@ static int process_socket(apr_socket_t *sock, slot_t *slot,
 	return SUCCESS;
 }
 
-static int ipchandler(int id,
-		int input_len, void *input,
-		int *output_len, void **output){
-	return sb_run_httpd_ipc_handler(id, input_len, input, output_len, output);
-}
-
 static int thread_main (slot_t *slot)
 {
 	apr_pool_t *tpool; /* thread's pool */
@@ -175,8 +170,6 @@ static int thread_main (slot_t *slot)
 	apr_uint32_t ap_max_mem_free = 1024;
 
 	sb_run_handler_init();
-
-	install_ipc_handler(&ipchandler);
 
 	apr_pool_create(&tpool, pool);
 	bucket_alloc = apr_bucket_alloc_create(tpool);
@@ -232,8 +225,9 @@ static int thread_main (slot_t *slot)
 			if ( scoreboard->shutdown
 					|| scoreboard->graceful_shutdown ) break;
 
-			//ret = apr_poll(pollset, &n, -1);
-			ret = apr_poll(pollset, &n, 0, -1);
+			/* old apr interface */
+			// ret = apr_poll(pollset, &n, -1);
+			ret = apr_poll(pollset, num_listensocks, &n, -1);
 			if (ret != APR_SUCCESS) {
 				if (APR_STATUS_IS_EINTR(ret)) continue;
 

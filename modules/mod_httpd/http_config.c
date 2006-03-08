@@ -5,6 +5,7 @@
 #include "http_config.h"
 #include "http_core.h"
 #include "http_util.h"
+#include "apr_strings.h"
 
 /*
 HOOK_STRUCT(

@@ -2,6 +2,8 @@
 #include <stdarg.h>
 #include "mod_httpd.h"
 #include "log.h"
+#include "apr_strings.h"
+#include "apr_tables.h"
 
 void ap_log_rerror(const char *file, const char *caller, int line,
 		int level, apr_status_t status, const request_rec *r,
@@ -25,7 +27,7 @@ void ap_log_rerror(const char *file, const char *caller, int line,
 		&& ((level & APLOG_LEVELMASK) <= APLOG_WARNING)
 		&& (apr_table_get(r->notes, "error-notes") == NULL)) {
 		apr_table_setn(r->notes, "error-notes",
-					   sb_escape_html(r->pool, apr_pvsprintf(r->pool, fmt,
+					   (const char*)sb_escape_html(r->pool, apr_pvsprintf(r->pool, fmt,
 															 args)));
 	}
 	va_end(args);

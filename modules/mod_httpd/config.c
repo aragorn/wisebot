@@ -3,6 +3,7 @@
  * config.c
  */
 
+#include "apr_strings.h"
 #include "conf.h"
 #include "core.h"
 #include "http_util.h"
@@ -710,7 +711,7 @@ AP_DECLARE(void) ap_process_resource_config(server_rec *s, const char *fname,
                                             apr_pool_t *ptemp)
 {
     cmd_parms parms;
-    apr_finfo_t finfo;
+    //apr_finfo_t finfo;
     const char *errmsg;
     ap_configfile_t *cfp;
 

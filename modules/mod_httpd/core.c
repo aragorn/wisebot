@@ -11,6 +11,7 @@
 #include "filter.h"
 #include "http_filter.h"
 #include "http_core.h" /* AP_MIN_BYTES_TO_WRITE */
+#include "apr_strings.h"
 
 /* LimitXMLRequestBody handling */
 #define AP_LIMIT_UNSET                  ((long) -1)
@@ -312,7 +313,7 @@ AP_DECLARE(const char *) ap_check_cmd_context(cmd_parms *cmd,
 static const char *set_timeout(cmd_parms *cmd, void *dummy, const char *arg)
 {
     const char *err = ap_check_cmd_context(cmd, NOT_IN_DIR_LOC_FILE|NOT_IN_LIMIT);
-    float strtof(char *, char **);
+    float strtof(const char *, char **);
     double floor(double);
     double fmod(double, double);
     float t;

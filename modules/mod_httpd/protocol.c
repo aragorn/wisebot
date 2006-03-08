@@ -16,6 +16,7 @@
 #include "util.h"
 #include "util_filter.h" // FIXME move to protocol.h??
 #include "http_filter.h"
+#include "http_util.h"
 /*#include "util_time.h"*/
 
 /*#include "apr.h"*/
