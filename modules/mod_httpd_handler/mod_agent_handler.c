@@ -498,7 +498,7 @@ static int softbot_agent(request_rec *r, softbot_handler_rec *s, word_db_t* word
 		req.type = LIGHT_SEARCH;
 
 		/* TODO : distributed search */
-		sb_run_qp_light_search(word_db, &req);
+		// sb_run_qp_light_search(word_db, &req);
 
 		if (make_xml_search_result(r, &req) == FAIL) {
 			return SUCCESS;
