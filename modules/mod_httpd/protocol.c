@@ -18,19 +18,9 @@
 #include "http_filter.h"
 #include "http_util.h"
 #include "util_string.h"
-
-/*#include "apr.h"*/
-/*#include "apr_errno.h"*/
 #include "apr_strings.h"
-/*#include "apr_buckets.h"*/
-/*#include "apr_hash.h"*/
 #include "apr_lib.h"
 #include "apr_strmatch.h" /* apr_strmatch_pattern */
-
-/*#include "apr_uri.h" |+ read_request_line() +|*/
-/*#include "apr_date.h"	|+ For apr_date_parse_http and APR_DATE_BAD +|*/
-/*#include "util_time.h"*/
-
 
 #ifndef DEFAULT_LOCKFILE
 #  define DEFAULT_LOCKFILE "/tmp/softbot_httpd_lock"

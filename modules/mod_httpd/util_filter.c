@@ -7,7 +7,6 @@
 #include "apr_hash.h"
 #include "apr_strings.h"
 
-//#include "http_log.h"
 #include "util_filter.h"
 #include "util_string.h"
 

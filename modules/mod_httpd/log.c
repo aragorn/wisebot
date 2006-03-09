@@ -32,5 +32,4 @@ void ap_log_rerror(const char *file, const char *caller, int line,
 															 args)));
 	}
 	va_end(args);
-}
-
+} 

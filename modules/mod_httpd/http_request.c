@@ -26,7 +26,6 @@
 #endif
 
 
-
 AP_DECLARE(void) ap_allow_standard_methods(request_rec *r, int reset, ...)
 {
     int method;
