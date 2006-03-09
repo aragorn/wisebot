@@ -22,7 +22,9 @@ SUBDIRS = mod_api \
 	mod_site_general \
 	mod_sfs mod_ifs \
 	mod_httpd \
-	mod_http_client 
+	mod_httpd_handler \
+	mod_http_client \
+    #
 #	mod_hash
 	
 #	mod_spool \
