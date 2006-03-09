@@ -1,13 +1,12 @@
 /* $Id$ */
 #include <string.h>
-#include "softbot.h"
 #include "../mod_httpd/conf.h"
 #include "../mod_httpd/protocol.h"
 #include "mod_api/qp.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/http_client.h"
 #include "mod_qp/mod_qp.h"
-#include "mod_httpd_softbot_handler.h"
+#include "mod_standard_handler.h"
 #include "apr_strings.h"
 
 #define MAX_SEARCH_UNIT 60
@@ -119,7 +118,7 @@ int retrieve_sunit(void){
 			return -1;
 		}
 
-		buf = sunit[i].client->full_current_request;
+		buf = sunit[i].client->current_request_buffer;
 		memfile_setOffset(buf, 0);
 		size = memfile_getSize(buf);
 		str = (char *) sb_malloc(size);
@@ -172,7 +171,7 @@ int retrieve_sunit(void){
 			break;
 		}
 
-		if ( select(maxFd + 1, &rset, &wset, NULL, &t) < 0 ) {
+		if ( select(maxFd + 1, &rset, &wset, NULL, &t) == 0 ) {
 			error("select : %s", strerror(errno));
 			continue;
 		}
@@ -408,7 +407,7 @@ static int agent_light_search(request_t *req)
 	return 0;
 }
 
-static int softbot_agent(request_rec *r, softbot_handler_rec *s)
+static int softbot_agent(request_rec *r, softbot_handler_rec *s, word_db_t* word_db)
 {
 	char *cmd;
 	char *arg;
@@ -499,7 +498,7 @@ static int softbot_agent(request_rec *r, softbot_handler_rec *s)
 		req.type = LIGHT_SEARCH;
 
 		/* TODO : distributed search */
-/*		sb_run_qp_light_search(&req);*/
+		sb_run_qp_light_search(word_db, &req);
 
 		if (make_xml_search_result(r, &req) == FAIL) {
 			return SUCCESS;
@@ -548,7 +547,7 @@ static config_t config[] = {
 	{NULL}
 };
 
-module httpd_softbot_agent_module = {
+module agent_handler_module = {
 	STANDARD_MODULE_STUFF,
 	config,					/* config */
 	NULL,					/* registry */
