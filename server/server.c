@@ -387,13 +387,6 @@ main(int argc, char *argv[], char *envp[])
 	}
 #endif
 
-#if USE_APR
-	/* apr stuff */
-	apr_app_initialize(&argc,
-		(char const *const **)&argv,
-		(char const *const **)&envp); /* see "apr_general.h" */
-	atexit(apr_terminate); /* will be called at exit. see "apr_general.h" */
-#endif
 	init_set_proc_title(argc, argv, envp);
 	set_static_modules(server_static_modules);
 
