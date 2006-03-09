@@ -32,6 +32,7 @@
 **  This code is in the public domain and has no copyright.
 */
 
+#include "softbot.h"
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 # ifdef HAVE_ALLOCA_H

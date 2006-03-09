@@ -91,7 +91,7 @@
  * - alternate output is done correct like in %#08x
  *
  ****************************************************************************/
-
+#include "softbot.h"
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
