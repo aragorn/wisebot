@@ -106,7 +106,7 @@ AH_VERBATIM([1_NEAR_TOP__],[
 #define FORWARD_INDEX 0
 
 /* whether to use apr, apr-util or not. default is NOT using it. */
-#define USE_APR 0
+/* #define USE_APR 0 */
 
 /* hit size of hits of doc_hit_t. default size is 4 */
 #define HIT_SIZE 4
@@ -154,15 +154,15 @@ AC_ARG_WITH(hitsize,
 AC_DEFINE_UNQUOTED(HIT_SIZE,$withval)
 ])
 
-AC_ARG_ENABLE(apr,
-[  --enable-apr            build with apr, apr-util support [default=no]], [
-if test "$enableval" != yes
-then
-    AC_DEFINE(USE_APR,0)
-else
-    AC_DEFINE(USE_APR,1)
-fi
-])
+# AC_ARG_ENABLE(apr,
+# [  --enable-apr            build with apr, apr-util support [default=no]], [
+# if test "$enableval" != yes
+# then
+#     AC_DEFINE(USE_APR,0)
+# else
+#     AC_DEFINE(USE_APR,1)
+# fi
+# ])
 
 AC_ARG_ENABLE(timelog,
 [  --enable-timelog        use timelog().                  [default=no]], [
@@ -480,6 +480,7 @@ AC_CONFIG_FILES([
 	modules/mod_site_general/Makefile
 
     modules/mod_httpd/Makefile
+    modules/mod_httpd_handler/Makefile
     modules/mod_http_client/Makefile
 
     platform/Makefile
