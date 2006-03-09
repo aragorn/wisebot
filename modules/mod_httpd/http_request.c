@@ -19,6 +19,7 @@
 #include "protocol.h"
 #include "http_protocol.h"
 #include "http_config.h"
+#include "util_string.h"
 
 #if APR_HAVE_STDARG_H
 /*#include <stdarg.h>*/

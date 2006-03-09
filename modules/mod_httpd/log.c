@@ -4,6 +4,7 @@
 #include "log.h"
 #include "apr_strings.h"
 #include "apr_tables.h"
+#include "util_string.h"
 
 void ap_log_rerror(const char *file, const char *caller, int line,
 		int level, apr_status_t status, const request_rec *r,

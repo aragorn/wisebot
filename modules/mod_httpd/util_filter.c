@@ -9,6 +9,7 @@
 
 //#include "http_log.h"
 #include "util_filter.h"
+#include "util_string.h"
 
 /* NOTE: Apache's current design doesn't allow a pool to be passed thru,
    so we depend on a global to hold the correct pool

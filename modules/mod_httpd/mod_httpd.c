@@ -323,9 +323,20 @@ static process_rec *create_process_rec(int argc, const char * const *argv)
 
 static int module_init ()
 {
+	return SUCCESS;
+}
+
+static int module_main (slot_t *slot)
+{
 	int argc = 1;
 	const char *argv[] = {"mod_httpd", NULL};
+	const char *envp[] = {NULL};
 
+    /* initialization for apr */
+    apr_app_initialize(&argc,
+        (char const *const **)&argv,
+        (char const *const **)&envp); /* see "apr_general.h" */
+    atexit(apr_terminate); /* will be called at exit. see "apr_general.h" */
 
 	process = create_process_rec(argc, argv);
 	if ( process == NULL ) return FAIL;
@@ -337,11 +348,6 @@ static int module_init ()
 	 * which is gonna use apr_global_hook_pool?? */
 	apr_global_hook_pool = pool;
 
-	return SUCCESS;
-}
-
-static int module_main (slot_t *slot)
-{
 	apr_pool_t *ptemp; /* Pool for temporary config stuff, reset often */
 
 	debug("mod_httpd.c: module_main() init");

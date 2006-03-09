@@ -10,7 +10,7 @@
 #include "http_request.h"
 #include "http_protocol.h"
 #include "http_util.h"
-/*#include "util_filter.h"*/
+#include "util_string.h"
 #include "util_time.h"
 
 /*#include "apr.h"*/
