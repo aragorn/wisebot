@@ -1,7 +1,6 @@
 /* $Id$ */
 #include <string.h>
 #include <ctype.h>
-#include "softbot.h"
 #include "../mod_httpd/conf.h"
 #include "../mod_httpd/protocol.h"
 #include "mod_mp/mod_mp.h"
@@ -16,7 +15,7 @@ HOOK_STRUCT(
 )
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, httpd_softbot_subhandler,
-						(request_rec *r, softbot_handler_rec *s), (r, s), DECLINE)
+						(request_rec *r, softbot_handler_rec *s, word_db_t *w), (r, s, w), DECLINE)
 
 typedef struct _sbhandler_postdata sbhandler_postdata;
 
@@ -27,6 +26,9 @@ struct _sbhandler_postdata {
 	sbhandler_postdata *prev;
 	sbhandler_postdata *next;
 };
+
+static int word_db_set = -1;
+static word_db_t* word_db = NULL;
 
 #define INIT_POST_DATA(a,b)	\
 { \
@@ -352,7 +354,7 @@ static int softbot_handler(request_rec *r)
 		}
 	}
 	
-	rv = sb_run_httpd_softbot_subhandler(r, &s);
+	rv = sb_run_httpd_softbot_subhandler(r, &s, word_db);
 	
 /* XXX DEBUG */
 /*	ap_rvputs(r,*/
@@ -717,7 +719,7 @@ static int softbot_default(request_rec *r, softbot_handler_rec *s)
 
 		req.type = FULL_SEARCH;
 
-		sb_run_qp_full_search(&req);
+		sb_run_qp_full_search(word_db, &req);
 
 		if (make_xml_search_result(r, &req) == FAIL) {
 			return SUCCESS;
@@ -752,7 +754,7 @@ static int softbot_default(request_rec *r, softbot_handler_rec *s)
 
 		req.type = LIGHT_SEARCH;
 
-		sb_run_qp_light_search(&req);
+		sb_run_qp_light_search(word_db, &req);
 
 		accept = apr_table_get(r->headers_in, "Accept");
 		debug("accept : %s", accept);
@@ -804,8 +806,8 @@ static int softbot_lexicon(request_rec *r, softbot_handler_rec *s)
 		int ret;
 		word_t lexicon;
 
-		strncpy(lexicon.string, arg , MAX_WORD_LENGTH);
-		ret = sb_run_get_word(&gWordDB, &lexicon);
+		strncpy(lexicon.string, arg , MAX_WORD_LEN);
+		ret = sb_run_get_word(word_db, &lexicon);
 
 		debug("word:[%s]",arg);
 		ap_rvputs(r, "<xml>\n" "<result>", NULL);
@@ -825,13 +827,13 @@ static int softbot_lexicon(request_rec *r, softbot_handler_rec *s)
 				"<retcode>%d</retcode>\n"
 				"<word>%s"
 				"</word>\n"
-				"<df>%d</df>\n"
+				//"<df>%d</df>\n"
 				"<id>%d</id>\n"
 				"</result>\n"
 				"</xml>\n",
 				ret,
 				lexicon.string,
-				lexicon.word_attr.df,
+				//lexicon.word_attr.df,
 				lexicon.id
 				);
 	}
@@ -842,30 +844,50 @@ static int softbot_lexicon(request_rec *r, softbot_handler_rec *s)
 	return SUCCESS;
 }
 
-static int softbot_handler_init(void)
+static int standard_handler_init(void)
 {
 	//FIXME 
 	sb_run_qp_init();
+
+    if ( sb_run_open_word_db( &word_db, word_db_set ) != SUCCESS ) {
+        error("lexicon open failed");
+        return FAIL;
+    }
+
 	return SUCCESS;
 }
+
+/* ###########################################################################
+ * frame & configuration stuff here
+ * ########################################################################## */
+	
+static void set_word_db_set(configValue v)
+{
+    word_db_set = atoi( v.argument[0] );
+}
+
+static config_t config[] = {
+    CONFIG_GET("WordDbSet", set_word_db_set, 1, "WordDbSet {number}"),
+    {NULL}
+};
 
 static void register_hooks(void)
 {
 	sb_hook_handler(softbot_handler,NULL,NULL,HOOK_REALLY_FIRST);
-	sb_hook_handler_init(softbot_handler_init,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_handler_init(standard_handler_init,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_httpd_softbot_subhandler(softbot_status,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_httpd_softbot_subhandler(softbot_lexicon,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_httpd_softbot_subhandler(softbot_default,NULL,NULL,HOOK_REALLY_LAST);
 	return;
 }
 
-module httpd_softbot_handler_module = {
+module standard_handler_module = {
 	STANDARD_MODULE_STUFF,
-	NULL,					/* config */
+	config,					/* config */
 	NULL,					/* registry */
-	NULL,				/* initialize */
-	NULL,				/* child_main */
-	NULL,				/* scoreboard */
-	register_hooks				/* register hook api */
+	NULL,				    /* initialize */
+	NULL,				    /* child_main */
+	NULL,				    /* scoreboard */
+	register_hooks		    /* register hook api */
 };
 
