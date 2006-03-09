@@ -15,21 +15,25 @@ pkglib_LTLIBRARIES = mod_httpd.la mod_httpd_test_handler.la
 mod_httpd_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)
 mod_httpd_la_LIBADD = $(APR_LIBS) $(APU_LIBS)
 mod_httpd_la_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
-mod_httpd_la_SOURCES = mod_httpd.c core.c \
-					log.c config.c listen.c \
-					connection.c filter.c \
-					request.c protocol.c \
-					http_filter.c http_request.c \
-					http_protocol.c http_config.c \
-					http_core.c http_util.c \
-					util_cfgtree.c util_filter.c \
-					util_time.c \
-					conf.h connection.h core.h \
-					filter.h http_config.h http_core.h \
-					http_filter.h http_protocol.h http_request.h \
-					http_util.h listen.h log.h \
-					mod_httpd.h protocol.h request.h \
-					util_cfgtree.h util_filter.h util_time.h
+mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \
+                       conf.h config.c \
+                       connection.c connection.h \
+                       core.c core.h \
+                       filter.c filter.h \
+                       http_config.c http_config.h \
+                       http_core.c http_core.h \
+                       http_filter.c http_filter.h \
+                       http_protocol.c http_protocol.h \
+                       http_request.c http_request.h \
+                       http_util.c http_util.h \
+                       listen.c listen.h \
+                       log.c log.h \
+                       protocol.c protocol.h \
+                       request.c request.h \
+                       util_cfgtree.c util_cfgtree.h \
+                       util_filter.c util_filter.h \
+                       util_string.c util_string.h \
+                       util_time.c util_time.h
 
 mod_httpd_test_handler_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)
 mod_httpd_test_handler_la_LIBADD = $(APR_LIBS) $(APU_LIBS)
