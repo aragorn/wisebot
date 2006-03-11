@@ -49,8 +49,6 @@ static int field_count = 0;
 static field_info_t field_info[MAX_EXT_FIELD];
 ///////////////////////////////////////////////////////////
 
-static int mNeedSum=TRUE; // TRUE(1), FALSE(-1)
-
 enum DbType {
 	TYPE_VRFI,
 	TYPE_INDEXDB
@@ -2817,15 +2815,6 @@ static void get_FieldSortingOrder(configValue v)
 	info("set sorting order[%d]: %s", n, sortingorder[n]);
 }
 
-static void get_needsum(configValue v)
-{
-	if (strncasecmp("YES",v.argument[0],SHORT_STRING_SIZE) == 0)
-		mNeedSum = TRUE;
-	else if (strncasecmp("TRUE",v.argument[0],SHORT_STRING_SIZE) ==0)
-		mNeedSum = TRUE;
-	else mNeedSum = FALSE;
-}
-
 static config_t config[] = {
 	CONFIG_GET("DbType",setDbType,1, "vrfi or indexdb"),
 	CONFIG_GET("IndexDbPath",setIndexDbPath,1,
@@ -2835,7 +2824,6 @@ static config_t config[] = {
 
 	CONFIG_GET("Field",get_commentfield,VAR_ARG, "Field which needs to be shown in result"),
 	CONFIG_GET("FieldSortingOrder",get_FieldSortingOrder,2, "Field sorting order"),
-	CONFIG_GET("NeedSum",get_needsum,1, "add SUM field to result, if Yes"),
 	{NULL}
 };
 
