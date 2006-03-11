@@ -323,11 +323,6 @@ static process_rec *create_process_rec(int argc, const char * const *argv)
 
 static int module_init ()
 {
-	return SUCCESS;
-}
-
-static int module_main (slot_t *slot)
-{
 	int argc = 1;
 	const char *argv[] = {"mod_httpd", NULL};
 	const char *envp[] = {NULL};
@@ -348,6 +343,11 @@ static int module_main (slot_t *slot)
 	 * which is gonna use apr_global_hook_pool?? */
 	apr_global_hook_pool = pool;
 
+	return SUCCESS;
+}
+
+static int module_main (slot_t *slot)
+{
 	apr_pool_t *ptemp; /* Pool for temporary config stuff, reset often */
 
 	debug("mod_httpd.c: module_main() init");
