@@ -86,17 +86,83 @@ static int pre_connection(conn_rec *c, apr_socket_t *sock)
     return DONE;
 }
 
-static void flush_conn(conn_rec *c)
+void ap_flush_conn(conn_rec *c)
 {
-	// see apache server/connection.c
+    apr_bucket_brigade *bb;
+    apr_bucket *b;
+
+    bb = apr_brigade_create(c->pool, c->bucket_alloc);
+    b = apr_bucket_flush_create(c->bucket_alloc);
+    APR_BRIGADE_INSERT_TAIL(bb, b);
+    ap_pass_brigade(c->output_filters, bb);
 }
 
+#define SECONDS_TO_LINGER  2
 static int lingering_close_connection(conn_rec *c)
 {
-	flush_conn(c);
+    char dummybuf[512];
+    apr_size_t nbytes = sizeof(dummybuf);
+    apr_status_t rc;
+    apr_int32_t timeout;
+    apr_int32_t total_linger_time = 0;
+    apr_socket_t *csd = ap_get_module_config(c->conn_config, CORE_HTTPD_MODULE);
 
-	// FIXME howto get c->sockfd??
-	return SUCCESS;
+    if (!csd) {
+        return SUCCESS;
+    }
+
+	update_slot_state(c->slot, SLOT_CLOSING, NULL);
+
+#ifdef NO_LINGCLOSE
+    ap_flush_conn(c); /* just close it */
+    apr_socket_close(csd);
+    return SUCCESS;
+#endif
+
+    /* Close the connection, being careful to send out whatever is still
+     * in our buffers.  If possible, try to avoid a hard close until the
+     * client has ACKed our FIN and/or has stopped sending us data.
+     */
+
+    /* Send any leftover data to the client, but never try to again */
+    ap_flush_conn(c);
+
+    if (c->aborted) {
+        apr_socket_close(csd);
+        return SUCCESS;
+    }
+
+    /* Shut down the socket for write, which will send a FIN
+     * to the peer.
+     */
+    if (apr_shutdown(csd, APR_SHUTDOWN_WRITE) != APR_SUCCESS
+        || c->aborted) {
+        apr_socket_close(csd);
+        return SUCCESS;
+    }
+
+    /* Read all data from the peer until we reach "end-of-file" (FIN
+     * from peer) or we've exceeded our overall timeout. If the client does
+     * not send us bytes within 2 seconds (a value pulled from Apache 1.3
+     * which seems to work well), close the connection.
+     */
+    timeout = SECONDS_TO_LINGER * APR_USEC_PER_SEC;
+    apr_setsocketopt(csd, APR_SO_TIMEOUT, timeout);
+    apr_setsocketopt(csd, APR_INCOMPLETE_READ, 1);
+    while (1) {
+        nbytes = sizeof(dummybuf);
+        rc = apr_recv(csd, dummybuf, &nbytes);
+        if (rc != APR_SUCCESS || nbytes == 0)
+            break;
+
+        total_linger_time += SECONDS_TO_LINGER;
+        if (total_linger_time >= MAX_SECS_TO_LINGER) {
+            break;
+        }
+    }
+
+    apr_socket_close(csd);
+    return SUCCESS;
 }
 
 static void register_hooks(void)
