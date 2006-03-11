@@ -27,6 +27,6 @@ struct light_search_row {
 	int relevance; 
 };
  
-SB_DECLARE_HOOK(int,httpd_softbot_subhandler,(request_rec *r, softbot_handler_rec *s, word_db_t *w))
+SB_DECLARE_HOOK(int,httpd_softbot_subhandler,(request_rec *r, softbot_handler_rec *s))
 
 #endif

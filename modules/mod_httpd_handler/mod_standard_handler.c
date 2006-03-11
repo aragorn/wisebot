@@ -1,6 +1,8 @@
 /* $Id$ */
 #include <string.h>
 #include <ctype.h>
+#include "mod_api/did.h"
+#include "mod_cdm/mod_cdm.h"
 #include "../mod_httpd/conf.h"
 #include "../mod_httpd/protocol.h"
 #include "mod_mp/mod_mp.h"
@@ -15,7 +17,7 @@ HOOK_STRUCT(
 )
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, httpd_softbot_subhandler,
-						(request_rec *r, softbot_handler_rec *s, word_db_t *w), (r, s, w), DECLINE)
+						(request_rec *r, softbot_handler_rec *s), (r, s), DECLINE)
 
 typedef struct _sbhandler_postdata sbhandler_postdata;
 
@@ -27,6 +29,8 @@ struct _sbhandler_postdata {
 	sbhandler_postdata *next;
 };
 
+static int did_set = -1;
+static did_db_t* did_db = NULL;
 static int word_db_set = -1;
 static word_db_t* word_db = NULL;
 
@@ -354,7 +358,7 @@ static int softbot_handler(request_rec *r)
 		}
 	}
 	
-	rv = sb_run_httpd_softbot_subhandler(r, &s, word_db);
+	rv = sb_run_httpd_softbot_subhandler(r, &s);
 	
 /* XXX DEBUG */
 /*	ap_rvputs(r,*/
@@ -722,6 +726,7 @@ static int softbot_default(request_rec *r, softbot_handler_rec *s)
 		sb_run_qp_full_search(word_db, &req);
 
 		if (make_xml_search_result(r, &req) == FAIL) {
+		    sb_run_qp_finalize_search(&req);
 			return SUCCESS;
 		}
 
@@ -760,10 +765,12 @@ static int softbot_default(request_rec *r, softbot_handler_rec *s)
 		debug("accept : %s", accept);
 		if ( accept && !strcasecmp(accept, "application/x-softbot") ) {
 			if (make_light_search_result(r, &req) == FAIL) {
+		        sb_run_qp_finalize_search(&req);
 				return SUCCESS;
 			}
 		} else {
 			if (make_xml_search_result(r, &req) == FAIL) {
+		        sb_run_qp_finalize_search(&req);
 				return SUCCESS;
 			}
 		}
@@ -846,11 +853,24 @@ static int softbot_lexicon(request_rec *r, softbot_handler_rec *s)
 
 static int standard_handler_init(void)
 {
-	//FIXME 
-	sb_run_qp_init();
+    int ret = 0;
+
+    ret = sb_run_open_did_db( &did_db, did_set );
+    if ( ret != SUCCESS && ret != DECLINE ) {
+        error("did db open failed");
+        return FAIL;
+    }
 
     if ( sb_run_open_word_db( &word_db, word_db_set ) != SUCCESS ) {
         error("lexicon open failed");
+        return FAIL;
+    }
+
+	sb_run_qp_init();
+
+    ret = sb_run_server_canneddoc_init();
+    if ( ret != SUCCESS && ret != DECLINE ) {
+        error( "cdm module init failed" );
         return FAIL;
     }
 
@@ -860,13 +880,19 @@ static int standard_handler_init(void)
 /* ###########################################################################
  * frame & configuration stuff here
  * ########################################################################## */
-	
+
+static void set_did_set(configValue v)
+{
+    did_set = atoi( v.argument[0] );
+}
+
 static void set_word_db_set(configValue v)
 {
     word_db_set = atoi( v.argument[0] );
 }
 
 static config_t config[] = {
+    CONFIG_GET("DidSet", set_did_set, 1, "Did Set 0~..."),
     CONFIG_GET("WordDbSet", set_word_db_set, 1, "WordDbSet {number}"),
     {NULL}
 };
@@ -885,7 +911,7 @@ module standard_handler_module = {
 	STANDARD_MODULE_STUFF,
 	config,					/* config */
 	NULL,					/* registry */
-	NULL,				    /* initialize */
+	standard_handler_init,  /* initialize */
 	NULL,				    /* child_main */
 	NULL,				    /* scoreboard */
 	register_hooks		    /* register hook api */

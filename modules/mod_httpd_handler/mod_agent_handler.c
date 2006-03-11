@@ -407,7 +407,7 @@ static int agent_light_search(request_t *req)
 	return 0;
 }
 
-static int softbot_agent(request_rec *r, softbot_handler_rec *s, word_db_t* word_db)
+static int softbot_agent(request_rec *r, softbot_handler_rec *s)
 {
 	char *cmd;
 	char *arg;
