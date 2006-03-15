@@ -5,6 +5,11 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H 1
 
+#warning ***********************************************************
+#warning  Using platform.h is deprecated. See common/common_util.
+#warning  -- aragorn, 2006/03/15
+#warning ***********************************************************
+
 #include "unix/setproctitle.h"
 #include "unix/sb_fopen.h"
 #include "unix/sb_open.h"
@@ -21,7 +26,6 @@
 #include "generic/md5_global.h"
 #include "generic/md5.h"
 
-//XXX: temporarily.. --jiwon
 #include "unix/os-aix-dso.h"
 
 #endif
