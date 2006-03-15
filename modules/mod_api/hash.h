@@ -4,8 +4,6 @@
 // _HASH_H_ 는 platform/unix/hash.h 에서 이미 쓰고 있다.
 // hash_t 도 마찬가지다.
 
-#include "hook.h"
-
 #define MAX_HASH_SET (10)
 
 typedef struct _api_hash_t {

@@ -1,3 +1,5 @@
+/* $Id$ */
+#include "common_core.h"
 #include "mod_api/indexdb.h"
 #include "mod_ifs.h"
 #include "../mod_sfs/shared_memory.h"

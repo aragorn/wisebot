@@ -1,28 +1,15 @@
 /* $Id$ */
-#include "softbot.h"
-#include <pthread.h>
-
-/* XXX move to constants.h ? */
-#define DEBUG_MODULE_NUM 	(20)
-
-#define NO_POLICY			(-1)
-#define INCLUDE 			(0)
-#define EXCLUDE				(1)
-
-static char* color_format[] = {
-	/*         module.c     function     */
-	CLEAR GREEN "%s" CLEAR " %s() " BLINK BOLD WHITE ON_RED " ", /* emerg */
-	CLEAR GREEN "%s" CLEAR " %s() " BLINK BOLD WHITE ON_RED " ", /* alert */
-	CLEAR GREEN "%s" CLEAR " %s() " BOLD WHITE ON_RED " ", /* crit */
-	CLEAR GREEN "%s" CLEAR " %s() " BOLD RED     " ", /* error */
-	CLEAR GREEN "%s" CLEAR " %s() " YELLOW       " ", /* warn */
-	CLEAR GREEN "%s" CLEAR " %s() " CYAN         " ", /* notice */
-	CLEAR GREEN "%s" CLEAR " %s() " CYAN         " ", /* info */
-	CLEAR GREEN "%s" CLEAR " %s()  "              , /* debug */
-};
-
-REGISTRY int *registry_log_stat=NULL;
-REGISTRY int *regLogLevel=NULL;
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/sem.h>
+#include <unistd.h>
+#include <time.h>
+#include "common_core.h"
+#include "ipc.h"
+#include "modules.h"
+#include "ansi_color.h"
+#include "log_error.h"
 
 int   gLogLevel = MAX_LOG_LEVEL;
 char *gLogLevelStr[] = {
@@ -37,13 +24,33 @@ char *gLogLevelStr[] = {
 	NULL
 };
 
-static FILE *fplog = NULL; // error_log
-static FILE *fpqlog = NULL; // query_log
-static int  screen_log = 0;
+//#include <pthread.h>
+
+#define DEBUG_MODULE_NUM 	(20)
+
+#define NO_POLICY			(0)
+#define INCLUDE 			(1)
+#define EXCLUDE				(2)
 
 static int  debug_module_policy=NO_POLICY;
 static int  debug_module_number=0;
-static char debug_module_name[DEBUG_MODULE_NUM][STRING_SIZE];
+static char debug_module_name[DEBUG_MODULE_NUM][SHORT_STRING_SIZE];
+
+static char* color_format[] = {
+	/*         module.c     function     */
+	CLEAR GREEN "%s" CLEAR " %s() " BLINK BOLD WHITE ON_RED " ", /* emerg */
+	CLEAR GREEN "%s" CLEAR " %s() " BLINK BOLD WHITE ON_RED " ", /* alert */
+	CLEAR GREEN "%s" CLEAR " %s() " BOLD WHITE ON_RED " ", /* crit */
+	CLEAR GREEN "%s" CLEAR " %s() " BOLD RED     " ", /* error */
+	CLEAR GREEN "%s" CLEAR " %s() " YELLOW       " ", /* warn */
+	CLEAR GREEN "%s" CLEAR " %s() " CYAN         " ", /* notice */
+	CLEAR GREEN "%s" CLEAR " %s() " CYAN         " ", /* info */
+	CLEAR GREEN "%s" CLEAR " %s()  "              , /* debug */
+};
+
+static FILE *fplog  = NULL; // error_log
+static FILE *fpqlog = NULL; // query_log
+static int  screen_log = 0;
 
 #ifndef HAVE_SETLINEBUF
 void setlinebuf(FILE *stream)
@@ -240,9 +247,6 @@ void log_error_core(int          level,
 	
 	if (check_log_condition(aModule, level)==FAIL)	
 		return;
-	if (registry_log_stat != NULL)
-		registry_log_stat[level]++;
-
 
     if (strrchr(aModule,'/'))
         aModule = 1+ strrchr(aModule,'/');
@@ -337,115 +341,43 @@ double timediff(struct timeval *later, struct timeval *first)
 /*****************************************************************************/
 /* config section */
 
-void setDebugModulePolicy(configValue a)
+int set_debug_module_policy(const char *policy)
 {
-	if (strcasecmp(a.argument[0],"include") ==0) {
-		debug_module_policy = INCLUDE;		
-		debug("module policy INCLUDE");
-	}else if (strcasecmp(a.argument[0],"exclude") ==0) {
+	if (strcasecmp(policy,"include") == 0) {
+		debug_module_policy = INCLUDE;
+	} else
+	if (strcasecmp(policy,"exclude") == 0) {
 		debug_module_policy = EXCLUDE;
-		debug("module policy EXCLUDE");
-	}else{
-		alert("SpecialModulePolicy should be either include or exclude");
+	} else {
+		warn("policy[%s] should be either \"include\" or \"exclude\".", policy);
+		return FAIL;
 	}
+
+	return SUCCESS;
 }
 
-void setDebugModuleName(configValue a)
+int add_debug_module(const char *name)
 {
-	int i=0, from=0;
-	int num_of_modules = a.argNum;
-
 	if (debug_module_policy == NO_POLICY) {
-		debug_module_policy = INCLUDE; /* if debug module name is set, */
-									   /* at least debug module policy should be */
-									   /* include or exclude */
+		/* The policy should be either INCLUDE or EXCLUDE. */
+		debug_module_policy = INCLUDE;
+	}
+
+	if (debug_module_number >= DEBUG_MODULE_NUM)
+	{
+		alert("You cannot set more than %d modules for debug.", DEBUG_MODULE_NUM);
+		return FAIL;
 	}
 	
-	if (num_of_modules > DEBUG_MODULE_NUM) {
-		alert("argument number of DebugModuleName should be less than %d",
-														DEBUG_MODULE_NUM);
-		num_of_modules = DEBUG_MODULE_NUM;
+	if (find_module(name) == NULL) {
+		error("module[%s] is not loaded.", name);
+		return FAIL;
 	}
 
-	for (from = debug_module_number, i=0; i<num_of_modules; i++) {
-		if (find_module(a.argument[i]) == NULL) {
-			error("module[%s] is not loaded",a.argument[i]);
-			continue;
-		}
-		if (from+i >= DEBUG_MODULE_NUM) {
-			error("number of debug modules exceeds DEBUG_MODULE_NUM(%d)",
-					DEBUG_MODULE_NUM);
-			break;
-		}
-		 
-		strncpy(debug_module_name[from+i],
-				a.argument[i], STRING_SIZE);
-		debug_module_name[from+i][STRING_SIZE-1] = '\0';
-		debug("debug module[%d]: [%s]",from+i,debug_module_name[from+i]);
-		debug_module_number++;
-	}
+	strncpy(debug_module_name[debug_module_number], name, SHORT_STRING_SIZE);
+	debug_module_name[debug_module_number][SHORT_STRING_SIZE-1] = '\0';
+	debug_module_number++;
+	
+	return SUCCESS;
 }
 
-/* registry section */ 
-static void init_LogLevelStat(void *data)
-{
-	registry_log_stat = data;
-	memset(registry_log_stat, 0x00, MAX_LOG_LEVEL*sizeof(int));
-}
-
-static char* registryGetLevelStat()
-{
-	int i;
-	static char buf[STRING_SIZE];
-	char *ptr;
-
-	ptr = buf;
-	for ( i = 0; i < MAX_LOG_LEVEL; i++ ) {
-		sprintf(ptr, "%d[%p], ", registry_log_stat[i], &registry_log_stat[i]);
-		ptr = buf + strlen(buf);
-	}
-	ptr -= 2;
-	*ptr = '\0';
-	return buf;
-}
-
-static void init_CurrentLogLevel(void *data)
-{
-	regLogLevel = data;
-	*regLogLevel = gLogLevel;
-}
-
-static char *registryGetLogLevel()
-{
-	static char buf[SHORT_STRING_SIZE];
-	sprintf(buf, "%s[%d]", gLogLevelStr[*regLogLevel], *regLogLevel);
-	return buf;
-}
-
-static char* registrySetLogLevel(void *str)
-{
-	*regLogLevel = gLogLevel = atoi((char*)str);
-
-	return "OK";
-}
-
-static registry_t registry[] = {
-    RUNTIME_REGISTRY("LogLevelStat", "count log calls by each log level", 
-					MAX_LOG_LEVEL*sizeof(int),init_LogLevelStat, 
-					registryGetLevelStat, NULL),
-    RUNTIME_REGISTRY("CurrentLogLevel", "current log level", 
-					sizeof(int),init_CurrentLogLevel, 
-					registryGetLogLevel, registrySetLogLevel),
-	NULL_REGISTRY
-};
-
-module error_log_module = 
-{
-	CORE_MODULE_STUFF,
-	NULL,					/* config */
-    registry,              	/* registry */
-	NULL,					/* initialize module */
-    NULL,               	/* child_main */
-    NULL,               	/* scoreboard */
-    NULL					/* register hook api */
-};

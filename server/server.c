@@ -4,6 +4,30 @@
  * Created by Aragorn, 2002-02-12
  */
 
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <signal.h>
+#include "common_core.h"
+
+#ifdef HAVE_GETOPT_LONG
+#  define _GNU_SOURCE
+#  include <getopt.h>
+#endif
+
+#include "scoreboard.h"
+#include "modules.h"
+#include "log_error.h"
+#include "memory.h"
+#include "hook.h"
+#include "config.h"
+#include "timelog.h"
+#include "registry.h"
+#include "setproctitle.h"
+#include "ipc.h"
+#include "mp_api.h"
+#include "common_util.h"
 #include "server.h"
 
 static char mConfigFile[MAX_PATH_LEN] = DEFAULT_CONFIG_FILE;
@@ -282,10 +306,9 @@ int server_main()
 		}
 		else {
 			info("debugging module [%s]", debug_module);
-			// XXX: in debugging mode, isn't it better
-			//      not to fork? is it?
+			// XXX: in debugging mode, isn't it better not to fork? is it?
 			if (mod->main) 
-				sb_spawn_process_for_module(scoreboard, mod);
+				sb_run_spawn_process_for_module(scoreboard, mod);
 			else {
 				error("module[%s] has no main",debug_module);
 				exit(1);
@@ -299,13 +322,13 @@ int server_main()
 		goto STOP;
 	}
 	else
-		sb_spawn_processes_for_each_module(scoreboard, first_module);
+		sb_run_spawn_processes_for_each_module(scoreboard, first_module);
 
 	crit("** master monitoring loop **");
 	setproctitle("softbotd: master - monitoring");
 	set_proc_desc(NULL, "softbotd: master - monitoring");
 	scoreboard->period = CHILD_MONITORING_PERIOD;
-	sb_monitor_processes_for_modules(scoreboard, first_module);
+	sb_run_monitor_processes_for_modules(scoreboard, first_module);
 
   /***********************************************************************
    * stopping state.
@@ -387,7 +410,7 @@ main(int argc, char *argv[], char *envp[])
 	}
 #endif
 
-	init_set_proc_title(argc, argv, envp);
+	init_setproctitle(argc, argv, envp);
 	set_static_modules(server_static_modules);
 
 	/* getopt stuff */
@@ -609,6 +632,20 @@ static void setQueryLog(configValue a)
 	strncpy(gQueryLogFile, a.argument[0], MAX_PATH_LEN);
 }
 
+static void setDebugModulePolicy(configValue a)
+{
+	set_debug_module_policy(a.argument[0]);
+}
+
+static void setDebugModuleName(configValue a)
+{
+	int i = 0;
+	for ( i = 0; i < a.argNum; i++ )
+	{
+		add_debug_module(a.argument[i]);
+	}
+}
+
 static void setPidFile(configValue a)
 {
 	debug("pid file. argument[0]:%s",a.argument[0]);
@@ -642,7 +679,7 @@ static void setListenPort(configValue a)
 
 static void setName(configValue a)
 {
-	strncpy(proc_name, a.argument[0], STRING_SIZE);
+	setproctitle_prefix(a.argument[0]);
 }
 
 /***** registry *****/

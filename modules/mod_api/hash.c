@@ -1,3 +1,6 @@
+/* $Id*/
+
+#include "softbot.h"
 #include "hash.h"
 
 HOOK_STRUCT(

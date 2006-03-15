@@ -2,24 +2,10 @@
 #ifndef MEMORY_H
 #define MEMORY_H 1
 
-#include <sys/types.h>
-#include <unistd.h>
+//#include <sys/types.h>
+//#include <unistd.h>
 
-#undef sb_malloc
-#undef sb_calloc
-#undef sb_realloc
-#undef sb_free
-#undef sb_strdup
-
-#undef sb_mmap
-#undef sb_munmap
-
-#undef sb_alloc_shm
-#undef sb_free_shm
-
-#undef sb_fork
-
-#ifdef DEBUG_SOFTBOTD
+#ifdef DEBUG_SOFTBOT
 #	define sb_malloc(s)			_sb_malloc(s, __FILE__, __FUNCTION__, __LINE__)
 #	define sb_calloc(n,s)		_sb_calloc(n, s, __FILE__, __FUNCTION__, __LINE__)
 #	define sb_realloc(p,s)		_sb_realloc(p, s, __FILE__, __FUNCTION__, __LINE__)
@@ -76,7 +62,5 @@ struct sb_mem_block_t {
 };
 
 #define sb_mem_block_free(p) free((p)->data); free((p))
-
-#include "standalone_debug.h"
 
 #endif //MEMORY_H

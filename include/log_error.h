@@ -1,12 +1,14 @@
-/**
- * $Id$
- */
-#ifndef _LOG_ERROR_H_
-#define _LOG_ERROR_H_ 1
+/* $Id$ */
+#ifndef LOG_ERROR_H
+#define LOG_ERROR_H 1
 
-#include "modules.h"
+#ifndef COMMON_CORE_H
+# error You should include "common_core.h" first.
+#endif
 
-#ifdef DEBUG_SOFTBOTD
+#include <stdarg.h>
+
+#ifdef DEBUG_SOFTBOT
 #  define DEBUG_LOG_ERROR
 #  define EMERG(format, ...)   emerg(format, ##__VA_ARGS__) 
 #  define ALERT(format, ...)   alert(format, ##__VA_ARGS__) 
@@ -36,16 +38,16 @@
  *
  * Use sb_assert() if the condition should always be checked.
  * Use SB_DEBUG_ASSERT() if the condition should only be checked
- * when DEBUG_SOFTBOTD is defined.
+ * when DEBUG_SOFTBOT is defined.
  */
 
-#ifdef DEBUG_SOFTBOTD
+#ifdef DEBUG_SOFTBOT
 #define SB_DEBUG_ASSERT(exp) sb_assert(exp)
 #else
 #define SB_DEBUG_ASSERT(exp) ((void)0)
 #endif
 
-#ifdef DEBUG_SOFTBOTD
+#ifdef DEBUG_SOFTBOT
 #define SB_ABORT() _sb_abort(__FILE__, __FUNCTION__)
 #else
 #define SB_ABORT() ((void)0)
@@ -53,7 +55,7 @@
 
 #define DEFAULT_LOGLEVEL LEVEL_WARN
 
-enum loglevels {
+enum log_levels {
 	LEVEL_EMERG,
 	LEVEL_ALERT,
 	LEVEL_CRIT,
@@ -78,52 +80,24 @@ enum loglevels {
 extern char *gLogLevelStr[];
 extern int  gLogLevel;
 
-void setDebugModulePolicy(configValue a);
-void setDebugModuleName(configValue a);
+SB_DECLARE(int) set_debug_module_policy(const char *policy);
+SB_DECLARE(int) add_debug_module(const char *name);
 
-void open_error_log(const char *error_log, const char *query_log);
-void reopen_error_log(const char *error_log, const char *query_log);
-void close_error_log();
-void save_pid(const char *file);
+SB_DECLARE(void) open_error_log(const char *error_log, const char *query_log);
+SB_DECLARE(void) reopen_error_log(const char *error_log, const char *query_log);
+SB_DECLARE(void) close_error_log();
+SB_DECLARE(void) save_pid(const char *file);
 
-SB_DECLARE(void) log_error(int level,const char *aModule,const char *aCaller,const char *format, ...)
- __attribute__((format(printf,4,5)));
-SB_DECLARE(void) log_error_core(int level,const char *aModule,const char *aCaller,
- const char *format, va_list args);
+SB_DECLARE(void) log_error(int level, const char *aModule, \
+						   const char *aCaller,const char *format, ...) \
+						   __attribute__((format(printf,4,5)));
+SB_DECLARE(void) log_error_core(int level, const char *aModule, const char *aCaller, \
+								const char *format, va_list args);
 SB_DECLARE(void) log_query(const char *query);
 SB_DECLARE(void) log_assert(const char *exp,const char *file,int line,const char *func);
 SB_DECLARE(void) _sb_abort(const char *file,const char *function);
 SB_DECLARE(void) set_screen_log();
 SB_DECLARE(double) timediff(struct timeval *first, struct timeval *later);
 SB_DECLARE(int) log_setlevelstr(const char* levelstr);
-
-/* ansi terminal coloring */
-#define CLEAR		"\e[0m"
-#define RESET		"\e[0m"
-#define BOLD		"\e[1m"
-#define DARK		"\e[2m"
-#define UNDERLINE	"\e[4m"
-#define UNDERSCORE	"\e[4m"
-#define BLINK		"\e[5m"
-#define REVERSE		"\e[7m"
-#define CONCEALED	"\e[8m"
-#define BLACK		"\e[30m"
-#define RED		"\e[31m"
-#define GREEN		"\e[32m"
-#define YELLOW		"\e[33m"
-#define BLUE		"\e[34m"
-#define MAGENTA		"\e[35m"
-#define CYAN		"\e[36m"
-#define WHITE		"\e[37m"
-#define ON_BLACK	"\e[40m"
-#define ON_RED		"\e[41m"
-#define ON_GREEN	"\e[42m"
-#define ON_YELLOW	"\e[43m" 
-#define ON_BLUE		"\e[44m" 
-#define ON_MAGENTA	"\e[45m" 
-#define ON_CYAN		"\e[46m" 
-#define ON_WHITE	"\e[47m" 
-
-#include "standalone_debug.h"
 
 #endif

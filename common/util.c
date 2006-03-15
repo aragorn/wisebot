@@ -1,5 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
+
+#include "common_core.h"
 #include "util.h"
 
 const char *sb_get_server_version(void)

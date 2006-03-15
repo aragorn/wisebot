@@ -1,31 +1,40 @@
 /* $Id$ */
-#include "softbot.h"
+#include <stdlib.h>
 #include <search.h> /* for hash table function like hcreate.. */
+#include <string.h>
+#include <errno.h>
+#include <time.h>
+#include "common_core.h"
+#include "ipc.h"
+#include "modules.h"
+#include "log_error.h"
+#include "registry.h"
 
 #undef DEBUG_REGISTRY_MEMORY
+
 char gRegistryFile[MAX_PATH_LEN] = DEFAULT_REGISTRY_FILE;
-static ipc_t g_registry_shm;
+static ipc_t registry_shm;
 
 static char *bin2hex(char *s, void *bin, int size);
 static void *hex2bin(void *bin, char *s, int size);
 
 static void alloc_shm_for_registry(int size) {
-	g_registry_shm.type = IPC_TYPE_SHM;
-	g_registry_shm.pathname = NULL;
+	registry_shm.type = IPC_TYPE_SHM;
+	registry_shm.pathname = NULL;
     /* guarantee no shm collision with client.
 	 * NULL pathname means key IPC_PRIVATE.
 	 * see ipc.c->alloc_shm() */
-	g_registry_shm.pid = SYS5_REGISTRY;
-	g_registry_shm.size = size;
-	if ( alloc_shm(&g_registry_shm) != SUCCESS ) {
+	registry_shm.pid = SYS5_REGISTRY;
+	registry_shm.size = size;
+	if ( alloc_shm(&registry_shm) != SUCCESS ) {
 		exit(1);
 	}
 
 #ifdef DEBUG_REGISTRY_MEMORY
 	debug("key file for shared memory:%s",gSoftBotRoot);
-	debug("shared memory key:%d",g_registry_shm.key);
-	debug("shared memory shmid:%d",g_registry_shm.id);
-	debug("shared memory size:%ld",g_registry_shm.size);
+	debug("shared memory key:%d",registry_shm.key);
+	debug("shared memory shmid:%d",registry_shm.id);
+	debug("shared memory size:%ld",registry_shm.size);
 #endif
 
 }
@@ -73,7 +82,7 @@ void load_each_registry() {
 
 	registry_size = count_total_registry_size();
 	alloc_shm_for_registry(registry_size);
-	current_shmaddr = g_registry_shm.addr;
+	current_shmaddr = registry_shm.addr;
 	hcreate(registry_size); // see hcreate(3)
 
 	debug("linking registry"); 
@@ -98,7 +107,7 @@ void load_each_registry() {
 				warn("registry %s is not registered due to hash error", reg->name);
 
 			reg->data = current_shmaddr;
-			reg->data_relative = (void*)(g_registry_shm.addr - current_shmaddr);
+			reg->data_relative = (void*)(registry_shm.addr - current_shmaddr);
 
 			current_shmaddr += reg->size + padded;
 

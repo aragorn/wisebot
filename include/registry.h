@@ -2,6 +2,10 @@
 #ifndef REGISTRY_H
 #define REGISTRY_H 1
 
+#ifndef COMMON_CORE_H
+# error You should include "common_core.h" first.
+#endif
+
 #define MAX_EACH_REGISTRY_RESULT_STRING_SIZE (128)
 #define REGISTRY static
 
@@ -17,7 +21,7 @@ enum save_flag {
 #define NULL_REGISTRY \
 		{NULL,NULL,NULL,NULL,NULL,0,NULL,NULL,NULL,DONT_SAVE}
 
-typedef struct {
+struct registry_t {
     char *module;			/* module name */
     char *name;           	/* name of registry */
     char *desc;           	/* description of registry */
@@ -29,7 +33,7 @@ typedef struct {
     char* (*set)(void*);	/* callback function to set value */
 							/* FIXME: is set function needed to return char*? */
 	enum save_flag flag;	/* flag to save registry or not */
-} registry_t;
+};
 
 SB_DECLARE(void) load_each_registry();
 SB_DECLARE(void) list_registry(FILE *out, char *module_name);

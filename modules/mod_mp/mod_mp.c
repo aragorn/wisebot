@@ -1,6 +1,20 @@
 /* $Id$ */
 
-#include "softbot.h"
+#include <pthread.h>
+#include <unistd.h>  /* usleep(3) */
+#include <signal.h>
+#include <string.h>  /* memset(3) */
+#include <errno.h>
+#include <stdlib.h>  /* EXIT_SUCCESS .. */
+//#include <sys/types.h>
+#include <sys/wait.h>  /* waitpid(2) */
+#include "common_core.h"
+#include "hook.h"
+#include "log_error.h"
+#include "scoreboard.h"
+#include "modules.h"
+#include "memory.h"
+#include "mp_api.h"
 #include "mod_mp.h"
 #include "proc_list.h"
 
@@ -41,8 +55,7 @@ static void _reopen_log_error(int sig)
 	return;
 }
 
-SB_DECLARE(int) sb_set_sighandlers(
-	int signum, void (*handler)(int) )
+static int set_sighandlers(int signum, void (*handler)(int))
 {
 	struct sigaction act;
 
@@ -56,8 +69,8 @@ SB_DECLARE(int) sb_set_sighandlers(
 	return SUCCESS;
 }
 
-SB_DECLARE(int) sb_set_default_sighandlers(
-	void (*shutdown_handler)(int), void (*graceful_shutdown_handler)(int))
+static int set_default_sighandlers(void (*shutdown_handler)(int),
+								   void (*graceful_shutdown_handler)(int))
 {
 	struct sigaction act;
 
@@ -95,7 +108,7 @@ SB_DECLARE(int) sb_set_default_sighandlers(
 	return SUCCESS;
 }
 
-SB_DECLARE(int) sb_spawn_thread(slot_t *slot, const char *name, int (*main)(slot_t *))
+static int spawn_thread(slot_t *slot, const char *name, int (*main)(slot_t *))
 {
 	int n;
 
@@ -125,7 +138,8 @@ SB_DECLARE(int) sb_spawn_thread(slot_t *slot, const char *name, int (*main)(slot
 	return SUCCESS;
 }
 
-SB_DECLARE(int) sb_spawn_process(slot_t *slot, const char *name, int (*main)(slot_t *))
+
+static int spawn_process(slot_t *slot, const char *name, int (*main)(slot_t *))
 {
 	pid_t pid = -1;
 
@@ -163,8 +177,9 @@ SB_DECLARE(int) sb_spawn_process(slot_t *slot, const char *name, int (*main)(slo
 
 	return SUCCESS; /* never comes here */
 }
-SB_DECLARE(int) 
-sb_spawn_processes(scoreboard_t *scoreboard, const char *name, int (*main)(slot_t *))
+
+
+static int spawn_processes(scoreboard_t *scoreboard, const char *name, int (*main)(slot_t *))
 {
 	int i=0;
 	if ( scoreboard->type != TYPE_PROCESS ) {
@@ -182,14 +197,13 @@ sb_spawn_processes(scoreboard_t *scoreboard, const char *name, int (*main)(slot_
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 
 		slow_start();
-		sb_spawn_process(&(scoreboard->slot[i]), name, main);
+		spawn_process(&(scoreboard->slot[i]), name, main);
 	}
 
 	return SUCCESS;
 }
 
-SB_DECLARE(int)
-sb_spawn_threads(scoreboard_t *scoreboard, const char *name, int (*main)(slot_t *))
+static int spawn_threads(scoreboard_t *scoreboard, const char *name, int (*main)(slot_t *))
 {
 	int i=0;
 
@@ -209,14 +223,13 @@ sb_spawn_threads(scoreboard_t *scoreboard, const char *name, int (*main)(slot_t 
 	for (i = 1; i <= scoreboard->size; i++) {
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 		slow_start();
-		sb_spawn_thread(&(scoreboard->slot[i]), name, main);
+		spawn_thread(&(scoreboard->slot[i]), name, main);
 	}
 
 	return SUCCESS;
 }
 
-SB_DECLARE(int) 
-sb_spawn_processes_for_each_module(scoreboard_t *scoreboard, module *mod)
+static int spawn_processes_for_each_module(scoreboard_t *scoreboard, module *mod)
 {
 	int i;
 	module *m;
@@ -249,7 +262,7 @@ sb_spawn_processes_for_each_module(scoreboard_t *scoreboard, module *mod)
 		strncpy(scoreboard->slot[i].name, m->name, SHORT_STRING_SIZE);
 		scoreboard->slot[i].name[SHORT_STRING_SIZE-1] = '\0';
 		scoreboard->slot[i].main = m->main;
-		sb_spawn_process(slot, m->name, m->main);
+		spawn_process(slot, m->name, m->main);
 	}
 
 	if (i == 1) {
@@ -260,8 +273,7 @@ sb_spawn_processes_for_each_module(scoreboard_t *scoreboard, module *mod)
 }
 
 
-SB_DECLARE(int)
-sb_spawn_process_for_module(scoreboard_t *scoreboard, module *mod)
+static int spawn_process_for_module(scoreboard_t *scoreboard, module *mod)
 {
 	if ( scoreboard->type != TYPE_PROCESS ) {
 		error("scoreboard type [%d] is not suitable.", scoreboard->type);
@@ -284,7 +296,7 @@ sb_spawn_process_for_module(scoreboard_t *scoreboard, module *mod)
 		return FAIL;
 	}
 
-	return sb_spawn_process(&scoreboard->slot[1], mod->name, mod->main);
+	return spawn_process(&scoreboard->slot[1], mod->name, mod->main);
 }
 
 
@@ -302,7 +314,8 @@ sb_spawn_process_for_module(scoreboard_t *scoreboard, module *mod)
  * this causes incompatible code with monitor_processes().
  * --aragorn, 2002/06/08
  */
-SB_DECLARE(int) sb_monitor_threads(scoreboard_t *scoreboard)
+
+static int monitor_threads(scoreboard_t *scoreboard)
 {
 	slot_t *slot;
 	int i=0, n=0, alive;
@@ -357,7 +370,7 @@ SB_DECLARE(int) sb_monitor_threads(scoreboard_t *scoreboard)
 				if (scoreboard->shutdown || 
 					scoreboard->graceful_shutdown) continue;
 
-				sb_spawn_thread(slot, slot->name, slot->main);
+				spawn_thread(slot, slot->name, slot->main);
 				alive++;
 			
 				debug("thread slot[%d] is empty", i);
@@ -388,7 +401,7 @@ SB_DECLARE(int) sb_monitor_threads(scoreboard_t *scoreboard)
 
 #define ERROR_TIME_SLOT_SIZE	(10)
 #define TOO_MANY_ERRORS		(10)
-static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
+static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 {
 	int status;
 	pid_t pid;
@@ -428,7 +441,7 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 				continue;
 			}
 			slow_start();
-			sb_spawn_process(slot, slot->name, slot->main);
+			spawn_process(slot, slot->name, slot->main);
 		}
 
 		/* we need to reinitialize timeval.
@@ -483,7 +496,7 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 						scoreboard->name, (int) pid, slot->name, status);
 				if (slot->state == SLOT_RESTART) {
 					slow_start();
-					sb_spawn_process(slot, slot->name, slot->main);
+					spawn_process(slot, slot->name, slot->main);
 					continue;
 				}
 				slot->state = SLOT_OPEN;
@@ -524,7 +537,7 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 //				}
 
 				slow_start();
-				sb_spawn_process(slot, slot->name, slot->main);
+				spawn_process(slot, slot->name, slot->main);
 			} else if ( WIFEXITED(status) && WEXITSTATUS(status) > 0 ) {
 				warn("%s monitor: child process[%d, %s] exited with exitstatus[%d].",
 						scoreboard->name, (int)pid, slot->name, WEXITSTATUS(status));
@@ -533,7 +546,7 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 					scoreboard->graceful_shutdown ) continue;
 
 				slow_start();
-				sb_spawn_process(slot, slot->name, slot->main);
+				spawn_process(slot, slot->name, slot->main);
 			} else {
 				info("%s monitor: child process[%d, %s] exited with status[%d].",
 						scoreboard->name, (int)pid, slot->name, status);
@@ -558,18 +571,18 @@ static int _sb_monitor_processes(scoreboard_t *scoreboard, module *mod)
 	return SUCCESS;
 }
 
-SB_DECLARE(int) sb_monitor_processes(scoreboard_t *scoreboard)
+static int monitor_processes(scoreboard_t *scoreboard)
 {
-	return _sb_monitor_processes(scoreboard, NULL);
+	return _monitor_processes(scoreboard, NULL);
 }
 
-SB_DECLARE(int) sb_monitor_processes_for_modules(scoreboard_t *scoreboard, module *mod)
+static int monitor_processes_for_modules(scoreboard_t *scoreboard, module *mod)
 {
-	return _sb_monitor_processes(scoreboard, mod);
+	return _monitor_processes(scoreboard, mod);
 }
 
 
-SB_DECLARE(int) sb_init_scoreboard(scoreboard_t *scoreboard)
+static int init_scoreboard(scoreboard_t *scoreboard)
 {
 	int i;
 
@@ -597,8 +610,7 @@ SB_DECLARE(int) sb_init_scoreboard(scoreboard_t *scoreboard)
 	return SUCCESS;
 }
 
-SB_DECLARE(void) sb_first_init_scoreboard(
-		scoreboard_t *s, char *name, int type, int slotnum)
+static void irst_init_scoreboard(scoreboard_t *s, char *name, int type, int slotnum)
 {
 	s->type = type;
 	s->name = name;
@@ -612,91 +624,20 @@ SB_DECLARE(void) sb_first_init_scoreboard(
 }
 	
 /*****************************************************************************/
-SB_DECLARE(int) sb_run_set_default_sighandlers
-	(void (*shutdown_handler)(int), void (*graceful_shutdown_handler)(int))
-{
-	warn("%s is depricated.Use sb_default_sighandlers",__FUNCTION__);
-	return sb_set_default_sighandlers(shutdown_handler,
-									  graceful_shutdown_handler);
-}
-SB_DECLARE(int) sb_run_init_scoreboard (scoreboard_t *scoreboard)
-{
-	warn("%s is depricated.Use sb_init_scoreboard",__FUNCTION__);
-	return sb_init_scoreboard(scoreboard);
-}
-SB_DECLARE(void) sb_run_first_init_scoreboard
-	(scoreboard_t *scoreboard, char *name, int type, int slotnum)
-{
-	warn("%s is depricated.Use sb_first_init_scoreboard",__FUNCTION__);
-	sb_first_init_scoreboard(scoreboard,name,type,slotnum);
-}
-
-SB_DECLARE(int) sb_run_monitor_processes(scoreboard_t *scoreboard)
-{
-	warn("%s is depricated.Use sb_monitor_processes",__FUNCTION__);
-	return sb_monitor_processes(scoreboard);
-}
-
-SB_DECLARE(int) sb_run_monitor_threads(scoreboard_t *scoreboard)
-{
-	warn("%s is depricated.Use sb_monitor_threads",__FUNCTION__);
-	return sb_monitor_threads(scoreboard);
-}
-
-SB_DECLARE(int) sb_run_spawn_process 
-		(slot_t *slot, const char *name, int (*main)(slot_t *))
-{
-	warn("%s is depricated.Use sb_spawn_process",__FUNCTION__);
-	return sb_spawn_process(slot,name,main);
-}
-
-SB_DECLARE(int) sb_run_spawn_thread
-		(slot_t *slot, const char *name, int (*main)(slot_t *))
-{
-	warn("%s is depricated.Use sb_spawn_thread",__FUNCTION__);
-	return sb_spawn_thread(slot,name,main);
-}
-SB_DECLARE(int) sb_run_spawn_processes
-		(scoreboard_t *scoreboard, const char *name, int (*main)(slot_t *))
-{
-	warn("%s is depricated.Use sb_spawn_processes",__FUNCTION__);
-	return sb_spawn_processes(scoreboard,name,main);
-}
-SB_DECLARE(int) sb_run_spawn_threads
-		(scoreboard_t *scoreboard, const char *name, int (*main)(slot_t *))
-{
-	warn("%s is depricated.Use sb_spawn_threads.",__FUNCTION__);
-	return sb_spawn_threads(scoreboard,name,main);
-}
-
-SB_DECLARE(int) sb_run_spawn_processes_for_each_module
-		(scoreboard_t *scoreboard, module *mod)
-{
-	warn("%s is depricated.Use sb_spawn_processes_for_each_module",__FUNCTION__);
-	return sb_spawn_processes_for_each_module(scoreboard,mod);
-}
-SB_DECLARE(int) sb_run_spawn_process_for_module
-		(scoreboard_t *scoreboard, module *mod)
-{
-	warn("%s is depricated.Use sb_spawn_process_for_module.",__FUNCTION__);
-	return sb_spawn_process_for_module(scoreboard,mod);
-}
 static void register_hooks(void)
 {
-#if 0
 	sb_hook_set_default_sighandlers(set_default_sighandlers,NULL,NULL,HOOK_MIDDLE);/*{{{*/
 	sb_hook_init_scoreboard(init_scoreboard,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_monitor_processes(monitor_processes,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_monitor_threads(monitor_threads,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_spawn_process(spawn_process,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_spawn_processes(spawn_processes,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_spawn_threads(spawn_threads,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_spawn_processes_for_each_module(spawn_processes_for_each_module,\
-														NULL,NULL,HOOK_MIDDLE);
-	sb_hook_spawn_process_for_module(spawn_process_for_module,\
-														NULL,NULL,HOOK_MIDDLE);
-	sb_hook_first_init_scoreboard(first_init_scoreboard,NULL,NULL,HOOK_MIDDLE);/*}}}*/
-#endif
+	sb_hook_monitor_processes(monitor_processes,NULL,NULL,HOOK_MIDDLE);
+
+	//sb_hook_monitor_threads(monitor_threads,NULL,NULL,HOOK_MIDDLE);
+	//sb_hook_spawn_process(spawn_process,NULL,NULL,HOOK_MIDDLE);
+	//sb_hook_spawn_threads(spawn_threads,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_spawn_processes_for_each_module(spawn_processes_for_each_module,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_spawn_process_for_module(spawn_process_for_module,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_monitor_processes_for_modules(monitor_processes_for_modules,NULL,NULL,HOOK_MIDDLE);
+	//sb_hook_first_init_scoreboard(first_init_scoreboard,NULL,NULL,HOOK_MIDDLE);
 }
 
 module mp_module = {

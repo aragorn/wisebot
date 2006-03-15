@@ -1,10 +1,15 @@
 /* $Id$ */
-#include "softbot.h"
-#include "hook.h"
+
+#include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
-SB_DECLARE_DATA const char *current_hooking_module = NULL;
-SB_DECLARE_DATA int debug_module_hooks = 0;
+#include "common_core.h"
+#include "log_error.h"
+#include "hook.h"
+
+const char *current_hooking_module = NULL;
+int debug_module_hooks = 0;
 
 #define MAX_HOOK_LINK_ARRAY	(20)
 

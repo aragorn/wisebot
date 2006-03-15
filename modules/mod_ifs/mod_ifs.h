@@ -2,11 +2,11 @@
 #ifndef __MOD_IFS_H__
 #define __MOD_IFS_H__
 
+#include "common_core.h"
 #include "mod_api/indexdb.h"
 #include "table.h"
 #include "../mod_sfs/mod_sfs.h"
 
-#include "softbot.h"
 #define PATH_SEP '/'
 
 #define IFS_MAGIC "IFS0"

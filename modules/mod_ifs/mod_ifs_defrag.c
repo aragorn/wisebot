@@ -1,6 +1,6 @@
 #include "mod_ifs.h"
 #include "mod_ifs_defrag.h"
-#include "mod_mp/mod_mp.h"
+#include "mp_api.h"
 
 // 2개의 segment를 defrag 했더니 이만큼까지 segment가 늘어날 수 있다.
 #define MAX_PSEG_LIST 256
@@ -761,16 +761,16 @@ static int child_main(slot_t *slot)
 
 static int module_main(slot_t *slot)
 {
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 
 	setproctitle("softbotd: mod_ifs_defrag.c");
 	scoreboard->size = 1;
 
-	sb_init_scoreboard(scoreboard);
-	sb_spawn_processes(scoreboard, "ifs defrag process", child_main);
+	sb_run_init_scoreboard(scoreboard);
+	sb_run_spawn_processes(scoreboard, "ifs defrag process", child_main);
 
 	scoreboard->period = MONITORING_PERIOD;
-	sb_monitor_processes(scoreboard);
+	sb_run_monitor_processes(scoreboard);
 
 	return 0;
 }

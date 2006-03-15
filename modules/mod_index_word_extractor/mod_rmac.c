@@ -1,7 +1,7 @@
 /* $Id$ */
 #include "softbot.h"
 
-#include "mod_mp/mod_mp.h"
+#include "mp_api.h"
 #include "mod_api/mod_api.h"
 #include "mod_api/spool.h"
 
@@ -322,7 +322,7 @@ static void mark_server_state_table( int server_id , int value)
 static int module_main (slot_t *slot)
 {
 	/* set signal handler */
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);	
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);	
 
 	debug("mod_register.c: module_main() init");
 	spl = sb_run_spool_open(spoolpath, spool_queue_size, spool_mpool_size);
@@ -334,15 +334,15 @@ static int module_main (slot_t *slot)
 	scoreboard->size = needed_threads;
 
 	/* set scoreboard properly */
-	sb_init_scoreboard(scoreboard);
+	sb_run_init_scoreboard(scoreboard);
 
 	/* spawn slave thread */
-	sb_spawn_threads(scoreboard,
+	sb_run_spawn_threads(scoreboard,
 			"rmac process", thread_main);
 
 	/* monitering slave thread */
 	scoreboard->period = MONITORING_PERIOD;
-	sb_monitor_threads(scoreboard);
+	sb_run_monitor_threads(scoreboard);
 
 	debug("monitor_processes returned");
 

@@ -1,4 +1,5 @@
 #include "softbot.h"
+#include "mp_api.h"
 #include "mod_mp/mod_mp.h"
 #include "mod_vrfi/mod_vrfi.h"
 #include "mod_qp/mod_qp.h"
@@ -311,24 +312,24 @@ static int indexdb_child_main(slot_t* slot)
 
 static int module_main(slot_t* slot)
 {
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 
 	scoreboard->size = m_processes;
-	sb_init_scoreboard(scoreboard);
+	sb_run_init_scoreboard(scoreboard);
 
 	switch( m_type ) {
 		case TYPE_VRFI:
-			sb_spawn_processes(scoreboard, "vrfi data check process", vrfi_child_main);
+			sb_run_spawn_processes(scoreboard, "vrfi data check process", vrfi_child_main);
 			break;
 		case TYPE_INDEXDB:
-			sb_spawn_processes(scoreboard, "indexdb data check process", indexdb_child_main);
+			sb_run_spawn_processes(scoreboard, "indexdb data check process", indexdb_child_main);
 			break;
 		default:
 			error( "error in m_type: %d", m_type );
 	}
 
 	scoreboard->period = MONITORING_PERIOD;
-	sb_monitor_processes(scoreboard);
+	sb_run_monitor_processes(scoreboard);
 
 	return 0;
 }

@@ -1,11 +1,13 @@
 /* $Id$ */
 #define CLIENT /* includes client only APIs */
 
+#include "common_core.h"
 #include "client.h"
 #include "commands.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/did.h"
 #include "mod_api/cdm.h"
+#include "setproctitle.h"
 
 char mServerAddr[SHORT_STRING_SIZE] = "localhost";
 char mServerPort[SHORT_STRING_SIZE] = "8605";
@@ -343,7 +345,6 @@ int client_main()
 	finish_readline();
 	printf("bye!\n");
 
-	free_ipcs();
 	if ( mDidDb ) sb_run_close_did_db( mDidDb );
 	if ( mWordDb ) sb_run_close_word_db( mWordDb );
 
@@ -447,7 +448,7 @@ main(int argc, char *argv[], char *envp[])
 	 * all error messages should go into error_log file */
 	set_screen_log();
 
-	init_set_proc_title(argc, argv, envp);
+	init_setproctitle(argc, argv, envp);
 	set_static_modules(client_static_modules);
 
 	// getopt stuff
@@ -567,6 +568,7 @@ main(int argc, char *argv[], char *envp[])
 
 	client_main();
 	close_error_log();
+	free_ipcs();
 
 	return 0;
 }
@@ -609,6 +611,20 @@ static void setLogLevel(configValue a)
 static void setErrorLog(configValue a)
 {
 	strncpy(mErrorLogFile, a.argument[0], MAX_PATH_LEN);
+}
+
+static void setDebugModulePolicy(configValue a)
+{
+    set_debug_module_policy(a.argument[0]);
+}
+
+static void setDebugModuleName(configValue a)
+{
+    int i = 0;
+    for ( i = 0; i < a.argNum; i++ )
+    {
+        add_debug_module(a.argument[i]);
+    }
 }
 
 static void setServerRoot(configValue a)
@@ -719,7 +735,7 @@ static config_t config[] = {
 
 	CONFIG_GET("DidSet", setDidSet, 1, "DidSet 0~..."),
 	CONFIG_GET("WordDbSet", setWordDbSet, 1, "WordDbSet 0~..."),
-	{NULL}
+	{ NULL }
 };
 
 

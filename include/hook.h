@@ -2,8 +2,11 @@
 #ifndef HOOK_H
 #define HOOK_H
 
-#include <stdlib.h>
-#include "softbot.h" /* SB_DECLARE_HOOK */
+#ifndef COMMON_CORE_H
+# error You should include "common_core.h" first.
+#endif
+
+//#include <stdlib.h>
 
 extern SB_DECLARE_DATA const char *current_hooking_module;
 extern SB_DECLARE_DATA int debug_module_hooks;

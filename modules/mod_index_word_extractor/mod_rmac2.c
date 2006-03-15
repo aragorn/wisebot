@@ -1,7 +1,7 @@
 /* $Id$ */
 #include "softbot.h"
 
-#include "mod_mp/mod_mp.h"
+#include "mp_api.h"
 #include "mod_api/cdm.h"
 #include "mod_api/indexer.h"
 #include "mod_api/tcp.h"
@@ -343,7 +343,7 @@ static void mark_rmas_error( int server_id )
 static int module_main (slot_t *slot)
 {
 	/* set signal handler */
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);	
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);	
 
 	debug("mod_register.c: module_main() init");
 
@@ -354,15 +354,15 @@ static int module_main (slot_t *slot)
 	scoreboard->size = needed_processes;
 
 	/* set scoreboard properly */
-	sb_init_scoreboard(scoreboard);
+	sb_run_init_scoreboard(scoreboard);
 	init_scoreboard();
 
 	/* spawn slave process */
-	sb_spawn_processes(scoreboard, "rmac process", process_main);
+	sb_run_spawn_processes(scoreboard, "rmac process", process_main);
 
 	/* monitering slave thread */
 	scoreboard->period = MONITORING_PERIOD;
-	sb_monitor_processes(scoreboard);
+	sb_run_monitor_processes(scoreboard);
 
 	debug("monitor_processes returned");
 

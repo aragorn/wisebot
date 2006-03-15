@@ -1,7 +1,19 @@
 /* $Id$ */
-#include "softbot.h"
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <stdint.h>
+#include <fcntl.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include "common_core.h"
+#include "log_error.h"
+#include "memory.h"
 #include "ipc.h"
-#include "sys/mman.h"
+
+//#include "sys/mman.h"
 
 #define MAX_SYS5_IPC (200)
 
@@ -28,9 +40,9 @@ int free_ipcs()
 															strerror(errno));
 				fail++;
 			}
-#ifdef DEBUG_SOFTBOTD
+#ifdef DEBUG_SOFTBOT
 			_sb_free_shm(allocated_ipcs[i].id, __FILE__, __FUNCTION__);
-#endif //DEBUG_SOFTBOTD
+#endif //DEBUG_SOFTBOT
 			break;
 		case IPC_TYPE_SEM:
 			if (semctl(allocated_ipcs[i].id, ignored, IPC_RMID) != 0) {
@@ -91,8 +103,8 @@ int _acquire_lock(int semid,int idx,const char *file,const char* caller)
 	while ( (n=semop(semid,&semopt,1)) == -1 && errno == EINTR );
 
 	if (n == -1) {
-		error("semop failed while acquiring lock(file=%s,caller=%s): %s",
-				file, caller, strerror(errno));
+		error("semop failed while acquiring lock(semid=%d,file=%s,caller=%s): %s",
+				semid, file, caller, strerror(errno));
 		return FAIL;
 	}
 	return SUCCESS;
@@ -108,7 +120,8 @@ int _acquire_lock_nowait(int semid,int idx,const char* file, const char* caller)
 	/* process exit시에 kernel이 sem value를 adjusting할 수 있게 */
 	semopt.sem_flg = SEM_UNDO | IPC_NOWAIT;
 	if (semop(semid,&semopt,1) == -1) {
-		debug("semop failed while acquiring lock(file=%s,caller=%s): %s", file, caller, strerror(errno));
+		debug("semop failed while acquiring lock(semid=%d,file=%s,caller=%s): %s",
+				semid, file, caller, strerror(errno));
 		return FAIL;
 	}
 	return SUCCESS;
@@ -123,8 +136,8 @@ int _release_lock(int semid,int idx,const char* file, const char* caller)
 	semopt.sem_flg = SEM_UNDO;
 
 	if (semop(semid,&semopt,1) == -1) {
-		error("semop failed while releasing lock(file=%s,caller=%s): %s",
-				file, caller, strerror(errno));
+		error("semop failed while releasing lock(semid=%d,file=%s,caller=%s): %s",
+				semid, file, caller, strerror(errno));
 		return FAIL;
 	}
 	return SUCCESS;
@@ -216,7 +229,7 @@ int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
 	if (created) {
 		allocated_ipcs[last_ipc].type = IPC_TYPE_SEM;
 		allocated_ipcs[last_ipc].id = ipc->id;
-// #ifdef DEBUG_SOFTBOTD XXX: conditional compilation needed?
+// #ifdef DEBUG_SOFTBOT XXX: conditional compilation needed?
 		allocated_ipcs[last_ipc].key = ipc->key;
 		if (ipc->pathname != NULL) {
 			strncpy(allocated_ipcs[last_ipc].path,ipc->pathname,SHORT_STRING_SIZE);
@@ -389,9 +402,9 @@ attached to the calling process, SHMSEG value of the kernel.");
 
 	/* shared memory will be removed automatically when shutdown */
 	if (created) {
-#ifdef DEBUG_SOFTBOTD
+#ifdef DEBUG_SOFTBOT
 		_sb_alloc_shm(ipc->id, ipc->size, file, caller);
-#endif //DEBUG_SOFTBOTD
+#endif //DEBUG_SOFTBOT
 		/* initialize the newly allocated memory */
 		memset(ipc->addr, 0x00, ipc->size);
 		
@@ -399,7 +412,7 @@ attached to the calling process, SHMSEG value of the kernel.");
 		
 		allocated_ipcs[last_ipc].type = IPC_TYPE_SHM;
 		allocated_ipcs[last_ipc].id = ipc->id;
-// #ifdef DEBUG_SOFTBOTD XXX: conditional compilation needed?
+// #ifdef DEBUG_SOFTBOT XXX: conditional compilation needed?
 		allocated_ipcs[last_ipc].key = ipc->key;
 		if (ipc->pathname != NULL) {
 			strncpy(allocated_ipcs[last_ipc].path,ipc->pathname,SHORT_STRING_SIZE);

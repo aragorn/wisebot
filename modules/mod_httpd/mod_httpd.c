@@ -1,5 +1,6 @@
 /* $Id$ */
 #include "softbot.h"
+#include "mp_api.h"
 #include "mod_mp/mod_mp.h"
 #include "mod_httpd.h"
 #include "connection.h"
@@ -353,7 +354,7 @@ static int module_main (slot_t *slot)
 	debug("mod_httpd.c: module_main() init");
 
 	/* creating pool : now moved to module_init() */
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 
 	/* read apache style configuration file */
 	apr_pool_create(&ptemp, pconf);
@@ -384,23 +385,19 @@ static int module_main (slot_t *slot)
 
 	scoreboard->size = process_num;
 
-#ifdef THREAD_VER
-	sb_init_scoreboard(scoreboard);
-#else
-	sb_init_scoreboard(scoreboard);
-#endif
+	sb_run_init_scoreboard(scoreboard);
 
 #ifdef THREAD_VER
-	sb_spawn_threads(scoreboard, "httpd thread", thread_main);
+	sb_run_spawn_threads(scoreboard, "httpd thread", thread_main);
 #else
-	sb_spawn_processes(scoreboard, "httpd process", thread_main);
+	sb_run_spawn_processes(scoreboard, "httpd process", thread_main);
 #endif
 
 	scoreboard->period = MONITORING_PERIOD;
 #ifdef THREAD_VER
-	sb_monitor_threads(scoreboard);
+	sb_run_monitor_threads(scoreboard);
 #else
-	sb_monitor_processes(scoreboard);
+	sb_run_monitor_processes(scoreboard);
 #endif
 	debug("monitor_threads returned");
 

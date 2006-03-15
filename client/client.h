@@ -4,7 +4,8 @@
 #ifndef _SOFTBOT_CLIENT_H_
 #define _SOFTBOT_CLIENT_H_ 1
 
-#include "softbot.h"
+#include "common_core.h"
+#include "ansi_color.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/did.h"
 

@@ -2,10 +2,13 @@
 #ifndef IPC_H
 #define IPC_H 1
 
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <sys/shm.h>
+#ifndef COMMON_CORE_H
+# error You should include "common_core.h" first.
+#endif
+
+//#include <sys/ipc.h>    /* ftok(3) */
+//#include <sys/sem.h>
+//#include <sys/shm.h>
 
 #if !defined(SHM_R)
 #define SHM_R	0400
@@ -98,7 +101,5 @@ SB_DECLARE(int) _sync_mmap(void* start,int size,const char* file,const char* cal
 SB_DECLARE(int) _free_mmap(void* start,int size,const char* file,const char* caller);
 
 SB_DECLARE(int) free_ipcs(void);
-
-#include "standalone_debug.h"
 
 #endif

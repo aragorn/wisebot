@@ -1,5 +1,6 @@
 /* $Id$ */
 
+#include "common_core.h"
 #include "shm.h"
 #include "mm.h"
 

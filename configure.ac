@@ -312,7 +312,7 @@ AC_CHECK_HEADERS( \
   inttypes.h string.h stdlib.h unistd.h fcntl.h getopt.h \
   sys/stat.h sys/mman.h \
   sys/time.h sys/times.h ctype.h getopt.h sys/types.h io.h \
-  pthread.h \
+  stdarg.h pthread.h \
 )
 
 AC_CHECK_FUNCS( \
@@ -437,8 +437,10 @@ AC_CONFIG_FILES([
     Makefile
 
     include/Makefile
+    common/Makefile
     server/Makefile
     client/Makefile
+	util/Makefile
     debug/Makefile
 
     modules/Makefile
@@ -482,10 +484,5 @@ AC_CONFIG_FILES([
     modules/mod_httpd/Makefile
     modules/mod_httpd_handler/Makefile
     modules/mod_http_client/Makefile
-
-    platform/Makefile
-    platform/unix/Makefile
-
-	util/Makefile
 ])
 AC_OUTPUT

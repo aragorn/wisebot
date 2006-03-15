@@ -1,3 +1,7 @@
+#include "common_core.h"
+#include "log_error.h"
+#include "hook.h"
+#include "mp_api.h"
 #include "mod_api/hash.h"
 #include "db/db.h"
 #include <errno.h>
@@ -592,14 +596,14 @@ error:
 
 static int test_module_main(slot_t *slot)
 {
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 	scoreboard->size = 1;
 	
-	sb_init_scoreboard(scoreboard);
-	sb_spawn_processes(scoreboard, "bdb_hash test module", test_main);
+	sb_run_init_scoreboard(scoreboard);
+	sb_run_spawn_processes(scoreboard, "bdb_hash test module", test_main);
 
 	scoreboard->period = 2;
-	sb_monitor_processes(scoreboard);
+	sb_run_monitor_processes(scoreboard);
 
 	return 0;
 }

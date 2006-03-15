@@ -1,5 +1,14 @@
 /* $Id$ */
-#include "softbot.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
+#include "common_core.h"
+#include "ipc.h"
+#include "log_error.h"
+#include "modules.h"
+#include "setproctitle.h"
+#include "scoreboard.h"
 
 static char *slot_state_str[] = {
 	"OPEN",

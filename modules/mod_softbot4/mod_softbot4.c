@@ -1,6 +1,7 @@
 /* $Id$ */
 
 #include "softbot.h"
+#include "mp_api.h"
 #include "mod_softbot4.h"
 #include "mod_api/docattr.h"
 #include "mod_api/did.h"
@@ -149,7 +150,7 @@ static int child_main (slot_t *slot)
 
 static int module_main (slot_t *slot)
 {
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 
 	debug("softbot4.c: module_main() init");
 
@@ -162,12 +163,12 @@ static int module_main (slot_t *slot)
 	scoreboard->size = needed_threads;
 
 	debug("softbot4.c: module_main() init");
-	sb_init_scoreboard(scoreboard);
+	sb_run_init_scoreboard(scoreboard);
 	//XXX: process version needs sb_run_qp_process_init or something?
-	sb_spawn_processes(scoreboard, "softbot4 process", child_main);
+	sb_run_spawn_processes(scoreboard, "softbot4 process", child_main);
 
 	scoreboard->period = MONITORING_PERIOD;
-	sb_monitor_processes(scoreboard);
+	sb_run_monitor_processes(scoreboard);
 
 	debug("monitor_threads returned");
 	info("syncronize docattr db: this should be called in new cdm register module later");

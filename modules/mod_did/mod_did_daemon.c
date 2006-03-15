@@ -1,5 +1,6 @@
 /* $Id$ */
 #include "softbot.h"
+#include "mp_api.h"
 #include "mod_mp/mod_mp.h"
 #include "mod_api/udp.h"
 #include "mod_api/did_daemon.h"
@@ -794,7 +795,7 @@ static void private_init()
 static int module_main(slot_t *slot)
 {
 
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 
 	debug("docid server started");
 	private_init();
@@ -815,11 +816,11 @@ static int module_main(slot_t *slot)
 	}
 	pthread_mutex_init(&slot_lock, NULL);
 
-	sb_init_scoreboard(scoreboard);
-	sb_spawn_threads(scoreboard, "docid server thread(child)", thread_main);
+	sb_run_init_scoreboard(scoreboard);
+	sb_run_spawn_threads(scoreboard, "docid server thread(child)", thread_main);
 
 	scoreboard->period = 20;
-	sb_monitor_threads(scoreboard);
+	sb_run_monitor_threads(scoreboard);
 	did_server_kill(0);
 
 	if ( pthread_mutex_destroy(&sock_lock) != 0 ) {

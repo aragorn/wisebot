@@ -1,13 +1,23 @@
 /* $Id$ */
+
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+#include "common_core.h"
+#include "log_error.h"
+#include "memory.h"
+#include "util.h"
+#include "config.h"
+#include "hook.h"
 #include "modules.h"
 
-// aix dlopen cannot deal with shared object properly. use apache-hacked dlopen
 #ifndef AIX5
+// aix dlopen cannot deal with shared object properly. use apache-hacked dlopen
 #  include <dlfcn.h>
 #endif
 
-#include <sys/stat.h>
-#include <sys/types.h>
+//#include <sys/stat.h>
+//#include <sys/types.h>
 
 #define MAX_PORTINFO	32
 typedef struct {
@@ -668,9 +678,9 @@ void show_portinfo()
 	SoftBotPortInfo *info=NULL;
 
 	printf("\n");
-	printf(ON_GREEN "Ports information that is used by SoftBot\n"RESET);
+	printf("Ports information used by SoftBot\n");
 	for (i=0; i<mSoftBotPortInfoNum; i++) {
 		info = mSoftBotPortInfo+i;
-		printf(GREEN"%s: %d\n"RESET,info->modname, info->port);
+		printf("%s: %d\n",info->modname, info->port);
 	}
 }
