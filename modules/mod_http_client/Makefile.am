@@ -10,8 +10,7 @@ mod_http_client_la_SOURCES = getdate.c getdate.h \
 	                         http_client_status.h http_reserved_words.h \
 	                         memfile.c memfile.h \
 	                         mod_http_client.c mod_http_client.h \
-	                         mprintf.c mprintf.h \
-	                         test_http_client.c
+	                         mprintf.c mprintf.h
 
 mod_http_client_la_LDFLAGS = -module -avoid-version
 
