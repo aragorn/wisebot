@@ -70,7 +70,7 @@ struct request_t{
 	char attr2_string[MAX_ATTR_STRING_SIZE];
 	char group_string[MAX_GROUP_STRING_SIZE];
 	char sort_string[MAX_SORT_STRING_SIZE];
-	uint32_t first_result; /* first_result = result page number*list_size + 1*/
+	int first_result; /* first_result = result page number*list_size + 1*/
 	int  list_size;    /* size of result list */
 
 	char word_list[MAX_QUERY_STRING_SIZE];
@@ -79,7 +79,7 @@ struct request_t{
 	char comments[COMMENT_LIST_SIZE][LONG_LONG_STRING_SIZE]; 
 									/* XXX:COMMENT_SIZE? */
 	char otherId[COMMENT_LIST_SIZE][STRING_SIZE];
-	uint8_t filtering_id;
+	int8_t filtering_id;
 
 	int sb4error;
 };
@@ -91,7 +91,7 @@ enum field_type {
     NONE,           // 아무처리하지 않음.
 	RETURN,         // 단순출력
     SUM,            // 요약출력	
-	SUMANY,         // 단어가 없더라도 요약출력
+	SUM_OR_FIRST,   // 단어가 없더라도 요약출력
 };
 
 // 필드명, 필드 속성

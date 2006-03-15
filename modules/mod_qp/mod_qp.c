@@ -2112,7 +2112,7 @@ static void fill_title_and_comment(request_t *req)
 					sizeleft = (sizeleft < 0) ? 0:sizeleft;
                 break;
                 case SUM:
-                case SUMANY:
+                case SUM_OR_FIRST:
                     {
                         char summary[210];
                         int exist_summary = 0;
@@ -2132,7 +2132,7 @@ static void fill_title_and_comment(request_t *req)
 						}
 						
 						/* 본문에 단어가  없을경우 */
-						if(field_info[k].type == SUMANY && exist_summary == 0) {
+						if(field_info[k].type == SUM_OR_FIRST && exist_summary == 0) {
 							memset(summary, 0x00, 210);
 							strncpy(summary, field_value, 201);
 							cut_string( summary, 200 );
@@ -2791,8 +2791,8 @@ static void get_commentfield(configValue v)
         field_info[field_count].type = RETURN;
     } else if (strncasecmp("SUM",v.argument[6],SHORT_STRING_SIZE) == 0) {
         field_info[field_count].type = SUM;
-    } else if (strncasecmp("SUMANY",v.argument[6],SHORT_STRING_SIZE) == 0) {
-        field_info[field_count].type = SUMANY;
+    } else if (strncasecmp("SUM_OR_FIRST",v.argument[6],SHORT_STRING_SIZE) == 0) {
+        field_info[field_count].type = SUM_OR_FIRST;
     } else {
         field_info[field_count].type = NONE;
     }
