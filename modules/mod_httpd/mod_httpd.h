@@ -10,6 +10,12 @@
 #include "apr_buckets.h"
 #include "apu.h"
 
+
+#include "mod_api/did.h"
+#include "mod_api/qp.h"
+#include "mod_api/lexicon.h"
+#include "mod_api/cdm.h"
+
 /* ----------------------------- config dir ------------------------------ */
 
 /* Define this to be the default server home dir. Most things later in this
@@ -905,6 +911,8 @@ int graceful_stop_signalled(void);
 int update_slot_state(slot_t *slot, int state, request_rec *r);
 char *ap_response_code_string(request_rec *r, int error_index);
 const char *ap_psignature(const char *prefix, request_rec *r);
+did_db_t* get_did_db();
+word_db_t* get_word_db();
 
 // http_log.h
 #include "log.h"

@@ -51,6 +51,11 @@ static process_rec *process;
 static server_rec *server_conf;
 static apr_pool_t *pool; /* pool for httpd child stuff */
 static apr_pool_t *pconf;
+
+static int did_set = -1;    
+static did_db_t* did_db = NULL;
+static int word_db_set = -1;
+static word_db_t* word_db = NULL;
 /*****************************************************************************/
 static void _do_nothing(int sig)
 {
@@ -63,7 +68,7 @@ static void _shutdown(int sig)
 
 	memset(&act, 0x00, sizeof(act));
 
-	act.sa_flags = SA_RESTART;
+//	act.sa_flags = SA_RESTART;
 	sigfillset(&act.sa_mask);
 
 	act.sa_handler = _do_nothing;
@@ -83,7 +88,7 @@ static void _graceful_shutdown(int sig)
 
 	memset(&act, 0x00, sizeof(act));
 
-	act.sa_flags = SA_RESTART;
+//	act.sa_flags = SA_RESTART;
 	sigfillset(&act.sa_mask);
 
 	act.sa_handler = _do_nothing;
@@ -137,6 +142,47 @@ int update_slot_state(slot_t *slot, int state, request_rec *r)
 
 
 /*****************************************************************************/
+static int process_module_initialize()
+{
+    int ret = 0;
+
+    ret = sb_run_open_did_db( &did_db, did_set );
+    if ( ret != SUCCESS && ret != DECLINE ) {
+        error("did db open failed");
+        return FAIL;
+    }
+
+    ret = sb_run_open_word_db( &word_db, word_db_set );
+    if ( ret != SUCCESS && ret != DECLINE ) {
+        error("word db open failed");
+        return FAIL;
+    }
+
+    ret = sb_run_qp_init();
+    if ( ret != SUCCESS && ret != DECLINE ) {
+        error( "qp init failed" );
+        return FAIL;
+    }
+
+    ret = sb_run_server_canneddoc_init();
+    if ( ret != SUCCESS && ret != DECLINE ) {
+        error( "cdm module init failed" );
+        return FAIL;
+    }
+
+    return SUCCESS;
+}
+
+/*****************************************************************************/
+did_db_t* get_did_db() {
+    return did_db;
+}
+
+word_db_t* get_word_db() {
+    return word_db;
+}
+
+/*****************************************************************************/
 static int process_socket(apr_socket_t *sock, slot_t *slot, 
 		apr_bucket_alloc_t *bucket_alloc, apr_pool_t *p)
 {
@@ -170,6 +216,7 @@ static int thread_main (slot_t *slot)
 	//FIXME : configuration must set this value 
 	apr_uint32_t ap_max_mem_free = 1024;
 
+	process_module_initialize();
 	sb_run_handler_init();
 
 	apr_pool_create(&tpool, pool);
@@ -253,6 +300,8 @@ static int thread_main (slot_t *slot)
 					last_lr = lr;
 					goto got_fd;
 				}
+
+				if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 			} while (lr != last_lr);
 		}
 
@@ -276,6 +325,7 @@ static int thread_main (slot_t *slot)
 			kill(getpid(), SIGNAL_GRACEFUL_SHUTDOWN);
 		}
 
+	    if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 		timelog("http_start");
 		process_socket(csd, slot, bucket_alloc, ptrans);
 		apr_pool_clear(ptrans);
@@ -448,6 +498,16 @@ static void set_threads_num(configValue v)
 	process_num = atoi(v.argument[0]);
 }
 
+static void set_did_set(configValue v)
+{
+    did_set = atoi( v.argument[0] );
+}
+
+static void set_word_db_set(configValue v)
+{
+    word_db_set = atoi( v.argument[0] );
+}
+
 static config_t config[] = {
 	CONFIG_GET("Threads", set_threads_num, 1, "number of threads"),
 	CONFIG_GET("ApacheStyleConf", set_apache_style_conf, 1, \
@@ -457,6 +517,8 @@ static config_t config[] = {
 	CONFIG_GET("ListenBacklog", set_listen_backlog, 1, \
 		   "maximum length of the queue of pending connections. see listen(2)"),
 	CONFIG_GET("MaxRequests", set_max_requests_per_child, 1, "max requests for child's lifetime"),
+    CONFIG_GET("DidSet", set_did_set, 1, "Did Set 0~..."),
+    CONFIG_GET("WordDbSet", set_word_db_set, 1, "WordDb Set 0~..."),
 	{NULL}
 };
 
