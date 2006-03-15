@@ -1,32 +1,45 @@
 /* $Id$ */
-#ifndef _MOD_HTTPD_SOFTBOT_HANDLER_H_
-#define _MOD_HTTPD_SOFTBOT_HANDLER_H_
+#ifndef _MOD_STANDARD_HANDLER_H_
+#define _MOD_STANDARD_HANDLER_H_
 
-#include "hook.h"
-#include "softbot.h"
-#include "../mod_httpd/mod_httpd.h"
+#include "apr_tables.h"
+#include "mod_httpd/mod_httpd.h"
 
 typedef struct softbot_handler_rec softbot_handler_rec;
-typedef struct light_search_summary light_search_summary;
-typedef struct light_search_row light_search_row;
 
 struct softbot_handler_rec {
 	char *name_space;
+	char *request_name;
 	char *remain_uri;
 	apr_table_t	*parameters_in;
 };
 
-struct light_search_summary { 
-	char query[MAX_QUERY_STRING_SIZE]; // 검색 질의어
-	int total_count; // 총 검색결과 건수 
-	int num_of_rows; // 현재 검색된 건수 
-};
+typedef struct {
+    char *name;
+    /* interfaces used when clients send requests */        
+    int (*handler)(request_rec *r, softbot_handler_rec *s);
+} softbot_handler_key_t; 
 
-struct light_search_row { 
-	int docid; 
-	int relevance; 
-};
- 
-SB_DECLARE_HOOK(int,httpd_softbot_subhandler,(request_rec *r, softbot_handler_rec *s))
+//--------------------------------------------------------------//
+    
+//--------------------------------------------------------------//
+//  macro's used to handle request
+//--------------------------------------------------------------//
+#define CHECK_REQUEST_CONTENT_TYPE(rec, content_type) \
+{ \
+	const char *req_type = NULL; \
+	req_type = apr_table_get(rec->headers_in, "Content-Type"); \
+	if ( !content_type ) { \
+		if ( req_type ) {	\
+			error("content_type should be NULL but [%s]", req_type); \
+			return FAIL;	\
+		} \
+	}else if ( !req_type || \
+			strncmp(req_type, content_type, strlen(content_type)) != 0 ){ \
+		error("[%s] is not expected content_type", \
+				(req_type) ? req_type : "null" ); \
+		return FAIL;	\
+	}	\
+}
 
 #endif
