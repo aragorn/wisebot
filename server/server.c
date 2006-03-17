@@ -26,7 +26,7 @@
 #include "registry.h"
 #include "setproctitle.h"
 #include "ipc.h"
-#include "mp_api.h"
+#include "scoreboard.h"
 #include "common_util.h"
 #include "server.h"
 
