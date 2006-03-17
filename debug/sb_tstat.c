@@ -1,4 +1,5 @@
-#include "softbot.h"
+#include "common_core.h"
+#include "common_util.h"
 
 char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
 module *static_modules[1];
