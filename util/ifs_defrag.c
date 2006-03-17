@@ -1,3 +1,5 @@
+#include "common_core.h"
+#include "common_util.h"
 #include "../modules/mod_ifs/table.h"
 #include "../modules/mod_ifs/mod_ifs_defrag.h"
 
@@ -75,7 +77,7 @@ int main(int argc, char* argv[], char* envp[])
 	int pause = 0, show_state = 0, fix = 0;
     ifs_set_t local_ifs_set[MAX_INDEXDB_SET];
 
-	init_set_proc_title(argc, argv, envp);
+	init_setproctitle(argc, argv, envp);
 	log_setlevelstr("debug");
 
 	opterr = 0;
