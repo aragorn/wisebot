@@ -152,6 +152,15 @@ static int docattr_filtering(docattr_cond_t *cond, char *attrquery)
 			}
 		}
 
+		// 외부종법 전체 (GAN, WON, MIGANOPEN)
+		get_str_item(buf, query, "OUTALL:", '&', STRING_SIZE);
+		if (buf[0]) {
+			sprintf(key, "%d:%s", i, "OUTALL");
+			if (sb_run_docattr_set_doccond_function(cond, key, buf) == -1) {
+				break;
+			}
+		}
+
 		get_str_item(buf, query, "DEL:", '&', STRING_SIZE);
 		if (buf[0]) {
 			sprintf(key, "%d:%s", i, "DEL");

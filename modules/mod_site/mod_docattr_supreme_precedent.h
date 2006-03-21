@@ -37,6 +37,7 @@ typedef struct _supreme_row{
 	uint32_t court;
 	uint8_t nlawtype;
 	uint8_t lawtype[MAX_LAWTYPE_NUM];
+	uint8_t outall; // 외부종법전체. gan | won | miganopen
 } supreme_row;
 
 #define MAX_CATEGORY_ROWS	3

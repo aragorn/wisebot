@@ -51,6 +51,9 @@ static int compare_function(void *dest, void *cond, uint32_t docid) {  /* 검색시
                 continue;
 			if (doccond->rows[i].miganopen != 0 && docattr->miganopen != doccond->rows[i].miganopen)
 				continue;
+			if (doccond->rows[i].outall != 0 // 외부종법 전체
+					&& (docattr->gan == 0 && docattr->won == 0 && docattr->miganopen == 0))
+				continue;
             if (doccond->rows[i].del != 0 && docattr->del != doccond->rows[i].del)
                 continue;
             if (doccond->rows[i].close != 0 && docattr->close != doccond->rows[i].close)
