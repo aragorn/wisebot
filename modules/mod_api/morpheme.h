@@ -2,7 +2,6 @@
 #ifndef MORPHEME_H
 #define MORPHEME_H 1
 
-#include "softbot.h"
 #include "tokenizer.h"
 #include "mod_morpheme/lib/lb_lex.h"	/* to use CLex type */
 #include "mod_tokenizer/mod_tokenizer.h"
@@ -18,7 +17,7 @@ typedef struct _bigram_handle_t
 	token_t last_token;     // 지난번 토큰
 
 	tokenizer_t *tokenizer;
-	tokenizer_t tokenizerobj; // obsolete. only used in mod_morphem/ files
+	//tokenizer_t tokenizerobj; // obsoleted. only used in mod_morphem/ files
 
 	token_t last_tokens[MAX_TOKENS];
 	int32_t last_token_idx;

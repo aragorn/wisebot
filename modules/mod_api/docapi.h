@@ -1,13 +1,10 @@
-/**
- * $Id$
- * Created By YoungHoon
- */
+/* $id$ */
+/* Created By YoungHoon */
 
-#ifndef _DOCAPI_H_
-#define _DOCAPI_H_ 1
+#ifndef DOCAPI_H
+#define DOCAPI_H 1
 
-#include "softbot.h"
-#include "mod_api/cdm.h"
+#include "cdm.h"
 
 #define DOCAPI_DELETED	-2
 

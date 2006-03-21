@@ -1,7 +1,8 @@
 /* $Id$ */
-// XXX: obsolete. see index_word_extractor.[ch]
-#include "softbot.h"
-#include "mod_api/morpheme.h"
+#include "common_core.h"
+#include "morpheme.h"
+
+#warning "Morpheme.c is deprecated. Use index_word_indextractor.[ch]."
 
 HOOK_STRUCT(
 	HOOK_LINK(morp_set_text)

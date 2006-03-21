@@ -1,9 +1,8 @@
 /* $Id$ */
-#ifndef _PROTOCOL4_H_
-#define _PROTOCOL4_H_ 1
+#ifndef PROTOCOL4_H
+#define PROTOCOL4_H 1
 
-#include "softbot.h"
-#include "mod_api/vbm.h"
+#include "vbm.h"
 
 #include <sys/socket.h>
 #include <arpa/inet.h>

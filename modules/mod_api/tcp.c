@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/tcp.h"
+#include "common_core.h"
+#include "tcp.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(tcp_connect)

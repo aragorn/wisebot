@@ -1,8 +1,6 @@
 /* $Id$ */
-#ifndef _VBM_H_
-#define _VBM_H_ 1
-
-#include "softbot.h"
+#ifndef VBM_H
+#define VBM_H 1
 
 // FIXME: VBM_.. stuff must be changed?? 'cause this is api declaration file
 #define VBM_UNDEFINED_SYSTEM_PARAMETER	(-10)

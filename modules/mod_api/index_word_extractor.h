@@ -1,10 +1,9 @@
-
 /* $Id$ */
 #ifndef INDEX_WORD_EXTRACTOR_H
 #define INDEX_WORD_EXTRACTOR_H 1
 
+#include <stdint.h> /* uint32_t, uint16_t */
 // XXX: attribute definition goes here
-#include "softbot.h"
 typedef struct {
 	char word[MAX_WORD_LEN];
 	uint32_t pos;

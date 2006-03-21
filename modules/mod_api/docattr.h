@@ -1,9 +1,14 @@
 /* $Id$ */
-#ifndef _DOCATTR_H_
-#define _DOCATTR_H_ 1
+#ifndef DOCATTR_H
+#define DOCATTR_H 1
 
-#include "softbot.h"
-#include <string.h>
+typedef struct docattr_t docattr_t;
+typedef struct docattr_cond_t docattr_cond_t;
+typedef struct docattr_mask_t docattr_mask_t;
+typedef struct docattr_sort_t docattr_sort_t;
+
+#include <stdint.h> /* uint32_t */
+#include "qp.h"
 
 #define DOCATTR_SET_ZERO(a) memset((a), 0x00, sizeof(*a))
 #define DOCCOND_SET_ZERO(a) memset((a), 0x00, sizeof(*a))
@@ -18,39 +23,36 @@
 /* attr structure of user specific docattr module 
  * must be smaller than DOCATTR_ELEMENT_SIZE(64) byte */
 #define MAX_DOCATTR_ELEMENT_SIZE		64 /*byte*/
-typedef struct _docattr_t {
+struct docattr_t {
 	char rsv[MAX_DOCATTR_ELEMENT_SIZE];
-} docattr_t;
+};
 
 /* cond structure of user specific docattr module 
  * must be smaller than STRING_SIZE(256) x 2 bytes */
-typedef struct _docattr_cond_t {
+struct docattr_cond_t {
 	char rsv1[STRING_SIZE];
 	char rsv2[STRING_SIZE];
-} docattr_cond_t;
+};
 
 /* mask structure of user specific docattr module 
  * must be smaller than STRING_SIZE(256) bytes */
-typedef struct _docattr_mask_t {
+struct docattr_mask_t {
 	char rsv[STRING_SIZE];
-} docattr_mask_t;
+};
 
 /* key means field name to sort by 
  * order is minus if descent, plus if ascent */
 #define MAX_SORTING_CRITERION		8
-typedef struct _docattr_sort_t {
+struct docattr_sort_t {
 	int index;
-	struct _keys {
+	struct {
 		char key[STRING_SIZE];
 		int order;
 	} keys[MAX_SORTING_CRITERION];
-} docattr_sort_t;
+};
 
 typedef int (*condfunc)(void *dest, void *cond, uint32_t docid);
 typedef int (*maskfunc)(void *dest, void *mask);
-
-struct index_list_t;
-struct group_result_t;
 
 SB_DECLARE_HOOK(int,docattr_open,(void))
 SB_DECLARE_HOOK(int,docattr_close,(void))
@@ -65,18 +67,18 @@ SB_DECLARE_HOOK(int,docattr_set_array, \
 	(uint32_t *list, int listsize, maskfunc func, void *mask))
 
 SB_DECLARE_HOOK(int,docattr_get_index_list, \
-	(struct index_list_t *dest, struct index_list_t *sour, \
+	(index_list_t *dest, index_list_t *sour, \
 	 condfunc func, void *cond))
 SB_DECLARE_HOOK(int,docattr_set_index_list, \
-	(struct index_list_t *list, maskfunc func, void *mask))
+	(index_list_t *list, maskfunc func, void *mask))
 SB_DECLARE_HOOK(int,docattr_index_list_sortby, \
-	(struct index_list_t *list, void *userdata, \
+	(index_list_t *list, void *userdata, \
 	 int (*compar)(const void *, const void *, void *)))
 
 SB_DECLARE_HOOK(int,docattr_compare_function,(void *dest, void *cond, uint32_t docid))
 SB_DECLARE_HOOK(int,docattr_compare2_function,(void *dest, void *cond, uint32_t docid))
 SB_DECLARE_HOOK(int,docattr_set_group_result_function,
-		(void *cond, struct group_result_t* group_result, int* size))
+		(void *cond, group_result_t* group_result, int* size))
 SB_DECLARE_HOOK(int,docattr_mask_function,(void *dest, void *mask))
 SB_DECLARE_HOOK(int,docattr_sort_function, \
 	(const void *dest, const void *sour, void *userdata))
@@ -92,5 +94,5 @@ SB_DECLARE_HOOK(int,docattr_set_docmask_function, \
 		(void *dest, char *key, char *value))
 
 SB_DECLARE_HOOK(int,docattr_modify_index_list, \
-		(int id, struct index_list_t *list))
+		(int id, index_list_t *list))
 #endif

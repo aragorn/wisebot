@@ -1,5 +1,5 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
 
 /* for dynamic loading */
 module api_module = {

@@ -2,11 +2,9 @@
 #ifndef CDM_H
 #define CDM_H 1
 
-
-#include "softbot.h"
-#include "mod_api/vbm.h"
-#include "mod_api/did.h"
-#include "../mod_indexer/hit.h" // MAX_EXT_FIELD
+#include "vbm.h"
+#include "did.h"
+#include "indexer.h" /* MAX_EXT_FIELD */
 
 /* canned document manager status code */
 #define CDM_UNKNOWN_DATABASE		(-1)

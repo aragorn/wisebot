@@ -1,11 +1,8 @@
-#ifndef _SBHANDLER_H_
-#define	_SBHANDLER_H_
-
-#include "softbot.h"
-#include "hook.h"
+/* $Id$ */
+#ifndef SBHANDLER_H
+#define	SBHANDLER_H 1
 
 #include "mod_httpd_handler/mod_standard_handler.h"
-
 
 SB_DECLARE_HOOK( int, sbhandler_get_table, \
 		(char *name_space, void **tab))

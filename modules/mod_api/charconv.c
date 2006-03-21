@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/charconv.h"
+#include "common_core.h"
+#include "charconv.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(charset_conv)

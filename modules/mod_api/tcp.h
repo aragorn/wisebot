@@ -1,8 +1,8 @@
 /* $Id$ */
-#ifndef _TCP_H_
-#define _TCP_H_ 1
+#ifndef TCP_H
+#define TCP_H 1
 
-#include "softbot.h"
+#include <sys/socket.h> /* struct sockaddr */
 
 SB_DECLARE_HOOK(int,tcp_connect,(int *sockfd, char *host, char *port))
 SB_DECLARE_HOOK(int,tcp_close,(int sockfd))

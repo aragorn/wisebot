@@ -2,9 +2,7 @@
 #ifndef TOKENIZER_H
 #define TOKENIZER_H 1
 
-#include "softbot.h"
-
-typedef struct _tokenizer_t tokenizer_t;
+typedef struct tokenizer_t tokenizer_t;
 
 typedef struct {
 	int32_t type;

@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/udp.h"
+#include "common_core.h"
+#include "udp.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(udp_connect)

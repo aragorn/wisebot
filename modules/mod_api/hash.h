@@ -1,17 +1,21 @@
+/* $Id$ */
 #ifndef _HASH_H_API_
 #define _HASH_H_API_
 
-// _HASH_H_ 는 platform/unix/hash.h 에서 이미 쓰고 있다.
-// hash_t 도 마찬가지다.
+#include <stdint.h> /* uint32_t */
+
+/* _HASH_H_ 는 platform/unix/hash.h 에서 이미 쓰고 있다.
+ * hash_t 도 마찬가지다.
+ */
 
 #define MAX_HASH_SET (10)
 
-typedef struct _api_hash_t {
+typedef struct {
 	int set;
 	void* db;
 } api_hash_t;
 
-typedef struct _hash_data_t {
+typedef struct {
 	void *data;
 	uint32_t size;
 	uint32_t data_len;

@@ -1,4 +1,5 @@
-#include "softbot.h"
+/* $Id$ */
+#include "common_core.h"
 #include "httpd.h"
 
 HOOK_STRUCT(

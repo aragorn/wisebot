@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/docattr.h"
+#include "common_core.h"
+#include "docattr.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(docattr_open)

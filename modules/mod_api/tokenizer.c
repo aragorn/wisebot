@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/tokenizer.h"
+#include "common_core.h"
+#include "tokenizer.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(new_tokenizer)

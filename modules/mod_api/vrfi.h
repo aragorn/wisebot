@@ -2,12 +2,9 @@
 #ifndef VRFI_H
 #define VRFI_H 1
 
-#include "softbot.h"
+#include <stdint.h> /* uint32_t */
 
-#ifndef VARIABLE_RECORD_FILE_DEFINED
-typedef struct _VariableRecordFile VariableRecordFile;
-#define VARIABLE_RECORD_FILE_DEFINED
-#endif
+typedef struct VariableRecordFile VariableRecordFile;
 
 SB_DECLARE_HOOK(int, vrfi_alloc,(VariableRecordFile **this))
 SB_DECLARE_HOOK(int, vrfi_open,(VariableRecordFile *this, \

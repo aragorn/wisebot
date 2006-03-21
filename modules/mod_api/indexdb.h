@@ -1,9 +1,8 @@
-#ifndef _INDEXDB_H_
-#define _INDEXDB_H_
+/* $Id$ */
+#ifndef INDEXDB_H
+#define INDEXDB_H
 
-#include "hook.h"
-
-typedef struct _index_db_t {
+typedef struct {
 	int set;
 	void* db;
 } index_db_t;

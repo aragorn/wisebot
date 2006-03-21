@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/rmas.h"
+#include "common_core.h"
+#include "rmas.h"
 
 HOOK_STRUCT(
 		HOOK_LINK(rmas_merge_index_word_array)

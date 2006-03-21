@@ -1,8 +1,7 @@
 /* $Id$ */
-#ifndef _HTTP_CLIENT_H_
-#define _HTTP_CLIENT_H_ 1
+#ifndef HTTP_CLIENT_H
+#define HTTP_CLIENT_H 1
 
-#include "softbot.h"
 #include "mod_http_client/mod_http_client.h"
 
 SB_DECLARE_HOOK(http_client_t *, http_client_new, (const char *host, const char *port))
@@ -10,8 +9,7 @@ SB_DECLARE_HOOK(void, http_client_reset, (http_client_t *httpClt))
 SB_DECLARE_HOOK(void, http_client_free, (http_client_t *httpClt))
 SB_DECLARE_HOOK(void, http_client_conn_close, (http_client_t *httpClt))
 SB_DECLARE_HOOK(int, http_client_makeRequest, (http_client_t *httpClt, memfile *req))
-SB_DECLARE_HOOK(int, http_client_retrieve, \
-	(int num_clients, http_client_t **client_list));
+SB_DECLARE_HOOK(int, http_client_retrieve, (int num_clients, http_client_t **client_list));
 SB_DECLARE_HOOK(int, http_client_connect, (http_client_t *httpClt))
 SB_DECLARE_HOOK(int, http_client_sendRequest, (http_client_t *httpClt))
 SB_DECLARE_HOOK(int, http_client_sendRequestMore,

@@ -1,7 +1,5 @@
 /* $id$ */
-
 #include "common_core.h"
-#include "log_error.h"
 #include "indexdb.h"
 
 HOOK_STRUCT(

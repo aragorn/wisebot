@@ -1,6 +1,5 @@
-/* $Id*/
-
-#include "softbot.h"
+/* $Id$ */
+#include "common_core.h"
 #include "hash.h"
 
 HOOK_STRUCT(

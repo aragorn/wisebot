@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/lexicon.h"
+#include "common_core.h"
+#include "lexicon.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(open_word_db)

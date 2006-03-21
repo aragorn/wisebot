@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/index_word_extractor.h"
+#include "common_core.h"
+#include "index_word_extractor.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(new_index_word_extractor)

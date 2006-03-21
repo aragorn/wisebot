@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/http_client.h"
+#include "common_core.h"
+#include "http_client.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(http_client_new)

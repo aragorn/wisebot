@@ -1,5 +1,5 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
 #include "vrfi.h"
 
 HOOK_STRUCT(

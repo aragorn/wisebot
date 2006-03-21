@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/docapi.h"
+#include "common_core.h"
+#include "docapi.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(doc_put)

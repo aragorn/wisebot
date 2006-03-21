@@ -1,8 +1,7 @@
 /* $Id$ */
-#ifndef _QPP_H_
-#define _QPP_H_ 1
+#ifndef QPP_H
+#define QPP_H 1
 
-#include "softbot.h"
 #include "lexicon.h"
 
 #define QPP_QUERY_NODE_OVERFLOW 		(-10)

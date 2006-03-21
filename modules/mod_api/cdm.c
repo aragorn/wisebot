@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/cdm.h"
+#include "common_core.h"
+#include "cdm.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(server_canneddoc_init)

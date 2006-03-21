@@ -1,7 +1,7 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/indexer.h"
-#include "mod_api/docattr.h"
+#include "common_core.h"
+#include "docattr.h"
+#include "indexer.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(index_each_spooled_doc)

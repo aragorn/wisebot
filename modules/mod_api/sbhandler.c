@@ -1,4 +1,5 @@
-#include "softbot.h"
+/* $id$ */
+#include "common_core.h"
 #include "sbhandler.h"
 
 HOOK_STRUCT(

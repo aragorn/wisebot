@@ -1,10 +1,8 @@
 /* $Id$ */
-#ifndef DID2_H
-#define DID2_H 1
+#ifndef DID_H
+#define DID_H 1
 
-#include "softbot.h"
-#include "hook.h"
-
+#include <stdint.h> /* uint32_t */
 #define DOCID_OVERFLOW             (-11)/* Cannot make new document id */
 
 #define DOCID_NOT_REGISTERED       (-12)/* Document is not registered */

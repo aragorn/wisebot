@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/protocol4.h"
+#include "common_core.h"
+#include "protocol4.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(protocol_open)

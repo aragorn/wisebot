@@ -1,9 +1,6 @@
-/* $Id $ */
+/* $Id$ */
 #ifndef DOCABSTRACT_H
 #define DOCABSTRACT_H 1
-
-//#include "softbot.h"
-
 
 #define MAX_EACH_FIELD_COMMENT_SIZE		(50)
 
@@ -12,6 +9,7 @@
 #define MAX_ABSTRACT_FIELD_NUM   (MAX_ABSTRACT_INDEX_FIELD_NUM + MAX_ABSTRACT_ENTIRE_FIELD_NUM)
 #define MAX_QP_WANT_ABSTRACT_POS_NUM	(10)
 #define MAX_INDEX_SAVE_ABSTRACT_POS_NUM (10)
+
 // get abstract string input (query send)
 typedef struct {
 	uint32_t start_word_pos;

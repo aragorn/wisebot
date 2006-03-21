@@ -1,12 +1,8 @@
 /* $Id$ */
-#ifndef _XMLPARSER_H_
-#define _XMLPARSER_H_ 1
+#ifndef XMLPARSER_H
+#define XMLPARSER_H 1
 
 #include "mod_xmlparser/parser.h"
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
 
 SB_DECLARE_HOOK(parser_t *,xmlparser_parselen, \
 	(const char *charset, const char *xmltext, const int len))
@@ -25,9 +21,5 @@ SB_DECLARE_HOOK(int,xmlparser_get_domsize,(parser_t *p))
 
 SB_DECLARE_HOOK(field_t *,xmlparser_retrieve_field,(parser_t *p, char *query))
 SB_DECLARE_HOOK(attribute_t *,xmlparser_retrieve_attr,(parser_t *p, const char *query))
-
-#if defined (__cplusplus)
-}
-#endif
 
 #endif

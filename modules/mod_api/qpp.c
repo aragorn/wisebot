@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/qpp.h"
+#include "common_core.h"
+#include "qpp.h"
 
 HOOK_STRUCT(
   HOOK_LINK(preprocess)

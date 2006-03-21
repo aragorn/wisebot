@@ -1,10 +1,9 @@
 /* $Id$ */
-#ifndef _RMAS_H_
-#define _RMAS_H_ 1
+#ifndef RMAS_H
+#define RMAS_H 1
 
-#include "softbot.h"
-#include "mod_api/morpheme.h"
-#include "mod_api/protocol4.h"
+#include "morpheme.h"
+#include "protocol4.h"
 
 
 SB_DECLARE_HOOK(int, rmas_merge_index_word_array , \

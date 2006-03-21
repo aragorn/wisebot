@@ -1,4 +1,5 @@
 /* $Id$ */
+#include "common_core.h"
 #include "did.h"
 
 HOOK_STRUCT(

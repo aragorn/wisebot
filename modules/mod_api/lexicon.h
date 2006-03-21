@@ -2,8 +2,7 @@
 #ifndef LEXICON_H
 #define LEXICON_H 1
 
-#include "softbot.h"
-#include "hook.h"
+#include <stdint.h> /* uint32_t */
 
 // lexicon ÀÇ return value
 #define WORD_OLD_REGISTERED         (11)

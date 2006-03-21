@@ -1,8 +1,6 @@
 /* $Id$ */
-#ifndef _CHARCONV_H_
-#define _CHARCONV_H_ 1
-
-#include "softbot.h"
+#ifndef CHARCONV_H
+#define CHARCONV_H 1
 
 #define EUCKR_TO_UTF8(data) sb_run_charset_conv((data), "UTF-8", "CP949")
 #define UTF8_TO_EUCKR(data) sb_run_charset_conv((data), "CP949", "UTF-8")

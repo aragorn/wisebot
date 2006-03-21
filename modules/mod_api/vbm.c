@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/vbm.h"
+#include "common_core.h"
+#include "vbm.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(buffer_initbuf)

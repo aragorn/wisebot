@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/xmlparser.h"
+#include "common_core.h"
+#include "xmlparser.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(xmlparser_parse)

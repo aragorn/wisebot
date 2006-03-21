@@ -1,6 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/qp.h"
+#include "common_core.h"
+#include "qp.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(qp_init)
