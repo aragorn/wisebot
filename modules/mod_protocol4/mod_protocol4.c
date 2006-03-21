@@ -2,6 +2,8 @@
 #include <time.h>
 #include <sys/wait.h>
 
+#include "common_core.h"
+#include "mod_api/lexicon.h"
 #include "mod_api/did.h"
 #include "mod_api/xmlparser.h"
 #include "mod_api/qp.h"
@@ -12,7 +14,6 @@
 #include "mod_cdm/mod_cdm.h"
 #include "mod_qp/mod_qp.h"
 #include "mod_client.h"
-//#include "sn2.h"
 
 #define PROCESS_HANDLE 1
 //#undef PROCESS_HANDLE

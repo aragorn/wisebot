@@ -1,13 +1,14 @@
 #ifndef MOD_DOCATTR_GENERAL_H
 #define MOD_DOCATTR_GENERAL_H 1
 
-#include "mod_api/docattr.h"
-#include <inttypes.h>
+#include <stdint.h>
 
 #if defined(AIX5)
+# warning AIX5 is defined. We use PRIu64 instead of %PRIu64 .
 # define SB_PRIu64 PRIu64
 # define SB_PRIx64 PRIx64
 #else
+# warning AIX5 is NOT defined. We use %PRIu64 instead of PRIu64 .
 # define SB_PRIu64 "%"PRIu64
 # define SB_PRIx64 "%"PRIx64
 #endif

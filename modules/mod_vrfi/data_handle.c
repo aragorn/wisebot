@@ -1,5 +1,12 @@
 /* $Id$ */
-#include "softbot.h"
+#include <unistd.h> /* lseek(2) */
+#include <string.h> /* memset(3) */
+#include <errno.h>
+#include <fcntl.h> /* O_RDWR,O_CREAT,O_RDONLY */
+#include <sys/stat.h> /* S_IREAD,S_IWRITE */
+#include "common_core.h"
+#include "common_util.h"
+#include "memory.h" /* sb_calloc() */
 #include "data_handle.h"
 #include "mod_vrfi.h"
 

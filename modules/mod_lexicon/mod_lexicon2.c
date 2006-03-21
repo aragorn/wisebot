@@ -4,6 +4,12 @@
  * mod_lexicon.c
  */
 
+#include <stdlib.h> /* atoi(3) */
+#include <string.h> /* strerror(3) */
+#include <errno.h>
+#include "common_core.h"
+#include "ipc.h"
+#include "memory.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/hash.h"
 

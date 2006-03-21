@@ -1,10 +1,12 @@
-/*
- * $Id$
- *
- * mod_did.c
- *
- */
-
+/* $Id$ */
+#include <stdlib.h> /* atoi(3) */
+#include <string.h> /* memset(3) */
+#include <errno.h>
+#include "common_core.h"
+#include "ipc.h"
+#include "md5.h"
+#include "memory.h"
+#include "hash.h"
 #include "mod_api/did.h"
 
 #define BLOCK_DATA_SIZE       16000000

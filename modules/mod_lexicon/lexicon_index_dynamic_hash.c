@@ -1,8 +1,11 @@
-/* lexicon index dynamic hash 
- * 
- *  $Id$
- */
-// 
+/* $Id$ */
+#include <string.h> /* strlen(3),memcpy(3) */
+#include <errno.h>
+#include "common_core.h"
+#include "ipc.h"
+#include "hash.h"
+#include "md5.h"
+#include "memory.h"
 #include "lexicon_index.h"
 #include "mod_lexicon.h"
 	

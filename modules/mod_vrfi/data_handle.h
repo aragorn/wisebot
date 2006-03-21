@@ -2,7 +2,7 @@
 #ifndef DATA_HANDLE_H
 #define DATA_HANDLE_H 1
 
-#include "softbot.h"
+#include <stdint.h> /* uint32_t */
 
 typedef struct data_handle_t data_handle_t;
 

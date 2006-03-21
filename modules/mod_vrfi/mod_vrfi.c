@@ -1,5 +1,13 @@
 /* $Id$ */
-#include "softbot.h"
+#include <unistd.h> /* lseek(2) */
+#include <string.h> /* memset(3) */
+#include <errno.h>
+#include <fcntl.h> /* O_RDWR,O_CREAT,O_RDONLY */
+#include <sys/stat.h> /* S_IREAD,S_IWRITE */
+#include "common_core.h"
+#include "common_util.h"
+#include "memory.h" /* sb_calloc() */
+#include "ipc.h" /* sync_mmap(), alloc_mmap() */
 #include "mod_vrfi.h"
 
 #define OPEN_FLAG   (O_RDWR)

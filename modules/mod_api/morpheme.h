@@ -2,17 +2,18 @@
 #ifndef MORPHEME_H
 #define MORPHEME_H 1
 
+#include <stdint.h>
 #include "tokenizer.h"
 #include "mod_morpheme/lib/lb_lex.h"	/* to use CLex type */
 #include "mod_tokenizer/mod_tokenizer.h"
 
-typedef struct{
+typedef struct {
 	char *next;
 } Paragraph;
 
 //XXX: temporary...
 #define MAX_TOKENS 32
-typedef struct _bigram_handle_t
+typedef struct bigram_handle_t
 {
 	token_t last_token;     // 지난번 토큰
 

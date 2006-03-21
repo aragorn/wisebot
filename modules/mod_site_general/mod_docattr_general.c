@@ -1,8 +1,15 @@
-#include "mod_docattr_general.h"
+/* $Id$ */
+#include <limits.h>
+#include <string.h>
+#include <errno.h>
+
+#include "common_core.h"
+#include "md5.h"
+#include "memory.h"
+#include "common_util.h"
 #include "mod_api/morpheme.h"
 #include "mod_api/qp.h"
-#include "mod_qp/mod_qp.h"
-#include <limits.h>
+#include "mod_docattr_general.h"
 
 #define MAX_ENUM_NUM		1024
 #define MAX_ENUM_LEN		SHORT_STRING_SIZE

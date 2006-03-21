@@ -1,8 +1,8 @@
-#ifndef _LEXICON_INDEX_H_
-#define _LEXICON_INDEX_H_
+#ifndef LEXICON_INDEX_H
+#define LEXICON_INDEX_H
 
-#include "mod_api/lexicon.h"
-#include "mod_lexicon.h"
+#include <stdint.h> /* uint32_t */
+#include "mod_lexicon.h" /* lexicon_t */
 
 int lexicon_index_open  ( lexicon_t *lexicon );
 int lexicon_index_sync  ( lexicon_t *lexicon );

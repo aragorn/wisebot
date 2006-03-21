@@ -1,10 +1,6 @@
 /* $Id$ */
-#ifndef _MOD_QPP_H_
-#define _MOD_QPP_H_ 1
-// mod_qpp private header.
-
-#include "mod_api/qpp.h"
-#include "mod_indexer/hit.h"
+#ifndef MOD_QPP_H
+#define MOD_QPP_H 1
 
 #define QPP_OP_OPERAND		(-1)
 #define QPP_OP_STAR			(20)

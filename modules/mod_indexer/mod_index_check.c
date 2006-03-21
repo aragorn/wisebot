@@ -1,11 +1,17 @@
-#include "softbot.h"
-#include "mp_api.h"
-#include "mod_mp/mod_mp.h"
-#include "mod_vrfi/mod_vrfi.h"
-#include "mod_qp/mod_qp.h"
+/* $Id$ */
+#include <signal.h>
+#include <stdlib.h> /* atoi(3) */
+#include <fcntl.h> /* O_RDWR */
+#include <time.h> /* time(2) */
+#include <string.h>
+#include <errno.h>
+#include "common_core.h"
+#include "memory.h"
+#include "setproctitle.h"
+#include "mod_api/vrfi.h"
+#include "mod_api/qp.h"
 #include "mod_api/indexdb.h"
 #include "mod_api/lexicon.h"
-#include "hit.h"
 
 #define MAX_PROCESSES         10
 #define MONITORING_PERIOD     5

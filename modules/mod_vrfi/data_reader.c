@@ -1,6 +1,13 @@
 /* $Id$ */
+#include <stdlib.h> /* atoi(3) */
+#include <fcntl.h> /* O_RDWR */
+#include <unistd.h> /* read(2) */
+#include <string.h> /* strerror(3) */
+#include <errno.h>
+#include "common_core.h"
+#include "mod_api/indexer.h" /* hit_t,doc_hit_t */
 #include "data_handle.h"
-#include "../mod_indexer/hit.h"
+//#include "../mod_indexer/hit.h"
 
 #define BUF_SIZE	1024
 

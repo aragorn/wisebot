@@ -1,12 +1,12 @@
-/*
- * $Id$
- */
+/* $Id$ */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-#include "softbot.h"
+#include "common_core.h"
+#include "common_util.h"
+#include "mod_api/indexer.h"
 #include "mod_qpp.h"
-
 #include "tokenizer.h"
 
 #define MAX_QPP_OP_NUM			(128)

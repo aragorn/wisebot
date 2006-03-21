@@ -1,8 +1,7 @@
 /* $Id$ */
-#ifndef _MOD_LEXICON_H_
-#define _MOD_LEXICON_H_ 
+#ifndef MOD_LEXICON_H
+#define MOD_LEXICON_H
 
-#include "softbot.h"
 #include "mod_api/lexicon.h"
 
 #define MAX_BLOCK_NUM       254

@@ -1,7 +1,9 @@
-#include "mod_qp_general.h"
+/* $Id$ */
+#include <ctype.h>
+#include "common_core.h"
 #include "mod_api/qp.h"
 #include "mod_qp/mod_qp.h"
-#include <ctype.h>
+#include "mod_qp_general.h"
 
 // operand pool
 static docattr_operand_t* operands = NULL;

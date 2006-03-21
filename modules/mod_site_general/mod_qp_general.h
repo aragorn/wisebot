@@ -1,5 +1,5 @@
-#ifndef _MOD_QP_GENERAL_H_
-#define _MOD_QP_GENERAL_H_ 1
+#ifndef MOD_QP_GENERAL_H
+#define MOD_QP_GENERAL_H 1
 
 #include "mod_docattr_general.h"
 

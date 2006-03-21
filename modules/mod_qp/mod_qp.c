@@ -1,7 +1,14 @@
 /* $Id$ */ 
-#include "softbot.h"
-
+#include <math.h>
+#include <fcntl.h> /* O_RDONLY */
+#include <string.h>
+#include <errno.h>
+#include "common_core.h"
+#include "memory.h"
+#include "util.h"
+#include "common_util.h"
 #include "mod_api/qp.h"
+#include "mod_api/qpp.h"
 #include "mod_api/indexdb.h"
 #include "mod_api/vrfi.h"
 #include "mod_api/lexicon.h"
@@ -11,10 +18,7 @@
 #include "mod_api/protocol4.h" /* sb4 related error codes */
 
 #include "mod_qp.h"
-#include <math.h>
-
-#include "mod_indexer/hit.h"
-#include "mod_morpheme/lib/lb_lex.h"
+#include "mod_morpheme/lib/lb_lex.h" /* 2228,2236: LEXM_IS_WHITE,LEXM_IS_EOS */
 
 #ifdef DEBUG_SOFTBOTD
 #	define debug_show_dochitlist(dochits, start, nelm, stream) \

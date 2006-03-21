@@ -1,4 +1,9 @@
 /* $Id$ */
+#include <stdio.h> /* printf(3) */
+#include <string.h> /* strerror(3) */
+#include <unistd.h> /* read(2) */
+#include <fcntl.h> /* O_RDWR */
+#include <errno.h>
 #include "header_handle.h"
 
 #define BUF_SIZE	sizeof(header_data_t)

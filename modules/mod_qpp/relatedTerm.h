@@ -1,11 +1,8 @@
-/*
- * $Id$
- * 
- */
-#ifndef _RELATE_TERM_H_
-#define _RELATE_TERM_H_
+/* $Id$ */
+#ifndef RELATE_TERM_H
+#define RELATE_TERM_H 1
 
-#include "softbot.h"
+#include <stdint.h>
 
 typedef struct{
 	int8_t relType;

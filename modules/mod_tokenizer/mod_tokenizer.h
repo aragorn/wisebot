@@ -1,13 +1,10 @@
 /* $Id$ */
-#ifndef _TOKENIZER_H
-#define _TOKENIZER_H 1
+#ifndef MOD_TOKENIZER_H
+#define MOD_TOKENIZER_H 1
 
-#include <softbot.h>
-
-struct _tokenizer_t {
+struct tokenizer_t {
 	unsigned char *text;
 	unsigned char *current;
 };
-
 
 #endif

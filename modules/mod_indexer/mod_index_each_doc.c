@@ -1,12 +1,13 @@
 /* $Id$ */
-#include "softbot.h"
-
-#include "mod_daemon_indexer.h"
-#include "mod_index_each_doc.h"
+#include <stdlib.h> /* abort(3) */
+#include <string.h>
+#include "common_core.h"
 #include "mod_api/indexer.h"
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/vrfi.h"
 #include "mod_api/lexicon.h"
+#include "mod_daemon_indexer.h"
+#include "mod_index_each_doc.h"
 
 static int mNumOfField = 0;
 static char mFieldName[MAX_EXT_FIELD][MAX_FIELD_STRING];

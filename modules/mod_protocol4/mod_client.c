@@ -1,8 +1,10 @@
 /* $Id$ */
 
+#include "common_core.h"
 #include "mod_api/rmas.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/cdm.h"
+#include "mod_api/docattr.h"
 #include "mod_api/docapi.h"
 #include "mod_api/indexer.h"
 #include "mod_api/index_word_extractor.h"
@@ -10,7 +12,6 @@
 #include "mod_api/did.h"
 
 #include "mod_client.h"
-#include "mod_indexer/hit.h"
 #include "mod_site/mod_docattr_lgcaltex.h"
 
 typedef struct {

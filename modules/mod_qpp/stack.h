@@ -1,9 +1,8 @@
 /* $Id$ */
-#ifndef _QPP_STACK_H_
-#define _QPP_STACK_H_ 1
+#ifndef QPP_STACK_H
+#define QPP_STACK_H 1
 
-#include "softbot.h"
-#include "mod_api/qpp.h" // XXX: qpp structure 를 쓰므로..(QueryNode)
+#include "mod_api/qpp.h" /* QueryNode */
 
 #define STACK_OVERFLOW	(-1)
 #define STACK_UNDERFLOW	(-2)

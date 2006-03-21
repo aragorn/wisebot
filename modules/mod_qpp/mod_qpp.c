@@ -1,11 +1,13 @@
 /* $Id$ */
-#include "softbot.h"
-
+#include <string.h>
+#include <stdlib.h>
+#include "common_core.h"
+#include "util.h"
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/lexicon.h"
+#include "mod_api/qp.h"
 
 #include "mod_qpp.h"
-#include "mod_qp/mod_qp.h"
 
 #include "stack.h"
 #include "tokenizer.h"

@@ -1,4 +1,6 @@
 /* $Id$ */
+#include <string.h>
+#include "common_core.h"
 #include "stack.h"
 #include "mod_qpp.h"
 

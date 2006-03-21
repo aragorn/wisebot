@@ -1,6 +1,13 @@
 /* $Id$ */
+#include <stdlib.h> /* atoi(3) */
+#include <unistd.h> /* lseek(2) */
+#include <string.h> /* strerror(3) */
+#include <unistd.h> /* read(2) */
+#include <fcntl.h> /* O_RDWR */
+#include <errno.h>
+#include "common_core.h"
+#include "mod_api/indexer.h"
 #include "mod_vrfi.h"
-#include "mod_indexer/hit.h"
 
 #define BUFSIZE(fixed_size) (fixed_size + \
 			sizeof(variable_data_info_t) + sizeof(header_pos_t) )

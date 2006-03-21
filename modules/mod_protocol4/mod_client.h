@@ -1,10 +1,6 @@
-/*
- * $Id$
- */
-#ifndef _SOFTBOT_CLIENT_H_
-#define _SOFTBOT_CLIENT_H_ 1
-
-#include "softbot.h"
+/* $Id$ */
+#ifndef SOFTBOT_CLIENT_H
+#define SOFTBOT_CLIENT_H 1
 
 #include <sys/time.h>
 

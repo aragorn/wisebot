@@ -1,10 +1,9 @@
-/*
- * $Id$
- */
+/* $Id$ */
 #ifndef QPP_TOKENIZER_H
 #define QPP_TOKENIZER_H
 
-#include "softbot.h"
+#include <stdint.h> /* int32_t */
+#include "mod_api/qpp.h" /* QueryNode */
 
 #define TOKEN_DUPLICATED	(-11)
 #define END_OF_STRING		(-21)

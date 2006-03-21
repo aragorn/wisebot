@@ -35,7 +35,7 @@ void* new_bigram_generator(int id)
 void bigram_set_text_old(void* h, char* text)
 {
 	bigram_handle_t *handle = h;
-	sb_run_tokenizer_set_text(&(handle->tokenizerobj), text);
+	sb_run_tokenizer_set_text(handle->tokenizer, text);
 	handle->last_token.type = TOKEN_END_OF_DOCUMENT;
 	handle->last_token.len = 0;
 	handle->last_token_idx = MAX_TOKENS;
@@ -45,7 +45,7 @@ void bigram_set_text_old(void* h, char* text)
 void delete_bigram_generator_old(void *h)
 {
 	bigram_handle_t *handle = h;
-	sb_run_delete_tokenizer(&(handle->tokenizerobj));
+	sb_run_delete_tokenizer(handle->tokenizer);
 	sb_free(handle);
 }
 
@@ -78,7 +78,7 @@ int bigram_generator_old(void *h, Word index_word[], int32_t max_index_word)
 		num_of_tokens = &(handle->num_of_tokens);
 	}
 	else {
-		handle->num_of_tokens = sb_run_get_tokens(&(handle->tokenizerobj), handle->last_tokens, MAX_TOKENS);
+		handle->num_of_tokens = sb_run_get_tokens(handle->tokenizer), handle->last_tokens, MAX_TOKENS);
 		handle->last_token_idx = 0;
 		current_idx = &(handle->last_token_idx);
 		num_of_tokens = &(handle->num_of_tokens);

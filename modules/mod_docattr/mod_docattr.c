@@ -1,17 +1,20 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_api/docattr.h"
-#include "mod_api/qp.h"
-#include "mod_qp/mod_qp.h"
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <errno.h>
 #include <search.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h> /* O_CREAT,O_RDWR */
+
+#include "common_core.h"
+#include "common_util.h"
+#include "mod_api/docattr.h"
+#include "mod_api/qp.h"
+#include "mod_api/indexer.h"
 
 #define DOCATTR_ELEMENT_SIZE			docattr_size
 static uint32_t max_doc_num = 1000000;

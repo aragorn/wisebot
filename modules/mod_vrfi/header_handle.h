@@ -2,7 +2,9 @@
 #ifndef HEADER_HANDLE_H
 #define HEADER_HANDLE_H 1
 
-#include "softbot.h"
+#include <stdint.h> /* uint32_t */
+
+typedef struct header_handle_t header_handle_t;
 
 typedef struct {
 	uint32_t start;
@@ -25,7 +27,6 @@ typedef struct {
 	header_metadata_t metadata;
 } header_data_t;
 
-typedef struct header_handle_t header_handle_t;
 
 extern header_handle_t *new_header_file_handle();
 extern int header_open(header_handle_t *this, char filepath[]);

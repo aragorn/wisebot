@@ -1,6 +1,17 @@
-#include "softbot.h"
-#include "mp_api.h"
-#include "mod_mp/mod_mp.h"
+/* $Id$ */
+#include <signal.h>
+#include <stdlib.h> /* abort(3) */
+#include <unistd.h> /* lseek(2) */
+#include <fcntl.h> /* O_RDWR */
+#include <sys/time.h> /* gettimeofday(2) */
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h> /* S_IREAD,S_IWRITE */
+#include "common_core.h"
+#include "memory.h"
+#include "ipc.h"
+#include "setproctitle.h"
+#include "common_util.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/indexer.h"
 #include "mod_api/indexdb.h"
@@ -8,11 +19,8 @@
 #include "mod_api/cdm.h"
 #include "mod_api/index_word_extractor.h"
 
-#include "mod_qp/mod_qp.h" /* XXX: STD_HITS_LEN */
-#include "mod_daemon_indexer.h"
 #include "mod_index_each_doc.h"
-
-#include "hit.h"
+#include "mod_daemon_indexer.h"
 
 #define MONITORING_PERIOD	5
 #define MAGICNUMBER 	    12345

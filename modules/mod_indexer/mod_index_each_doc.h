@@ -2,6 +2,8 @@
 #ifndef MOD_INDEX_EACH_DOC_H
 #define MOD_INDEX_EACH_DOC_H 1
 
+#include <stdint.h> /* uint16_t */
+
 /* XXX: obsolete but used by print forward index, and some functions.. */
 typedef struct{
 	uint16_t para_idx	:3; /* max 2^3-1=7 */
