@@ -446,6 +446,10 @@ static int set_doccond_function(void *dest, char *key, char *value)
         doccond->rows[row-1].miganopen =
             return_constants_value(value, strlen(value));
     }
+	else if (strcmp(key, "OUTALL") == 0) {
+		doccond->rows[row-1].outall =
+			return_constants_value(value, strlen(value));
+	}
     else if (strcmp(key, "DEL") == 0) {
         doccond->rows[row-1].del =
             return_constants_value(value, strlen(value));
