@@ -52,7 +52,7 @@ static int compare_function(void *dest, void *cond, uint32_t docid) {  /* 검색시
 			if (doccond->rows[i].miganopen != 0 && docattr->miganopen != doccond->rows[i].miganopen)
 				continue;
 			if (doccond->rows[i].outall != 0 // 외부종법 전체
-					&& (docattr->gan == 0 && docattr->won == 0 && docattr->miganopen == 0))
+					&& (docattr->gan == 1 && docattr->won == 1 && docattr->miganopen == 1))
 				continue;
             if (doccond->rows[i].del != 0 && docattr->del != doccond->rows[i].del)
                 continue;
