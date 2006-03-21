@@ -1,5 +1,5 @@
 /* $Id$ */
-
+#define CORE_PRIVATE 1
 #include "common_core.h"
 #include "util.h"
 

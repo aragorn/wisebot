@@ -8,6 +8,7 @@
 #include <sys/sem.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#define CORE_PRIVATE 1
 #include "common_core.h"
 #include "log_error.h"
 #include "memory.h"

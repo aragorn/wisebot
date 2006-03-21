@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#define CORE_PRIVATE 1
 #include "common_core.h"
 #include "ipc.h"
 #include "modules.h"

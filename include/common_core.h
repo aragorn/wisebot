@@ -40,9 +40,13 @@ extern SB_DECLARE_DATA char gQueryLogFile[MAX_PATH_LEN];
 extern SB_DECLARE_DATA char gRegistryFile[MAX_PATH_LEN];
 extern SB_DECLARE_DATA pid_t gRootPid;
 
-
-#ifndef COMMON_CORE_PRIVATE
-
+#ifndef CORE_PRIVATE
+# include "modules.h"
+# include "scoreboard.h"
+# include "config.h"
+# include "registry.h"
+# include "log_error.h"
+#else
 #endif
 
 #endif

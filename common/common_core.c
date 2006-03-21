@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <fcntl.h>
+#define CORE_PRIVATE 1
 #include "common_core.h"
 
 char  gSoftBotRoot[MAX_PATH_LEN]  = SERVER_ROOT;

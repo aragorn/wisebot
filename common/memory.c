@@ -1,19 +1,15 @@
 /* $Id$ */
 //FIXME : name is inappropriate.. isn't it? -- eerun
-
 #define _GNU_SOURCE
 #include <stdio.h>    // 77: dprintf()
 #include <stdlib.h>   // 66: calloc
 #include <string.h>   // strerror()
 #include <errno.h>    // errno
-
 #include <unistd.h>    // 78: getpid()
 #include <time.h>      // 78: time()
 #include <sys/mman.h>  // 198: mmap()
 #include <fcntl.h>     // 76: O_CREAT
-//#include <sys/types.h>
-//#include <sys/stat.h>
-
+#define CORE_PRIVATE 1
 #include "common_core.h"
 #include "log_error.h"
 #include "ipc.h"

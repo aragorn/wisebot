@@ -1,8 +1,8 @@
 /* $Id$ */
-
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#define CORE_PRIVATE 1
 #include "common_core.h"
 #include "log_error.h"
 #include "memory.h"

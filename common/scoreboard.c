@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#define CORE_PRIVATE 1
 #include "common_core.h"
 #include "ipc.h"
 #include "log_error.h"

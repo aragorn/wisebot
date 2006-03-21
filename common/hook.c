@@ -4,6 +4,7 @@
 #include <string.h>
 #include <assert.h>
 
+#define CORE_PRIVATE 1
 #include "common_core.h"
 #include "log_error.h"
 #include "hook.h"
