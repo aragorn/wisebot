@@ -1,7 +1,6 @@
 /* $Id$ */
 #ifndef _COMMANDS_H_
 #define _COMMANDS_H_ 1
-#include "client.h"
 
 /* the names of functions that actually execute the command */
 

@@ -4,14 +4,12 @@
 #ifndef _SOFTBOT_CLIENT_H_
 #define _SOFTBOT_CLIENT_H_ 1
 
-#include "common_core.h"
-#include "ansi_color.h"
-#include "mod_api/lexicon.h"
-#include "mod_api/did.h"
-
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <sys/time.h>
+#include "mod_api/lexicon.h"
+#include "mod_api/did.h"
+#include "mod_api/cdm.h"
+#include "ansi_color.h"
 
 char *stripwhite(char *line);
 char *dupstr(char *s);

@@ -1,9 +1,15 @@
+/* $Id$ */
 /* search performance test tool */
 /* by jso 2004/02/04 */
 
-#include "benchmark.h"
-#include "commands.h"
+#include <string.h>
 #include <pthread.h>
+#include <sys/time.h>  /* gettimeofday(2) */
+#include <unistd.h>    /* getopt(3) */
+#include <stdlib.h>    /* atoi(3) */
+#include "common_core.h"
+#include "commands.h"  /* search() */
+#include "benchmark.h"
 
 #define SLOT_SIZE 20
 #define SLOT_TIME_INTERVAL 100

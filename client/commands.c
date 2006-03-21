@@ -1,5 +1,9 @@
 /* $Id$ */
 
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include "common_core.h"
 #include "mod_api/tcp.h"
 #include "mod_api/protocol4.h"
 #include "mod_api/cdm.h"
@@ -16,9 +20,6 @@
 #include "client.h"
 #include "mod_indexer/hit.h"
 #include "benchmark.h"
-
-#include <sys/types.h>
-#include <sys/wait.h>
 
 #define TOKEN_MAX_LEN 128
 #define ARG_MAX_CNT 1024
