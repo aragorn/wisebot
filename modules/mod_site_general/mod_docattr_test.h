@@ -1,7 +1,5 @@
-#ifndef MOD_DOCATTR_SUPREME_HOME_H
-#define MOD_DOCATTR_SUPREME_HOME_H
-
-#include <string.h>
+#ifndef MOD_DOCATTR_TEST_H
+#define MOD_DOCATTR_TEST_H
 
 /**************************************************
  * 여기 구조체들은 만들때 4byte align을 지키줘야

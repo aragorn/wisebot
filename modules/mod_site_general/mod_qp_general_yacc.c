@@ -116,7 +116,7 @@
 /* Copy the first part of user declarations.  */
 #line 16 "mod_qp_general_yacc.y"
 
-#include "mod_docattr_general.h"
+#include "common_core.h"
 #include "mod_qp_general.h"
 
 #define yyerror __yyerror

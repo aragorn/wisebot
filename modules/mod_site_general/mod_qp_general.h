@@ -1,7 +1,7 @@
 #ifndef MOD_QP_GENERAL_H
 #define MOD_QP_GENERAL_H 1
 
-#include "mod_docattr_general.h"
+#include "mod_docattr_general.h" /* docattr_operant_t, etc */
 
 typedef docattr_operand_t* yystype;
 #define YYSTYPE yystype // obsolete ... 라고 한다...

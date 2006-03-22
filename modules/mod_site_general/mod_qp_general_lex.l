@@ -1,5 +1,5 @@
 %{
-#include "mod_docattr_general.h"
+#include "common_core.h"
 #include "mod_qp_general.h"
 #include "mod_qp_general_yacc.h"
 

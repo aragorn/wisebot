@@ -14,7 +14,7 @@
 %left BIT_AND
 %nonassoc BIT_NOT
 %{
-#include "mod_docattr_general.h"
+#include "common_core.h"
 #include "mod_qp_general.h"
 
 #define yyerror __yyerror

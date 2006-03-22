@@ -1,8 +1,10 @@
 /* $Id$ */
-#include <ctype.h>
+#include <ctype.h> /* isspace(3) */
+#include <string.h> /* memset(3) */
+#include <stdlib.h> /* atoi(3) */
 #include "common_core.h"
-#include "mod_api/qp.h"
-#include "mod_qp/mod_qp.h"
+#include "memory.h"
+#include "common_util.h" /* hangul_strncmp() */
 #include "mod_qp_general.h"
 
 // operand pool

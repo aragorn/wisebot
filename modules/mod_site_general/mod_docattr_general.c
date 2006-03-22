@@ -1,5 +1,6 @@
 /* $Id$ */
 #include <limits.h>
+#include <stdlib.h> /* strtol(3) */
 #include <string.h>
 #include <errno.h>
 
@@ -7,8 +8,7 @@
 #include "md5.h"
 #include "memory.h"
 #include "common_util.h"
-#include "mod_api/morpheme.h"
-#include "mod_api/qp.h"
+#include "mod_api/morpheme.h" /* WordList */
 #include "mod_docattr_general.h"
 
 #define MAX_ENUM_NUM		1024

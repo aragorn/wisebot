@@ -534,7 +534,7 @@ static int yy_more_len = 0;
 char *yytext;
 #line 1 "mod_qp_general_lex.l"
 #line 2 "mod_qp_general_lex.l"
-#include "mod_docattr_general.h"
+#include "common_core.h"
 #include "mod_qp_general.h"
 #include "mod_qp_general_yacc.h"
 

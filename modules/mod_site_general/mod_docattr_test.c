@@ -2,15 +2,15 @@
  *  이거는 general module 과 기존 module 의 속도를
  *  비교하려고 만들어 본 module 이다.
  ***********************************************************/
-#include "softbot.h"
+#include <stdlib.h> /* atoi(3),qsort(3) */
+#include <string.h>
+#include "common_core.h"
+#include "md5.h"
+#include "common_util.h"
 #include "mod_api/index_word_extractor.h"
-#include "mod_api/docattr.h"
-#include "mod_api/qp.h"
 #include "mod_docattr_general.h" // for SB_PRIu64
 #include "mod_docattr_test.h"
-#include "mod_qp/mod_qp.h"
 
-#include <stdio.h>
 
 #define MAX_ENUM_NUM		1024
 #define MAX_ENUM_LEN		SHORT_STRING_SIZE
