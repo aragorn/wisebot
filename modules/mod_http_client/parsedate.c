@@ -73,16 +73,15 @@
   20040911 +0200
 
 */
-#include "setup.h"
+#include "common_core.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h> /* for strtol() */
 #endif
-
-#include <curl/curl.h>
 
 static time_t Curl_parsedate(const char *date);
 
@@ -158,13 +157,17 @@ static int checkday(char *check, size_t len)
 {
   int i;
   const char * const *what;
-  bool found= FALSE;
+  int found= FALSE;
   if(len > 3)
     what = &weekday[0];
   else
     what = &Curl_wkday[0];
   for(i=0; i<7; i++) {
+	/* curl_strequal()은 strcasecmp()의 wrapper이다.
+	 *
     if(curl_strequal(check, what[0])) {
+	 */
+    if(strcasecmp(check, what[0]) == 0) {
       found=TRUE;
       break;
     }
@@ -177,11 +180,12 @@ static int checkmonth(char *check)
 {
   int i;
   const char * const *what;
-  bool found= FALSE;
+  int found= FALSE;
 
   what = &Curl_month[0];
   for(i=0; i<12; i++) {
-    if(curl_strequal(check, what[0])) {
+    //if(curl_strequal(check, what[0])) {
+    if(strcasecmp(check, what[0]) == 0) {
       found=TRUE;
       break;
     }
@@ -197,11 +201,12 @@ static int checktz(char *check)
 {
   unsigned int i;
   const struct tzinfo *what;
-  bool found= FALSE;
+  int found= FALSE;
 
   what = tz;
   for(i=0; i< sizeof(tz)/sizeof(tz[0]); i++) {
-    if(curl_strequal(check, what->name)) {
+    //if(curl_strequal(check, what->name)) {
+    if(strcasecmp(check, what->name) == 0) {
       found=TRUE;
       break;
     }
@@ -252,7 +257,7 @@ static time_t Curl_parsedate(const char *date)
 #endif
 
   while(*date && (part < 6)) {
-    bool found=FALSE;
+    int found=FALSE;
 
     skip(&date);
 

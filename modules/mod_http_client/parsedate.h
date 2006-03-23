@@ -1,5 +1,5 @@
 #ifndef __PARSEDATE_H
-#define __PARSEDATEL_H
+#define __PARSEDATE_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -25,4 +25,14 @@
 extern const char * const Curl_wkday[7];
 extern const char * const Curl_month[12];
 
+/*
+ * NAME curl_getdate()
+ *
+ * DESCRIPTION
+ *
+ * Returns the time, in seconds since 1 Jan 1970 of the time string given in
+ * the first argument. The time argument in the second parameter is unused
+ * and should be set to NULL.
+ */
+time_t curl_getdate(const char *p, const time_t *unused);
 #endif
