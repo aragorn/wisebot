@@ -1,8 +1,11 @@
 /* $Id$ */
-#include "softbot.h"
-
-#include "memfile.h"
+//#include "softbot.h"
+#include <string.h> /* memcpy(3),strlen(3) */
+#include <errno.h>
+#include "common_core.h"
+#include "memory.h"
 #include "mprintf.h"
+#include "memfile.h"
 
 static unsigned int NUMALLOCOBJ = 5;
 static unsigned int BLOCKSIZE = MEMFILE_LINE_LEN;

@@ -1,19 +1,18 @@
 /* $Id$ */
-#ifndef _HTTP_H_
-#define _HTTP_H_
+#ifndef HTTP_H
+#define HTTP_H
 
 #include "memfile.h"
-#include "http_reserved_words.h"
-#include "http_buffering.h"
+#include "http_buffering.h" /* http_parsing_t */
 
-typedef struct _slist slist;
+typedef struct slist slist;
 
-struct _slist {
+struct slist {
 	char	*data;
 	slist	*next;
 };
 
-typedef struct _http {
+typedef struct {
 	/* about request */
 	int request_http_ver;	/* HTTP request version */
 	char *method;			/* HTTP request method */
@@ -61,8 +60,8 @@ char * http_getFromResponseHeader(http_t *http, const char *fieldName);
 char * http_popFromResponseHeader(http_t *http, const char *fieldName);
 int http_getResponse(http_t *http, const char *req_method, http_buffering_t *buffering_handle);
 
-#ifndef NULL
-#define NULL ((void *)0)
-#endif //NULL
+//#ifndef NULL
+//#define NULL ((void *)0)
+//#endif //NULL
 
-#endif //_http_H_
+#endif // HTTP_H

@@ -1,6 +1,9 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mod_mp/mod_mp.h"
+#include <signal.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h> /* fstat(2) */
+#include "common_core.h"
 #include "mod_api/http_client.h"
 
 static int url_retrieve(){
@@ -358,11 +361,11 @@ static RETSIGTYPE _graceful_shutdown(int sig)
 }/*}}}*/
 
 static int module_main(slot_t *slot) {
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown); 
-	sb_init_scoreboard(scoreboard); 
-	sb_spawn_processes(scoreboard,"test_httpclient_module process",test_main);
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown); 
+	sb_run_init_scoreboard(scoreboard); 
+	sb_run_spawn_processes(scoreboard,"test_httpclient_module process",test_main);
 	scoreboard->period = 5;
-	sb_monitor_processes(scoreboard);
+	sb_run_monitor_processes(scoreboard);
 
 	return 0;
 }

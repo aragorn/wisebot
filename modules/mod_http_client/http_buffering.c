@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "softbot.h"
+#include "common_core.h"
+#include "memory.h"
 #include "http_buffering.h"
 
 #define CONST_BUF_SIZE 	(512)

@@ -1,6 +1,6 @@
 /* $Id$ */
-#ifndef _HTTP_BUFFERING_H_
-#define _HTTP_BUFFERING_H_
+#ifndef HTTP_BUFFERING_H
+#define HTTP_BUFFERING_H
 
 #include "memfile.h"
 
@@ -42,26 +42,17 @@ typedef struct {
 } http_buffering_t;
 
 /* By Pattern */
-char *          
-http_buffering_getUntil(http_buffering_t *handle, char **buf, char *pattern);
-
-int
-http_buffering_fill_memfile_Until(http_buffering_t *handle, memfile *buf, char *pattern);
-
+char* http_buffering_getUntil(http_buffering_t *handle, char **buf, char *pattern);
+int   http_buffering_fill_memfile_Until(http_buffering_t *handle, memfile *buf, char *pattern);
 
 /* By Bytes */
-int
-http_buffering_getNByte(http_buffering_t *handle, void **buf, int size);
-
-int
-http_buffering_fill_memfile_NByte(http_buffering_t *handle, memfile *mfile, int size);
-
+int   http_buffering_getNByte(http_buffering_t *handle, void **buf, int size);
+int   http_buffering_fill_memfile_NByte(http_buffering_t *handle, memfile *mfile, int size);
 
 /* By Connection Close */
-int
-http_buffering_fill_memfile_UntilClose(http_buffering_t *handle, 
-										memfile *mfile, char *connClosedFlag);
+int   http_buffering_fill_memfile_UntilClose(http_buffering_t *handle, 
+											 memfile *mfile, char *connClosedFlag);
 
-#endif //_HTTP_BUFFERING_H_
+#endif //HTTP_BUFFERING_H
 
 

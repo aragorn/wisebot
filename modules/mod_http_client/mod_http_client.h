@@ -1,11 +1,10 @@
 /* $Id$ */
-#ifndef _MOD_HTTP_CLIENT_H_
-#define _MOD_HTTP_CLIENT_H_
+#ifndef MOD_HTTP_CLIENT_H
+#define MOD_HTTP_CLIENT_H
 
-#include "softbot.h"
 #include "memfile.h"
+#include "http_buffering.h" /* http_parsing_t */
 #include "http.h"
-#include "http_client_status.h"
 
 #ifdef DEBUG_SOFTBOTD
 #include <sys/time.h>

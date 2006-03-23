@@ -1,6 +1,6 @@
 /* $Id$ */
-#ifndef _HTTP_RESERVED_WORDS_H_
-#define _HTTP_RESERVED_WORDS_H_ 
+#ifndef HTTP_RESERVED_WORDS_H
+#define HTTP_RESERVED_WORDS_H
 
 /* about request method */
 #define HTTP_METHOD_GET		"GET"
@@ -36,4 +36,4 @@
 #define HTTP_STATUS_CODE_CLIENT_ERROR	400
 #define HTTP_STATUS_CODE_SERVER_ERROR	500
 
-#endif //_HTTP_RESERVED_WORDS_H_
+#endif // HTTP_RESERVED_WORDS_H

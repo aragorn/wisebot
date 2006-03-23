@@ -10,10 +10,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "softbot.h"
-#include "getdate.h"
+#include "common_core.h"
+#include "memory.h"
+#include "parsedate.h" /* curl_getdate() */
+#include "http_reserved_words.h"
 #include "http.h"
-#include "http_buffering.h"
 
 #define HTTPHEADER_LINEEND	"\r\n"
 #define HTTPHEADER_NECESSARY_LINEEND	"\n"

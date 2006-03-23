@@ -6,10 +6,13 @@
 #include <time.h>
 
 #include <errno.h>
-extern int errno;
 
+#include "common_core.h"
+#include "memory.h"
 #include "mod_api/tcp.h"
 #include "mod_api/http_client.h"
+#include "http_client_status.h"
+#include "http_reserved_words.h" /* HTTP_CONNECTION,HTTP_WORD_CLOSE */
 #include "mod_http_client.h"
 
 
