@@ -6,11 +6,6 @@
 # error You should include "common_core.h" first.
 #endif
 
-//#include <stdio.h>
-//#include <unistd.h>
-//#include <sys/time.h>
-//#include <string.h>
-//#include <errno.h>
 #include <time.h>
 #include <sys/times.h>
 #include <sys/socket.h>  /* struct sockaddr */

@@ -24,5 +24,7 @@ libcommon_util_la_SOURCES = common_util.c \
 							qsort2.c \
 							msort.c \
 							md5c.c \
-							hash.c
+							hash.c \
+							memfile.c \
+							mprintf.c
 libcommon_util_la_LDFLAGS = -shared -avoid-version
