@@ -147,7 +147,9 @@ static void
 http_client_free(http_client_t *httpClt){
 	if(!httpClt)
 		return;
-	sb_run_tcp_close(httpClt->sockFd);
+	if(httpClt->sockFd != -1) {
+		sb_run_tcp_close(httpClt->sockFd);
+	}
 	if(httpClt->host)
 		sb_free(httpClt->host);
 	if(httpClt->port)
@@ -172,7 +174,9 @@ http_client_conn_close(http_client_t *this){
 	if(!this ){
 		return;
 	}
-	sb_run_tcp_close(this->sockFd);
+	if(this->sockFd != -1) {
+		sb_run_tcp_close(this->sockFd);
+	}
 	this->sockFd = -1;
 	this->statusFlag = CON_FLAG_CLEAN;
 	
@@ -201,7 +205,7 @@ http_client_connect(http_client_t *this){
 		int n;
 		
 		httpclient_record_event(this, "tcp_recv try [%d]bytes : check if still connected", 1);
-		n = sb_run_tcp_recv(this->sockFd, temp, 1, 0);
+		n = sb_run_tcp_recv_nonb(this->sockFd, temp, 1, 0);
 		httpclient_record_event(this, "tcp_recv return [%d]", n);
 		if ( n == -1 && errno == ETIMEDOUT ){
 			still_connected = TRUE;
@@ -289,7 +293,7 @@ http_client_sendRequest(http_client_t *this){
 		read = memfile_read(request, temp, CONST_BUF_SIZE);
 		
 		httpclient_record_event(this, "tcp_send try [%d] bytes", read);
-		sent = sb_run_tcp_send(this->sockFd, temp, read, this->timeout);
+		sent = sb_run_tcp_send_nonb(this->sockFd, temp, read, this->timeout);
 		httpclient_record_event(this, "tcp send return [%d]", sent);
 		if(sent <= 0 ) {
 			this->statusFlag |= CON_FLAG_REQUESTFAILED;
@@ -329,7 +333,7 @@ http_client_sendRequestMore(http_client_t *this, char *buf, int buflen, int *sen
 	}
 
 	httpclient_record_event(this, "tcp_send try [%d] bytes", buflen);
-	*sentlen = sb_run_tcp_send(this->sockFd, buf, buflen, this->timeout);
+	*sentlen = sb_run_tcp_send_nonb(this->sockFd, buf, buflen, this->timeout);
 	httpclient_record_event(this, "tcp send return [%d]", *sentlen);
 	if(*sentlen <= 0 ) {
 		this->statusFlag |= CON_FLAG_REQUESTFAILED;
@@ -397,7 +401,8 @@ http_client_recvResponse(http_client_t *this){
 			break;
 		}
 		httpclient_record_event(this, "tcp_recv try [%d] bytes", CONST_BUF_SIZE);
-		n = sb_run_tcp_recv(this->sockFd, temp, CONST_BUF_SIZE, this->timeout);
+		debug("recv timeout[%d]", this->timeout);
+		n = sb_run_tcp_recv_nonb(this->sockFd, temp, CONST_BUF_SIZE, this->timeout);
 		httpclient_record_event(this, "tcp_recv return [%d]", n);
 		if ( n <= 0 ) {
 			if ( total_recv > 0 )	break;
@@ -576,6 +581,7 @@ http_client_retrieve(int num_of_clients, http_client_t **client_list){
 			}
 
 			/* send request */
+			debug("send request client[%d]", i);
 			if ( (client_list[i]->statusFlag & CON_FLAG_CONNECTED) &&
 					(FD_ISSET(client_list[i]->sockFd, &wset)) ) {
 				if ( http_client_sendRequest(client_list[i]) != SUCCESS ) {
@@ -585,6 +591,7 @@ http_client_retrieve(int num_of_clients, http_client_t **client_list){
 			}
 
 			/* recv response */
+			debug("recv response client[%d], sockFd[%d]", i, client_list[i]->sockFd);
 			if ( (client_list[i]->statusFlag & CON_FLAG_CONNECTED) &&
 					(FD_ISSET(client_list[i]->sockFd, &rset)) ) {
 				nRet = http_client_recvResponse(client_list[i]);
