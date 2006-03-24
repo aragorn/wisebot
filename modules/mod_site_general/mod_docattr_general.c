@@ -831,41 +831,27 @@ static int add_docattr_field(char* field_name, char* field_type)
 			return FAIL;
 		}
 
+		field->field_type = FIELD_INTEGER;
+		field->value_type = VALUE_INTEGER;
+		field->size = size;
+		field->get_as_string_func = integer_get_as_string_func;
+		field->compare_func = integer_compare_func;
+
 		if ( size == (int) sizeof(docattr_integer) ) {
-			field->field_type = FIELD_INTEGER;
-			field->value_type = VALUE_INTEGER;
-			field->size = size;
 			field->set_func = integer_set_func;
 			field->get_func = integer_get_func;
-			field->get_as_string_func = integer_get_as_string_func;
-			field->compare_func = integer_compare_func;
 		}
 		else if ( size == 4 ) {
-			field->field_type = FIELD_INTEGER;
-			field->value_type = VALUE_INTEGER;
-			field->size = size;
 			field->set_func = integer4_set_func;
 			field->get_func = integer4_get_func;
-			field->get_as_string_func = integer_get_as_string_func;
-			field->compare_func = integer_compare_func;
 		}
 		else if ( size == 2 ) {
-			field->field_type = FIELD_INTEGER;
-			field->value_type = VALUE_INTEGER;
-			field->size = size;
 			field->set_func = integer2_set_func;
 			field->get_func = integer2_get_func;
-			field->get_as_string_func = integer_get_as_string_func;
-			field->compare_func = integer_compare_func;
 		}
 		else if ( size == 1 ) {
-			field->field_type = FIELD_INTEGER;
-			field->value_type = VALUE_INTEGER;
-			field->size = size;
 			field->set_func = integer1_set_func;
 			field->get_func = integer1_get_func;
-			field->get_as_string_func = integer_get_as_string_func;
-			field->compare_func = integer_compare_func;
 		}
 		else {
 			error("unsupported integer size: %s %s", field_name, field_type);
@@ -911,42 +897,27 @@ static int add_docattr_field(char* field_name, char* field_type)
 			return FAIL;
 		}
 
+		field->field_type = FIELD_ENUM;
+		field->value_type = VALUE_INTEGER;
+		field->size = size;
+		field->get_as_string_func = enum_get_as_string_func;
+		field->compare_func = integer_compare_func;
+
 		if ( size == sizeof(docattr_integer) ) {
-			field->field_type = FIELD_ENUM;
-			field->value_type = VALUE_INTEGER;
-			field->size = size;
 			field->set_func = integer_set_func;
 			field->get_func = integer_get_func;
-			field->get_as_string_func = enum_get_as_string_func;
-			field->compare_func = integer_compare_func;
 		}
-
-		if ( size == 4 ) {
-			field->field_type = FIELD_ENUM;
-			field->value_type = VALUE_INTEGER;
-			field->size = size;
+		else if ( size == 4 ) {
 			field->set_func = integer4_set_func;
 			field->get_func = integer4_get_func;
-			field->get_as_string_func = enum_get_as_string_func;
-			field->compare_func = integer_compare_func;
 		}
 		else if ( size == 2 ) {
-			field->field_type = FIELD_ENUM;
-			field->value_type = VALUE_INTEGER;
-			field->size = size;
 			field->set_func = integer2_set_func;
 			field->get_func = integer2_get_func;
-			field->get_as_string_func = enum_get_as_string_func;
-			field->compare_func = integer_compare_func;
 		}
 		else if ( size == 1 ) {
-			field->field_type = FIELD_ENUM;
-			field->value_type = VALUE_INTEGER;
-			field->size = size;
 			field->set_func = integer1_set_func;
 			field->get_func = integer1_get_func;
-			field->get_as_string_func = enum_get_as_string_func;
-			field->compare_func = integer_compare_func;
 		}
 		else {
 			error("unsupported integer size: %s %s", field_name, field_type);
