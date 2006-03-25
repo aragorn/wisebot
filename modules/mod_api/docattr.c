@@ -51,9 +51,9 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_set_index_list, \
 	(struct index_list_t *list, maskfunc func, void *mask), \
 	(list, func, mask), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_index_list_sortby, \
-	(struct index_list_t *list, void *userdata, \
+	(sort_base_t *sort_base, void *userdata, \
 	 int (*compar)(const void *, const void *, void *)), \
-	(list, userdata, compar), DECLINE)
+	(sort_base, userdata, compar), DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,docattr_compare_function, \
 	(void *dest, void *cond, uint32_t docid), (dest,cond,docid), MINUS_DECLINE)
