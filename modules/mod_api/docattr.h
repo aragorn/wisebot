@@ -2,12 +2,20 @@
 #ifndef DOCATTR_H
 #define DOCATTR_H 1
 
+#include <stdint.h> /* uint32_t */
+
 typedef struct docattr_t docattr_t;
 typedef struct docattr_cond_t docattr_cond_t;
 typedef struct docattr_mask_t docattr_mask_t;
 typedef struct docattr_sort_t docattr_sort_t;
 
-#include <stdint.h> /* uint32_t */
+/* attr structure of user specific docattr module 
+ * must be smaller than DOCATTR_ELEMENT_SIZE(64) byte */
+#define MAX_DOCATTR_ELEMENT_SIZE		64 /*byte*/
+struct docattr_t {
+	char rsv[MAX_DOCATTR_ELEMENT_SIZE];
+};
+
 #include "qp.h"
 
 #define DOCATTR_SET_ZERO(a) memset((a), 0x00, sizeof(*a))
@@ -20,12 +28,6 @@ typedef struct docattr_sort_t docattr_sort_t;
 #define SC_MASK  sb_run_docattr_mask_function
 #define SC_SORT  sb_run_docattr_sort_function
 
-/* attr structure of user specific docattr module 
- * must be smaller than DOCATTR_ELEMENT_SIZE(64) byte */
-#define MAX_DOCATTR_ELEMENT_SIZE		64 /*byte*/
-struct docattr_t {
-	char rsv[MAX_DOCATTR_ELEMENT_SIZE];
-};
 
 /* cond structure of user specific docattr module 
  * must be smaller than STRING_SIZE(256) x 2 bytes */
@@ -49,6 +51,7 @@ struct docattr_sort_t {
 		char key[STRING_SIZE];
 		int order;
 	} keys[MAX_SORTING_CRITERION];
+    sort_base_t* sort_base;
 };
 
 typedef int (*condfunc)(void *dest, void *cond, uint32_t docid);
@@ -72,7 +75,7 @@ SB_DECLARE_HOOK(int,docattr_get_index_list, \
 SB_DECLARE_HOOK(int,docattr_set_index_list, \
 	(index_list_t *list, maskfunc func, void *mask))
 SB_DECLARE_HOOK(int,docattr_index_list_sortby, \
-	(index_list_t *list, void *userdata, \
+	(sort_base_t *sort_base, void *userdata, \
 	 int (*compar)(const void *, const void *, void *)))
 
 SB_DECLARE_HOOK(int,docattr_compare_function,(void *dest, void *cond, uint32_t docid))
