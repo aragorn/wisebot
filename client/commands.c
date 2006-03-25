@@ -2,8 +2,14 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "common_core.h"
+#include "common_util.h"
 #include "mod_api/tcp.h"
 #include "mod_api/protocol4.h"
 #include "mod_api/cdm.h"
@@ -18,7 +24,7 @@
 #include "mod_api/did.h"
 
 #include "client.h"
-#include "mod_indexer/hit.h"
+#include "mod_api/indexer.h"
 #include "benchmark.h"
 
 #define TOKEN_MAX_LEN 128
