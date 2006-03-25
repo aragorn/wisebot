@@ -227,14 +227,19 @@ static int docattr_set_index_list(index_list_t *list, maskfunc func, void *mask)
 	return TRUE;
 }
 
-static int docattr_index_list_sortby(index_list_t *list, void *userdata,
+static int docattr_index_list_sortby(sort_base_t *sort_base, void *userdata,
 		int (*compar)(const void *, const void *, void *))
 {
-//	CRIT("before qsort2");
-//	CRIT("list:%p",list);
-	debug("list->ndochits:%u", list->ndochits);
-	qsort2(list->doc_hits, list->ndochits, sizeof(doc_hit_t), userdata, compar);
-//	CRIT("after qsort2");
+	if(sort_base->type == INDEX_LIST) {
+		index_list_t* list = (index_list_t*)sort_base;
+	    debug("index list->ndochits:%u", list->ndochits);
+	    qsort2(list->doc_hits, list->ndochits, sizeof(doc_hit_t), userdata, compar);
+	} else if(sort_base->type == AGENT_INFO) {
+		// sort시  agent_doc_hits_t의 swap이 속도에 영향을 미칠것이다. pointer array로 변경해야 한다.
+		agent_light_info_t* info = (agent_light_info_t*)sort_base;
+	    debug("agent list->ndochits:%u", info->recv_cnt);
+	    qsort2(info->agent_doc_hits, info->recv_cnt, sizeof(agent_doc_hits_t*), userdata, compar);
+	}
 	return TRUE;
 }
 
