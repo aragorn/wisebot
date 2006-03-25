@@ -681,18 +681,30 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 	general_sort_t *sort;
 	docattr_field_t* field;
 
+
 	if ( general_sort == NULL ) return 0;
 
 	sort = &general_sort[((docattr_sort_t*) userdata)->index];
 	if ( !sort->set ) return 0;
 
-	if ( sb_run_docattr_ptr_get(((doc_hit_t*) dest)->id, &attr1) != SUCCESS ) {
-		error("cannot get docattr element");
-		return 0;
+	enum sortarraytype type = ((docattr_sort_t*) userdata)->sort_base->type;
+
+	if(type == INDEX_LIST) {
+		if ( sb_run_docattr_ptr_get(((doc_hit_t*) dest)->id, &attr1) != SUCCESS ) {
+			error("cannot get docattr element");
+			return 0;
+		}
+	} else if(type == AGENT_INFO) {
+		attr1 = &((agent_doc_hits_t*)dest)->docattr;
 	}
-	if ( sb_run_docattr_ptr_get(((doc_hit_t*) sour)->id, &attr2) != SUCCESS ) {
-		error("cannot get docattr element");
-		return 0;
+
+	if(type == INDEX_LIST) {
+		if ( sb_run_docattr_ptr_get(((doc_hit_t*) sour)->id, &attr2) != SUCCESS ) {
+			error("cannot get docattr element");
+			return 0;
+		}
+	} else if(type == AGENT_INFO) {
+		attr2 = &((agent_doc_hits_t*)sour)->docattr;
 	}
 
 	for ( i = 0; i < sort->condition_count; i++ ) {
@@ -700,10 +712,19 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 
 		// hit는 docattr field 가 아니다.
 		if ( field == HIT_FIELD ) {
-			diff = ((doc_hit_t*) dest)->hitratio - ((doc_hit_t*) sour)->hitratio;
+	        if(type == INDEX_LIST) {
+			    diff = ((doc_hit_t*) dest)->hitratio - ((doc_hit_t*) sour)->hitratio;
+			} else if(type == AGENT_INFO) {
+			    //diff = ((agent_doc_hits_t*) dest)->relevancy - ((agent_doc_hits_t*) sour)->relevancy;
+			    diff = ((agent_doc_hits_t*) dest)->doc_hits.hitratio - ((agent_doc_hits_t*) sour)->doc_hits.hitratio;
+			}
 		}
 		else if ( field == DID_FIELD ) {
-			diff = ((doc_hit_t*) dest)->id - ((doc_hit_t*) sour)->id;
+	        if(type == INDEX_LIST) {
+			    diff = ((doc_hit_t*) dest)->id - ((doc_hit_t*) sour)->id;
+			} else if(type == AGENT_INFO) {
+			    diff = ((agent_doc_hits_t*) dest)->doc_hits.id - ((agent_doc_hits_t*) sour)->doc_hits.id;
+			}
 		}
 		else { // 일반 docattr field
 			field->get_func( attr1, field, &value1 );
