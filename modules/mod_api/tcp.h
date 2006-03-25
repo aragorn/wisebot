@@ -13,6 +13,8 @@ SB_DECLARE_HOOK(int,tcp_select_accept,
 	(int listenfd, int *sockfd, struct sockaddr *remote_addr, socklen_t *len))
 SB_DECLARE_HOOK(int,tcp_recv,(int sockfd, void *data, int len, int timeout))
 SB_DECLARE_HOOK(int,tcp_send,(int sockfd, void *data, int len, int timeout))
+SB_DECLARE_HOOK(int,tcp_recv_nonb,(int sockfd, void *data, int len, int timeout))
+SB_DECLARE_HOOK(int,tcp_send_nonb,(int sockfd, void *data, int len, int timeout))
 SB_DECLARE_HOOK(int,tcp_local_connect,(int *sockfd, char *path))
 SB_DECLARE_HOOK(int,tcp_local_bind_listen,
 	(const char *path, const int backlog, int *listenfd))

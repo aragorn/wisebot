@@ -10,6 +10,8 @@ HOOK_STRUCT(
 	HOOK_LINK(tcp_select_accept)
 	HOOK_LINK(tcp_recv)
 	HOOK_LINK(tcp_send)
+	HOOK_LINK(tcp_recv_nonb)
+	HOOK_LINK(tcp_send_nonb)
 	HOOK_LINK(tcp_local_connect)
 	HOOK_LINK(tcp_local_bind_listen)
 	HOOK_LINK(tcp_server_timeout)
@@ -31,6 +33,12 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int,tcp_recv, \
 	(int sockfd, void *data, int len, int timeout), \
 	(sockfd, data, len, timeout), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,tcp_send, \
+	(int sockfd, void *data, int len, int timeout), \
+	(sockfd, data, len, timeout), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int,tcp_recv_nonb, \
+	(int sockfd, void *data, int len, int timeout), \
+	(sockfd, data, len, timeout), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int,tcp_send_nonb, \
 	(int sockfd, void *data, int len, int timeout), \
 	(sockfd, data, len, timeout), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,tcp_local_connect, \
