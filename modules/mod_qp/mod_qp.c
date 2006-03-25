@@ -72,6 +72,8 @@ static char *sortingorder[MAX_DOCATTR_SORTING_CONF] = { NULL };
 static index_list_t complete_index_list_pool[MAX_INDEX_LIST_POOL];
 static index_list_t incomplete_index_list_pool[MAX_INCOMPLETE_INDEX_LIST_POOL];
 
+static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment);
+
 typedef struct {
 	uint32_t id;
 	uint32_t ndochits; /* < MAX_DOCHITS_PER_DOCUMENT */
@@ -1991,16 +1993,6 @@ int operate(sb_stack_t *stack, QueryNode *node)
 	return FAIL;
 }
 
-int abstract_info (request_t *r)
-{
-	return 0;
-}
-
-int full_info (request_t *r)
-{
-	return 0;
-}
-
 // 마지막 NULL 은 빼고 길이를 maxLen 으로 맞춘다. 그러니까 text는 최소한 maxLen+1
 // 한글을 고려해서 자른다.
 void cut_string(char* text, int maxLen)
@@ -2025,11 +2017,29 @@ void cut_string(char* text, int maxLen)
 	return;
 }
 
-#define COMMENT_SIZE 10 /* words */
-static void fill_title_and_comment(request_t *req)
+/*
+ * agent_reqeust_t 의 dochits, recv_cnt만 유효하다.
+ * doc_hits 의 docid에 대한 comment만 추출하면 된다.
+ */
+static void fill_title_and_comment_agent(agent_request_t *ar) 
 {
-	int i=0, j=0, k=0, last=0;
-	uint32_t docid=0;
+    int i = 0;
+
+	for(i = 0; i < ar->ali.recv_cnt; i++) {
+	    doc_hit_t* doc_hits = &ar->ali.agent_doc_hits[i]->doc_hits;
+	    char* comment = ar->ali.agent_doc_hits[i]->comments;
+
+        if(fill_title_and_comment(doc_hits, comment) != SUCCESS) {
+			continue;
+		}
+	}
+
+	return;
+}
+
+static void fill_title_and_comment_server(request_t *req)
+{
+	int i=0, j=0, last=0;
 	int searched_list_size=0;
 
 	if ( req->result_list == NULL || req->result_list->ndochits == 0) {
@@ -2056,121 +2066,143 @@ static void fill_title_and_comment(request_t *req)
 	last = req->first_result + searched_list_size;
 	
 	DEBUG("req->first_result:%d, last:%d",req->first_result,last);
-
-	//XXX: result_list->doc_hit index and other index differs.
 	for (i = req->first_result,j=0; i < last; i++,j++) {
-		DocObject *docBody = 0x00; 
-		char *field_value = 0x00; 
-		int sizeleft = 0;
-        int ret = 0;
-
-		docid = req->result_list->doc_hits[i].id; //XXX -- for debug
-		if (docid == 0) {
-			crit("docid(%u) < 0",(uint32_t)docid);
+        if(fill_title_and_comment(req->result_list->doc_hits, req->comments[j]) != SUCCESS) {
 			continue;
 		}
-
-        // 여기서 문서를 한번 가져온다
-		ret = sb_run_doc_get( req->result_list->doc_hits[i].id, &docBody); 
-		if (ret < 0) { 
-			warn("cannot get document object of document[%u]\n", docid); 
-			continue; 
-		} 
-
-		req->comments[j][0]='\0'; /* ready for strcat */
-		sizeleft = LONG_LONG_STRING_SIZE-1;
-
-		for (k = 0; k < field_count; k++) {
-            int ret = 0;
-
-            if(field_info[k].type == NONE) { // enum field_type 참조.
-               continue;
-            }
-
-			#define max_comment_bytes 1024
-			field_value = NULL;
-
-			ret = sb_run_doc_get_field(docBody, NULL, field_info[k].name, &field_value);
-			if (ret < 0) {
-				error("doc_get_field error for doc[%d], field[%s]", docid, field_info[k].name);
-				continue;
-			}
-
-            // 구성 : FIELD_NAME:
-			strncat(req->comments[j], field_info[k].name, sizeleft);
-			sizeleft -= strlen(field_info[k].name);
-			sizeleft = (sizeleft < 0) ? 0:sizeleft;
-
-			strncat(req->comments[j],":",sizeleft);
-			sizeleft -= 1;
-			sizeleft = (sizeleft < 0) ? 0:sizeleft;
-
-            // 구성 : VALUE;;
-            switch(field_info[k].type) {
-                case RETURN:
-					// 길이가 너무 길면 좀 자른다. 한글 안다치게...
-					cut_string( field_value, max_comment_bytes );
-
-					strncat(req->comments[j], field_value, sizeleft);
-					sizeleft -= strlen(field_value);
-					sizeleft = (sizeleft < 0) ? 0:sizeleft;
-                break;
-                case SUM:
-                case SUM_OR_FIRST:
-                    {
-                        char summary[210];
-                        int exist_summary = 0;
-                        int m = 0;
-
-						for(m = 0; m < req->result_list->doc_hits[i].nhits; m++) {
-							if ( field_info[k].id == req->result_list->doc_hits[i].hits[m].std_hit.field ) {
-                                int summary_pos = 0;
-								memset(summary, 0x00, 210);
-
-								summary_pos = getAutoComment(field_value, req->result_list->doc_hits[i].hits[m].std_hit.position-4);
-								strncpy(summary, field_value + summary_pos, 201);
-								cut_string( summary, 200 );
-								exist_summary = 1;
-								break;
-							}
-						}
-						
-						/* 본문에 단어가  없을경우 */
-						if(field_info[k].type == SUM_OR_FIRST && exist_summary == 0) {
-							memset(summary, 0x00, 210);
-							strncpy(summary, field_value, 201);
-							cut_string( summary, 200 );
-						}
-
-						strncat(req->comments[j], summary, sizeleft);
-						sizeleft -= strlen(summary);
-						sizeleft = (sizeleft < 0) ? 0:sizeleft;
-                    }
-                break;
-            }
-			strncat(req->comments[j],";;",sizeleft);
-			sizeleft -= 2;
-			sizeleft = (sizeleft < 0) ? 0:sizeleft;
-	        sb_free(field_value);
-
-			if (sizeleft <= 0) {
-				error("req->comments size lack while pushing comment(field:%s, doc:%u)", field_info[k].name, docid);
-				req->comments[j][LONG_LONG_STRING_SIZE-1] = '\0';
-				error("%s", req->comments[j]);
-				break;
-			}
-		}
-
-		sb_run_doc_free(docBody);
 	}
 
 	//XXX: ask jiwon or dong-hun
-	
 	for (i=req->first_result,j=0; i<last; i++,j++) {
 		req->result_list->doc_hits[j].id = req->result_list->doc_hits[i].id;
 		req->result_list->relevancy[j] = req->result_list->relevancy[i];
 		req->result_list->doc_hits[j].hitratio = req->result_list->doc_hits[i].hitratio;
 	}
+}
+
+static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
+	int k=0;
+	//XXX: result_list->doc_hit index and other index differs.
+	DocObject *docBody = 0x00; 
+	char *field_value = 0x00; 
+	int sizeleft = 0;
+	int ret = 0;
+	uint32_t docid = doc_hits->id;
+
+	if (docid == 0) {
+		crit("docid(%u) < 0",(uint32_t)docid);
+		return FAIL;
+	}
+
+	// 여기서 문서를 한번 가져온다
+	ret = sb_run_doc_get(docid, &docBody); 
+	if (ret < 0) { 
+		warn("cannot get document object of document[%u]\n", docid); 
+		return FAIL;
+	} 
+
+	comment[0]='\0'; /* ready for strcat */
+	sizeleft = LONG_LONG_STRING_SIZE-1;
+
+	for (k = 0; k < field_count; k++) {
+		int ret = 0;
+
+		if(field_info[k].type == NONE) { // enum field_type 참조.
+			continue;
+		}
+
+		#define max_comment_bytes 1024
+		field_value = NULL;
+
+		ret = sb_run_doc_get_field(docBody, NULL, field_info[k].name, &field_value);
+		if (ret < 0) {
+			error("doc_get_field error for doc[%d], field[%s]", docid, field_info[k].name);
+			continue;
+		}
+
+		// 구성 : FIELD_NAME:
+		strncat(comment, field_info[k].name, sizeleft);
+		sizeleft -= strlen(field_info[k].name);
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+
+		strncat(comment,":",sizeleft);
+		sizeleft -= 1;
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+
+		// 구성 : VALUE;;
+		switch(field_info[k].type) {
+			case RETURN:
+				// 길이가 너무 길면 좀 자른다. 한글 안다치게...
+				cut_string( field_value, max_comment_bytes );
+
+				strncat(comment, field_value, sizeleft);
+				sizeleft -= strlen(field_value);
+				sizeleft = (sizeleft < 0) ? 0:sizeleft;
+			break;
+			case SUM:
+			case SUM_OR_FIRST:
+				{
+					char summary[210];
+					int exist_summary = 0;
+					int m = 0;
+
+					for(m = 0; m < doc_hits->nhits; m++) {
+						if ( field_info[k].id == doc_hits->hits[m].std_hit.field ) {
+							int summary_pos = 0;
+							memset(summary, 0x00, 210);
+
+							summary_pos = getAutoComment(field_value, doc_hits->hits[m].std_hit.position-4);
+							strncpy(summary, field_value + summary_pos, 201);
+							cut_string( summary, 200 );
+							exist_summary = 1;
+							break;
+						}
+					}
+					
+					/* 본문에 단어가  없을경우 */
+					if(field_info[k].type == SUM_OR_FIRST && exist_summary == 0) {
+						memset(summary, 0x00, 210);
+						strncpy(summary, field_value, 201);
+						cut_string( summary, 200 );
+					}
+
+					strncat(comment, summary, sizeleft);
+					sizeleft -= strlen(summary);
+					sizeleft = (sizeleft < 0) ? 0:sizeleft;
+				}
+			break;
+		}
+		strncat(comment,";;",sizeleft);
+		sizeleft -= 2;
+		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+		sb_free(field_value);
+
+		if (sizeleft <= 0) {
+			error("req->comments size lack while pushing comment(field:%s, doc:%u)", field_info[k].name, docid);
+			comment[LONG_LONG_STRING_SIZE-1] = '\0';
+			error("%s", comment);
+			break;
+		}
+	}
+
+	sb_run_doc_free(docBody);
+
+	return SUCCESS;
+}
+
+/*
+ * agent 부터 comment 정보를 얻기위해 호출됨
+ */
+int abstract_info (agent_request_t *ar)
+{
+	fill_title_and_comment_agent(ar);
+
+	return SUCCESS;
+}
+
+int full_info (request_t *r)
+{
+	return 0;
 }
 
 /*********************************************************/
@@ -2303,7 +2335,7 @@ int full_search (void* word_db, request_t *req)
 	INFO("light_search done");
 
 	INFO("filling title and comment");
-	fill_title_and_comment(req);
+	fill_title_and_comment_server(req);
 	INFO("filling title and comment done");
 
 #ifdef DEBUG_SOFTBOTD
@@ -2421,7 +2453,7 @@ RELEASE_LIST_AND_FAIL:
 	return FAIL;
 }
 
-static int docattr_sorting(index_list_t *list, char *sortquery);
+static int docattr_sorting(sort_base_t *list, char *sortquery);
 static int docattr_filter_sort(index_list_t *list, request_t *req)
 {
 	docattr_cond_t cond;
@@ -2457,7 +2489,8 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 
 	// 정렬
 	CRIT("before sorting: %d", list->ndochits);
-	if (docattr_sorting(list, req->sort_string) == FAIL) {
+	list->sort_base.type = INDEX_LIST;
+	if (docattr_sorting((sort_base_t*)list, req->sort_string) == FAIL) {
 		return FAIL;
 	}	
 
@@ -2472,6 +2505,25 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 		return FAIL;
 	}
 
+	return SUCCESS;
+}
+
+/* siouk 작업중 */
+static int agent_info_sort(agent_request_t* req)
+{
+	// 정렬
+	CRIT("before sorting: %d", req->ali.recv_cnt);
+	req->ali.sort_base.type = AGENT_INFO;
+	if (docattr_sorting((sort_base_t*)&req->ali, req->sh) == FAIL) {
+		return FAIL;
+	}	
+/*
+	list->group_result_count = MAX_GROUP_RESULT;
+	if (sb_run_docattr_set_group_result_function(
+				&cond, list->group_result, &list->group_result_count) == FAIL) {
+		return FAIL;
+	}
+*/
 	return SUCCESS;
 }
 
@@ -2589,7 +2641,7 @@ int light_search (void* word_db, request_t *req)
 	return SUCCESS;
 }
 
-static int docattr_sorting(index_list_t *list, char *sortquery)
+static int docattr_sorting(sort_base_t *list, char *sortquery)
 {
 	docattr_sort_t sc;
 	char *cur, *d1, *d2;
@@ -2599,6 +2651,7 @@ static int docattr_sorting(index_list_t *list, char *sortquery)
 	if ( n == 0 ) //관련성 sorting
 	{
 		DOCSORT_SET_ZERO(&sc);
+	    sc.sort_base = list;
 		sc.index = 0;
 		strncpy(sc.keys[0].key, "0", MAX_SORT_STRING_SIZE);
 		sc.keys[0].key[MAX_SORT_STRING_SIZE-1] = '\0';
@@ -2622,6 +2675,7 @@ static int docattr_sorting(index_list_t *list, char *sortquery)
 		CRIT("sortquery:%s",sortquery);
 	
 		DOCSORT_SET_ZERO(&sc);
+	    sc.sort_base = list;
 		sc.index = n;
 		cur = sortquery; i = 0;
 		while ((d1 = strchr(cur, ':')) != NULL) {
@@ -2836,6 +2890,7 @@ static void register_hooks(void)
 	/* XXX: module which uses qp should call sb_run_qp_init once after fork. */
 	sb_hook_qp_init(private_init,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_light_search(light_search,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_agent_info_sort(agent_info_sort,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_full_search(full_search,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_abstract_info(abstract_info,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_full_info(full_info,NULL,NULL,HOOK_MIDDLE);
