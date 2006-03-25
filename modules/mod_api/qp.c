@@ -6,6 +6,7 @@ HOOK_STRUCT(
 	HOOK_LINK(qp_init)
 	HOOK_LINK(qp_full_search)
 	HOOK_LINK(qp_light_search)
+	HOOK_LINK(qp_agent_info_sort)
 	HOOK_LINK(qp_abstract_info)
 	HOOK_LINK(qp_full_info)
 	HOOK_LINK(qp_finalize_search)
@@ -21,7 +22,8 @@ HOOK_STRUCT(
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_init, (void), (), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_full_search, (void* word_db, request_t *r), (word_db,r), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_light_search, (void* word_db, request_t *r), (word_db,r), DECLINE)
-SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_abstract_info, (request_t *r), (r), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_agent_info_sort, (agent_request_t *r), (r), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_abstract_info, (agent_request_t *r), (r), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_full_info, (request_t *r), (r), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_finalize_search, (request_t *r), (r), DECLINE)
 
