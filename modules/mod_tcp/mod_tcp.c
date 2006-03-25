@@ -600,6 +600,107 @@ static int set_non_blocking(int s, int flag)
 
 static int tcp_recv_nonb (int sockfd, void *data, int len, int timeout)
 {
+	int n = 0;
+	fd_set rset;
+	struct timeval	tval;
+
+	if (len == 0) return SUCCESS;
+
+    if ( sockfd < 0 ) {
+        warn("socket file descriptor is not valid [%d]", sockfd);
+        errno = EBADF;
+        return -1;
+    }
+
+	FD_ZERO(&rset);
+	FD_SET(sockfd, &rset);
+	tval.tv_sec = timeout;
+	tval.tv_usec = 0;
+
+	n = select(sockfd +1, &rset, NULL, NULL, &tval);
+    if(n == 0) {
+        if ( timeout > 0 ){
+            warn("recv timedout(timeout = %d)", timeout);
+        }else {
+            DEBUG("recv timedout(timeout = %d)", timeout);
+        }
+		errno = ETIMEDOUT;
+		return -1;
+	} else if ( n == -1 ) {
+		error("select: %s", strerror(errno));
+		return -1;
+	} else {
+		; /* socket is now readable, so continue the loop */
+	}
+
+#if defined(AIX5)
+	n = recv(sockfd, data, len, MSG_NONBLOCK);
+#elif defined(CYGWIN) || defined(HPUX)
+	/* CYGWIN does not seem to have MSG_DONTWAIT flag. */
+	n = recv(sockfd, data, len, 0);
+#else
+	n = recv(sockfd, data, len, MSG_DONTWAIT);
+#endif
+
+	sbs->total_recv++;
+	if ( n > 0 ) {
+		return n;
+	} else if ( n == 0 ) {
+        DEBUG("recv() returned 0 after select() ok : connection closed");
+        return 0;
+	} else {
+        warn("recv() returned %d: %s", n, strerror(errno));
+        return -1;
+	}
+}
+
+static int tcp_send_nonb (int sockfd, void *data, int len, int timeout)
+{
+	fd_set		wset;
+	struct timeval	tval;
+    int n = 0;
+
+	FD_ZERO(&wset);
+	FD_SET(sockfd, &wset);
+	tval.tv_sec = timeout;
+	tval.tv_usec = 0;
+
+	n = select(sockfd +1, NULL, &wset, NULL, &tval);
+	if ( n == 0 ) {
+		error("send timedout(timeout = %d)", timeout);
+		errno = ETIMEDOUT;
+		return -1;
+	} else if ( n == -1 ) {
+		error("select: %s", strerror(errno));
+		return -1;
+	} else {
+		; /* socket is now writable, so continue the loop */
+	}
+
+#if defined(AIX5)
+	n = send(sockfd, data, len, MSG_NONBLOCK);
+#elif defined(CYGWIN) || defined(HPUX)
+	/* CYGWIN does not seem to have MSG_DONTWAIT flag. */
+	n = send(sockfd, data, len, 0);
+#else
+	n = send(sockfd, data, len, MSG_DONTWAIT);
+#endif
+
+	sbs->total_send++;
+	if ( n > 0 ) {
+        return n;
+	} else if ( n == 0 ) {
+        error("send timedout(timeout = %d)", timeout);
+        errno = ETIMEDOUT;
+        return -1;
+	} else {
+        error("select: %s", strerror(errno));
+        return -1;
+	}
+}
+
+static int tcp_recv (int sockfd, void *data, int len, int timeout)
+{
 	int  size = len;
 	char *ptr = data;
 	fd_set rset;
@@ -689,7 +790,7 @@ static int tcp_recv_nonb (int sockfd, void *data, int len, int timeout)
 	return SUCCESS;
 }
 
-static int tcp_send_nonb (int sockfd, void *data, int len, int timeout)
+static int tcp_send(int sockfd, void *data, int len, int timeout)
 {
 	int size = len;
 	char *ptr = data;
@@ -815,8 +916,10 @@ static void register_hooks(void)
 	sb_hook_tcp_lingering_close(tcp_lingering_close,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_tcp_bind_listen(tcp_bind_listen,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_tcp_select_accept(tcp_select_accept,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_tcp_recv(tcp_recv_nonb,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_tcp_send(tcp_send_nonb,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_tcp_recv(tcp_recv,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_tcp_send(tcp_send,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_tcp_recv_nonb(tcp_recv_nonb,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_tcp_send_nonb(tcp_send_nonb,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_tcp_local_connect(tcp_local_connect,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_tcp_local_bind_listen(tcp_local_bind_listen,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_tcp_server_timeout(tcp_server_timeout,NULL,NULL,HOOK_MIDDLE);
