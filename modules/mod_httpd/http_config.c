@@ -1,5 +1,4 @@
 /* $Id$ */
-#include "softbot.h"
 #include "mod_httpd.h"
 #include "request.h"
 #include "http_config.h"

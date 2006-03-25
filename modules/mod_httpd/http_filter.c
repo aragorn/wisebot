@@ -3,7 +3,11 @@
  * http_filter.c
  */
 
-
+#include <sys/types.h>
+#include <unistd.h>
+#include "common_core.h"
+#include "common_util.h"
+#include "util.h"
 #include "mod_httpd.h"
 #include "http_filter.h"
 #include "http_core.h"

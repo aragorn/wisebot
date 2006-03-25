@@ -1,14 +1,20 @@
 /* $Id$ */
-#include "softbot.h"
-#include "mp_api.h"
-#include "mod_mp/mod_mp.h"
+#include <sys/types.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include "common_core.h"
+#include "common_util.h"
 #include "mod_httpd.h"
+#include "timelog.h"
 #include "connection.h"
 #include "listen.h"
 #include "conf.h" /* ugly workaround for name collision */
 #include "apr_hooks.h" /* for apr_global_hook_pool */
 #include "apr_poll.h"
 #include "apr_lib.h"
+
+
 /*#include "util.h"*/
 
 /*#include "apr.h"*/

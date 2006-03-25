@@ -2,7 +2,6 @@
 /*****************************************************************************/
 /* protocol.c */
 
-#include "softbot.h"
 #include "mod_httpd.h"
 #include "http_config.h"
 

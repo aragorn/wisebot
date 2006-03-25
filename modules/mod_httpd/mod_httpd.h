@@ -1,19 +1,16 @@
 /* $Id$ */
-#ifndef _MOD_HTTPD_H_
-#define _MOD_HTTPD_H_
+#ifndef MOD_HTTPD_H
+#define MOD_HTTPD_H
 
-#include "softbot.h"
-#include "hook.h"
-#include "util.h"
+#include "common_core.h"
 #include "apr.h"
+#include "apu.h"
 #include "apr_tables.h"
 #include "apr_buckets.h"
-#include "apu.h"
-
 
 #include "mod_api/did.h"
-#include "mod_api/qp.h"
 #include "mod_api/lexicon.h"
+#include "mod_api/qp.h"
 #include "mod_api/cdm.h"
 
 /* ----------------------------- config dir ------------------------------ */

@@ -1,6 +1,5 @@
 /* $Id$ */
-#define CORE_PRIVATE
-#include "softbot.h"
+#define HTTPD_CORE_PRIVATE
 #include "mod_httpd.h"
 #include "conf.h"
 #include "filter.h"

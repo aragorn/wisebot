@@ -5,7 +5,6 @@
 
 #include "mod_httpd.h"
 #include "filter.h"
-#define CORE_PRIVATE
 #include "http_core.h"
 #include "http_config.h"
 #include "util_filter.h"

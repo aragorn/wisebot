@@ -2,7 +2,6 @@
 /*****************************************************************************/
 /* http_protocol.c */
 
-#include "softbot.h"
 #include "mod_httpd.h"
 /*#include "request.h"*/
 #include "protocol.h"

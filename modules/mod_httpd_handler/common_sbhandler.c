@@ -1,5 +1,5 @@
+#include <stdlib.h>
 #include "mod_standard_handler.h"
-
 #include "mod_httpd/protocol.h"
 #include "mod_api/sbhandler.h"
 

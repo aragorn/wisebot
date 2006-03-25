@@ -1,8 +1,8 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "conf.h"
+#include "util_filter.h"
 #include "connection.h"
-#include "core.h"
-#include "config.h"
 
 HOOK_STRUCT(
 	HOOK_LINK(create_connection)

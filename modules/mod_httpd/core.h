@@ -5,9 +5,8 @@
  * core.h
  */
 #include "conf.h"
-#include "util_filter.h"
 
-#include "apr.h"
+//#include "apr.h"
 #include "apr_hash.h"
 #include "pcreposix.h"
 

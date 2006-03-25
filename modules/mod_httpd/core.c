@@ -2,7 +2,7 @@
 /*
  * core.c
  */
-#include "core.h"
+#include "common_core.h"
 #include "protocol.h"
 #include "request.h"
 #include "http_protocol.h"
@@ -12,6 +12,7 @@
 #include "http_filter.h"
 #include "http_core.h" /* AP_MIN_BYTES_TO_WRITE */
 #include "apr_strings.h"
+#include "core.h"
 
 /* LimitXMLRequestBody handling */
 #define AP_LIMIT_UNSET                  ((long) -1)

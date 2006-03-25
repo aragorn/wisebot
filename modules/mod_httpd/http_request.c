@@ -12,8 +12,6 @@
 #define APR_WANT_STRFUNC
 /*#include "apr_want.h"*/
 
-#define CORE_PRIVATE
-#include "softbot.h"
 #include "conf.h"
 #include "request.h"
 #include "protocol.h"

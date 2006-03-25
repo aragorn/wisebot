@@ -1,12 +1,6 @@
 /* $Id$ */
-#ifndef _CONNECTION_H_
-#define _CONNECTION_H_
-
-#include "hook.h"
-#include "softbot.h"
-#include "apr_network_io.h"
-#include "apr_buckets.h"
-#include "mod_httpd.h"
+#ifndef CONNECTION_H
+#define CONNECTION_H
 
 SB_DECLARE_HOOK(conn_rec *,create_connection,
 	(apr_socket_t *sock, server_rec *server,

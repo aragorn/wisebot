@@ -2,7 +2,6 @@
 #ifndef _PROTOCOL_H_
 #define _PROTOCOL_H_
 
-#include "hook.h"
 #include "mod_httpd.h"
 #include "util_filter.h"
 

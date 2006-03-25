@@ -1,6 +1,7 @@
 /* $Id$ */
 
 #include "common_core.h"
+#include "memory.h"
 #include "mod_api/rmas.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/cdm.h"
