@@ -1,41 +1,49 @@
-#include "softbot.h"
+#include <stdlib.h>
+#include "common_core.h"
+#include "common_util.h"
+#include "util.h"
+#include "timelog.h"
+#include "memory.h"
 #include "mod_api/sbhandler.h"
+#include "mod_api/docattr.h"
 #include "mod_qp/mod_qp.h"
-#include "mod_indexer/hit.h"
+#include "mod_api/indexer.h"
+#include "mod_standard_handler.h"
 #include "mod_httpd/http_protocol.h"
+#include "mod_api/http_client.h"
 
 extern void ap_set_content_type(request_rec * r, const char *ct);
-//#include "mod_indexer/hit_new.h"
-//#include "mod_api/qp.h"
 
-//#include "mod_internet/internet.h"
-
-#if 0
-typedef struct _agent_abstract_t agent_abstract_t;
-struct _agent_abstract_t {
-	char title[STRING_SIZE];
-	char comment[MAX_EACH_FIELD_COMMENT_SIZE]; /* XXX:COMMENT_SIZE? */
-	char url[STRING_SIZE];
-};
-
-static void pull_out_comment_from_doc(search_abstract_t *search_abs, 
-agent_abstract_t *agent_abs);
-#endif
 static int search_handler(request_rec *r, softbot_handler_rec *s);
 static int light_search_handler(request_rec *r, softbot_handler_rec *s);
-#if 0
 static int abstract_search_handler(request_rec *r, softbot_handler_rec *s);
-#endif
+static agent_request_t* g_agent_request;
+static agent_doc_hits_t* g_agent_doc_hits;
 
 static softbot_handler_key_t search_handler_tbl[] = {
 	{"light_search", light_search_handler},
-	//{"abstract_search", abstract_search_handler},
+	{"abstract_search", abstract_search_handler},
 	{"search", search_handler},
 	{NULL, NULL}
 };
 
 
-/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+// node 정보
+static uint32_t this_node_id; // 하위 4bit만 쓴다.
+
+//--------------------------------------------------------------//
+//  *   custom function 
+//--------------------------------------------------------------//
+static char *replace_newline_to_space(char *str) {
+    char *ch;
+    ch = str;       
+    while ( (ch = strchr(ch, '\n')) != NULL ) {
+        *ch = ' ';
+    }
+    return str;
+}   
+
 static int def_atoi(const char *s, int def)
 {
 	if (s)
@@ -43,30 +51,94 @@ static int def_atoi(const char *s, int def)
 	return def;
 }
 
-static char *replace_newline_to_space(char *str) {
-    char *ch;       
-    ch = str;       
-    while ( (ch = strchr(ch, '\n')) != NULL ) {
-        *ch = ' ';
-    }   
-    return str;
-} 
+/*
+ * 하위 4bit에 node_id를 push
+ * push 된 node_id를 리턴
+ */
+static uint32_t push_node_id(uint32_t node_id)
+{
+    // 상위 4bit에 내용이 있으면 더이상 depth를 늘릴수 없음.
+    if((node_id >> 28) > 0) {
+        error("depth overflower[%s]", sb_strbin(node_id, sizeof(uint32_t)));
+        return 0;
+    }
 
+    node_id = node_id << 4;
+    node_id |= this_node_id;
+
+    return node_id;
+}
+
+/*
+ * 하위 4bit를 pop한다.
+ * pop 된 node_id를 리턴.
+ */
+static uint32_t pop_node_id(uint32_t node_id)
+{
+    return (node_id >> 4);
+}
+
+// 하위 4bit의 node_id 알아내기
+static uint32_t get_node_id(uint32_t node_id)
+{
+    return node_id & 0x0f;
+}
+
+static void init_agent_request(agent_request_t** req)
+{
+	int i = 0;
+
+    if(g_agent_request == NULL) {
+		g_agent_request = (agent_request_t*)sb_malloc(sizeof(agent_request_t));
+	}
+
+	// MAX_AGENT_DOC_HITS_COUNT번 memory 할당 하지 않고 한번에 할당받고 연결한다.
+	if(g_agent_doc_hits == NULL) {
+		g_agent_doc_hits = (agent_doc_hits_t*)
+			            sb_malloc(sizeof(agent_doc_hits_t)*MAX_AGENT_DOC_HITS_COUNT);
+
+		// pointer 연결
+		for(i = 0; i < MAX_AGENT_DOC_HITS_COUNT; i++) {
+            g_agent_request->ali.agent_doc_hits[i] = &g_agent_doc_hits[i];
+		}
+	}
+
+	//  초기화
+	g_agent_request->lc = 0;
+	g_agent_request->pg = 0;
+	g_agent_request->ft = 0;
+	g_agent_request->send_cnt = 0;
+	g_agent_request->send_first = 0;
+	g_agent_request->ali.total_cnt = 0;
+	g_agent_request->ali.recv_cnt = 0;
+
+	// g_agent_request->ali.agent_doc_hits를 절대 건들지 말것.
+
+	*req = g_agent_request;
+
+    return;
+}
+
+/////////////////////////////////////////////////////////////////////////
+// 몇건 전송해야 하는지 계산한다.
 static int get_send_count(request_t* req)
 {
+    int total_cnt = req->result_list->ndochits;
     int send_cnt = 0;
+    int send_page = req->first_result/req->list_size;
+    int lc = req->list_size;
 
-    if (req->result_list->ndochits < req->first_result) {
+    if (total_cnt < send_page*lc) {
         send_cnt = 0;
     }
     else {
-        int tmp = req->result_list->ndochits - req->first_result;
+        int remain = total_cnt - send_page*lc;
 
-        if (tmp > req->list_size) {
-            send_cnt = req->list_size;
+        if (remain > lc) {
+            send_cnt = lc; // page_no 가 뒤로 한참 남았다.
         }
         else {
-            send_cnt = tmp;
+            send_cnt = remain; // 마지막 페이지다.
         }
 
         if ( send_cnt > COMMENT_LIST_SIZE ) {
@@ -79,14 +151,9 @@ static int get_send_count(request_t* req)
     return send_cnt;
 }
 
-static int search_handler(request_rec *r, softbot_handler_rec *s)
+static int make_request(softbot_handler_rec* s, request_t* req, char* query_string)
 {
     char* p = NULL;
-    request_t req; 
-    int rv = 0, i = 0;
-    int search_total_cnt = 0; // 총 검색결과수
-    int search_send_cnt = 0;  // 전송하는 검색결과 수
-	char query[MAX_QUERY_STRING_SIZE];
 
 	//1. set request_t
     /* query */
@@ -95,62 +162,81 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 		error("no query string");
 		return FAIL;
 	}
-	strncpy(req.query_string, p, MAX_QUERY_STRING_SIZE-1);
+	strncpy(req->query_string, p, MAX_QUERY_STRING_SIZE-1);
 
     /* AT */
 	p = (char *)apr_table_get(s->parameters_in, "at");
 	if (p != NULL) {
-	    strncpy(req.attr_string, p, MAX_ATTR_STRING_SIZE-1);
+	    strncpy(req->attr_string, p, MAX_ATTR_STRING_SIZE-1);
 	}
 
     /* AT2 */
 	p = (char *)apr_table_get(s->parameters_in, "at2");
 	if (p != NULL) {
-	    strncpy(req.attr2_string, p, MAX_ATTR_STRING_SIZE-1);
+	    strncpy(req->attr2_string, p, MAX_ATTR_STRING_SIZE-1);
 	}
 
     /* GR */
 	p = (char *)apr_table_get(s->parameters_in, "gr");
 	if (p != NULL) {
-	    strncpy(req.group_string, p, MAX_GROUP_STRING_SIZE-1);
+	    strncpy(req->group_string, p, MAX_GROUP_STRING_SIZE-1);
 	}
 
     /* SH */
 	p = (char *)apr_table_get(s->parameters_in, "sh");
 	if (p != NULL) {
-	    strncpy(req.sort_string, p, MAX_SORT_STRING_SIZE-1);
+	    strncpy(req->sort_string, p, MAX_SORT_STRING_SIZE-1);
 	}
 
     /* LC */
-	req.list_size = def_atoi(apr_table_get(s->parameters_in, "lc"), 20);
-	if(req.list_size < 0) req.list_size = 20;
+	req->list_size = def_atoi(apr_table_get(s->parameters_in, "lc"), 20);
+	if(req->list_size < 0) req->list_size = 20;
 
     /* PG */
-    req.first_result = def_atoi(apr_table_get(s->parameters_in, "pg"), 0);
-	if(req.first_result < 0) req.first_result = 0;
+    req->first_result = def_atoi(apr_table_get(s->parameters_in, "pg"), 0) * req->list_size;
+	if(req->first_result < 0) req->first_result = 0;
 
-	req.first_result *= req.list_size;
+	//req->first_result *= req.list_size;
 
     /* FT */
-    req.filtering_id = def_atoi(apr_table_get(s->parameters_in, "ft"), 0);
-
-    req.type = FULL_SEARCH;
+    req->filtering_id = def_atoi(apr_table_get(s->parameters_in, "ft"), 0);
 
     /* reqeust debug string */
-    debug("req.query_string:[%s]",req.query_string);
-    debug("req.attr_string:[%s]",req.attr_string);
-    debug("req.attr2_string:[%s]",req.attr2_string);
-    debug("req.group_string:[%s]",req.group_string);
-    debug("req.sort_string:[%s]",req.sort_string);
-    debug("req.list_size:%d",req.list_size);
-    debug("req.first_result:%d",req.first_result);
-    debug("req.filtering_id:%d", req.filtering_id);
+    debug("req->query_string:[%s]",req->query_string);
+    debug("req->attr_string:[%s]",req->attr_string);
+    debug("req->attr2_string:[%s]",req->attr2_string);
+    debug("req->group_string:[%s]",req->group_string);
+    debug("req->sort_string:[%s]",req->sort_string);
+    debug("req->list_size:%d",req->list_size);
+    debug("req->first_result:%d",req->first_result);
+    debug("req->filtering_id:%d", req->filtering_id);
 
-	sprintf(query, "q=%s&at=%s&at2=%s&gr=%s&sh=%s&lc=%d&pg=%d&ft=%d",
-			       req.query_string, req.attr_string,
-				   req.attr2_string, req.group_string,
-				   req.sort_string, req.list_size, 
-				   req.first_result, req.filtering_id);
+    if( snprintf(query_string, MAX_QUERY_STRING_SIZE, "q=%s&at=%s&at2=%s&gr=%s&sh=%s&lc=%d&pg=%d&ft=%d",
+                   req->query_string, req->attr_string,
+                   req->attr2_string, req->group_string,
+                   req->sort_string, req->list_size, 
+                   req->first_result, req->filtering_id) <= 0) {
+		error("query to long");
+		return FAIL;
+    }
+
+    return SUCCESS;
+}
+
+static int search_handler(request_rec *r, softbot_handler_rec *s)
+{
+    request_t req; 
+    int rv = 0, i = 0;
+    int search_total_cnt = 0; // 총 검색결과수
+    int search_send_cnt = 0;  // 전송하는 검색결과 수
+	char query[MAX_QUERY_STRING_SIZE];
+
+    if(make_request(s, &req, query) != SUCCESS) {
+        error("can not make request string");
+        return FAIL;
+    }
+
+    req.type = FULL_SEARCH;
 
 	//2. get result
 	timelog("full_search_start");
@@ -196,7 +282,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 			req.list_size, search_send_cnt);
 
 	/* each result */
-	for (i = 0; i < search_send_cnt; i++) {
+	for (i = req.first_result; i < search_send_cnt; i++) {
 		ap_rprintf(r, 
 				"<row>"
 				"<rowno>%d</rowno>"
@@ -205,7 +291,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 				"<wordhist>%d</wordhist>"
 				"<comment><![CDATA[%s]]></comment>"
 				"</row>\n",
-				req.first_result + i,
+				i,
                 req.result_list->doc_hits[i].id,
                 req.result_list->doc_hits[i].hitratio,
                 req.result_list->doc_hits[i].nhits,
@@ -221,84 +307,28 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 	sb_run_qp_finalize_search(&req);
 	timelog("qp_finalize");
 
-
 	return SUCCESS;
 }
 
 ///////////////////////////////////////////////////////////////////////
 static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 {
-    char* p = NULL;
     request_t req; 
     int rv = 0, i = 0;
     int search_total_cnt = 0; // 총 검색결과수
     int search_send_cnt = 0;  // 전송하는 검색결과 수
 	char query[MAX_QUERY_STRING_SIZE];
-	//agent_depth_t agent_depth;
 
-	//1. set request_t
-    /* P : query */
-	p = (char *)apr_table_get(s->parameters_in, "q");
-	if (p == NULL) {
-		error("no query string");
-		return FAIL;
-	}
-	strncpy(req.query_string, p, MAX_QUERY_STRING_SIZE-1);
-
-    /* AT */
-	p = (char *)apr_table_get(s->parameters_in, "at");
-	if (p != NULL) {
-	    strncpy(req.attr_string, p, MAX_ATTR_STRING_SIZE-1);
-	}
-
-    /* AT2 */
-	p = (char *)apr_table_get(s->parameters_in, "at2");
-	if (p != NULL) {
-	    strncpy(req.attr2_string, p, MAX_ATTR_STRING_SIZE-1);
-	}
-
-    /* GR */
-	p = (char *)apr_table_get(s->parameters_in, "gr");
-	if (p != NULL) {
-	    strncpy(req.group_string, p, MAX_GROUP_STRING_SIZE-1);
-	}
-
-    /* SH */
-	p = (char *)apr_table_get(s->parameters_in, "sh");
-	if (p != NULL) {
-	    strncpy(req.sort_string, p, MAX_SORT_STRING_SIZE-1);
-	}
-
-    /* LC */
-	req.list_size = def_atoi(apr_table_get(s->parameters_in, "lc"), 20);
-
-    /* PG */
-    req.first_result = def_atoi(apr_table_get(s->parameters_in, "pg"), 0) * req.list_size;
-
-    /* FT */
-    req.filtering_id = def_atoi(apr_table_get(s->parameters_in, "ft"), 0);
+    if(make_request(s, &req, query) != SUCCESS) {
+        error("can not make request string");
+        return FAIL;
+    }
 
     req.type = LIGHT_SEARCH;
-
-    /* reqeust debug string */
-    debug("req.query_string:[%s]",req.query_string);
-    debug("req.attr_string:[%s]",req.attr_string);
-    debug("req.attr2_string:[%s]",req.attr2_string);
-    debug("req.group_string:[%s]",req.group_string);
-    debug("req.sort_string:[%s]",req.sort_string);
-    debug("req.list_size:%d",req.list_size);
-    debug("req.first_result:%d",req.first_result);
-    debug("req.filtering_id:%d", req.filtering_id);
-	sprintf(query, "q=%s&at=%s&at2=%s&gr=%s&sh=%s&lc=%d&pg=%d&ft=%d",
-			       req.query_string, req.attr_string,
-				   req.attr2_string, req.group_string,
-				   req.sort_string, req.list_size, 
-				   req.first_result, req.filtering_id);
 
     req.sb4error = 0;
     req.result_list = NULL; 
 
-	//2. get result
 	timelog("light_search_start");
 	rv = sb_run_qp_light_search(get_word_db(), &req);
 	timelog("light_search_finish");
@@ -307,7 +337,6 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 		return FAIL;
 	}
 
-	//we've got no search result
 	if (req.result_list == NULL) {
         search_total_cnt = 0;
         search_send_cnt = 0;
@@ -318,50 +347,57 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
         search_send_cnt = get_send_count(&req);
 	}
 
-	timelog("send_result_start");
 	ap_set_content_type(r, "x-softbotd/binary");
 
-	//3-1 search_words
-	ap_rwrite(req.word_list, sizeof(char)*STRING_SIZE, r);
-	//3-2 total_cnt 
-	ap_rwrite(&(search_total_cnt), sizeof(uint32_t), r);
-	//3-3 cnt 
-	ap_rwrite(&(search_send_cnt), sizeof(uint32_t), r);
-#if 0
-	//3-4 relevency list
-	ap_rwrite(res.relevancy, sizeof(uint32_t)*res.cnt, r);
-#endif
-	//3-5 agent_depth list
-	//for(i=0; i<res.cnt; i++) {
-	//	memset(&agent_depth, AGENT_DEPTH_NULL_TARGET, sizeof(agent_depth_t));
-	//	ap_rwrite(&agent_depth, sizeof(agent_depth_t), r);
-	//}
-#if 0
-	//3-6 dochit list
-	ap_rwrite(res.doc_hits, DOCHIT_SIZE*res.cnt, r);
-	timelog("send_result_finish");
-#endif
-    // result list
-	for (i = req.first_result; i < search_send_cnt; i++) {
-        index_list_t *result;
-        uint32_t word_id;
-        uint32_t relevancy;
-        uint16_t length;
+	timelog("send_result_start");
+	// 0. node id - 0 ~ 16 
+	ap_rwrite(&(this_node_id), sizeof(uint32_t), r);
 
-        result = &req.result_list[i];
-        word_id = result->wordid;
-	    ap_rwrite(&word_id, sizeof(uint32_t), r);
-        relevancy = result->relevancy;
-	    ap_rwrite((void*)&relevancy, sizeof(uint32_t), r);
-        length = result->list_size;
-	    ap_rwrite(&length, sizeof(uint16_t), r);
-        ap_rwrite(result->doc_hits, sizeof(doc_hit_t) * length, r);
-        info("result %d. docid [%d] relevancy [%d] length [%d]",
-                i,
-                word_id,
-                relevancy,
-                length);
+	// 1. 총 검색건수 
+	ap_rwrite(&(search_total_cnt), sizeof(uint32_t), r);
+
+	// 2. 전송 검색건수
+	ap_rwrite(&(search_send_cnt), sizeof(uint32_t), r);
+	debug("send cnt[%d]", search_send_cnt);
+
+	// 3. 검색 단어 리스트
+	ap_rwrite(req.word_list, sizeof(char)*STRING_SIZE, r);
+
+	debug("search_total_cnt[%u], search_send_cnt[%u], word_list[%s]", 
+			search_total_cnt,
+			search_send_cnt,
+			req.word_list);
+
+    // 4. 검색결과 전송
+    index_list_t *result = req.result_list;
+    for(i = 0; i < search_send_cnt; i++) {
+        uint32_t docid = result->doc_hits[i].id;
+        docattr_t* attr;
+
+		// 4-1. 관련성 전송
+		ap_rwrite((void*)&result->doc_hits[i].hitratio, sizeof(uint32_t), r);
+
+		// 4-2. doc_hits 전송
+		ap_rwrite((void*)&result->doc_hits[i], sizeof(doc_hit_t), r);
+
+		// 4-3. node id - 32bit
+		ap_rwrite(&(this_node_id), sizeof(uint32_t), r);
+		debug("send node_id[%u]", this_node_id);
+    
+		// 4-4. docattr 전송
+        if ( sb_run_docattr_ptr_get(docid, &attr) != SUCCESS ) {
+            docattr_t dummy;
+            memset(&dummy, 0x00, sizeof(docattr_t));
+            error("cannot get docattr element");
+
+            // dummy 전송. 최소한 상위 agent에서 오류나지 않도록한다.
+	        ap_rwrite((void*)&dummy, sizeof(docattr_t), r);
+            continue;
+        }
+
+	    ap_rwrite((void*)attr, sizeof(docattr_t), r);
     }
+
     timelog("send_result_finish");
 
 	sb_run_qp_finalize_search(&req);
@@ -369,108 +405,96 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 	return SUCCESS;
 }
 
-#if 0
 static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 {
-	memfile *req_body;
-	int cnt, i;
-	index_list_t *list;
+    int i = 0;
+    memfile *buf;
+    int recv_data_size = 0;
+    int recv_cancel_cnt = 0;
+	agent_request_t* req = NULL;
+
+    init_agent_request(&req);
 
 	CHECK_REQUEST_CONTENT_TYPE(r, "x-softbotd/binary");
 
-	if (sb_run_sbhandler_make_memfile(r, &req_body) != SUCCESS) {
-		MSG_RECORD(&(s->msgs), error, "make_memfile_from_postdata failed");
+	if (sb_run_sbhandler_make_memfile(r, &buf) != SUCCESS) {
+		error("make_memfile_from_postdata failed");
 		return FAIL;
 	}
 
-	cnt = memfile_getSize(req_body) / (sizeof(agent_depth_t) + sizeof(hit_t));
+    // 1. 수신건수(agent에서 recv_cnt를 계산할수 없기 때문에 size로 해야 한다.)
+    req->ali.recv_cnt = memfile_getSize(buf) / (sizeof(doc_hit_t) + sizeof(uint32_t));
+	debug("recv cnt[%d]", req->ali.recv_cnt);
 
-	list = (index_list_t *)apr_palloc(r->pool, cnt*sizeof(index_list_t));
-	memfile_setOffset(req_body, cnt*sizeof(agent_depth_t));
-    for(i = 0; i < cnt; i++)
-    {
-        memfile_read(req_body, (void *)&(list[i].word_id), sizeof(list[i].word_id));
-        memfile_read(req_body, (void *)&(list[i].relevancy), sizeof(list[i].relevancy));
-        memfile_read(req_body, (void *)&(list[i].list_size), sizeof(list[i].list_size));
-        list[i].doc_hits = apr_palloc(r->pool, sizeof(doc_hit_t) * list[i].length);
-        memfile_read(req_body, (void *)list[i].start, sizeof(hit_base_t) * list[i].length);
-    }
-	memfile_free(req_body);
+    // 2. agent_doc_hits 수신
+    for (i=0; i<req->ali.recv_cnt; i++ ) {
+        // 2.1 doc_hit 수신
+        recv_data_size = sizeof(doc_hit_t);
+        if ( memfile_read(buf, (char*)&req->ali.agent_doc_hits[i]->doc_hits, recv_data_size)
+                != recv_data_size ) {
+            error("incomplete result at [%d]th node: doc_hits ", i);
+            continue;
+        }
 
-	search_abs_list = apr_palloc(r->pool, cnt*sizeof(search_abstract_t));
-	if (!search_abs_list) {
-		MSG_RECORD(&(s->msgs), error, "search_abs_list apr_palloc failed");
-		return FAIL;
-	}
-
-	if (sb_run_qp_abstract_info(cnt, list, search_abs_list) != SUCCESS) {
-		MSG_RECORD(&(s->msgs), error, "sb_run_qp_get_abstract_list failed");
-		return FAIL;
-	}
-
-	agent_abs_list = apr_palloc(r->pool, cnt*sizeof(agent_abstract_t));
-	if (!agent_abs_list) {
-		MSG_RECORD(&(s->msgs), error, "agent_abs_list apr_palloc failed");
-		for(i = 0;i < cnt; i++) {
-			sb_run_free_document_object(search_abs_list[i].doc);
+		// 2. node_id 수신
+		recv_data_size = sizeof(uint32_t);
+		if ( memfile_read(buf, (char*)&req->ali.agent_doc_hits[i]->node_id, recv_data_size)
+				!= recv_data_size ) {
+			error("incomplete result at [%d]th node: doc_hits ", i);
+			continue;
 		}
+
+		// 자신의 node_id가 아니면 error
+		if(get_node_id(req->ali.agent_doc_hits[i]->node_id) != this_node_id) {
+			error("node_id[%u] not equals this_node_id[%u]",
+						  get_node_id(req->ali.agent_doc_hits[i]->node_id),
+						  this_node_id);
+			recv_cancel_cnt++; // 한건을 취소시킨다.
+			continue;
+		}
+
+        // 자신의 node_id pop
+        req->ali.agent_doc_hits[i]->node_id = 
+			pop_node_id(req->ali.agent_doc_hits[i]->node_id);
+
+        // 수신해야할 comment 초기화
+        req->ali.agent_doc_hits[i]->comments[0] = '\0';
+    }
+
+    req->ali.recv_cnt -= recv_cancel_cnt;
+
+	if (sb_run_qp_abstract_info(req) != SUCCESS) {
+		error("sb_run_qp_get_abstract_list failed");
 		return FAIL;
 	}
 
-	for(i = 0;i < cnt; i++) {
-		pull_out_comment_from_doc(&(search_abs_list[i]), &(agent_abs_list[i]));
-		sb_run_free_document_object(search_abs_list[i].doc);
-	}
+    /////////// abstarct search 결과 전송 ////////////////////////////////////////
+    // binary로 전송한다.
+    ap_set_content_type(r, "x-softbotd/binary");
 
-	ap_set_content_type(r, "x-softbotd/binary");
-	ap_rwrite(agent_abs_list, cnt*sizeof(agent_abstract_t), r);
+    // 1. 전송건수.
+    ap_rwrite(&req->ali.recv_cnt, sizeof(uint32_t), r);
+	
+	// 2. agent_doc_hits 전송.
+    for (i=0; i<req->ali.recv_cnt; i++ ) {
+        // 2.1 doc_id 전송.
+        ap_rwrite(&req->ali.agent_doc_hits[i]->doc_hits.id, sizeof(uint32_t), r);
+        // 2.2. comment
+        ap_rwrite(req->ali.agent_doc_hits[i]->comments, LONG_LONG_STRING_SIZE, r);
+		debug("comments[%s]", req->ali.agent_doc_hits[i]->comments);
+    }
 
 	return SUCCESS;
 }
-
-static void pull_out_comment_from_doc(search_abstract_t *search_abs,
-agent_abstract_t *agent_abs) {
-	int i, rv, len;
-	char *val;
-	char *ptr;
-	
-	memset(agent_abs, 0, sizeof(agent_abstract_t));
-
-	for (i=0; i<search_abs->info.abstract_field_info_num; i++){
-		if (!search_abs->doc) continue;
-		rv = sb_run_document_object_search_field_i
-			(search_abs->doc, search_abs->info.info[i].field_id, (void**)&val, &len);
-		if (rv == FAIL || len == 0) {
-			warn("cannot get field[%d]:rv[%d]len[%d]", 
-					search_abs->info.info[i].field_id, rv, len);
-			continue;
-		}
-		
-		DEBUG("field_id: %d", search_abs->info.info[i].field_id);
-		DEBUG("val: %s", val);
-		//url
-		if (search_abs->info.info[i].field_id == 0) {
-			strncpy(agent_abs->url, val, STRING_SIZE);
-			agent_abs->url[STRING_SIZE-1] = '\0';
-		
-		//comment
-		} else if (search_abs->info.info[i].field_id == 1) {
-			strncpy(agent_abs->comment, val, MAX_EACH_FIELD_COMMENT_SIZE);
-			agent_abs->comment[MAX_EACH_FIELD_COMMENT_SIZE-1] = '\0';
-		//title
-		} else if (search_abs->info.info[i].field_id == 2) {
-			strncpy(agent_abs->title, val, STRING_SIZE);
-			agent_abs->title[STRING_SIZE-1] = '\0';
-		}
-	}
-
-	/* remove \n: replace with space */
-	while ((ptr = strchr(agent_abs->comment, '\n')) != NULL) *ptr = ' ';
-
-	return;
-}
-#endif
 /////////////////////////////////////////////////////////////////////////
+
+static void set_node_id(configValue v)
+{
+    this_node_id = atoi(v.argument[0]);
+    if(this_node_id > 16) {
+        error("node_id should be smaller than 16");
+    }
+}
 
 static int get_table(char *name_space, void **tab)
 {
@@ -483,18 +507,23 @@ static int get_table(char *name_space, void **tab)
 	return SUCCESS;
 }
 
+static config_t config[] = {
+    CONFIG_GET("NodeId", set_node_id, 1, "set node id : NodeId [no]"),
+    {NULL}
+};
+
 static void register_hooks(void)
 {
 	sb_hook_sbhandler_get_table(get_table,NULL,NULL,HOOK_MIDDLE);
 	return;
 }
 
-module search_handler_module = {
+module search_sbhandler_module = {
 	STANDARD_MODULE_STUFF,
-	NULL,                   /* config */
-	NULL,                   /* registry */
-	NULL,               /* initialize */
-	NULL,               /* child_main */
-	NULL,               /* scoreboard */
-	register_hooks              /* register hook api */
+	config,                   /* config            */
+	NULL,                     /* registry          */
+	NULL,                     /* initialize        */
+	NULL,                     /* child_main        */
+	NULL,                     /* scoreboard        */
+	register_hooks            /* register hook api */
 };

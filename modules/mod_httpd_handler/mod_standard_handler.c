@@ -1,15 +1,74 @@
 /* $Id$ */
 #include <string.h>
 #include <ctype.h>
-#include "mod_api/sbhandler.h"
 #include "mod_httpd/protocol.h"
 #include "mod_httpd/conf.h"
 #include "mod_standard_handler.h"
 #include "apr_strings.h"
+#include "mod_api/sbhandler.h"
 
 //implemented in common_handler.c
 int sbhandler_common_get_table(char *name_space, void **tab);
 
+static int make_memfile_from_postdata(request_rec *r, memfile **output){
+	apr_bucket_brigade *bb = NULL;
+	int seen_eos, rv;
+	
+	memfile *mfile = memfile_new();
+	if ( !mfile ) {
+		error("memfile_new failed");
+		return FAIL;
+	}
+	
+	/* read POST data */
+	bb = apr_brigade_create(r->pool, r->connection->bucket_alloc);
+	seen_eos = 0;
+	do {
+		apr_bucket *bucket;
+		
+		rv = ap_get_brigade(r->input_filters, bb, AP_MODE_READBYTES,
+							APR_BLOCK_READ, HUGE_STRING_LEN);
+
+		if (rv != APR_SUCCESS) {
+			error("ap_get_brigade failed");
+			memfile_free(mfile);
+			return rv;
+		}
+
+		APR_BRIGADE_FOREACH(bucket, bb) {
+			const char *data;
+			apr_size_t len;
+
+			if (APR_BUCKET_IS_EOS(bucket)) {
+				seen_eos = 1;
+				break;
+			}
+
+			/* We can't do much with this. */
+			if (APR_BUCKET_IS_FLUSH(bucket)) {
+				continue;
+			}
+
+			/* read */
+			apr_bucket_read(bucket, &data, &len, APR_BLOCK_READ);
+
+			/* Keep writing data to the child until done or too much time
+			 *              * elapses with no progress or an error occurs.
+			 *                           */
+			if ( memfile_append(mfile, (char *)data, len) != len ) {
+				error("memfile_append failed");
+				memfile_free(mfile);
+				apr_brigade_cleanup(bb);
+				return FAIL;
+			}
+		}
+		apr_brigade_cleanup(bb);
+	}
+	while (!seen_eos);
+	*output = mfile;
+	memfile_setOffset(mfile, 0);
+	return SUCCESS;
+}
 static int hex(unsigned char h)
 {
 	if (isdigit(h))
@@ -207,6 +266,7 @@ static void register_hooks(void)
 	sb_hook_handler(standard_handler,NULL,NULL,HOOK_REALLY_FIRST);
 	sb_hook_sbhandler_get_table(sbhandler_common_get_table,NULL,NULL,HOOK_REALLY_LAST);
     sb_hook_sbhandler_append_file(append_file, NULL, NULL, HOOK_MIDDLE);
+	sb_hook_sbhandler_make_memfile(make_memfile_from_postdata, NULL, NULL, HOOK_MIDDLE);
 	return;
 }
 
