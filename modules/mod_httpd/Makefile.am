@@ -11,9 +11,9 @@ noinst_PROGRAMS = gen_test_char #test_main
 gen_test_char_SOURCES = gen_test_char.c
 gen_test_char_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
 
-pkglib_LTLIBRARIES = mod_httpd.la mod_httpd_test_handler.la
+pkglib_LTLIBRARIES = mod_httpd.la
 mod_httpd_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)
-mod_httpd_la_LIBADD = $(APR_LIBS) $(APU_LIBS)
+mod_httpd_la_LIBADD = $(APR_LIBS) $(APU_LIBS) $(libdir)/libcommon_core.la $(libdir)/libcommon_util.la
 mod_httpd_la_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
 mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \
                        conf.h config.c \
@@ -35,11 +35,11 @@ mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \
                        util_string.c util_string.h \
                        util_time.c util_time.h
 
-mod_httpd_test_handler_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)
-mod_httpd_test_handler_la_LIBADD = $(APR_LIBS) $(APU_LIBS)
-mod_httpd_test_handler_la_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
-mod_httpd_test_handler_la_SOURCES = mod_httpd_test_handler.c \
-					mod_httpd_test_handler.h 
+#mod_httpd_test_handler_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)
+#mod_httpd_test_handler_la_LIBADD = $(APR_LIBS) $(APU_LIBS)
+#mod_httpd_test_handler_la_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+#mod_httpd_test_handler_la_SOURCES = mod_httpd_test_handler.c \
+#					mod_httpd_test_handler.h 
 
 #test_main_SOURCES = test_main.c $(mod_httpd_la_SOURCES)
 #test_main_LDFLAGS = -rdynamic $(DYN_LIB) $(APR_LIB) $(THREAD_LIB)
