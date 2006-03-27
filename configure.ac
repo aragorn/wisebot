@@ -211,7 +211,7 @@ case "$host" in
     AC_DEFINE(CYGWIN,1)
     OS_TYPE="unix"
     THREAD_LIB=""
-    DYN_LIB=""
+    DYN_LIB="-dlopen"
     ;;
   *freebsd* )
     SHORT_HOST="freebsd"
@@ -296,9 +296,7 @@ dnl AC_AIX
 
 CFLAGS="-Wall -g3 -O2"
 
-dnl if test x"$SHORT_HOST" = xcygwin; then
-  AC_LIBTOOL_WIN32_DLL
-dnl fi
+AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
 AC_PROG_LIBTOOL
 
