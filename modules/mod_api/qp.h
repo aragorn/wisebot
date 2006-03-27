@@ -78,7 +78,6 @@ struct agent_doc_hits_t {
     docattr_t docattr;
 	uint32_t  relevancy;
 	doc_hit_t doc_hits;
-	char comments[LONG_LONG_STRING_SIZE];
 };
 
 struct agent_light_info_t {
@@ -89,6 +88,7 @@ struct agent_light_info_t {
     agent_doc_hits_t* agent_doc_hits[MAX_AGENT_DOC_HITS_COUNT];
 	char word_list[STRING_SIZE];
 
+	char comments[COMMENT_LIST_SIZE][LONG_LONG_STRING_SIZE]; 
 	group_result_t group_result[MAX_GROUP_RESULT];
 };
 
