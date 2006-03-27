@@ -490,8 +490,6 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
 				continue;
 			}
 
-			recv_node_id = get_node_id(recv_node_id);
-
 			// 2.3 comment
 			recv_data_size = LONG_LONG_STRING_SIZE;
 			if ( memfile_read(buf, (char*)comment, recv_data_size) 
@@ -507,12 +505,13 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
 			found = 0;
 	        last = req->send_first + req->send_cnt;
 			for(k = req->send_first; k < last; k++) {
-				uint32_t child_node_id = get_node_id( pop_node_id(ali->agent_doc_hits[k]->node_id) );
+				uint32_t child_node_id = pop_node_id(ali->agent_doc_hits[k]->node_id);
 
 				if(doc_id == ali->agent_doc_hits[k]->doc_hits.id &&
 					child_node_id == recv_node_id) {
 				    memcpy(ali->comments[k - req->send_first], comment, LONG_LONG_STRING_SIZE); 
 				    found = 1;
+					break;
 				}
 			}
 
