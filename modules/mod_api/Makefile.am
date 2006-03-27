@@ -28,18 +28,16 @@ SOURCE_FILES = mod_api.c mod_api.h \
 			   sbhandler.c sbhandler.h
 
 
-lib_LTLIBRARIES = libapi.la
-libapi_la_SOURCES = $(SOURCE_FILES)
-libapi_la_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
-if AIX5
-libapi_la_LDFLAGS = -all-static -avoid-version $(APR_LIBS) $(APU_LIBS)
-else
-libapi_la_LDFLAGS = -shared -avoid-version $(APR_LIBS) $(APU_LIBS)
-endif
+# lib_LTLIBRARIES   = libapi.la
+# libapi_la_SOURCES = $(SOURCE_FILES)
+# libapi_la_CFLAGS  = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+# libapi_la_LDFLAGS = -shared -avoid-version -no-undefined
+# libapi_la_LIBADD  = $(libdir)/libcommon_core.la $(APR_LIBS) $(APU_LIBS)
 
 pkglib_LTLIBRARIES = mod_api.la
 mod_api_la_SOURCES = $(SOURCE_FILES)
-mod_api_la_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
-mod_api_la_LDFLAGS = -module -avoid-version $(APR_LIBS) $(APU_LIBS)
+mod_api_la_CFLAGS  = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+mod_api_la_LDFLAGS = -module -avoid-version -no-undefined
+mod_api_la_LIBADD  = $(libdir)/libcommon_core.la $(APR_LIBS) $(APU_LIBS)
 
-include ../install-pkglib.mk
+#include ../install-pkglib.mk
