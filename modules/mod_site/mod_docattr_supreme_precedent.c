@@ -3,7 +3,6 @@
 #include "mod_api/docattr.h"
 #include "mod_api/morpheme.h"
 #include "mod_docattr_supreme_precedent.h"
-#include "mod_api/qp.h"
 #include "mod_qp/mod_qp.h"
 
 #include <stdio.h>
@@ -93,32 +92,25 @@ static int compare_function_for_qsort(const void *dest, const void *sour,
 {
 	int i, diff;
 	docattr_sort_t *criterion;
-	supreme_court_attr_t *attr1, *attr2;
+	supreme_court_attr_t attr1, attr2;
 
-	criterion = (docattr_sort_t *)userdata;
-	enum sortarraytype type = criterion->sort_base->type;
-
-	if(type == INDEX_LIST) {
-		if (sb_run_docattr_ptr_get(((doc_hit_t *)dest)->id, (docattr_t**)&attr1) < 0) {
-			error("cannot get docattr element");
-			return 0;
-		}
-		if (sb_run_docattr_ptr_get(((doc_hit_t *)sour)->id, (docattr_t**)&attr2) < 0) {
-			error("cannot get docattr element");
-			return 0;
-		}
-	} else if(type == AGENT_INFO) {
-		attr1 = (supreme_court_attr_t*)&(((agent_doc_hits_t*)dest)->docattr);
-		attr2 = (supreme_court_attr_t*)&(((agent_doc_hits_t*)sour)->docattr);
+	if (sb_run_docattr_get(((doc_hit_t *)dest)->id, &attr1) < 0) {
+		error("cannot get docattr element");
+		return 0;
+	}
+	if (sb_run_docattr_get(((doc_hit_t *)sour)->id, &attr2) < 0) {
+		error("cannot get docattr element");
+		return 0;
 	}
 
+	criterion = (docattr_sort_t *)userdata;
 	for (i=0; 
 			i<MAX_SORTING_CRITERION && criterion->keys[i].key[0]!='\0'; 
 			i++) {
 
 		switch (criterion->keys[i].key[0]) {
 			case '1': // PronounceDate
-				if ((diff = attr1->pronouncedate - attr2->pronouncedate) == 0) {
+				if ((diff = attr1.pronouncedate - attr2.pronouncedate) == 0) {
 					break;
 				}
 				else {
@@ -127,7 +119,7 @@ static int compare_function_for_qsort(const void *dest, const void *sour,
 				}
 				break;
 			case '2': // bubwon simgup
-				if ((diff = (int)(attr1->court/10000) - (int)(attr2->court/10000)) 
+				if ((diff = (int)(attr1.court/10000) - (int)(attr2.court/10000)) 
 						== 0) {
 					break;
 				}
@@ -137,7 +129,7 @@ static int compare_function_for_qsort(const void *dest, const void *sour,
 				}
 				break;
 			case '3': // Court
-				if ((diff = attr1->court - attr2->court) == 0) {
+				if ((diff = attr1.court - attr2.court) == 0) {
 					break;
 				}
 				else {
@@ -146,7 +138,7 @@ static int compare_function_for_qsort(const void *dest, const void *sour,
 				}
 				break;
 			case '4': // CaseNum1
-				if ((diff = attr1->casenum1 - attr2->casenum1) == 0) {
+				if ((diff = attr1.casenum1 - attr2.casenum1) == 0) {
 					break;
 				}
 				else {
@@ -155,7 +147,7 @@ static int compare_function_for_qsort(const void *dest, const void *sour,
 				}
 				break;
 			case '5': // CaseNum2
-				if ((diff = hangul_strncmp(attr1->casenum2, attr2->casenum2, 16)) == 0) {
+				if ((diff = hangul_strncmp(attr1.casenum2, attr2.casenum2, 16)) == 0) {
 					break;
 				}
 				else {
@@ -164,7 +156,7 @@ static int compare_function_for_qsort(const void *dest, const void *sour,
 				}
 				break;
 			case '6': // CaseNum3
-				if ((diff = attr1->casenum3 - attr2->casenum3) == 0) {
+				if ((diff = attr1.casenum3 - attr2.casenum3) == 0) {
 					break;
 				}
 				else {
@@ -173,7 +165,7 @@ static int compare_function_for_qsort(const void *dest, const void *sour,
 				}
 				break;
 			case '7': // CaseName
-				if ((diff = hangul_strncmp(attr1->casename, attr2->casename, 16)) == 0) {
+				if ((diff = hangul_strncmp(attr1.casename, attr2.casename, 16)) == 0) {
 					break;
 				}
 				else {
