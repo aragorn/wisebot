@@ -7,6 +7,7 @@
 #include "mod_api/sbhandler.h"
 #include "mod_httpd_handler/mod_standard_handler.h"
 #include "mod_httpd/protocol.h"
+#include "mod_httpd/http_util.h"
 #include "mod_api/httpd.h"
 #include "mod_api/indexer.h"
 #include "mod_api/qp.h"
@@ -105,6 +106,39 @@ static int get_client_by_node_id(uint32_t node_id)
 
     return -1;
 }
+
+/*
+ * 검색 연산자의 &, +는 url syntax 로 적용되는 항목으로
+ * escape 대상에서 제외되므로 특별하게 변경하여 준다.
+ * URL reserved characters
+ * $ & + , / : ; = ? @
+ */
+static char* escape_ampersand(apr_pool_t *p, const char *path)
+{   
+    char *copy = apr_palloc(p, 3 * strlen(path) + 3);
+    const unsigned char *s = (const unsigned char *)path;
+    unsigned char *d = (unsigned char *)copy;
+    unsigned c;
+
+    while ((c = *s)) {
+    if (c == '&') {
+        *d++ = '%';
+        *d++ = '2';
+        *d++ = '6';
+    } else if( c == '+') {
+        *d++ = '%';
+        *d++ = '2';
+        *d++ = 'B';
+    }               
+    else {
+        *d++ = c;
+    }
+    ++s;
+    }
+    *d = '\0';
+    return copy;
+}
+
 //--------------------------------------------------------------//
 //	*	agent_search implemetation
 //--------------------------------------------------------------//
@@ -118,8 +152,10 @@ static int agent_lightsearch(request_rec *r, agent_request_t* req) {
 	// make request line : agent는 하위노드에게 lc*(pg+1) 의 결과를 요청함.
 	if ( snprintf(path, MAX_QUERY_STRING_SIZE, 
 				"/search/light_search?q=%s&at=%s&at2=%s&gr=%s&sh=%s&lc=%d&pg=0&ft=%d",
-				req->query, req->at, req->at2, req->gr,
-                   req->sh, req->lc*(req->pg+1), req->ft) <= 0 ){
+				escape_ampersand(r->pool, ap_escape_uri(r->pool, req->query) ), 
+				escape_ampersand(r->pool, ap_escape_uri(r->pool, req->at) ), 
+				escape_ampersand(r->pool, ap_escape_uri(r->pool, req->at2) ),
+				req->gr, req->sh, req->lc*(req->pg+1), req->ft) <= 0 ){
 		error("query to long");
 		return FAIL;
 	}
