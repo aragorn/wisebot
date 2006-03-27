@@ -235,7 +235,6 @@ static int docattr_index_list_sortby(sort_base_t *sort_base, void *userdata,
 	    debug("index list->ndochits:%u", list->ndochits);
 	    qsort2(list->doc_hits, list->ndochits, sizeof(doc_hit_t), userdata, compar);
 	} else if(sort_base->type == AGENT_INFO) {
-		// sort시  agent_doc_hits_t의 swap이 속도에 영향을 미칠것이다. pointer array로 변경해야 한다.
 		agent_light_info_t* info = (agent_light_info_t*)sort_base;
 	    debug("agent list->ndochits:%u", info->recv_cnt);
 	    qsort2(info->agent_doc_hits, info->recv_cnt, sizeof(agent_doc_hits_t*), userdata, compar);
