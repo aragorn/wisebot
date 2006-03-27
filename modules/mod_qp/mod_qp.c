@@ -2023,11 +2023,11 @@ void cut_string(char* text, int maxLen)
  */
 static void fill_title_and_comment_agent(agent_request_t *ar) 
 {
-    int i = 0;
+    int i = 0, j = 0;
 
-	for(i = 0; i < ar->ali.recv_cnt; i++) {
+	for(i = 0, j = 0; i < ar->ali.recv_cnt; i++, j++) {
 	    doc_hit_t* doc_hits = &ar->ali.agent_doc_hits[i]->doc_hits;
-	    char* comment = ar->ali.agent_doc_hits[i]->comments;
+	    char* comment = ar->ali.comments[j];
 
         if(fill_title_and_comment(doc_hits, comment) != SUCCESS) {
 			continue;
@@ -2067,7 +2067,7 @@ static void fill_title_and_comment_server(request_t *req)
 	
 	DEBUG("req->first_result:%d, last:%d",req->first_result,last);
 	for (i = req->first_result,j=0; i < last; i++,j++) {
-        if(fill_title_and_comment(req->result_list->doc_hits, req->comments[j]) != SUCCESS) {
+        if(fill_title_and_comment(&req->result_list->doc_hits[i], req->comments[j]) != SUCCESS) {
 			continue;
 		}
 	}
@@ -2145,6 +2145,8 @@ static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
 					char summary[210];
 					int exist_summary = 0;
 					int m = 0;
+
+					summary[0] = '\0';
 
 					for(m = 0; m < doc_hits->nhits; m++) {
 						if ( field_info[k].id == doc_hits->hits[m].std_hit.field ) {
@@ -2495,6 +2497,7 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 	}	
 
 	CRIT("before filter: %d", list->ndochits);
+#if 0
 	if (sb_run_docattr_get_index_list(list, list, SC_COMP2, &cond) == FAIL) {  /* 문서 filitering */
 		return FAIL;
 	}
@@ -2504,7 +2507,7 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 				&cond, list->group_result, &list->group_result_count) == FAIL) {
 		return FAIL;
 	}
-
+#endif
 	return SUCCESS;
 }
 
@@ -2514,7 +2517,7 @@ static int agent_info_sort(agent_request_t* req)
 	// 정렬
 	CRIT("before sorting: %d", req->ali.recv_cnt);
 	req->ali.sort_base.type = AGENT_INFO;
-	if (docattr_sorting((sort_base_t*)&req->ali, req->sh) == FAIL) {
+	if (docattr_sorting((sort_base_t*)&(req->ali), req->sh) == FAIL) {
 		return FAIL;
 	}	
 /*
@@ -2662,7 +2665,6 @@ static int docattr_sorting(sort_base_t *list, char *sortquery)
 			error("error in process of sorting by docattr module");
 			return FAIL;
 		}
-			
 	}
 	else
 	{
