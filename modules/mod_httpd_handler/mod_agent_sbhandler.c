@@ -289,20 +289,6 @@ static int agent_lightsearch(request_rec *r, agent_request_t* req) {
 				error("incomplete result at [%d]th node: doc_attr ", i);
 				continue;
 			}
-			error("docattr address[%x], doc_id[%u]", ali->agent_doc_hits[ali->recv_cnt+i], 
-					((agent_doc_hits_t*)ali->agent_doc_hits[ali->recv_cnt+i])->doc_hits.id);
-			{
-				int ii = 0, jj = 0;
-				char buffer[64];
-				for(ii=0; ii < 64; ii++) {
-					char c = ((char*)&(ali->agent_doc_hits[ali->recv_cnt+i]->docattr))[ii];
-					if(c != '\0') {
-					    buffer[jj++] = c;
-					}
-				}
-
-				error("docattr[%s]", buffer);
-			}
 		}
         ali->total_cnt += total_cnt;
         ali->recv_cnt += recv_cnt;
@@ -711,22 +697,6 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 	}
 	timelog("agent_lightsearch_finish");
 
-	error("========== after sort ==============");
-	{
-		int ii = 0, jj = 0;
-		char buffer[64];
-		for(i = 0; i < req->ali.recv_cnt; i++) {
-			for(ii=0, jj = 0; ii < 64; ii++) {
-				char c = ((char*)&(req->ali.agent_doc_hits[i]->docattr))[ii];
-				if(c != '\0') {
-					buffer[jj++] = c;
-				}
-			}
-		    error("docattr[%s]", buffer);
-		}
-
-	}
-
     // 자신의 node_id를 push.
     for(i = 0; i < req->ali.recv_cnt; i++) {
         req->ali.agent_doc_hits[i]->node_id = push_node_id(req->ali.agent_doc_hits[i]->node_id);
@@ -821,21 +791,6 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s){
 	}
 	timelog("agent_lightsearch_finish");
 
-	error("========== after sort ==============");
-	{
-		int ii = 0, jj = 0;
-		char buffer[64];
-		for(i = 0; i < req->ali.recv_cnt; i++) {
-			for(ii=0, jj = 0; ii < 64; ii++) {
-				char c = ((char*)&(req->ali.agent_doc_hits[i]->docattr))[ii];
-				if(c != '\0') {
-					buffer[jj++] = c;
-				}
-			}
-		    error("docattr[%s]", buffer);
-		}
-
-	}
     // url parameter, lightseach 결과를 분석하여 몇건을 보낼지 결정.
     get_send_count(req);
 
