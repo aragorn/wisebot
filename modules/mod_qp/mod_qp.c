@@ -2497,7 +2497,7 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 	}	
 
 	CRIT("before filter: %d", list->ndochits);
-#if 0
+
 	if (sb_run_docattr_get_index_list(list, list, SC_COMP2, &cond) == FAIL) {  /* ¹®¼­ filitering */
 		return FAIL;
 	}
@@ -2507,7 +2507,7 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 				&cond, list->group_result, &list->group_result_count) == FAIL) {
 		return FAIL;
 	}
-#endif
+
 	return SUCCESS;
 }
 
