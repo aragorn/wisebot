@@ -4,6 +4,7 @@
 #include <errno.h> /* errno */
 #include <netdb.h> /* getaddrinfo(3),freeaddrinfo(3) */
 #include <arpa/inet.h> /* inet_ntop(3) */
+#include <fcntl.h> /* various FLAGS on cygwin */
 
 #include "common_core.h"
 #include "mod_api/udp.h"
