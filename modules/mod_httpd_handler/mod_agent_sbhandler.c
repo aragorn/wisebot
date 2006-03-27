@@ -218,7 +218,7 @@ static int agent_lightsearch(request_rec *r, agent_request_t* req) {
 
         // 0. node id  - 0 ~ 16 값임.
         recv_data_size = sizeof(uint32_t);
-		if ( memfile_read(buf, (char *)&search_nodes[i].node_id, recv_data_size) != recv_data_size ){
+		if ( memfile_read(buf, (char *)&search_nodes[node_idx].node_id, recv_data_size) != recv_data_size ){
 			error("incomplete result at [%d]th node: tot_cnt ", i);
 			continue;
 		}
@@ -289,6 +289,20 @@ static int agent_lightsearch(request_rec *r, agent_request_t* req) {
 				error("incomplete result at [%d]th node: doc_attr ", i);
 				continue;
 			}
+			error("docattr address[%x], doc_id[%u]", ali->agent_doc_hits[ali->recv_cnt+i], 
+					((agent_doc_hits_t*)ali->agent_doc_hits[ali->recv_cnt+i])->doc_hits.id);
+			{
+				int ii = 0, jj = 0;
+				char buffer[64];
+				for(ii=0; ii < 64; ii++) {
+					char c = ((char*)&(ali->agent_doc_hits[ali->recv_cnt+i]->docattr))[ii];
+					if(c != '\0') {
+					    buffer[jj++] = c;
+					}
+				}
+
+				error("docattr[%s]", buffer);
+			}
 		}
         ali->total_cnt += total_cnt;
         ali->recv_cnt += recv_cnt;
@@ -312,10 +326,10 @@ static void free_mfile_list(memfile **mfile_list){
 }
 
 /*
- * req.ali에는 recv_cnt, agent_doc_hits(doc_hits, node_id) 만 유효하다.
+ * req에는 send_first, send_cnt ali.agent_doc_hits(doc_hits, node_id) 만 유효하다.
  */
 static int agent_abstractsearch(request_rec *r, agent_request_t* req){
-	int i = 0, j = 0;
+	int i = 0, last = 0;
 	memfile *msg_body_list[MAX_SEARCH_NODE];
     http_client_t* clients[MAX_SEARCH_NODE];
     agent_light_info_t* ali = &req->ali;
@@ -376,11 +390,13 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
      * 그전에 abstract_search 요청이 오면 어느 child agent로 reqeust해야 하는지 알지 못한다.
      * 이경우는 그냥 jump
 	 */
-	for(j = 0; j < req->ali.recv_cnt; j++) {
+	// 출력해야할 페이지의 comment만 요청
+	last = req->send_first + req->send_cnt;
+	for(i = req->send_first; i < last; i++) {
         memfile *buf = NULL;
 		int client_idx = 0;
         uint32_t child_node_id = 0;
-        uint32_t node_id = ali->agent_doc_hits[j]->node_id;
+        uint32_t node_id = ali->agent_doc_hits[i]->node_id;
 
 
 		// child의 node_id를 알아오기
@@ -398,9 +414,9 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
         buf = msg_body_list[client_idx];
 		
 	    //////////// abstract 요청 전송 ////////////////////////////////////////
-		memfile_append(buf, (void *)&(ali->agent_doc_hits[j]->doc_hits), sizeof(doc_hit_t));
+		memfile_append(buf, (void *)&(ali->agent_doc_hits[i]->doc_hits), sizeof(doc_hit_t));
 		memfile_append(buf, (void *)&node_id, sizeof(uint32_t));
-		debug("bufsize[%lu], abstractsearch docid[%u]", memfile_getSize(buf), ali->agent_doc_hits[j]->doc_hits.id);
+		debug("bufsize[%lu], abstractsearch docid[%u]", memfile_getSize(buf), ali->agent_doc_hits[i]->doc_hits.id);
 	} 
 
     // send...
@@ -411,6 +427,14 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
             error("client is null, [%d]", i);
 			continue;
 		}
+
+		/*
+		if ( memfile_getSize(*buf) == 0 ) {
+            error("client[%d]'s buffer length 0, do not send request", i);
+			client->current_request_buffer = NULL;
+			continue;
+		}
+		*/
 		
 		http_setMessageBody(client->http, *buf, "x-softbotd/binary", memfile_getSize(*buf));
 		if ( sb_run_http_client_makeRequest(client, NULL)	!= SUCCESS ) {
@@ -438,7 +462,8 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
 	for (i=0; i <search_node_num; i++ ) {
         int j = 0;
 		int recv_data_size = 0;
-		int doc_id = 0;
+		uint32_t doc_id = 0;
+		uint32_t recv_node_id = 0;
 		int recv_cnt = 0;
 		char comment[LONG_LONG_STRING_SIZE];
 
@@ -457,8 +482,11 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
 			continue;
 		}
 
+		info("client[%d], recv_cnt[%u]", i, recv_cnt);
+
 		for(j = 0; j < recv_cnt; j++) {
 			int k = 0;
+			int found = 0;
 
 			// 2.1 doc_id
 			recv_data_size = sizeof(uint32_t);
@@ -468,7 +496,17 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
 				continue;
 			}
 
-			// 2.2 comment
+			// 2.2 node_id
+			recv_data_size = sizeof(uint32_t);
+			if ( memfile_read(buf, (char*)&recv_node_id, recv_data_size) 
+					!= recv_data_size ) {
+				error("incomplete result at [%d]th node: node_id ", j);
+				continue;
+			}
+
+			recv_node_id = get_node_id(recv_node_id);
+
+			// 2.3 comment
 			recv_data_size = LONG_LONG_STRING_SIZE;
 			if ( memfile_read(buf, (char*)comment, recv_data_size) 
 					!= recv_data_size ) {
@@ -476,13 +514,24 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
 				continue;
 			}
 
-            debug("comment[%s]", comment);
+            debug("doc_id[%u], comments[%s]", doc_id, comment);
 
 		    // 가져온 comment를 찾아서 넣는다.
-			for(k = 0; k < req->ali.recv_cnt; k++) {
-				if(doc_id == ali->agent_doc_hits[k]->doc_hits.id) {
-				   memcpy(ali->agent_doc_hits[k]->comments, comment, LONG_LONG_STRING_SIZE); 
+	        // 출력해야할 페이지 내에서 찾으면 된다.
+			found = 0;
+	        last = req->send_first + req->send_cnt;
+			for(k = req->send_first; k < last; k++) {
+				uint32_t child_node_id = get_node_id( pop_node_id(ali->agent_doc_hits[k]->node_id) );
+
+				if(doc_id == ali->agent_doc_hits[k]->doc_hits.id &&
+					child_node_id == recv_node_id) {
+				    memcpy(ali->comments[k - req->send_first], comment, LONG_LONG_STRING_SIZE); 
+				    found = 1;
 				}
+			}
+
+			if(!found) {
+				error("can not find doc_id[%u] for set comment", doc_id);
 			}
 		}
 	}
@@ -628,7 +677,7 @@ static void init_agent_request(agent_request_t** req)
 	g_agent_request->ali.total_cnt = 0;
 	g_agent_request->ali.recv_cnt = 0;
 
-	// g_agent_request->ali.agent_doc_hits를 절대 건들지 말것.
+	// g_agent_request->ali를 절대 초기화 시키지 말것, 위의 pointer 연결때문임. 
 
 	*req = g_agent_request;
 
@@ -639,7 +688,7 @@ static void init_agent_request(agent_request_t** req)
  * root agent 에서 실행됨
  */
 static int search_handler(request_rec *r, softbot_handler_rec *s){
-    int i = 0, ret = 0;
+    int i = 0, j = 0, last = 0, ret = 0;
     char query[MAX_QUERY_STRING_SIZE];
 	agent_request_t* req = NULL;
 
@@ -661,6 +710,22 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 		return FAIL;
 	}
 	timelog("agent_lightsearch_finish");
+
+	error("========== after sort ==============");
+	{
+		int ii = 0, jj = 0;
+		char buffer[64];
+		for(i = 0; i < req->ali.recv_cnt; i++) {
+			for(ii=0, jj = 0; ii < 64; ii++) {
+				char c = ((char*)&(req->ali.agent_doc_hits[i]->docattr))[ii];
+				if(c != '\0') {
+					buffer[jj++] = c;
+				}
+			}
+		    error("docattr[%s]", buffer);
+		}
+
+	}
 
     // 자신의 node_id를 push.
     for(i = 0; i < req->ali.recv_cnt; i++) {
@@ -703,21 +768,24 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
             req->ali.total_cnt/req->lc + ((req->ali.total_cnt > 0 && req->ali.total_cnt%req->lc == 0) ? -1 : 0),
             req->pg,
             req->lc, 
-			req->ali.recv_cnt);
+			req->send_cnt);
     
     /* each result */
-    for (i = req->send_first; i < req->send_cnt; i++) {
+	last = req->send_first + req->send_cnt;
+    for (i = req->send_first, j = 0; i < last; i++, j++) {
         ap_rprintf(r, 
                 "<row>"
                 "<rowno>%d</rowno>"
                 "<did>%d</did>"
+				"<nodeid>%08X</nodeid>"
                 "<relevance>%d</relevance>"
                 "<comment><![CDATA[%s]]></comment>"
                 "</row>\n",
                 i,
                 req->ali.agent_doc_hits[i]->doc_hits.id,
+                req->ali.agent_doc_hits[i]->node_id,
                 req->ali.agent_doc_hits[i]->relevancy,
-                replace_newline_to_space(req->ali.agent_doc_hits[i]->comments));
+                replace_newline_to_space(req->ali.comments[j]));
     }
 	ap_rprintf(r, "</search>\n</xml>");
 
@@ -753,6 +821,21 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s){
 	}
 	timelog("agent_lightsearch_finish");
 
+	error("========== after sort ==============");
+	{
+		int ii = 0, jj = 0;
+		char buffer[64];
+		for(i = 0; i < req->ali.recv_cnt; i++) {
+			for(ii=0, jj = 0; ii < 64; ii++) {
+				char c = ((char*)&(req->ali.agent_doc_hits[i]->docattr))[ii];
+				if(c != '\0') {
+					buffer[jj++] = c;
+				}
+			}
+		    error("docattr[%s]", buffer);
+		}
+
+	}
     // url parameter, lightseach 결과를 분석하여 몇건을 보낼지 결정.
     get_send_count(req);
 
@@ -790,7 +873,7 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s){
  * comment 전송하기
  */
 static int abstract_search_handler(request_rec *r, softbot_handler_rec *s){
-    int i = 0, ret = 0;
+    int i = 0, ret = 0, last = 0;
     char query[MAX_QUERY_STRING_SIZE];
 	memfile *buf;
 	int recv_data_size = 0;
@@ -816,7 +899,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s){
 	// 1. 전송건수 수신
     // 1. 수신건수(agent에서 recv_cnt를 계산할수 없기 때문에 size로 해야 한다.)
     req->ali.recv_cnt = memfile_getSize(buf) / (sizeof(doc_hit_t) + sizeof(uint32_t));
-    debug("recv cnt[%d]", req->ali.recv_cnt);
+    info("recv cnt[%d]", req->ali.recv_cnt);
 
 	// 2. agent_doc_hits 수신
 	for (i=0; i<req->ali.recv_cnt; i++ ) {
@@ -846,7 +929,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s){
         }
 
         // 수신해야할 comment 초기화
-        req->ali.agent_doc_hits[i]->comments[0] = '\0';
+        req->ali.comments[i][0] = '\0';
 	}
 
     req->ali.recv_cnt -= recv_cancel_cnt;
@@ -855,6 +938,8 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s){
      * abstract_search는 doc_hits에 해당하는 comment만을 결과로 출력하기 때문에
      * 따로 page 계산이나 보낼 data 건수등을 계산하지 않는다.
      */
+	req->send_cnt = req->ali.recv_cnt;
+	req->send_first = 0;
 
 	timelog("agent_abstractsearch_start");
 	ret = agent_abstractsearch(r, req);
@@ -869,14 +954,19 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s){
 	ap_set_content_type(r, "x-softbotd/binary");
 
 	// 1. 전송건수.
-	ap_rwrite(&req->ali.recv_cnt, sizeof(uint32_t), r);
+	ap_rwrite(&req->send_cnt, sizeof(uint32_t), r);
+    info("send cnt[%d]", req->send_cnt);
 
-	for (i=0; i<req->ali.recv_cnt; i++ ) {
-		// 2. docid
+	last = req->send_cnt + req->send_first;
+	for (i=req->send_first; i<last; i++ ) {
+		// 2.1 docid
 	    ap_rwrite(&req->ali.agent_doc_hits[i]->doc_hits.id, sizeof(uint32_t), r);
-		// 3. comment
-		ap_rwrite(req->ali.agent_doc_hits[i]->comments, LONG_LONG_STRING_SIZE, r);
-        debug("comments[%s]", req->ali.agent_doc_hits[i]->comments);
+		// 2.2 nodeid
+	    ap_rwrite(&req->ali.agent_doc_hits[i]->node_id, sizeof(uint32_t), r);
+		// 2.3 comment
+		ap_rwrite(req->ali.comments[i], LONG_LONG_STRING_SIZE, r);
+        debug("doc_id[%u], comments[%s]", req->ali.agent_doc_hits[i]->doc_hits.id, 
+				req->ali.comments[i]);
 	}
 
 	return SUCCESS;
