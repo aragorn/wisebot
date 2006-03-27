@@ -59,6 +59,7 @@ static char sccsid[] = "@(#)merge.c	8.2 (Berkeley) 2/14/94";
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include "proto.h"
 
 static void setup __P((u_char *, u_char *, size_t, size_t, int (*)()));
 static void insertionsort __P((u_char *, size_t, size_t, int (*)()));

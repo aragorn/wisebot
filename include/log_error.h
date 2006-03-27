@@ -7,6 +7,7 @@
 #endif
 
 #include <stdarg.h>
+#include <sys/time.h> /* struct timeval */
 
 #ifdef DEBUG_SOFTBOT
 #  define DEBUG_LOG_ERROR

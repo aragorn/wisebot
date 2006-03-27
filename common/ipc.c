@@ -1,4 +1,6 @@
 /* $Id$ */
+#define CORE_PRIVATE 1
+#include "common_core.h"
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
@@ -8,13 +10,9 @@
 #include <sys/sem.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#define CORE_PRIVATE 1
-#include "common_core.h"
 #include "log_error.h"
 #include "memory.h"
 #include "ipc.h"
-
-//#include "sys/mman.h"
 
 #define MAX_SYS5_IPC (200)
 
@@ -191,7 +189,7 @@ int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
 			}
 		} /* if (ipc->key == -1) */
 	} /* if (ipc->pathname == NULL) */
-	debug("key:%d",ipc->key);
+	debug("key:"KEY_T_FORMAT,ipc->key);
 
 	/* semget(ipc->key,num, IPC_CREAT|IPC_EXCL|0600);
 	 *                                         ~~~~
@@ -322,7 +320,7 @@ int _alloc_shm(ipc_t *ipc,const char* file,const char* caller)
 			}
 		}
 	}
-	info("key:%d",ipc->key);
+	info("key:"KEY_T_FORMAT,ipc->key);
 
 RETRY:
 	ipc->id = shmget(ipc->key, ipc->size, SHM_R|SHM_W|IPC_CREAT|IPC_EXCL);
@@ -369,7 +367,7 @@ RETRY:
 		crit("HINT: check the maximum size for shared memory segment, "
 			 "SHMMAX value of the kernel.");
 		info("    path: %s", ipc->pathname);
-		info("    key: %d", ipc->key);
+		info("    key: "KEY_T_FORMAT, ipc->key);
 		info("    size: %d", ipc->size);
 
 		info("errno:%d", errno);
@@ -511,21 +509,21 @@ int _alloc_mmap(ipc_t *ipc, off_t offset, const char* file, const char* caller)
 
 	offset_correction = (int) (offset % getpagesize());
 	if ( offset_correction != 0 ) {
-		info( "offset[0x%lx] is not multiple of PAGE_SIZE[%d], but OK - correction[%d]",
+		info( "offset["OFF_T_FORMAT"] is not multiple of PAGE_SIZE[%d], but OK - correction[%d]",
 				offset, getpagesize(), offset_correction);
 	}
 
 	ipc->addr = mmap( NULL, ipc->size + offset_correction,
 					PROT_READ|PROT_WRITE, MAP_SHARED, fd, offset - offset_correction );
 	if ( ipc->addr == MAP_FAILED ) {
-		error( "mmap() failed: [%s:%s()], size:%d, offset:0x%lx, %s",
+		error( "mmap() failed: [%s:%s()], size:%d, offset:"OFF_T_FORMAT", %s",
 				file, caller, ipc->size, offset, strerror(errno) );
 		close( fd );
 		return FAIL;
 	}
 	else ipc->addr += offset_correction;
 
-	info( "[%s:%s()] mmap successed at[0x%p]: %s(0x%lx~0x%lx)",
+	info( "[%s:%s()] mmap successed at[0x%p]: %s("OFF_T_FORMAT"~"OFF_T_FORMAT")",
 			file, caller, ipc->addr, ipc->pathname,
 			offset, offset+ipc->size );
 	close( fd );

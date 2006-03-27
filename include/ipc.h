@@ -6,9 +6,7 @@
 # error You should include "common_core.h" first.
 #endif
 
-//#include <sys/ipc.h>    /* ftok(3) */
-//#include <sys/sem.h>
-//#include <sys/shm.h>
+#include <sys/types.h> /* key_t */
 
 #if !defined(SHM_R)
 #define SHM_R	0400
@@ -30,8 +28,8 @@
 #define MMAP_CREATED    (400)
 #define MMAP_ATTACHED   (500)
 
-typedef struct _ipc_t ipc_t;
-struct _ipc_t {
+typedef struct ipc_t ipc_t;
+struct ipc_t {
 	int type;   /* ipc type which is defined above */
 	int id;		/* shmid, semid or msgid */
 	char *pathname;
@@ -101,5 +99,15 @@ SB_DECLARE(int) _sync_mmap(void* start,int size,const char* file,const char* cal
 SB_DECLARE(int) _free_mmap(void* start,int size,const char* file,const char* caller);
 
 SB_DECLARE(int) free_ipcs(void);
+
+#ifdef CORE_PRIVATE
+# ifdef CYGWIN
+#  define OFF_T_FORMAT "0x%llX"
+#  define KEY_T_FORMAT "%lld"
+# else
+#  define OFF_T_FORMAT "0x%lX"
+#  define KEY_T_FORMAT "%d"
+# endif
+#endif /* CORE_PRIVATE */
 
 #endif

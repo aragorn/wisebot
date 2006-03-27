@@ -28,3 +28,4 @@ libcommon_util_la_SOURCES = common_util.c \
 							memfile.c \
 							mprintf.c
 libcommon_util_la_LDFLAGS = -shared -avoid-version
+libcommon_util_la_LIBADD = libcommon_core.la

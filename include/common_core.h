@@ -2,12 +2,7 @@
 #ifndef COMMON_CORE_H
 #define COMMON_CORE_H 1
 
-
-#ifdef WIN32
-# include "win32_config.h"
-#else
-# include "auto_config.h"
-#endif /* WIN32 */
+#include "auto_config.h"
 #include "constants.h"
 
 #define DEBUG_SOFTBOT  1

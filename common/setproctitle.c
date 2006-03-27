@@ -1,5 +1,6 @@
 /* $Id$ */
 #include <string.h>
+#include <stdlib.h> /* malloc(3) */
 #define CORE_PRIVATE 1
 #include "common_core.h"
 #include "setproctitle.h"
