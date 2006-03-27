@@ -35,7 +35,7 @@ echo $ac_n "${nl}Configuring Apache Portable Runtime library ...${nl}"
 apr_found=`apr-config --version`
 echo apr version: $apr_found
 
-if test "x$apr_found" != "x0.9.6"; then
+if test -z $apr_found; then
   AC_MSG_ERROR([APR not found. Please read the documentation.])
 fi
 
@@ -52,7 +52,7 @@ echo $ac_n "${nl}Configuring Apache Portable Runtime Utility library...${nl}"
 apu_found=`apu-config --version`
 echo apu version: $apu_found
 
-if test "x$apu_found" != "x0.9.6"; then
+if test -z $apu_found; then
   AC_MSG_ERROR([APR-util not found.  Please read the documentation.])
 fi
 
