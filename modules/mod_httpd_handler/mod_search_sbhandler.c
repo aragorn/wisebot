@@ -112,7 +112,7 @@ static void init_agent_request(agent_request_t** req)
 	g_agent_request->ali.total_cnt = 0;
 	g_agent_request->ali.recv_cnt = 0;
 
-	// g_agent_request->ali.agent_doc_hits를 절대 건들지 말것.
+	// g_agent_request->ali를 절대 초기화 시키지 말것, 위의 pointer 연결때문임. 
 
 	*req = g_agent_request;
 
@@ -193,10 +193,10 @@ static int make_request(softbot_handler_rec* s, request_t* req, char* query_stri
 	if(req->list_size < 0) req->list_size = 20;
 
     /* PG */
-    req->first_result = def_atoi(apr_table_get(s->parameters_in, "pg"), 0) * req->list_size;
+    req->first_result = def_atoi(apr_table_get(s->parameters_in, "pg"), 0);
 	if(req->first_result < 0) req->first_result = 0;
 
-	//req->first_result *= req.list_size;
+	req->first_result *= req->list_size;
 
     /* FT */
     req->filtering_id = def_atoi(apr_table_get(s->parameters_in, "ft"), 0);
@@ -226,7 +226,7 @@ static int make_request(softbot_handler_rec* s, request_t* req, char* query_stri
 static int search_handler(request_rec *r, softbot_handler_rec *s)
 {
     request_t req; 
-    int rv = 0, i = 0;
+    int rv = 0, i = 0, j = 0;
     int search_total_cnt = 0; // 총 검색결과수
     int search_send_cnt = 0;  // 전송하는 검색결과 수
 	char query[MAX_QUERY_STRING_SIZE];
@@ -282,20 +282,20 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 			req.list_size, search_send_cnt);
 
 	/* each result */
-	for (i = req.first_result; i < search_send_cnt; i++) {
+	for (i = req.first_result, j =0; j < search_send_cnt; i++, j++) {
 		ap_rprintf(r, 
 				"<row>"
 				"<rowno>%d</rowno>"
 				"<did>%d</did>"
+				"<nodeid>%08X</nodeid>"
 				"<relevance>%d</relevance>"
-				"<wordhist>%d</wordhist>"
 				"<comment><![CDATA[%s]]></comment>"
 				"</row>\n",
 				i,
                 req.result_list->doc_hits[i].id,
+				this_node_id,
                 req.result_list->doc_hits[i].hitratio,
-                req.result_list->doc_hits[i].nhits,
-                replace_newline_to_space(req.comments[i]));
+                replace_newline_to_space(req.comments[j]));
 	}
 
 	ap_rprintf(r, "</search>\n");
@@ -427,7 +427,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 	debug("recv cnt[%d]", req->ali.recv_cnt);
 
     // 2. agent_doc_hits 수신
-    for (i=0; i<req->ali.recv_cnt; i++ ) {
+    for (i=0; i<req->ali.recv_cnt; i++) {
         // 2.1 doc_hit 수신
         recv_data_size = sizeof(doc_hit_t);
         if ( memfile_read(buf, (char*)&req->ali.agent_doc_hits[i]->doc_hits, recv_data_size)
@@ -458,7 +458,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 			pop_node_id(req->ali.agent_doc_hits[i]->node_id);
 
         // 수신해야할 comment 초기화
-        req->ali.agent_doc_hits[i]->comments[0] = '\0';
+        req->ali.comments[i][0] = '\0';
     }
 
     req->ali.recv_cnt -= recv_cancel_cnt;
@@ -479,9 +479,11 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
     for (i=0; i<req->ali.recv_cnt; i++ ) {
         // 2.1 doc_id 전송.
         ap_rwrite(&req->ali.agent_doc_hits[i]->doc_hits.id, sizeof(uint32_t), r);
-        // 2.2. comment
-        ap_rwrite(req->ali.agent_doc_hits[i]->comments, LONG_LONG_STRING_SIZE, r);
-		debug("comments[%s]", req->ali.agent_doc_hits[i]->comments);
+        // 2.2 node_id 전송.
+        ap_rwrite(&this_node_id, sizeof(uint32_t), r);
+        // 2.3. comment
+        ap_rwrite(req->ali.comments[i], LONG_LONG_STRING_SIZE, r);
+		debug("comments[%s]", req->ali.comments[i]);
     }
 
 	return SUCCESS;
