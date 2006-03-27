@@ -695,7 +695,10 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 			return 0;
 		}
 	} else if(type == AGENT_INFO) {
-		attr1 = &((agent_doc_hits_t*)dest)->docattr;
+		// FIXME : pointer가 32bit로 간주되어 있다.
+		uint32_t ptr = *(uint32_t*)dest;
+
+		attr1 = &(((agent_doc_hits_t*)ptr)->docattr);
 	}
 
 	if(type == INDEX_LIST) {
@@ -704,7 +707,10 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 			return 0;
 		}
 	} else if(type == AGENT_INFO) {
-		attr2 = &((agent_doc_hits_t*)sour)->docattr;
+		// FIXME : pointer가 32bit로 간주되어 있다.
+		uint32_t ptr = *(uint32_t*)sour;
+
+		attr2 = &(((agent_doc_hits_t*)ptr)->docattr);
 	}
 
 	for ( i = 0; i < sort->condition_count; i++ ) {
