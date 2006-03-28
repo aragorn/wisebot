@@ -646,8 +646,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
             "<total_page>%d</total_page>\n"
             "<page_no>%d</page_no>\n"
             "<page_size>%d</page_size>\n"
-            "<result_count>%d</result_count>\n"
-            "</summary>\n",
+            "<result_count>%d</result_count>\n",
             query, 
 			req->ali.word_list, 
 			req->ali.total_cnt, 
@@ -655,6 +654,21 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
             req->pg,
             req->lc, 
 			req->send_cnt);
+
+    ap_rprintf(r, "<group>\n");
+
+	/* group search °á°ú */
+    for (i = 0; i < req->ali.group_result_count; i++) {
+        ap_rprintf(r, 
+                "<value>GR_CNT:%s,%s,%d</value>\n",
+                 req->ali.group_result[i].field,
+                 req->ali.group_result[i].value,
+                 req->ali.group_result[i].count);
+    }
+
+    ap_rprintf(r, "</group>\n");
+    ap_rprintf(r, "</summary>\n");
+
     
     /* each result */
 	last = req->send_first + req->send_cnt;

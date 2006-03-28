@@ -226,12 +226,25 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 			"<total_page>%d</total_page>\n"
 			"<page_no>%d</page_no>\n"
 			"<page_size>%d</page_size>\n"
-			"<result_count>%d</result_count>\n"
-			"</summary>\n",
+			"<result_count>%d</result_count>\n",
 			query, req.word_list, search_total_cnt, 
 			search_total_cnt/req.list_size + ((search_total_cnt > 0 && search_total_cnt%req.list_size == 0) ? -1 : 0),
 			req.first_result/req.list_size,
 			req.list_size, search_send_cnt);
+
+    ap_rprintf(r, "<group>\n");
+
+	/* group search °á°ú */
+    for (i = 0; i < req.result_list->group_result_count; i++) {
+        ap_rprintf(r, 
+                "<value>GR_CNT:%s,%s,%d</value>\n",
+                 req.result_list->group_result[i].field,
+                 req.result_list->group_result[i].value,
+                 req.result_list->group_result[i].count);
+    }
+
+    ap_rprintf(r, "</group>\n");
+    ap_rprintf(r, "</summary>\n");
 
 	/* each result */
 	for (i = req.first_result, j =0; j < search_send_cnt; i++, j++) {
