@@ -6,10 +6,14 @@
 #include "mod_standard_handler.h"
 #include "apr_strings.h"
 #include "mod_api/sbhandler.h"
+#include "handler_util.h"
 
 //implemented in common_handler.c
 int sbhandler_common_get_table(char *name_space, void **tab);
 
+//--------------------------------------------------------------//
+//	*   custom function	
+//--------------------------------------------------------------//
 static int make_memfile_from_postdata(request_rec *r, memfile **output){
 	apr_bucket_brigade *bb = NULL;
 	int seen_eos, rv;
@@ -68,37 +72,6 @@ static int make_memfile_from_postdata(request_rec *r, memfile **output){
 	*output = mfile;
 	memfile_setOffset(mfile, 0);
 	return SUCCESS;
-}
-static int hex(unsigned char h)
-{
-	if (isdigit(h))
-		return h-'0';
-	else
-		return toupper(h)-'A'+10;
-}
-
-static inline void decodencpy(unsigned char *dst, unsigned char *src, int n)
-{
-	register int x, y;
-
-	x = y = 0;
-	while(src[x]) {
-		if (src[x] == '+')
-			dst[y] = ' ';
-		else if (src[x] == '%' && n - x >= 2 
-				&& isxdigit((int)(src[x+1])) && isxdigit((int)(src[x+2]))) {
-			dst[y] = (hex(src[x+1]) << 4) + hex(src[x+2]);
-			x += 2;
-		}
-		else
-			dst[y] = src[x];
-		x++;
-		y++;
-		if (x >= n)
-			break;
-	}
-	if (y < n)
-		dst[y] = 0;
 }
 
 static int _sub_handler(request_rec *rec, softbot_handler_rec *s){
@@ -163,7 +136,9 @@ static void _make_fail_response(request_rec *r, softbot_handler_rec *s, int ret_
     return;
 }
 
-/*****************************************************************************/
+//--------------------------------------------------------------//
+//	*	standard_search implemetation
+//--------------------------------------------------------------//
 static int standard_handler(request_rec *r)
 {
         int nRet;

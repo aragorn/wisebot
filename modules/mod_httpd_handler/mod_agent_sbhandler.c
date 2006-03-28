@@ -13,6 +13,7 @@
 #include "mod_api/qp.h"
 #include "mod_qp/mod_qp.h"
 #include "mod_api/http_client.h"
+#include "handler_util.h"
 
 static int search_handler(request_rec *r, softbot_handler_rec *s);
 static int light_search_handler(request_rec *r, softbot_handler_rec *s);
@@ -52,91 +53,159 @@ node_t search_nodes[MAX_SEARCH_NODE];
 //--------------------------------------------------------------//
 //	*   custom function	
 //--------------------------------------------------------------//
-static char *replace_newline_to_space(char *str) {
-    char *ch;
-    ch = str;       
-    while ( (ch = strchr(ch, '\n')) != NULL ) {
-        *ch = ' ';
-    }
-    return str;
-}   
-
-/*
- * 하위 4bit에 node_id를 push
- * push 된 node_id를 리턴
- */
-static uint32_t push_node_id(uint32_t node_id)
-{
-	// 상위 4bit에 내용이 있으면 더이상 depth를 늘릴수 없음.
-	if((node_id >> 28) > 0) {
-		error("depth overflower[0x%0X]", node_id);
-		return 0;
-	}
-
-    node_id = node_id << 4;
-	node_id |= this_node_id;
-
-	return node_id;
-}
-
-/*
- * 하위 4bit를 pop한다.
- * pop 된 node_id를 리턴.
- */
-static uint32_t pop_node_id(uint32_t node_id)
-{
-    return (node_id >> 4);
-}
-
-// 하위 4bit의 node_id 알아내기
-static uint32_t get_node_id(uint32_t node_id)
-{
-	return node_id & 0x0f;
-}
-
-
 static int get_client_by_node_id(uint32_t node_id)
-{
-    int i = 0;
+{ 
+    int i = 0; 
     for(i = 0; i < search_node_num; i++) {
         if(search_nodes[i].node_id == node_id) {
             return i;
         }
-    }
-
-    return -1;
+    } 
+ 
+    return -1; 
 }
 
-/*
- * 검색 연산자의 &, +는 url syntax 로 적용되는 항목으로
- * escape 대상에서 제외되므로 특별하게 변경하여 준다.
- * URL reserved characters
- * $ & + , / : ; = ? @
- */
-static char* escape_ampersand(apr_pool_t *p, const char *path)
-{   
-    char *copy = apr_palloc(p, 3 * strlen(path) + 3);
-    const unsigned char *s = (const unsigned char *)path;
-    unsigned char *d = (unsigned char *)copy;
-    unsigned c;
+static void free_mfile_list(memfile **mfile_list){
+	int i;
+	for (i=0; i<search_node_num; i++ ) {
+		if ( mfile_list[i] ) memfile_free(mfile_list[i]);
+	}
+}
 
-    while ((c = *s)) {
-    if (c == '&') {
-        *d++ = '%';
-        *d++ = '2';
-        *d++ = '6';
-    } else if( c == '+') {
-        *d++ = '%';
-        *d++ = '2';
-        *d++ = 'B';
-    }               
+//--------------------------------------------------------------//
+static int make_request(softbot_handler_rec* s, agent_request_t* req, char* query_string)
+{
+    char* p = NULL;
+
+    //1. set request_t
+    /* query */
+    p = (char *)apr_table_get(s->parameters_in, "q");
+    if (p == NULL) {
+        error("no query string");
+        return FAIL;
+    }
+    strncpy(req->query, p, MAX_QUERY_STRING_SIZE-1);
+
+    /* AT */
+    p = (char *)apr_table_get(s->parameters_in, "at");
+    if (p != NULL) {
+        strncpy(req->at, p, MAX_ATTR_STRING_SIZE-1);
+    }
+
+    /* AT2 */
+    p = (char *)apr_table_get(s->parameters_in, "at2");
+    if (p != NULL) {
+        strncpy(req->at2, p, MAX_ATTR_STRING_SIZE-1);
+    }
+
+    /* GR */
+    p = (char *)apr_table_get(s->parameters_in, "gr");
+    if (p != NULL) {
+        strncpy(req->gr, p, MAX_GROUP_STRING_SIZE-1);
+    }
+
+    /* SH */
+    p = (char *)apr_table_get(s->parameters_in, "sh");
+    if (p != NULL) {
+        strncpy(req->sh, p, MAX_SORT_STRING_SIZE-1);
+    }
+
+    /* LC */
+    req->lc = def_atoi(apr_table_get(s->parameters_in, "lc"), 20);
+    if(req->lc < 0) req->lc = 20;
+
+    /* PG */
+    req->pg = def_atoi(apr_table_get(s->parameters_in, "pg"), 0);
+    if(req->pg < 0) req->pg = 0;
+
+    /* FT */
+    req->ft = def_atoi(apr_table_get(s->parameters_in, "ft"), 0);
+
+    /* reqeust debug string */
+    debug("req->query_string:[%s]",req->query);
+    debug("req->attr_string:[%s]",req->at);
+    debug("req->attr2_string:[%s]",req->at2);
+    debug("req->group_string:[%s]",req->gr);
+    debug("req->sort_string:[%s]",req->sh);
+    debug("req->list_size:%d",req->lc);
+    debug("req->first_result:%d",req->pg);
+    debug("req->filtering_id:%d", req->ft);
+
+    if( snprintf(query_string, MAX_QUERY_STRING_SIZE, 
+				"q=%s&at=%s&at2=%s&gr=%s&sh=%s&lc=%d&pg=%d&ft=%d",
+                   req->query, req->at, req->at2, req->gr,
+                   req->sh, req->lc, req->pg, req->ft) <= 0 ){
+        error("query to long");
+        return FAIL;
+    }
+
+    return SUCCESS;
+}
+
+
+// 몇건 전송해야 하는지 계산한다.
+static void get_send_count(agent_request_t* req)
+{
+    int pg = req->pg;
+    int lc = req->lc;
+	int total_cnt = req->ali.total_cnt;
+    
+    if (total_cnt < pg*lc) {
+        req->send_cnt = 0;
+    }
     else {
-        *d++ = c;
+        int remain = total_cnt - pg*lc;
+        
+        if (remain > lc) { 
+            req->send_cnt = lc; // page 가 뒤로 한참 남았다.
+        }
+        else {
+            req->send_cnt = remain; // 마지막 page. 
+        }
+        
+        if ( req->send_cnt > COMMENT_LIST_SIZE ) {
+            warn("searched_list_size[%d] > COMMENT_LIST_SIZE[%d]",
+                    req->send_cnt, COMMENT_LIST_SIZE);
+            req->send_cnt = COMMENT_LIST_SIZE;
+        }
     }
-    ++s;
-    }
-    *d = '\0';
-    return copy;
+
+	req->send_first = pg*lc;
+}
+
+static void init_agent_request(agent_request_t** req)
+{
+	int i = 0;
+
+    if(g_agent_request == NULL) {
+		g_agent_request = (agent_request_t*)sb_malloc(sizeof(agent_request_t));
+	}
+
+	// MAX_AGENT_DOC_HITS_COUNT번 memory 할당 하지 않고 한번에 할당받고 연결한다.
+	if(g_agent_doc_hits == NULL) {
+		g_agent_doc_hits = (agent_doc_hits_t*)
+			            sb_malloc(sizeof(agent_doc_hits_t)*MAX_AGENT_DOC_HITS_COUNT);
+
+		// pointer 연결
+		for(i = 0; i < MAX_AGENT_DOC_HITS_COUNT; i++) {
+            g_agent_request->ali.agent_doc_hits[i] = &g_agent_doc_hits[i];
+		}
+	}
+
+	//  초기화
+	g_agent_request->lc = 0;
+	g_agent_request->pg = 0;
+	g_agent_request->ft = 0;
+	g_agent_request->send_cnt = 0;
+	g_agent_request->send_first = 0;
+	g_agent_request->ali.total_cnt = 0;
+	g_agent_request->ali.recv_cnt = 0;
+
+	// g_agent_request->ali를 절대 초기화 시키지 말것, 위의 pointer 연결때문임. 
+
+	*req = g_agent_request;
+
+	return;
 }
 
 //--------------------------------------------------------------//
@@ -303,13 +372,6 @@ static int agent_lightsearch(request_rec *r, agent_request_t* req) {
 	return SUCCESS;
 }
 
-
-static void free_mfile_list(memfile **mfile_list){
-	int i;
-	for (i=0; i<search_node_num; i++ ) {
-		if ( mfile_list[i] ) memfile_free(mfile_list[i]);
-	}
-}
 
 /*
  * req에는 send_first, send_cnt ali.agent_doc_hits(doc_hits, node_id) 만 유효하다.
@@ -523,151 +585,6 @@ static int agent_abstractsearch(request_rec *r, agent_request_t* req){
 
 	return SUCCESS;
 }
-//--------------------------------------------------------------//
-
-
-/////////////////////////////////////////////////////////////////////
-static int def_atoi(const char *s, int def)
-{
-	if (s)
-		return atoi(s);
-	return def;
-}
-
-static int make_request(softbot_handler_rec* s, agent_request_t* req, char* query_string)
-{
-    char* p = NULL;
-
-    //1. set request_t
-    /* query */
-    p = (char *)apr_table_get(s->parameters_in, "q");
-    if (p == NULL) {
-        error("no query string");
-        return FAIL;
-    }
-    strncpy(req->query, p, MAX_QUERY_STRING_SIZE-1);
-
-    /* AT */
-    p = (char *)apr_table_get(s->parameters_in, "at");
-    if (p != NULL) {
-        strncpy(req->at, p, MAX_ATTR_STRING_SIZE-1);
-    }
-
-    /* AT2 */
-    p = (char *)apr_table_get(s->parameters_in, "at2");
-    if (p != NULL) {
-        strncpy(req->at2, p, MAX_ATTR_STRING_SIZE-1);
-    }
-
-    /* GR */
-    p = (char *)apr_table_get(s->parameters_in, "gr");
-    if (p != NULL) {
-        strncpy(req->gr, p, MAX_GROUP_STRING_SIZE-1);
-    }
-
-    /* SH */
-    p = (char *)apr_table_get(s->parameters_in, "sh");
-    if (p != NULL) {
-        strncpy(req->sh, p, MAX_SORT_STRING_SIZE-1);
-    }
-
-    /* LC */
-    req->lc = def_atoi(apr_table_get(s->parameters_in, "lc"), 20);
-    if(req->lc < 0) req->lc = 20;
-
-    /* PG */
-    req->pg = def_atoi(apr_table_get(s->parameters_in, "pg"), 0);
-    if(req->pg < 0) req->pg = 0;
-
-    /* FT */
-    req->ft = def_atoi(apr_table_get(s->parameters_in, "ft"), 0);
-
-    /* reqeust debug string */
-    debug("req->query_string:[%s]",req->query);
-    debug("req->attr_string:[%s]",req->at);
-    debug("req->attr2_string:[%s]",req->at2);
-    debug("req->group_string:[%s]",req->gr);
-    debug("req->sort_string:[%s]",req->sh);
-    debug("req->list_size:%d",req->lc);
-    debug("req->first_result:%d",req->pg);
-    debug("req->filtering_id:%d", req->ft);
-
-    if( snprintf(query_string, MAX_QUERY_STRING_SIZE, 
-				"q=%s&at=%s&at2=%s&gr=%s&sh=%s&lc=%d&pg=%d&ft=%d",
-                   req->query, req->at, req->at2, req->gr,
-                   req->sh, req->lc, req->pg, req->ft) <= 0 ){
-        error("query to long");
-        return FAIL;
-    }
-
-    return SUCCESS;
-}
-
-
-// 몇건 전송해야 하는지 계산한다.
-static void get_send_count(agent_request_t* req)
-{
-    int pg = req->pg;
-    int lc = req->lc;
-	int total_cnt = req->ali.total_cnt;
-    
-    if (total_cnt < pg*lc) {
-        req->send_cnt = 0;
-    }
-    else {
-        int remain = total_cnt - pg*lc;
-        
-        if (remain > lc) { 
-            req->send_cnt = lc; // page 가 뒤로 한참 남았다.
-        }
-        else {
-            req->send_cnt = remain; // 마지막 page. 
-        }
-        
-        if ( req->send_cnt > COMMENT_LIST_SIZE ) {
-            warn("searched_list_size[%d] > COMMENT_LIST_SIZE[%d]",
-                    req->send_cnt, COMMENT_LIST_SIZE);
-            req->send_cnt = COMMENT_LIST_SIZE;
-        }
-    }
-
-	req->send_first = pg*lc;
-}
-
-static void init_agent_request(agent_request_t** req)
-{
-	int i = 0;
-
-    if(g_agent_request == NULL) {
-		g_agent_request = (agent_request_t*)sb_malloc(sizeof(agent_request_t));
-	}
-
-	// MAX_AGENT_DOC_HITS_COUNT번 memory 할당 하지 않고 한번에 할당받고 연결한다.
-	if(g_agent_doc_hits == NULL) {
-		g_agent_doc_hits = (agent_doc_hits_t*)
-			            sb_malloc(sizeof(agent_doc_hits_t)*MAX_AGENT_DOC_HITS_COUNT);
-
-		// pointer 연결
-		for(i = 0; i < MAX_AGENT_DOC_HITS_COUNT; i++) {
-            g_agent_request->ali.agent_doc_hits[i] = &g_agent_doc_hits[i];
-		}
-	}
-
-	//  초기화
-	g_agent_request->lc = 0;
-	g_agent_request->pg = 0;
-	g_agent_request->ft = 0;
-	g_agent_request->send_cnt = 0;
-	g_agent_request->send_first = 0;
-	g_agent_request->ali.total_cnt = 0;
-	g_agent_request->ali.recv_cnt = 0;
-
-	// g_agent_request->ali를 절대 초기화 시키지 말것, 위의 pointer 연결때문임. 
-
-	*req = g_agent_request;
-
-	return;
-}
 
 /*
  * root agent 에서 실행됨
@@ -698,7 +615,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 
     // 자신의 node_id를 push.
     for(i = 0; i < req->ali.recv_cnt; i++) {
-        req->ali.agent_doc_hits[i]->node_id = push_node_id(req->ali.agent_doc_hits[i]->node_id);
+        req->ali.agent_doc_hits[i]->node_id = push_node_id(req->ali.agent_doc_hits[i]->node_id, this_node_id);
     }
     // url parameter, light search 결과를 분석하여 출력건수를 결정
     get_send_count(req);
@@ -811,7 +728,7 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s){
         // 4-3. node id - 32bit
 	    // light search 결과는 상위 agent에게 보고 되므로 자신의 node_id를 push
 	    req->ali.agent_doc_hits[i]->node_id = 
-	    push_node_id(req->ali.agent_doc_hits[i]->node_id);
+	    push_node_id(req->ali.agent_doc_hits[i]->node_id, this_node_id);
         ap_rwrite(&(req->ali.agent_doc_hits[i]->node_id), sizeof(uint32_t), r);
         // 4-4. docattr 전송
 	 	ap_rwrite(&(req->ali.agent_doc_hits[i]->docattr), sizeof(docattr_t), r);
@@ -927,7 +844,6 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s){
 }
 
 /////////////////////////////////////////////////////////////////////////
-
 static int get_table(char *name_space, void **tab)
 {
 	if ( strcmp(name_space, "agent") == 0 ){
@@ -940,7 +856,6 @@ static int get_table(char *name_space, void **tab)
 	return DECLINE;
 }
 
-//--------------------------------------------------------------//
 static void set_node_id(configValue v)
 {
     this_node_id = atoi(v.argument[0]);

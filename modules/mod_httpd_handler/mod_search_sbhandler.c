@@ -11,6 +11,7 @@
 #include "mod_standard_handler.h"
 #include "mod_httpd/http_protocol.h"
 #include "mod_api/http_client.h"
+#include "handler_util.h"
 
 extern void ap_set_content_type(request_rec * r, const char *ct);
 
@@ -35,55 +36,6 @@ static uint32_t this_node_id; // 하위 4bit만 쓴다.
 //--------------------------------------------------------------//
 //  *   custom function 
 //--------------------------------------------------------------//
-static char *replace_newline_to_space(char *str) {
-    char *ch;
-    ch = str;       
-    while ( (ch = strchr(ch, '\n')) != NULL ) {
-        *ch = ' ';
-    }
-    return str;
-}   
-
-static int def_atoi(const char *s, int def)
-{
-	if (s)
-		return atoi(s);
-	return def;
-}
-
-/*
- * 하위 4bit에 node_id를 push
- * push 된 node_id를 리턴
- */
-static uint32_t push_node_id(uint32_t node_id)
-{
-    // 상위 4bit에 내용이 있으면 더이상 depth를 늘릴수 없음.
-    if((node_id >> 28) > 0) {
-        error("depth overflower[%s]", sb_strbin(node_id, sizeof(uint32_t)));
-        return 0;
-    }
-
-    node_id = node_id << 4;
-    node_id |= this_node_id;
-
-    return node_id;
-}
-
-/*
- * 하위 4bit를 pop한다.
- * pop 된 node_id를 리턴.
- */
-static uint32_t pop_node_id(uint32_t node_id)
-{
-    return (node_id >> 4);
-}
-
-// 하위 4bit의 node_id 알아내기
-static uint32_t get_node_id(uint32_t node_id)
-{
-    return node_id & 0x0f;
-}
-
 static void init_agent_request(agent_request_t** req)
 {
 	int i = 0;
@@ -488,8 +440,8 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 
 	return SUCCESS;
 }
-/////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////////////////
 static void set_node_id(configValue v)
 {
     this_node_id = atoi(v.argument[0]);
