@@ -1,7 +1,6 @@
 #include "handler_util.h"
 #include "common_core.h"
 #include "common_util.h"
-#include "apr_pools.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
