@@ -44,7 +44,7 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_set_array, \
 	(list, listsize, func, mask), DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_get_index_list, \
-	(struct index_list_t *dest, struct index_list_t *sour, \
+	(struct sort_base_t *dest, struct sort_base_t *sour, \
 	 condfunc func, void *cond), \
 	(dest, sour, func, cond), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, docattr_set_index_list, \

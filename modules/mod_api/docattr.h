@@ -70,7 +70,7 @@ SB_DECLARE_HOOK(int,docattr_set_array, \
 	(uint32_t *list, int listsize, maskfunc func, void *mask))
 
 SB_DECLARE_HOOK(int,docattr_get_index_list, \
-	(index_list_t *dest, index_list_t *sour, \
+	(sort_base_t *dest, sort_base_t *sour, \
 	 condfunc func, void *cond))
 SB_DECLARE_HOOK(int,docattr_set_index_list, \
 	(index_list_t *list, maskfunc func, void *mask))

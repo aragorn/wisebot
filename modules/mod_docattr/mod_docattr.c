@@ -179,30 +179,58 @@ static int docattr_set_array(uint32_t *did_list, int listsize,
 	return TRUE;
 }
 
-static int docattr_get_index_list(index_list_t *dest, index_list_t *sour, 
+static int docattr_get_index_list(sort_base_t *sort_dest, sort_base_t *sort_sour, 
 		condfunc func, void *cond)
 {
 	int i, j, listsize;
 	void *ele=NULL;
 	int ret;
 
-	listsize = sour->ndochits;
-	for (i=0, j=0; i<listsize /*&& j<MAX_DOC_HITS_SIZE*/; i++) { 
-		// j<MAX_DOC_HITS_SIZE is apparent
-		ele = docattr_array + 
-			(sour->doc_hits[i].id-1) * DOCATTR_ELEMENT_SIZE;
+	if(sort_dest->type == INDEX_LIST) {
+		index_list_t* dest = (index_list_t*)sort_dest;
+		index_list_t* sour = (index_list_t*)sort_sour;
+	    debug("index list->ndochits:%u", dest->ndochits);
 
-		/* func returns zero when the element should be filtered out,
-		 * otherwise func returns non-zero value.
-		 */
-		ret = func(ele, cond, sour->doc_hits[i].id);
-		if ( ret == MINUS_DECLINE ) return TRUE;
-		else if ( ret ) { 
-			dest->doc_hits[j] = sour->doc_hits[i];
-			j++;
+	    listsize = sour->ndochits;
+		for (i=0, j=0; i<listsize /*&& j<MAX_DOC_HITS_SIZE*/; i++) { 
+			// j<MAX_DOC_HITS_SIZE is apparent
+			ele = docattr_array + 
+				(sour->doc_hits[i].id-1) * DOCATTR_ELEMENT_SIZE;
+
+			/* func returns zero when the element should be filtered out,
+			 * otherwise func returns non-zero value.
+			 */
+			ret = func(ele, cond, sour->doc_hits[i].id);
+			if ( ret == MINUS_DECLINE ) return TRUE;
+			else if ( ret ) { 
+				dest->doc_hits[j] = sour->doc_hits[i];
+				j++;
+			}
 		}
+	    dest->ndochits= j;
+	} else if(sort_dest->type == AGENT_INFO) {
+		agent_light_info_t* dest = (agent_light_info_t*)sort_dest;
+		agent_light_info_t* sour = (agent_light_info_t*)sort_sour;
+	    debug("agent list->ndochits:%u", dest->recv_cnt);
+
+	    listsize = sour->recv_cnt;
+		for (i=0, j=0; i<listsize /*&& j<MAX_DOC_HITS_SIZE*/; i++) { 
+			// j<MAX_DOC_HITS_SIZE is apparent
+			ele = &(sour->agent_doc_hits[i]->docattr);
+
+			/* func returns zero when the element should be filtered out,
+			 * otherwise func returns non-zero value.
+			 */
+			ret = func(ele, cond, sour->agent_doc_hits[i]->doc_hits.id);
+			if ( ret == MINUS_DECLINE ) return TRUE;
+			else if ( ret ) { 
+				dest->agent_doc_hits[j]->doc_hits = sour->agent_doc_hits[i]->doc_hits;
+				j++;
+			}
+		}
+	    dest->recv_cnt= j;
 	}
-	dest->ndochits= j;
+
 	// FIXME
 	// no need to set members of index_list_t? 
 	// such as type, prev, nex, header, op_not, nhits?

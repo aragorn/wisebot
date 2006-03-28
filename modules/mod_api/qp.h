@@ -90,6 +90,7 @@ struct agent_light_info_t {
 
 	char comments[COMMENT_LIST_SIZE][LONG_LONG_STRING_SIZE]; 
 	group_result_t group_result[MAX_GROUP_RESULT];
+	int group_result_count;
 };
 
 struct agent_request_t {

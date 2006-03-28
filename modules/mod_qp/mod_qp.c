@@ -2474,7 +2474,7 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 		return FAIL;
 
 	CRIT("before filter: %d", list->ndochits);
-	if (sb_run_docattr_get_index_list(list, list, SC_COMP, &cond) == -1) {  /* 문서 filitering */
+	if (sb_run_docattr_get_index_list((sort_base_t*)list, (sort_base_t*)list, SC_COMP, &cond) == -1) {  /* 문서 filitering */
 		return FAIL;
 	}
 
@@ -2498,7 +2498,7 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 
 	CRIT("before filter: %d", list->ndochits);
 
-	if (sb_run_docattr_get_index_list(list, list, SC_COMP2, &cond) == FAIL) {  /* 문서 filitering */
+	if (sb_run_docattr_get_index_list((sort_base_t*)list, (sort_base_t*)list, SC_COMP2, &cond) == FAIL) {  /* 문서 filitering */
 		return FAIL;
 	}
 
@@ -2511,22 +2511,28 @@ static int docattr_filter_sort(index_list_t *list, request_t *req)
 	return SUCCESS;
 }
 
-/* siouk 작업중 */
 static int agent_info_sort(agent_request_t* req)
 {
+	docattr_cond_t cond; // 의미없음.
+
 	// 정렬
 	CRIT("before sorting: %d", req->ali.recv_cnt);
 	req->ali.sort_base.type = AGENT_INFO;
 	if (docattr_sorting((sort_base_t*)&(req->ali), req->sh) == FAIL) {
 		return FAIL;
 	}	
-/*
-	list->group_result_count = MAX_GROUP_RESULT;
-	if (sb_run_docattr_set_group_result_function(
-				&cond, list->group_result, &list->group_result_count) == FAIL) {
+
+	if (sb_run_docattr_get_index_list((sort_base_t*)&(req->ali), 
+				                      (sort_base_t*)&(req->ali), SC_COMP2, &cond) == FAIL) {  /* 문서 filitering */
 		return FAIL;
 	}
-*/
+
+	req->ali.group_result_count = MAX_GROUP_RESULT;
+	if (sb_run_docattr_set_group_result_function(
+				&cond, req->ali.group_result, &req->ali.group_result_count) == FAIL) {
+		return FAIL;
+	}
+
 	return SUCCESS;
 }
 
