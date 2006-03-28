@@ -12,9 +12,12 @@ gen_test_char_SOURCES = gen_test_char.c
 gen_test_char_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
 
 pkglib_LTLIBRARIES = mod_httpd.la
-mod_httpd_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)
-mod_httpd_la_LIBADD = $(APR_LIBS) $(APU_LIBS) $(libdir)/libcommon_core.la $(libdir)/libcommon_util.la
-mod_httpd_la_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+mod_httpd_la_LDFLAGS = -module -avoid-version -no-undefined \
+                       $(APR_LDFLAGS) $(APU_LDFLAGS)
+mod_httpd_la_LIBADD  = $(libdir)/libcommon_core.la \
+                       $(libdir)/libcommon_util.la \
+                       $(APR_LIBS) $(APU_LIBS) 
+mod_httpd_la_CFLAGS  = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
 mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \
                        conf.h config.c \
                        connection.c connection.h \
