@@ -696,7 +696,7 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 		}
 	} else if(type == AGENT_INFO) {
 		// FIXME : pointer가 32bit로 간주되어 있다.
-		uint32_t ptr = *(uint32_t*)dest;
+		uintptr_t ptr = *(uintptr_t*)dest;
 
 		attr1 = &(((agent_doc_hits_t*)ptr)->docattr);
 	}
@@ -708,7 +708,7 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 		}
 	} else if(type == AGENT_INFO) {
 		// FIXME : pointer가 32bit로 간주되어 있다.
-		uint32_t ptr = *(uint32_t*)sour;
+		uintptr_t ptr = *(uintptr_t*)sour;
 
 		attr2 = &(((agent_doc_hits_t*)ptr)->docattr);
 	}
