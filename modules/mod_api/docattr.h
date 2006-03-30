@@ -97,5 +97,5 @@ SB_DECLARE_HOOK(int,docattr_set_docmask_function, \
 		(void *dest, char *key, char *value))
 
 SB_DECLARE_HOOK(int,docattr_modify_index_list, \
-		(int id, index_list_t *list))
+		(int id, sort_base_t *sort_base))
 #endif
