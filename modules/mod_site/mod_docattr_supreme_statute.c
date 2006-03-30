@@ -85,11 +85,12 @@ static int compare_rid(const void *dest, const void *sour)
 	else if (l1 == l2) return 0;
 	else return -1;
 }
-static int docattr_distinct_rid(int id, index_list_t *list)
+static int docattr_distinct_rid(int id, sort_base_t* sort_base)
 {
 	int i, abst;
 	supreme_statute_attr_t attr1, attr2;
 	unsigned long long rid1, rid2;
+	index_list_t *list = (index_list_t*)sort_base;
 
 	/* default filtering id */
 //	if (id != 0) return DECLINE;
