@@ -22,9 +22,6 @@ static int               docattr_field_count = 0;
 static docattr_field_t*  rid_field = NULL;
 static char              rid_field_name[SHORT_STRING_SIZE] = "";
 
-// 중복된 RID 허용 수.
-static int               allow_dup_rid_cnt = 0;
-
 // dummy, 실제 field가 아니다.
 #define HIT_FIELD_NAME   "<HIT>"
 #define HIT_FIELD        ((docattr_field_t*) 0x11)
@@ -537,31 +534,19 @@ static int get_docattr_function(void* dest, char* key, char* buf, int buflen)
 	return SUCCESS;
 }
 
-static int compare_rid_md5(const void* dest, const void* sour, void* userdata)
+static int compare_rid_md5(const void* dest, const void* sour)
 {
 	docattr_t *attr1, *attr2;
 	docattr_value_t value1, value2;
 
-	enum sortarraytype type = ((sort_base_t*) userdata)->type;
+	if ( sb_run_docattr_ptr_get( ((doc_hit_t*) dest)->id, &attr1 ) != SUCCESS ) {
+		error("cannot get docattr element");
+		return 0;
+	}
 
-	if(type == INDEX_LIST) {
-		if ( sb_run_docattr_ptr_get( ((doc_hit_t*) dest)->id, &attr1 ) != SUCCESS ) {
-			error("cannot get docattr element");
-			return 0;
-		}
-
-		if ( sb_run_docattr_ptr_get( ((doc_hit_t*) sour)->id, &attr2 ) != SUCCESS ) {
-			error("cannot get docattr element");
-			return 0;
-		}
-	} else if(type == AGENT_INFO) {
-		uintptr_t ptr = 0;
-
-		ptr = *(uintptr_t*)dest;
-		attr1 = &(((agent_doc_hits_t*)ptr)->docattr);
-
-		ptr = *(uintptr_t*)sour;
-		attr2 = &(((agent_doc_hits_t*)ptr)->docattr);
+	if ( sb_run_docattr_ptr_get( ((doc_hit_t*) sour)->id, &attr2 ) != SUCCESS ) {
+		error("cannot get docattr element");
+		return 0;
 	}
 
 	rid_field->get_func( attr1, rid_field, &value1 );
@@ -572,123 +557,65 @@ static int compare_rid_md5(const void* dest, const void* sour, void* userdata)
 	else return -1;
 }
 
-static int docattr_distinct_rid_md5(int id, sort_base_t* sort_base)
+static int docattr_distinct_rid_md5(int id, index_list_t* list)
 {
 	int i, abst;
 	docattr_t *attr1, *attr2;
 	docattr_value_t value1, value2;
 
-	enum sortarraytype type = sort_base->type;
+	qsort( list->doc_hits, list->ndochits, sizeof(doc_hit_t), compare_rid_md5);
 
-	if(type == INDEX_LIST) {
-		index_list_t* list = (index_list_t*)sort_base;
-		qsort2( list->doc_hits, list->ndochits, sizeof(doc_hit_t), sort_base, compare_rid_md5);
+	abst = 0;
 
-		abst = 0;
-
-		if ( sb_run_docattr_ptr_get( list->doc_hits[0].id, &attr1 ) != SUCCESS ) {
-			error("cannot get docattr element");
-			return FAIL;
-		}
-		rid_field->get_func( attr1, rid_field, &value2 );
-		debug("md5: " SB_PRIu64, value2.v.md5);
-
-		for ( i = 0; i < list->ndochits; ) {
-			int dup_rid_cnt = 0; //duplicated rid count
-			value1.v.md5 = value2.v.md5;
-
-			if ( abst != i ) {
-				memcpy( &(list->doc_hits[abst]), &(list->doc_hits[i]),
-						sizeof(doc_hit_t) );
-			}
-
-			for ( i++; i < list->ndochits; i++ ) {
-				if ( sb_run_docattr_ptr_get( list->doc_hits[i].id, &attr2 ) != SUCCESS ) {
-					error("cannot get docattr element");
-					return FAIL;
-				}
-				
-				rid_field->get_func( attr2, rid_field, &value2 );
-				debug("md5: " SB_PRIu64, value2.v.md5);
-
-				if ( value1.v.md5 == 0 || value2.v.md5 == 0 ) break;
-				if ( value1.v.md5 != value2.v.md5 ) break;
-
-				// 같으면 loop를 돈다.
-				dup_rid_cnt++;
-			}
-
-			abst += (allow_dup_rid_cnt >= dup_rid_cnt) ? dup_rid_cnt : allow_dup_rid_cnt;
-			debug("i[%d], dup_rid_cnt[%d], abst[%d]", i, dup_rid_cnt, abst);
-		}
-
-		list->ndochits = abst;
-	} else if(type == AGENT_INFO) {
-		agent_light_info_t* info = (agent_light_info_t*)sort_base;
-		qsort2( info->agent_doc_hits, info->recv_cnt, sizeof(agent_doc_hits_t*), sort_base, compare_rid_md5);
-
-		abst = 0;
-
-		attr1 = &(info->agent_doc_hits[0]->docattr);
-
-		rid_field->get_func( attr1, rid_field, &value2 );
-		info("md5: " SB_PRIu64, value2.v.md5);
-
-		for ( i = 0; i < info->recv_cnt; ) {
-			int dup_rid_cnt = 0; //duplicated rid count
-			value1.v.md5 = value2.v.md5;
-
-			if ( abst != i ) {
-				info->agent_doc_hits[abst] = info->agent_doc_hits[i];
-			}
-
-			for ( i++; i < info->recv_cnt; i++ ) {
-		        attr2 = &(info->agent_doc_hits[i]->docattr);
-				
-				rid_field->get_func( attr2, rid_field, &value2 );
-				info("md5: " SB_PRIu64, value2.v.md5);
-
-				if ( value1.v.md5 == 0 || value2.v.md5 == 0 ) break;
-				if ( value1.v.md5 != value2.v.md5 ) break;
-
-				// 같으면 loop를 돈다.
-				dup_rid_cnt++;
-			}
-
-			abst += (allow_dup_rid_cnt >= dup_rid_cnt) ? dup_rid_cnt : allow_dup_rid_cnt;
-		}
-
-		info->recv_cnt = abst;
+	if ( sb_run_docattr_ptr_get( list->doc_hits[0].id, &attr1 ) != SUCCESS ) {
+		error("cannot get docattr element");
+		return FAIL;
 	}
+	rid_field->get_func( attr1, rid_field, &value2 );
+	info("md5: " SB_PRIu64, value2.v.md5);
+
+	for ( i = 0; i < list->ndochits; ) {
+		value1.v.md5 = value2.v.md5;
+
+		if ( abst != i ) {
+			memcpy( &(list->doc_hits[abst]), &(list->doc_hits[i]),
+					sizeof(doc_hit_t) );
+		}
+
+		for ( i++; i < list->ndochits; i++ ) {
+			if ( sb_run_docattr_ptr_get( list->doc_hits[i].id, &attr2 ) != SUCCESS ) {
+				error("cannot get docattr element");
+				return FAIL;
+			}
+			
+			rid_field->get_func( attr2, rid_field, &value2 );
+			info("md5: " SB_PRIu64, value2.v.md5);
+
+			if ( value1.v.md5 == 0 || value2.v.md5 == 0 ) break;
+			if ( value1.v.md5 != value2.v.md5 ) break;
+		}
+
+		abst++;
+	}
+
+	list->ndochits = abst;
 
 	return SUCCESS;
 }
 
-static int compare_rid_general(const void* dest, const void* sour, void* userdata)
+static int compare_rid_general(const void* dest, const void* sour)
 {
 	docattr_t *attr1, *attr2;
 	docattr_value_t value1, value2;
 
-	enum sortarraytype type = ((sort_base_t*) userdata)->type;
+	if ( sb_run_docattr_ptr_get( ((doc_hit_t*) dest)->id, &attr1 ) != SUCCESS ) {
+		error("cannot get docattr element");
+		return 0;
+	}
 
-	if(type == INDEX_LIST) {
-		if ( sb_run_docattr_ptr_get( ((doc_hit_t*) dest)->id, &attr1 ) != SUCCESS ) {
-			error("cannot get docattr element");
-			return 0;
-		}
-
-		if ( sb_run_docattr_ptr_get( ((doc_hit_t*) sour)->id, &attr2 ) != SUCCESS ) {
-			error("cannot get docattr element");
-			return 0;
-		}
-	} else if(type == AGENT_INFO) {
-		uintptr_t ptr = 0;
-
-		ptr = *(uintptr_t*)dest;
-		attr1 = &(((agent_doc_hits_t*)ptr)->docattr);
-
-		ptr = *(uintptr_t*)sour;
-		attr2 = &(((agent_doc_hits_t*)ptr)->docattr);
+	if ( sb_run_docattr_ptr_get( ((doc_hit_t*) sour)->id, &attr2 ) != SUCCESS ) {
+		error("cannot get docattr element");
+		return 0;
 	}
 
 	rid_field->get_func( attr1, rid_field, &value1 );
@@ -698,102 +625,50 @@ static int compare_rid_general(const void* dest, const void* sour, void* userdat
 }
 
 // value.string 은 attr 내부를 가리키고 있으므로 조심
-static int docattr_distinct_rid_general(int id, sort_base_t* sort_base)
+static int docattr_distinct_rid_general(int id, index_list_t* list)
 {
 	int i, abst;
 	docattr_t *attr1, *attr2;
 	docattr_value_t value1, value2;
 
-	enum sortarraytype type = sort_base->type;
+	qsort( list->doc_hits, list->ndochits, sizeof(doc_hit_t), compare_rid_general);
 
-	if(type == INDEX_LIST) {
-		index_list_t* list = (index_list_t*)sort_base;
-		qsort2( list->doc_hits, list->ndochits, sizeof(doc_hit_t), sort_base, compare_rid_general);
+	abst = 0;
 
-		abst = 0;
-
-		if ( sb_run_docattr_ptr_get( list->doc_hits[0].id, &attr1 ) != SUCCESS ) {
-			error("cannot get docattr element");
-			return FAIL;
-		}
-		rid_field->get_func( attr1, rid_field, &value2 );
-
-		for ( i = 0; i < list->ndochits; ) {
-			int dup_rid_cnt = 0; //duplicated rid count
-			value1 = value2;
-
-			if ( abst != i ) {
-				memcpy( &(list->doc_hits[abst]), &(list->doc_hits[i]),
-						sizeof(doc_hit_t) );
-			}
-
-			for ( i++; i < list->ndochits; i++ ) {
-				if ( sb_run_docattr_ptr_get( list->doc_hits[i].id, &attr2 ) != SUCCESS ) {
-					error("cannot get docattr element");
-					return FAIL;
-				}
-				
-				rid_field->get_func( attr2, rid_field, &value2 );
-				if(rid_field->value_type == VALUE_INTEGER) {
-				    info("value: %ld", value2.v.integer);
-				} else {
-				    info("value: %s", value2.v.string);
-				}
-
-				if ( rid_field->compare_func( &value1, &value_zero ) == 0
-						|| rid_field->compare_func( &value2, &value_zero ) == 0 ) break;
-				if ( rid_field->compare_func( &value1, &value2 ) != 0 ) break;
-
-
-				// 같으면 loop를 돈다.
-				dup_rid_cnt++;
-			}
-
-			abst += (allow_dup_rid_cnt >= dup_rid_cnt) ? dup_rid_cnt : allow_dup_rid_cnt;
-			debug("i[%d], dup_rid_cnt[%d], abst[%d]", i, dup_rid_cnt, abst);
-		}
-
-		list->ndochits = abst;
-	} else if(type == AGENT_INFO) {
-		agent_light_info_t* info = (agent_light_info_t*)sort_base;
-		qsort2( info->agent_doc_hits, info->recv_cnt, sizeof(agent_doc_hits_t*), sort_base, compare_rid_general);
-
-		abst = 0;
-
-		attr1 = &(info->agent_doc_hits[0]->docattr);
-
-		rid_field->get_func( attr1, rid_field, &value2 );
-
-		for ( i = 0; i < info->recv_cnt; ) {
-			int dup_rid_cnt = 0; //duplicated rid count
-			value1 = value2;
-
-			if ( abst != i ) {
-				info->agent_doc_hits[abst] = info->agent_doc_hits[i];
-			}
-
-			for ( i++; i < info->recv_cnt; i++ ) {
-		        attr2 = &(info->agent_doc_hits[i]->docattr);
-				
-				rid_field->get_func( attr2, rid_field, &value2 );
-
-				if ( rid_field->compare_func( &value1, &value_zero ) == 0
-						|| rid_field->compare_func( &value2, &value_zero ) == 0 ) break;
-				if ( rid_field->compare_func( &value1, &value2 ) != 0 ) break;
-
-				info("same value: %s, %s", value1.v.string, value2.v.string);
-
-				// 같으면 loop를 돈다.
-				dup_rid_cnt++;
-			}
-
-			info("abst inc");
-			abst += (allow_dup_rid_cnt >= dup_rid_cnt) ? dup_rid_cnt : allow_dup_rid_cnt;
-		}
-
-		info->recv_cnt = abst;
-
+	if ( sb_run_docattr_ptr_get( list->doc_hits[0].id, &attr1 ) != SUCCESS ) {
+		error("cannot get docattr element");
+		return FAIL;
 	}
+	rid_field->get_func( attr1, rid_field, &value2 );
+
+	for ( i = 0; i < list->ndochits; ) {
+		value1 = value2;
+
+		if ( abst != i ) {
+			memcpy( &(list->doc_hits[abst]), &(list->doc_hits[i]),
+					sizeof(doc_hit_t) );
+		}
+
+		for ( i++; i < list->ndochits; i++ ) {
+			if ( sb_run_docattr_ptr_get( list->doc_hits[i].id, &attr2 ) != SUCCESS ) {
+				error("cannot get docattr element");
+				return FAIL;
+			}
+			
+			rid_field->get_func( attr2, rid_field, &value2 );
+
+			if ( rid_field->compare_func( &value1, &value_zero ) == 0
+					|| rid_field->compare_func( &value2, &value_zero ) == 0 ) break;
+			if ( rid_field->compare_func( &value1, &value2 ) != 0 ) break;
+
+			info("same value: %s, %s", value1.v.string, value2.v.string);
+		}
+
+		info("abst inc");
+		abst++;
+	}
+
+	list->ndochits = abst;
 
 	return SUCCESS;
 }
@@ -819,18 +694,22 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 			error("cannot get docattr element");
 			return 0;
 		}
+	} else if(type == AGENT_INFO) {
+		// FIXME : pointer가 32bit로 간주되어 있다.
+		uintptr_t ptr = *(uintptr_t*)dest;
 
+		attr1 = &(((agent_doc_hits_t*)ptr)->docattr);
+	}
+
+	if(type == INDEX_LIST) {
 		if ( sb_run_docattr_ptr_get(((doc_hit_t*) sour)->id, &attr2) != SUCCESS ) {
 			error("cannot get docattr element");
 			return 0;
 		}
 	} else if(type == AGENT_INFO) {
-		uintptr_t ptr = 0;
+		// FIXME : pointer가 32bit로 간주되어 있다.
+		uintptr_t ptr = *(uintptr_t*)sour;
 
-		ptr = *(uintptr_t*)dest;
-		attr1 = &(((agent_doc_hits_t*)ptr)->docattr);
-
-		ptr = *(uintptr_t*)sour;
 		attr2 = &(((agent_doc_hits_t*)ptr)->docattr);
 	}
 
@@ -1424,20 +1303,12 @@ static void get_field_sorting_order(configValue v)
 	strcpy( local_general_sort[index].string, v.argument[1] );
 }
 
-static void get_allow_dup_rid_cnt(configValue v)
-{
-	allow_dup_rid_cnt = atoi(v.argument[0]);
-
-	info("AllowDuplicateRidCnt[%d]", allow_dup_rid_cnt);
-}
-
 static config_t config[] = {
 	CONFIG_GET("DocAttrField", get_docattr_field, 2, "docattr field : name type"),
 	CONFIG_GET("RidField", get_rid_field, 1, "rid field name"),
 	CONFIG_GET("Enum", get_enum, 2, "constant"),
 	CONFIG_GET("FieldSortingOrder", get_field_sorting_order, 2,
 			"FieldSortingOrder index field:(asc|desc);..."),
-	CONFIG_GET("AllowDuplicateRidCnt", get_allow_dup_rid_cnt, 1, "allow duplicate rid count"),
 	{NULL}
 };
 
