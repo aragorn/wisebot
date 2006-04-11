@@ -82,6 +82,6 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int,docattr_set_docmask_function, \
 	(dest, key, value), DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_ALL(int,docattr_modify_index_list, \
-	(int id, struct sort_base_t *sort_base), \
-	(id, sort_base), SUCCESS, DECLINE)
+	(int id, struct index_list_t *list), \
+	(id, list), SUCCESS, DECLINE)
 
