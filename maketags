@@ -6,10 +6,10 @@ dir=`pwd`
 reldir=`basename $dir`
 if [ "$reldir" = "wisebot" ]
 then
-	ctags -R --exclude=Makefile server client modules include platform util
+	ctags -R --exclude=Makefile server client modules include platform util common
 	#ctags-exuberant -R
 	echo "set tags="$dir"/tags" >> .vimrc
-	find . -type d | egrep -v --regex="CVS|\.libs|\.deps" | egrep --regex="include|server|modules|platform|srclib|client|util" | awk '{ print "cp .vimrc " $1"/" }' | sh
+	find . -type d | egrep -v --regex="CVS|\.libs|\.deps" | egrep --regex="include|server|modules|platform|srclib|client|util|common" | awk '{ print "cp .vimrc " $1"/" }' | sh
 else
 	echo "you must run this script in project root directory"
 fi
