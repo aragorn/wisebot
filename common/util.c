@@ -2,6 +2,7 @@
 #define CORE_PRIVATE 1
 #include "common_core.h"
 #include "util.h"
+#include <string.h>
 
 const char *sb_get_server_version(void)
 {
@@ -37,3 +38,45 @@ char* sb_strbin(uint32_t number, int size)
 }
 
 
+char* sb_trim(char* s)
+{
+    return sb_right_trim(sb_left_trim(s));
+}
+
+char* sb_left_trim(char* s)
+{
+    int i = 0;
+    int len = 0;
+
+    if(s == NULL) return s;
+
+    len = strlen(s);
+
+    for(i = 0; i < len; i++) {
+        if(*s == ' ' || *s == '\n' ||
+           *s == '\r' || *s == '\t')
+            s++;
+        else break;
+    }
+
+    return s;
+}
+
+char* sb_right_trim(char* s)
+{
+    int i = 0;
+    int len = 0;
+
+    if(s == NULL) return s;
+
+    len = strlen(s);
+
+    for(i = len-1; i >= 0; i--) {
+        if(*(s+i) == ' ' || *(s+i) == '\n' ||
+           *(s+i) == '\r' || *(s+i) == '\t')
+            *(s+i) = '\0';
+        else break;
+    }
+
+    return s;
+}
