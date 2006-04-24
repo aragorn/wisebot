@@ -1992,9 +1992,11 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
 	comment[0]='\0'; /* ready for strcat */
 	sizeleft = LONG_LONG_STRING_SIZE-1;
 
-	//for (k = 0; k < field_count; k++) {
 	for (i = 0; i < sl->cnt; i++) {
-        if(sl->field_name[i][0] == '*' || is_exist_return_field(sl->field_name[i], &k) == TRUE) {
+		if(sl->field_name[0][0] == '*') {
+			if(k < field_count)
+				k++;
+		} else if(is_exist_return_field(sl->field_name[i], &k) == TRUE) {
             // select 항목에 존재하고 NONE이 아닐경우에만 추출한다.
 			if(field_info[k].type == NONE) { // enum field_type 참조.
 				continue;
@@ -3132,7 +3134,14 @@ static int private_init(void)
 		error("word db open failed");
 		return FAIL;
 	}
-    	
+    		
+	// cdm db open
+	ret = sb_run_server_canneddoc_init();
+	if ( ret != SUCCESS && ret != DECLINE ) {
+		error("cdm db open failed");
+		return FAIL;
+	}
+
 	if(g_vdl == NULL) {
 		g_vdl = (virtual_document_list_t*)sb_malloc(sizeof(virtual_document_list_t));
 		g_vdl->data = (virtual_document_t*)sb_malloc(sizeof(virtual_document_t)*MAX_DOC_HITS_SIZE);
