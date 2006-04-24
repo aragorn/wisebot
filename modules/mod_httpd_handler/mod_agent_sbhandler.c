@@ -1,3 +1,4 @@
+#if 0
 #include <stdlib.h> 
 #include "common_core.h"
 #include "common_util.h"
@@ -10,8 +11,7 @@
 #include "mod_httpd/http_util.h"
 #include "mod_api/httpd.h"
 #include "mod_api/indexer.h"
-#include "mod_api/qp.h"
-#include "mod_qp/mod_qp.h"
+#include "mod_api/qp2.h"
 #include "mod_api/http_client.h"
 #include "handler_util.h"
 
@@ -631,6 +631,15 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 	    timelog("agent_abstractsearch_finish");
 	}
 
+	// rid를 사용해서 중복 문서 삭제
+	/*
+	CRIT("before modify: %d, filtering_id: %d", list->ndochits, req->filtering_id);
+	rv = sb_run_docattr_modify_index_list(req->filtering_id, list);
+	if (rv == FAIL) {
+		return FAIL;
+	}
+	*/
+
 	ap_set_content_type(r, "text/xml; charset=euc-kr");
 	ap_rprintf(r,
 			"<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n");
@@ -926,3 +935,4 @@ module agent_sbhandler_module = {
 	NULL,                     /* scoreboard        */
 	register_hooks            /* register hook api */
 };
+#endif
