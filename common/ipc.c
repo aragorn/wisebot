@@ -270,17 +270,22 @@ int add_semid_to_allocated_ipcs(int semid)
 int _alloc_shm(ipc_t *ipc,const char* file,const char* caller)
 {
 	static int counter = 0, size=0;
-	int created=1;
+	int created=1, retry_limit=10;
 	char path[STRING_SIZE];
+
+	if ( ipc->size == 0 ) {
+		error("invalid size: %d (from file:%s, caller:%s)", ipc->size, file, caller);
+		return FAIL;
+	}
 
 	counter++;
 	size += ipc->size;
 
-        if(ipc->pathname != NULL) {
+    if(ipc->pathname != NULL) {
 	   info("counter:%d, size:%d, pathname:%s", counter, size, ipc->pathname);
-        } else {
+    } else {
 	   info("counter:%d, size:%d, pathname:%s", counter, size, "");
-        }
+    }
 
 	if ( ipc->pathname == NULL ) {
 		ipc->key = IPC_PRIVATE;
@@ -366,21 +371,15 @@ RETRY:
 				file, caller, strerror(errno), errno);
 		crit("HINT: check the maximum size for shared memory segment, "
 			 "SHMMAX value of the kernel.");
+		info("    caller: %s, file: %s", caller, file);
 		info("    path: %s", ipc->pathname);
 		info("    key: "KEY_T_FORMAT, ipc->key);
 		info("    size: %d", ipc->size);
-
-		info("errno:%d", errno);
-		info("EINVAL:%d", EINVAL);
-		info("EEXIST:%d", EEXIST);
-		info("EIDRM:%d", EIDRM);
-		info("ENOSPC:%d", ENOSPC);
-		info("ENOENT:%d", ENOENT);
-		info("EACCES:%d", EACCES);
-		info("ENOMEM:%d", ENOMEM);
 		
 		ipc->key++;
-		goto RETRY;
+
+		retry_limit--;
+		if ( retry_limit ) goto RETRY;
 
 		return FAIL;
 	}

@@ -27,7 +27,11 @@ static void alloc_shm_for_registry(int size) {
 	 * see ipc.c->alloc_shm() */
 	registry_shm.pid = SYS5_REGISTRY;
 	registry_shm.size = size;
-	if ( alloc_shm(&registry_shm) != SUCCESS ) {
+	if ( size == 0 ) {
+		warn("registry size is 0");
+		registry_shm.addr = NULL;
+	}
+	else if ( alloc_shm(&registry_shm) != SUCCESS ) {
 		exit(1);
 	}
 

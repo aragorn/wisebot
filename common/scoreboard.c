@@ -65,7 +65,11 @@ static void alloc_shm_for_scoreboard(int size)
 	g_scoreboard_shm.pid = SYS5_SCOREBOARD;
 	g_scoreboard_shm.size = size;
 
-	if ( alloc_shm(&g_scoreboard_shm) != SUCCESS ) {
+	if ( size == 0 ) {
+		warn("invalid scoreboard size: %d", size);
+		g_scoreboard_shm.addr = NULL;
+	}
+	else if ( alloc_shm(&g_scoreboard_shm) != SUCCESS ) {
 		// it's critical if error occured while getting shared memory.
 		// so we exit.
 		crit("error while allocating shm for scoreboard");
