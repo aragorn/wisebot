@@ -61,11 +61,13 @@ enum requesttype {
 	NO_HANDLER
 };
 
+enum doc_type { DOCUMENT, VIRTUAL_DOCUMENT, };
 enum key_type { DOCATTR, DID, RELEVANCY, };
 enum sortarraytype { INDEX_LIST, AGENT_INFO, };
-enum order_type { DESC=-1, ASC=0, };
+enum order_type { DESC=-1, ASC=1, };
 enum clause_type { UNKNOWN = -1, SELECT, SEARCH, VIRTUAL_ID,
-    WHERE, GROUP_BY, ORDER_BY, LIMIT, MAX_CLAUSE_TYPE};
+    WHERE, GROUP_BY, ORDER_BY, LIMIT, 
+	START_DID_RULE, END_DID_RULE, MAX_CLAUSE_TYPE};
 
 struct virtual_document_t {
     uint32_t id;
@@ -108,13 +110,13 @@ struct orderby_rule_list_t {
 	orderby_rule_t list[MAX_SORT_RULE];
 };
 
-#define MAX_GROUP_RULE (32)
+#define MAX_GROUP_RULE (8)
 struct groupby_rule_list_t {
     int cnt;
     groupby_rule_t list[MAX_GROUP_RULE];
 }; 
 
-#define MAX_CARDINALITY (128)
+#define MAX_CARDINALITY (256)
 struct groupby_result_list_t {
     groupby_rule_list_t rules;
     int result[MAX_GROUP_RULE][MAX_CARDINALITY];
@@ -147,12 +149,14 @@ struct request_t {
 	char query[MAX_QUERY_STRING_SIZE];
     char search[MAX_QUERY_STRING_SIZE];
     select_list_t select_list;
-	operation_list_t op_list;
+	operation_list_t op_list_vid;
+	operation_list_t op_list_did;
 	key_rule_t virtual_rule;
 };
 
 struct response_t {
-    groupby_result_list_t groupby_result;
+    groupby_result_list_t groupby_result_vid;
+    groupby_result_list_t groupby_result_did;
 	virtual_document_list_t* vdl;
 	char word_list[STRING_SIZE];
     char comments[COMMENT_LIST_SIZE][LONG_LONG_STRING_SIZE];
@@ -183,7 +187,7 @@ SB_DECLARE_HOOK(int, qp_init_response,(response_t* res))
 SB_DECLARE_HOOK(int, qp_light_search, (request_t *req, response_t *res))
 SB_DECLARE_HOOK(int, qp_full_search, (request_t *req, response_t *res))
 SB_DECLARE_HOOK(int, qp_abstract_search, (request_t *r, response_t *res))
-SB_DECLARE_HOOK(int, qp_do_filter_operate, (request_t *r, response_t *res))
+SB_DECLARE_HOOK(int, qp_do_filter_operate, (request_t *r, response_t *res, enum doc_type type))
 SB_DECLARE_HOOK(int, qp_finalize_search, (request_t *r, response_t *res))
 
 SB_DECLARE_HOOK(int, qp_cb_orderby_virtual_document, (const void *dest, const void *sour, void *userdata))

@@ -22,7 +22,8 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_init_response, (response_t * res), (res), DE
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_light_search, (request_t *req, response_t *res), (req,res), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_full_search, (request_t *req, response_t *res), (req,res), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_abstract_search, (request_t *req, response_t *res), (req,res), DECLINE)
-SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_do_filter_operate, (request_t *req, response_t *res), (req,res), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_do_filter_operate, \
+		(request_t *req, response_t *res, enum doc_type type), (req,res,type), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_finalize_search, (request_t *req, response_t *res), (req,res), DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_cb_orderby_virtual_document, \
