@@ -112,10 +112,13 @@ static char* clause_type_str[] = {
     "GROUP_BY",
     "ORDER_BY",
     "LIMIT",
+	"(",
+	")",
 };
 
 static char* key_type_str[] = { "DOCATTR", "DID", "RELEVANCY", };
-static char* order_type_str[] = { "DESC", "ASC", };
+static char* order_type_str[] = { "DESC", "", "ASC", }; // DESC:-1, ASC:1
+static char* doc_type_str[] = { "DOCUMENT", "VIRTUAL_DOCUMENT", };
 
 // function protoype
 static int	get_start_comment(char *pszStr, int lPosition);
@@ -129,24 +132,27 @@ static int make_groupby_rule(char* clause, groupby_rule_t* rule);
 static int make_groupby_rule_list(char* clause, groupby_rule_list_t* rules);
 static int make_limit_rule(char* clause, limit_t* rule);
 static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules);
-// docattr_index_list_sortby 참조.
-static int virtual_document_orderby(orderby_rule_list_t* rules);
 
-// docattr_get_index_list 참조.
+// document type별 operation
+static int virtual_document_orderby(orderby_rule_list_t* rules);
 static int virtual_document_where();
 
-// 동시처리를 위한 특별 함수.
+// document operation
 static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
                                      orderby_rule_list_t* orderby_rules,
-                                     groupby_result_list_t* result);
-static int operation_orderby(orderby_rule_list_t* rules);
-static int operation_where(char* cond);
-static int operation_limit(limit_t* rule);
+                                     groupby_result_list_t* result,
+									 enum doc_type doc_type);
+static int operation_orderby(orderby_rule_list_t* rules, enum doc_type doc_type);
+static int operation_where(char* where, enum doc_type doc_type);
+static int operation_limit(limit_t* rule, enum doc_type doc_type);
 
-static int grouping(groupby_result_list_t* result);
+static int grouping(groupby_result_list_t* result, enum doc_type doc_type);
+static int group_count(virtual_document_t* vd, groupby_result_list_t* result, int* is_remove, enum doc_type doc_type);
+//////////////////////////////////////////////////////////////////////////
+
 
 static int virtual_document_fill_comment(request_t* req, response_t* res);
-static int do_filter_operation(request_t* req, response_t* res);
+static int do_filter_operation(request_t* req, response_t* res, enum doc_type doc_type);
 
 static void print_orderby(orderby_rule_t* rule);
 static void print_limit(limit_t* rule);
@@ -1969,7 +1975,7 @@ static int is_exist_return_field(char* field_name, int* idx)
 
 static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment) 
 {
-	int i = 0, k = 0;
+	int i = 0, k = -1;
 	//XXX: result_list->doc_hit index and other index differs.
 	DocObject *docBody = 0x00; 
 	char *field_value = 0x00; 
@@ -1992,10 +1998,14 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
 	comment[0]='\0'; /* ready for strcat */
 	sizeleft = LONG_LONG_STRING_SIZE-1;
 
+	if(sl->field_name[0][0] == '*')
+		sl->cnt = field_count;
+
 	for (i = 0; i < sl->cnt; i++) {
 		if(sl->field_name[0][0] == '*') {
-			if(k < field_count)
+			if(k < field_count) {
 				k++;
+			}
 		} else if(is_exist_return_field(sl->field_name[i], &k) == TRUE) {
             // select 항목에 존재하고 NONE이 아닐경우에만 추출한다.
 			if(field_info[k].type == NONE) { // enum field_type 참조.
@@ -2275,6 +2285,11 @@ static void set_virtual_id(key_rule_t* rule, char* clause)
 
 static int add_operation(operation_list_t* op_list, char* clause, int clause_type)
 {
+	if(op_list->cnt >= MAX_OPERATION) {
+        error("cant not add operation. operation overflow. max[%d]", MAX_OPERATION);
+		return FAIL;
+	}
+
     op_list->list[op_list->cnt].type = clause_type;
     strncpy(op_list->list[op_list->cnt].clause, clause, SHORT_STRING_SIZE);
 
@@ -2305,6 +2320,7 @@ static int init_request(request_t* req, char* query)
 {
     char* s = NULL;
     char* e = NULL;
+	int did_rule_status = 0;
 
 	if(query == NULL) {
         error("no query string"); 
@@ -2352,7 +2368,22 @@ static int init_request(request_t* req, char* query)
 				case GROUP_BY:
 				case ORDER_BY:
 				case LIMIT:
-				    add_operation(&req->op_list, s+len, clause_type);
+					{
+                        operation_list_t* op_list = NULL;
+						if(did_rule_status) {
+							op_list = &req->op_list_did;
+						} else {
+							op_list = &req->op_list_vid;
+						}
+
+						add_operation(op_list, s+len, clause_type);
+						break;
+					}
+				case START_DID_RULE:
+					did_rule_status = 1;
+					break;
+				case END_DID_RULE:
+					did_rule_status = 0;
 					break;
 				default:
                     warn("clause started by unknown symbol[%s]", s);
@@ -2440,10 +2471,12 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
 
     for (i=0; i<list->ndochits; i++) {
         virtual_document_t* vd = &(g_vdl->data[g_vdl->cnt]);
+		/* virtual_document를 초기화 하고 만들어야 한다 일괄초기화를 피하기 위해. */
+		memset(vd, 0x00, sizeof(virtual_document_t));
 
 		vd->docattr = g_docattr_base_ptr + 
 					  g_docattr_record_size*(list->doc_hits[i].id - 1); // did는 1 base임.
-		vd->relevancy += list->relevancy[i];
+		vd->relevancy += list->doc_hits[i].hitratio;
 		vd->dochits = &list->doc_hits[i];
 		vd->dochit_cnt++;
 
@@ -2456,6 +2489,7 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
 		} else { // virtual_document의 key는 RELEVANCY가 될수 없다.
 			virtual_id = list->doc_hits[i].id;
 		}
+		vd->id = virtual_id;
 
         for (i++; i < list->ndochits; i++) {
 			docattr_t* docattr = g_docattr_base_ptr + 
@@ -2472,7 +2506,7 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
 			}
 
 		    if(virtual_id == next_virtual_id) {
-				vd->relevancy += list->relevancy[i];
+				vd->relevancy += list->doc_hits[i].hitratio;
 				vd->dochit_cnt++;
             } else {
                 break;
@@ -2669,7 +2703,7 @@ static int virtual_document_where()
     return SUCCESS;
 }
 
-static int operation_orderby(orderby_rule_list_t* rules)
+static int operation_orderby(orderby_rule_list_t* rules, enum doc_type doc_type)
 {
     int rv = 0;
 
@@ -2682,7 +2716,7 @@ static int operation_orderby(orderby_rule_list_t* rules)
 	return SUCCESS;
 }
 
-static int operation_where(char* where)
+static int operation_where(char* where, enum doc_type doc_type)
 {
     int rv = 0;
 
@@ -2700,7 +2734,8 @@ static int operation_where(char* where)
 
 static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
                                      orderby_rule_list_t* orderby_rules,
-                                     groupby_result_list_t* result)
+                                     groupby_result_list_t* result,
+									 enum doc_type doc_type)
 {
     int i = 0;
     int rv = 0;
@@ -2724,7 +2759,7 @@ static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
 		return FAIL;
 	}
 
-    rv = grouping(result);
+    rv = grouping(result, doc_type);
 	if(rv != SUCCESS) {
 		error("can not grouping");
 		return FAIL;
@@ -2733,32 +2768,7 @@ static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
     return SUCCESS;
 }
 
-static int operation_groupby(groupby_rule_list_t* rules, groupby_result_list_t* result)
-{
-    int i = 0;
-    int j = 0;
-    int rv = 0;
-    orderby_rule_list_t orderby_rules;
-
-	for(i = 0, j = 0; i < rules->cnt; i++, j++) {
-        orderby_rules.list[j] = rules->list[i].sort;
-	}
-
-    rv = virtual_document_orderby(&orderby_rules); 
-	if(rv != SUCCESS) {
-        error("can not orderby virtual_document");
-		return FAIL;
-	}
-	
-    if(grouping(result) != SUCCESS) {
-		error("can not grouping");
-		return FAIL;
-	}
-
-    return SUCCESS;
-}
-
-static int operation_limit(limit_t* rule)
+static int operation_limit(limit_t* rule, enum doc_type doc_type)
 {
     int i = 0;
     int j = 0;
@@ -2774,38 +2784,72 @@ static int operation_limit(limit_t* rule)
     return SUCCESS;
 }
 
-static int grouping(groupby_result_list_t* result)
+static int group_count(virtual_document_t* vd, groupby_result_list_t* result, int* is_remove, enum doc_type doc_type)
 {
-	int i = 0;
 	int j = 0;
 	uint32_t value = 0;
-	virtual_document_t* vd = NULL;
-	key_rule_t* rule;
+	key_rule_t* rule = NULL;
+	limit_t* limit = NULL;
     groupby_rule_list_t* rules = NULL;
 
-    rules = &result->rules;
-    if(rules->cnt == 0) 
+	rules = &result->rules;
+
+	for(j = 0; j < rules->cnt; j++) {
+		rule = &rules->list[j].sort.rule;
+		limit = &rules->list[j].limit;
+
+		if (sb_run_docattr_get_field_integer_function(vd->docattr, rule->name, &value) == -1) {
+			error("cannot get value of [%s] field", rule->name);
+			return FAIL;
+		}
+
+		if(value > MAX_CARDINALITY) {
+			error("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d]",
+				 rule->name, value, MAX_CARDINALITY);
+			return FAIL;
+		}
+
+		if(limit->start == -1 || limit->cnt == -1) {
+			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
+		} else if(result->result[j][value] < limit->start ||
+				result->result[j][value] > (limit->start + limit->cnt -1)) {
+			*is_remove = (*is_remove == 0) ? 1 : *is_remove;
+		} else {
+			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
+		}
+
+		result->result[j][value]++;
+	}
+
+	return SUCCESS;
+}
+
+static int grouping(groupby_result_list_t* result, enum doc_type doc_type)
+{
+	int i = 0;
+	int save_pos = 0;
+	int is_remove = 0;
+	virtual_document_t* vd = NULL;
+
+    if(result->rules.cnt == 0) 
 		return SUCCESS; 
 
 	for(i = 0; i < g_vdl->cnt; i++) {
-	    for(j = 0; j < rules->cnt; j++) {
-		    rule = &rules->list[j].sort.rule;
+		vd = &(g_vdl->data[i]);
+		is_remove = 0;
 
-			vd = &(g_vdl->data[i]);
+		if(group_count(vd, result, &is_remove, doc_type) != SUCCESS) {
+			error("can not count group");
+			return FAIL;
+		}
 
-			if (sb_run_docattr_get_field_integer_function(vd->docattr, rule->name, &value) == -1) {
-				error("cannot get value of [%s] field", rule->name);
-				return FAIL;
-			}
-
-            if(value > MAX_CARDINALITY) {
-                warn("group value[%d] is over MAX_CARDINALITY[%d]",
-                     value, MAX_CARDINALITY);
-                continue;
-            }
-            result->result[j][value]++;
-        }
+		if(is_remove == 0) {
+			memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
+			save_pos++;
+		}
 	}
+
+	g_vdl->cnt = save_pos;
 
 	return SUCCESS;
 }
@@ -2838,7 +2882,7 @@ static void print_groupby(groupby_rule_t* rule)
 	print_limit(&rule->limit);
 }
 
-static int do_filter_operation(request_t* req, response_t* res)
+static int do_filter_operation(request_t* req, response_t* res, enum doc_type doc_type)
 {
 	int i = 0;
 	int j = 0;
@@ -2846,16 +2890,23 @@ static int do_filter_operation(request_t* req, response_t* res)
     operation_t* op = NULL;
     operation_t* next_op = NULL;
 	operation_list_t* op_list = NULL;
+	groupby_result_list_t* groupby_result = NULL;
 
-	op_list = &req->op_list;
+	if(doc_type == DOCUMENT) {
+	    op_list = &req->op_list_did;
+		groupby_result = &res->groupby_result_did;
+	} else {
+	    op_list = &req->op_list_vid;
+		groupby_result = &res->groupby_result_vid;
+	}
 
-	info("before do_filter_operate virtual document cnt[%d]", g_vdl->cnt);
+	info("before do_filter_operate doc_type[%s], cnt[%d]", doc_type_str[doc_type], g_vdl->cnt);
     for(i = 0; i < op_list->cnt; i++) {
 		j = i+1; // next op
 		op = &op_list->list[i];
 		next_op = &op_list->list[j];
 
-	    info("before %s : virtual document cnt[%d]", get_clause_str(op->type), g_vdl->cnt);
+	    info("before %s : doc_type[%s], cnt[%d]", get_clause_str(op->type), doc_type_str[doc_type], g_vdl->cnt);
 	    switch(op->type) {
 		   case GROUP_BY:
 			   while(next_op->type == GROUP_BY) {
@@ -2870,7 +2921,7 @@ static int do_filter_operation(request_t* req, response_t* res)
 			   }
 
                // response에 결과 출력을 위한 group 정보 저장.
-			   res->groupby_result.rules = op->rule.groupby;
+			   groupby_result->rules = op->rule.groupby;
 
                {
                    int k = 0;
@@ -2888,14 +2939,14 @@ static int do_filter_operation(request_t* req, response_t* res)
 				   }
 
 				   rv = operation_groupby_orderby(&op->rule.groupby, 
-                                          &next_op->rule.orderby, &res->groupby_result);
+                                          &next_op->rule.orderby, groupby_result, doc_type);
 				   if(rv != SUCCESS) {
 					   error("can not operate operation_groupby_orderby");
 					   return FAIL;
 				   }
 				   j++;
 			   } else {
-				   rv = operation_groupby_orderby(&op->rule.groupby, NULL, &res->groupby_result);
+				   rv = operation_groupby_orderby(&op->rule.groupby, NULL, groupby_result, doc_type);
 				   if(rv != SUCCESS) {
 					   error("can not operate operation_groupby_orderby");
 					   return FAIL;
@@ -2906,7 +2957,7 @@ static int do_filter_operation(request_t* req, response_t* res)
 
 			   break;
 		   case ORDER_BY:
-			   rv = operation_orderby(&op->rule.orderby);
+			   rv = operation_orderby(&op->rule.orderby, doc_type);
 			   if(rv != SUCCESS) {
 				   error("can not operate operation_orderby");
 				   return FAIL;
@@ -2919,7 +2970,7 @@ static int do_filter_operation(request_t* req, response_t* res)
                }
 			   break;
 		   case WHERE:
-			   rv = operation_where(op->rule.where);
+			   rv = operation_where(op->rule.where, doc_type);
 			   if(rv != SUCCESS) {
 				   error("can not operate operation_where");
 				   return FAIL;
@@ -2927,7 +2978,7 @@ static int do_filter_operation(request_t* req, response_t* res)
                debug("where clause[%s]", op->rule.where);
 			   break;
 		   case LIMIT:
-			   rv = operation_limit(&op->rule.limit);
+			   rv = operation_limit(&op->rule.limit, doc_type);
 			   if(rv != SUCCESS) {
 				   error("can not operate operation_limit");
 				   return FAIL;
@@ -2940,10 +2991,10 @@ static int do_filter_operation(request_t* req, response_t* res)
                                        get_clause_str(op->type));
                break;
 	    }
-	    info("after %s : virtual document cnt[%d]", get_clause_str(op->type), g_vdl->cnt);
+	    info("after %s : doc_type[%s], cnt[%d]", get_clause_str(op->type), doc_type_str[doc_type], g_vdl->cnt);
     }
 
-    info("after do_filter_operate virtual document cnt[%d]", g_vdl->cnt);
+    info("after do_filter_operate doc_type[%s] cnt[%d]", doc_type_str[doc_type], g_vdl->cnt);
     return SUCCESS;
 }
 
@@ -3037,6 +3088,15 @@ static int light_search (request_t *req, response_t *res)
 
 	reduce_dochits_to_one_per_doc(g_result_list);
 
+	/*
+    rv = do_did_filter_operation(req, res);
+    if(rv == FAIL) {
+        error("fail");
+		release_list( g_result_list );
+        return FAIL;
+    }
+	*/
+
     rv = make_virtual_document(g_result_list, &req->virtual_rule);
     if(rv == FAIL) {
         error("can not make virtual document list");
@@ -3047,7 +3107,7 @@ static int light_search (request_t *req, response_t *res)
     // filtering 전의 건수
     res->search_result = res->vdl->cnt;
 
-    rv = do_filter_operation(req, res);
+    rv = do_filter_operation(req, res, VIRTUAL_DOCUMENT);
     if(rv == FAIL) {
         error("fail");
 		release_list( g_result_list );
