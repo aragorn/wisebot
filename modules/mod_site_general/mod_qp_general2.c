@@ -1369,7 +1369,7 @@ static int qp_cb_orderby(const void* dest, const void* sour, void* userdata)
 
 		if ( diff != 0 ) {
 			diff = diff > 0 ? 1 : -1;
-			return diff * order->rule.type;
+			return diff * order->type;
 		}
 	} // for (i)
 
