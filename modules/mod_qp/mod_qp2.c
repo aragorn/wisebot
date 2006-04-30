@@ -2466,10 +2466,12 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
     int next_virtual_id = -1;
 
     // virtual_document의 key가 did가 아닌경우 먼저 정렬을 한다.
+	/*
     if(rule->type != DID) {
         qsort2(list->doc_hits, list->ndochits, 
                sizeof(doc_hit_t), rule, cb_index_list_sort);
     }
+	*/
 
     for (i=0; i<list->ndochits;) {
         virtual_document_t* vd = &(g_vdl->data[g_vdl->cnt]);
