@@ -1329,7 +1329,7 @@ static int qp_cb_where(const void* dest)
 	return (int) where.root_operand->result->v.boolean;
 }
 
-static int qp_cb_orderby(const void* dest, const void* sour, void* userdata)
+static int qp_cb_orderby_virtual_document(const void* dest, const void* sour, void* userdata)
 {
 	int i, diff = 0;
 	docattr_value_t value1, value2;
@@ -1337,8 +1337,10 @@ static int qp_cb_orderby(const void* dest, const void* sour, void* userdata)
 	orderby_rule_list_t *rules;
 	virtual_document_t *dest_vd;
 	virtual_document_t *sour_vd;
+	user_data_t* ud;
 
-	rules = (orderby_rule_list_t*)userdata;
+	ud = (user_data_t*)userdata;
+	rules = ud->rules;
 
 	if ( rules == NULL ) return 0;
 
@@ -1358,7 +1360,7 @@ static int qp_cb_orderby(const void* dest, const void* sour, void* userdata)
 			diff = dest_vd->relevancy - sour_vd->relevancy;
 		}
 		else if ( order->rule.type == DID ) {
-		    diff = ((virtual_document_t*) dest)->id - ((virtual_document_t*) sour)->id;
+		    diff = dest_vd->id - sour_vd->id;
 		}
 		else { // 일반 docattr field
 			field->get_func( dest_vd->docattr, field, &value1 );
@@ -1375,6 +1377,61 @@ static int qp_cb_orderby(const void* dest, const void* sour, void* userdata)
 
 	return 0;
 }
+
+static int qp_cb_orderby_document(const void* dest, const void* sour, void* userdata)
+{
+	int i, diff = 0;
+	docattr_value_t value1, value2;
+	docattr_field_t* field;
+	orderby_rule_list_t *rules;
+	doc_hit_t *dest_d;
+	doc_hit_t *sour_d;
+	user_data_t* ud;
+
+	ud = (user_data_t*)userdata;
+	rules = ud->rules;
+
+	if ( rules == NULL ) return 0;
+
+	dest_d = (doc_hit_t*)dest;
+	sour_d = (doc_hit_t*)sour;
+
+	for ( i = 0; i < rules->cnt; i++ ) {
+		orderby_rule_t* order = &rules->list[i];
+
+	    return_docattr_field(order->rule.name, &field);
+		if(field == NULL) {
+			error("can not get docattr_field[%s]", order->rule.name);
+			return 0;
+		}
+
+		if ( order->rule.type == RELEVANCY ) {
+			diff = dest_d->hitratio - sour_d->hitratio;
+		}
+		else if ( order->rule.type == DID ) {
+		    diff = dest_d->id - sour_d->id;
+		}
+		else { // 일반 docattr field
+			void* dest_docattr = ud->docattr_base_ptr + 
+				            ud->docattr_record_size*(dest_d->id-1);
+			void* sour_docattr = ud->docattr_base_ptr + 
+				            ud->docattr_record_size*(sour_d->id-1);
+
+			field->get_func( dest_docattr, field, &value1 );
+			field->get_func( sour_docattr, field, &value2 );
+
+			diff = field->compare_func( &value1, &value2 );
+		}
+
+		if ( diff != 0 ) {
+			diff = diff > 0 ? 1 : -1;
+			return diff * order->type;
+		}
+	} // for (i)
+
+	return 0;
+}
+
 ////////////////////////////////////////////////////
 static void set_max_operand_count(configValue v)
 {
@@ -1398,7 +1455,8 @@ static void register_hooks(void)
 {
 	sb_hook_qp_set_where_expression(qp_set_where_expression,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_cb_where_virtual_document(qp_cb_where,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_qp_cb_orderby_virtual_document(qp_cb_orderby,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_cb_orderby_virtual_document(qp_cb_orderby_virtual_document,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_cb_orderby_document(qp_cb_orderby_document,NULL,NULL,HOOK_MIDDLE);
 	/*
 	sb_hook_docattr_compare_function(compare_function,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_docattr_compare2_function(compare2_function,NULL,NULL,HOOK_MIDDLE);

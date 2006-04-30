@@ -20,6 +20,7 @@ typedef struct groupby_rule_list_t groupby_rule_list_t;
 typedef struct operation_t operation_t;
 typedef struct operation_list_t operation_list_t;
 typedef struct select_list_t select_list_t;
+typedef struct user_data_t user_data_t;
 
 #include "docattr2.h"
 #include "indexer.h"
@@ -110,6 +111,13 @@ struct orderby_rule_list_t {
 	orderby_rule_t list[MAX_SORT_RULE];
 };
 
+struct user_data_t {
+	enum doc_type doc_type;
+    orderby_rule_list_t* rules;
+	void* docattr_base_ptr;
+	int docattr_record_size;
+};
+
 #define MAX_GROUP_RULE (8)
 struct groupby_rule_list_t {
     int cnt;
@@ -191,6 +199,7 @@ SB_DECLARE_HOOK(int, qp_do_filter_operate, (request_t *r, response_t *res, enum 
 SB_DECLARE_HOOK(int, qp_finalize_search, (request_t *r, response_t *res))
 
 SB_DECLARE_HOOK(int, qp_cb_orderby_virtual_document, (const void *dest, const void *sour, void *userdata))
+SB_DECLARE_HOOK(int, qp_cb_orderby_document, (const void *dest, const void *sour, void *userdata))
 SB_DECLARE_HOOK(int, qp_cb_where_virtual_document, (const void *data))
 SB_DECLARE_HOOK(int, qp_set_where_expression, (char *clause))
 

@@ -13,6 +13,7 @@ HOOK_STRUCT(
 	HOOK_LINK(qp_finalize_search)
 
 	HOOK_LINK(qp_cb_orderby_virtual_document)
+	HOOK_LINK(qp_cb_orderby_document)
 	HOOK_LINK(qp_cb_where_virtual_document)
 	HOOK_LINK(qp_set_where_expression)
 )
@@ -27,6 +28,9 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_do_filter_operate, \
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_finalize_search, (request_t *req, response_t *res), (req,res), DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_cb_orderby_virtual_document, \
+	(const void *dest, const void *sour, void *userdata), \
+	(dest, sour, userdata), MINUS_DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_cb_orderby_document, \
 	(const void *dest, const void *sour, void *userdata), \
 	(dest, sour, userdata), MINUS_DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_cb_where_virtual_document, \
