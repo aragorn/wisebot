@@ -64,13 +64,13 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
     int rv = 0;
     int i = 0, j = 0, cmt_idx = 0;
 	groupby_result_list_t* groupby_result = NULL;
-/*
+
 	rv = sb_run_qp_init();
     if(rv != SUCCESS && rv != DECLINE) {
         error("qp init failed");
         return FAIL;
     }
-*/
+
     rv = sb_run_qp_init_request(&qp_request, 
                                 (char *)apr_table_get(s->parameters_in, "q"));
     if(rv != SUCCESS) {
@@ -115,10 +115,10 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
     /* group result */
     ap_rprintf(r, "<groups>\n");
 
-	groupby_result = &qp_response.groupby_result;
+	groupby_result = &qp_response.groupby_result_vid;
     for(i = 0; i < groupby_result->rules.cnt; i++) {
         orderby_rule_t* sort_rule = &(groupby_result->rules.list[i].sort);
-        limit_t* limit_rule = &(groupby_result->rules.list[i].limit);
+        //limit_t* limit_rule = &(groupby_result->rules.list[i].limit);
 
 		// group °á°ú
 		for(j = 0; j < MAX_CARDINALITY; j++) {
