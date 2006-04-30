@@ -42,6 +42,8 @@ static char *docattrFields[MAX_FIELD_NUM] = { NULL };
 static int fdIndexFile = -1;
 static int *fdDBFile = NULL;
 
+static int reference_count = 0;
+
 static struct cdm_shared_t {
 	uint16_t currentDBNo;
 	uint32_t    lastDocId;
@@ -127,6 +129,12 @@ static int CDM_init() {
 	int iResult; //, iCount;
 	ipc_t ipc;
 
+	if(cdm_shared != NULL) {
+		reference_count++;
+	    info("reference count[%d], pid[%d]", reference_count, getpid());
+        return SUCCESS;
+	}
+
 	ipc.type = IPC_TYPE_MMAP;
 	ipc.pathname = cdm_shared_file;
 	ipc.size = sizeof(struct cdm_shared_t);
@@ -155,6 +163,8 @@ static int CDM_init() {
 		return FAIL;
 	}
 
+	reference_count++;
+	info("reference count[%d], pid[%d]", reference_count, getpid());
 	return SUCCESS;
 }
 
