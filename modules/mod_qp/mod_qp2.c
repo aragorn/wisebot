@@ -136,6 +136,17 @@ static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules);
 // document type별 operation
 static int virtual_document_orderby(orderby_rule_list_t* rules);
 static int virtual_document_where();
+static int virtual_document_grouping(groupby_result_list_t* result);
+static int virtual_document_group_count(virtual_document_t* vd, 
+		                                groupby_result_list_t* result, 
+										int* is_remove);
+
+static int document_orderby(orderby_rule_list_t* rules);
+static int document_where();
+static int document_grouping(groupby_result_list_t* result);
+static int document_group_count(doc_hit_t* d, 
+		                                groupby_result_list_t* result, 
+										int* is_remove);
 
 // document operation
 static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
@@ -146,8 +157,6 @@ static int operation_orderby(orderby_rule_list_t* rules, enum doc_type doc_type)
 static int operation_where(char* where, enum doc_type doc_type);
 static int operation_limit(limit_t* rule, enum doc_type doc_type);
 
-static int grouping(groupby_result_list_t* result, enum doc_type doc_type);
-static int group_count(virtual_document_t* vd, groupby_result_list_t* result, int* is_remove, enum doc_type doc_type);
 //////////////////////////////////////////////////////////////////////////
 
 
@@ -2453,15 +2462,8 @@ static int cb_index_list_sort(const void* dest, const void* sour, void* userdata
 static int make_virtual_document(index_list_t* list, key_rule_t* rule)
 {
     uint32_t i=0;
-    int rv = 0;
     int virtual_id = -1;
     int next_virtual_id = -1;
-
-    rv = sb_run_docattr_get_base_ptr((docattr_t**)&g_docattr_base_ptr, &g_docattr_record_size);
-    if(rv != SUCCESS) {
-        error("can not get docattr base ptr");
-        return FAIL;
-    }
 
     // virtual_document의 key가 did가 아닌경우 먼저 정렬을 한다.
     if(rule->type != DID) {
@@ -2469,7 +2471,7 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
                sizeof(doc_hit_t), rule, cb_index_list_sort);
     }
 
-    for (i=0; i<list->ndochits; i++) {
+    for (i=0; i<list->ndochits;) {
         virtual_document_t* vd = &(g_vdl->data[g_vdl->cnt]);
 		/* virtual_document를 초기화 하고 만들어야 한다 일괄초기화를 피하기 위해. */
 		memset(vd, 0x00, sizeof(virtual_document_t));
@@ -2673,13 +2675,33 @@ static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules)
 
 static int virtual_document_orderby(orderby_rule_list_t* rules)
 {
-    qsort2(g_vdl->data, g_vdl->cnt, sizeof(virtual_document_t), rules, 
+	user_data_t userdata;
+	userdata.doc_type = VIRTUAL_DOCUMENT;
+	userdata.rules = rules;
+	userdata.docattr_base_ptr = g_docattr_base_ptr;
+	userdata.docattr_record_size = g_docattr_record_size;
+
+    qsort2(g_vdl->data, g_vdl->cnt, sizeof(virtual_document_t), &userdata, 
           sb_run_qp_cb_orderby_virtual_document);
 
 	return SUCCESS;
 }
 
-static int virtual_document_where()
+static int document_orderby(orderby_rule_list_t* rules)
+{
+	user_data_t userdata;
+	userdata.doc_type = DOCUMENT;
+	userdata.rules = rules;
+	userdata.docattr_base_ptr = g_docattr_base_ptr;
+	userdata.docattr_record_size = g_docattr_record_size;
+
+    qsort2(g_result_list->doc_hits, g_result_list->ndochits, sizeof(doc_hit_t), &userdata, 
+          sb_run_qp_cb_orderby_document);
+
+	return SUCCESS;
+}
+
+static int document_where()
 {
     int i = 0;
     int save_pos = 0;
@@ -2703,88 +2725,35 @@ static int virtual_document_where()
     return SUCCESS;
 }
 
-static int operation_orderby(orderby_rule_list_t* rules, enum doc_type doc_type)
-{
-    int rv = 0;
-
-    rv = virtual_document_orderby(rules); 
-	if(rv != SUCCESS) {
-		error("can not orderby virtual_document");
-		return FAIL;
-	}
-
-	return SUCCESS;
-}
-
-static int operation_where(char* where, enum doc_type doc_type)
-{
-    int rv = 0;
-
-	if (sb_run_qp_set_where_expression(where) == FAIL)
-		return FAIL;
-
-    rv = virtual_document_where(); 
-	if(rv != SUCCESS) {
-		error("can not where virtual_document");
-		return FAIL;
-	}
-
-    return SUCCESS;
-}
-
-static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
-                                     orderby_rule_list_t* orderby_rules,
-                                     groupby_result_list_t* result,
-									 enum doc_type doc_type)
+static int virtual_document_where()
 {
     int i = 0;
-    int rv = 0;
-
-    orderby_rule_list_t join_orderby_rules;
-
-    join_orderby_rules.cnt = 0;
-
-	/* groupby, orerby의 조건을 하나로 합친다. 순서중요 */
-	for(i = 0; i < groupby_rules->cnt; i++) {
-        join_orderby_rules.list[join_orderby_rules.cnt++] = groupby_rules->list[i].sort;
-	}
-
-	for(i = 0; orderby_rules != NULL && i < orderby_rules->cnt; i++) {
-        join_orderby_rules.list[join_orderby_rules.cnt++] = orderby_rules->list[i];
-	}
-
-	rv = virtual_document_orderby(&join_orderby_rules); 
-	if(rv != SUCCESS) {
-        error("can not orderby virtual_document");
-		return FAIL;
-	}
-
-    rv = grouping(result, doc_type);
-	if(rv != SUCCESS) {
-		error("can not grouping");
-		return FAIL;
-	}
-
-    return SUCCESS;
-}
-
-static int operation_limit(limit_t* rule, enum doc_type doc_type)
-{
-    int i = 0;
-    int j = 0;
     int save_pos = 0;
+    int rv = 0;
+	docattr_t* docattr = NULL;
 
-	for (i = rule->start; i < g_vdl->cnt && j < rule->cnt ; i++, j++) {
-		memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
-		save_pos++;
+	for (i = 0; i < g_result_list->ndochits ; i++) {
+        doc_hit_t* doc_hit = (doc_hit_t*)&g_result_list->doc_hits[i];
+		docattr = g_docattr_base_ptr + g_docattr_record_size*(doc_hit->id-1);
+
+		rv = sb_run_qp_cb_where_virtual_document(docattr);
+		if ( rv == MINUS_DECLINE ) {
+			warn("callback function return [%d]", rv);
+			return TRUE;
+	    } else if ( rv ) {
+			memcpy(&(g_result_list->doc_hits[save_pos]), 
+					&g_result_list->doc_hits[i], 
+				    sizeof(doc_hit_t));
+			save_pos++;
+		}
 	}
 
-	g_vdl->cnt = save_pos;
+	g_result_list->ndochits = save_pos;
 
     return SUCCESS;
 }
 
-static int group_count(virtual_document_t* vd, groupby_result_list_t* result, int* is_remove, enum doc_type doc_type)
+static int virtual_document_group_count(virtual_document_t* vd, groupby_result_list_t* result, int* is_remove)
 {
 	int j = 0;
 	uint32_t value = 0;
@@ -2823,8 +2792,49 @@ static int group_count(virtual_document_t* vd, groupby_result_list_t* result, in
 
 	return SUCCESS;
 }
+static int document_group_count(doc_hit_t* doc_hit, groupby_result_list_t* result, int* is_remove)
+{
+	int j = 0;
+	uint32_t value = 0;
+	key_rule_t* rule = NULL;
+	limit_t* limit = NULL;
+    groupby_rule_list_t* rules = NULL;
+	docattr_t* docattr = NULL;
 
-static int grouping(groupby_result_list_t* result, enum doc_type doc_type)
+	rules = &result->rules;
+
+	for(j = 0; j < rules->cnt; j++) {
+		rule = &rules->list[j].sort.rule;
+		limit = &rules->list[j].limit;
+		docattr = g_docattr_base_ptr + g_docattr_record_size*(doc_hit->id-1);
+
+		if (sb_run_docattr_get_field_integer_function(docattr, rule->name, &value) == -1) {
+			error("cannot get value of [%s] field", rule->name);
+			return FAIL;
+		}
+
+		if(value > MAX_CARDINALITY) {
+			error("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d]",
+				 rule->name, value, MAX_CARDINALITY);
+			return FAIL;
+		}
+
+		if(limit->start == -1 || limit->cnt == -1) {
+			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
+		} else if(result->result[j][value] < limit->start ||
+				result->result[j][value] > (limit->start + limit->cnt -1)) {
+			*is_remove = (*is_remove == 0) ? 1 : *is_remove;
+		} else {
+			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
+		}
+
+		result->result[j][value]++;
+	}
+
+	return SUCCESS;
+}
+
+static int virtual_document_grouping(groupby_result_list_t* result)
 {
 	int i = 0;
 	int save_pos = 0;
@@ -2838,7 +2848,7 @@ static int grouping(groupby_result_list_t* result, enum doc_type doc_type)
 		vd = &(g_vdl->data[i]);
 		is_remove = 0;
 
-		if(group_count(vd, result, &is_remove, doc_type) != SUCCESS) {
+		if(virtual_document_group_count(vd, result, &is_remove) != SUCCESS) {
 			error("can not count group");
 			return FAIL;
 		}
@@ -2852,6 +2862,141 @@ static int grouping(groupby_result_list_t* result, enum doc_type doc_type)
 	g_vdl->cnt = save_pos;
 
 	return SUCCESS;
+}
+
+static int document_grouping(groupby_result_list_t* result)
+{
+	int i = 0;
+	int save_pos = 0;
+	int is_remove = 0;
+	doc_hit_t* doc_hit = NULL;
+
+    if(result->rules.cnt == 0) 
+		return SUCCESS; 
+
+	for(i = 0; i < g_result_list->ndochits; i++) {
+		doc_hit = &(g_result_list->doc_hits[i]);
+		is_remove = 0;
+
+		if(document_group_count(doc_hit, result, &is_remove) != SUCCESS) {
+			error("can not count group");
+			return FAIL;
+		}
+
+		if(is_remove == 0) {
+			memcpy(&(g_result_list->doc_hits[save_pos]), 
+				   &(g_result_list->doc_hits[i]), sizeof(doc_hit_t));
+			save_pos++;
+		}
+	}
+
+	g_result_list->ndochits = save_pos;
+
+	return SUCCESS;
+}
+
+static int operation_orderby(orderby_rule_list_t* rules, enum doc_type doc_type)
+{
+    int rv = 0;
+
+	if(doc_type == DOCUMENT) {
+        rv = document_orderby(rules); 
+	} else {
+        rv = virtual_document_orderby(rules); 
+	}
+
+	if(rv != SUCCESS) {
+		error("can not orderby virtual_document");
+		return FAIL;
+	}
+
+	return SUCCESS;
+}
+
+static int operation_where(char* where, enum doc_type doc_type)
+{
+    int rv = 0;
+
+	if(doc_type == DOCUMENT) {
+		if (sb_run_qp_set_where_expression(where) == FAIL)
+			return FAIL;
+
+		rv = virtual_document_where(); 
+	} else {
+		if (sb_run_qp_set_where_expression(where) == FAIL)
+			return FAIL;
+
+		rv = document_where(); 
+	}
+
+	if(rv != SUCCESS) {
+		error("can not where virtual_document");
+		return FAIL;
+	}
+
+    return SUCCESS;
+}
+
+static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
+                                     orderby_rule_list_t* orderby_rules,
+                                     groupby_result_list_t* result,
+									 enum doc_type doc_type)
+{
+    int i = 0;
+    int rv = 0;
+
+    orderby_rule_list_t join_orderby_rules;
+
+    join_orderby_rules.cnt = 0;
+
+	/* groupby, orerby의 조건을 하나로 합친다. 순서중요 */
+	for(i = 0; i < groupby_rules->cnt; i++) {
+        join_orderby_rules.list[join_orderby_rules.cnt++] = groupby_rules->list[i].sort;
+	}
+
+	for(i = 0; orderby_rules != NULL && i < orderby_rules->cnt; i++) {
+        join_orderby_rules.list[join_orderby_rules.cnt++] = orderby_rules->list[i];
+	}
+
+	if(doc_type == DOCUMENT) {
+		rv = document_orderby(&join_orderby_rules); 
+	} else {
+		rv = virtual_document_orderby(&join_orderby_rules); 
+	}
+
+	if(rv != SUCCESS) {
+        error("can not orderby virtual_document");
+		return FAIL;
+	}
+
+	if(doc_type == DOCUMENT) {
+        rv = document_grouping(result);
+	} else {
+        rv = virtual_document_grouping(result);
+	}
+
+	if(rv != SUCCESS) {
+		error("can not grouping");
+		return FAIL;
+	}
+
+    return SUCCESS;
+}
+
+static int operation_limit(limit_t* rule, enum doc_type doc_type)
+{
+    int i = 0;
+    int j = 0;
+    int save_pos = 0;
+
+	for (i = rule->start; i < g_vdl->cnt && j < rule->cnt ; i++, j++) {
+		memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
+		save_pos++;
+	}
+
+	g_vdl->cnt = save_pos;
+
+    return SUCCESS;
 }
 
 static void print_select(select_list_t* rule)
@@ -2887,6 +3032,7 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 	int i = 0;
 	int j = 0;
 	int rv = 0;
+	int* result_cnt = NULL;
     operation_t* op = NULL;
     operation_t* next_op = NULL;
 	operation_list_t* op_list = NULL;
@@ -2895,18 +3041,21 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 	if(doc_type == DOCUMENT) {
 	    op_list = &req->op_list_did;
 		groupby_result = &res->groupby_result_did;
+		result_cnt = &g_result_list->ndochits;
 	} else {
 	    op_list = &req->op_list_vid;
 		groupby_result = &res->groupby_result_vid;
+		result_cnt = &g_vdl->cnt;
 	}
 
-	info("before do_filter_operate doc_type[%s], cnt[%d]", doc_type_str[doc_type], g_vdl->cnt);
+	info("before do_filter_operate doc_type[%s], cnt[%d]", doc_type_str[doc_type], *result_cnt);
     for(i = 0; i < op_list->cnt; i++) {
 		j = i+1; // next op
 		op = &op_list->list[i];
 		next_op = &op_list->list[j];
 
-	    info("before %s : doc_type[%s], cnt[%d]", get_clause_str(op->type), doc_type_str[doc_type], g_vdl->cnt);
+	    info("before %s : doc_type[%s], cnt[%d]", get_clause_str(op->type), 
+				                             doc_type_str[doc_type], *result_cnt);
 	    switch(op->type) {
 		   case GROUP_BY:
 			   while(next_op->type == GROUP_BY) {
@@ -2954,7 +3103,6 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 			   }
 			   i = j-1;
 
-
 			   break;
 		   case ORDER_BY:
 			   rv = operation_orderby(&op->rule.orderby, doc_type);
@@ -2991,10 +3139,11 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
                                        get_clause_str(op->type));
                break;
 	    }
-	    info("after %s : doc_type[%s], cnt[%d]", get_clause_str(op->type), doc_type_str[doc_type], g_vdl->cnt);
+	    info("after %s : doc_type[%s], cnt[%d]", get_clause_str(op->type), 
+				                              doc_type_str[doc_type], *result_cnt);
     }
 
-    info("after do_filter_operate doc_type[%s] cnt[%d]", doc_type_str[doc_type], g_vdl->cnt);
+    info("after do_filter_operate doc_type[%s] cnt[%d]", doc_type_str[doc_type], *result_cnt);
     return SUCCESS;
 }
 
@@ -3088,14 +3237,18 @@ static int light_search (request_t *req, response_t *res)
 
 	reduce_dochits_to_one_per_doc(g_result_list);
 
-	/*
-    rv = do_did_filter_operation(req, res);
+    rv = sb_run_docattr_get_base_ptr((docattr_t**)&g_docattr_base_ptr, &g_docattr_record_size);
+    if(rv != SUCCESS) {
+        error("can not get docattr base ptr");
+        return FAIL;
+    }
+
+    rv = do_filter_operation(req, res, DOCUMENT);
     if(rv == FAIL) {
-        error("fail");
+        error("can not fileter operation - document");
 		release_list( g_result_list );
         return FAIL;
     }
-	*/
 
     rv = make_virtual_document(g_result_list, &req->virtual_rule);
     if(rv == FAIL) {
@@ -3109,7 +3262,7 @@ static int light_search (request_t *req, response_t *res)
 
     rv = do_filter_operation(req, res, VIRTUAL_DOCUMENT);
     if(rv == FAIL) {
-        error("fail");
+        error("can not fileter operation - virtual_document");
 		release_list( g_result_list );
         return FAIL;
     }
@@ -3207,7 +3360,7 @@ static int private_init(void)
 		g_vdl->data = (virtual_document_t*)sb_malloc(sizeof(virtual_document_t)*MAX_DOC_HITS_SIZE);
 		g_vdl->cnt = 0;
 
-		error("data size[%d]", sizeof(virtual_document_t)*MAX_DOC_HITS_SIZE);
+		debug("virtual_document data size[%d]", sizeof(virtual_document_t)*MAX_DOC_HITS_SIZE);
 	}
 
 	return SUCCESS;
