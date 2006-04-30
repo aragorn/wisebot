@@ -505,6 +505,7 @@ static int open_word_db(word_db_t** word_db, int opt)
 	if(g_word_db != NULL && g_word_db->set == opt) {
         *word_db = g_word_db;
 		reference_count++;
+		info("reference count[%d]", reference_count);
 		return SUCCESS;
 	}
 
@@ -588,6 +589,7 @@ static int open_word_db(word_db_t** word_db, int opt)
 		
 	g_word_db = *word_db;
 	reference_count++;
+	info("reference count[%d]", reference_count);
 	return SUCCESS;
 
 error:
