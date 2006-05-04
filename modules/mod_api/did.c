@@ -9,6 +9,7 @@ HOOK_STRUCT(
 
 	HOOK_LINK(get_new_docid)
 	HOOK_LINK(get_docid)
+	HOOK_LINK(get_last_docid)
 )
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, open_did_db, \
@@ -21,3 +22,4 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, get_new_docid, \
 	(did_db, pKey, docid, olddocid), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, get_docid, \
 	(did_db_t* did_db, char *pKey, uint32_t *docid), (did_db, pKey, docid), DECLINE)
+SB_IMPLEMENT_HOOK_RUN_FIRST(uint32_t, get_last_docid, (did_db_t* did_db), (did_db), DECLINE)

@@ -267,6 +267,18 @@ static int get_doc_id(did_db_t* did_db, char* pKey, uint32_t* docid)
 	else return FAIL;
 }
 
+static uint32_t get_last_doc_id(did_db_t* did_db)
+{
+	did_db_custom_t* db;
+
+	if ( did_set == NULL || !did_set[did_db->set].set )
+		return DECLINE;
+	db = (did_db_custom_t*) did_db->db;
+
+	// no lock?
+	return db->shared->last_did;
+}
+
 /******  module stuff *******/
 static int init() 
 {
@@ -359,6 +371,7 @@ static void register_hooks(void)
 	
 	sb_hook_get_new_docid	(get_new_doc_id, 	NULL, NULL, HOOK_MIDDLE);
 	sb_hook_get_docid		(get_doc_id, 		NULL, NULL, HOOK_MIDDLE);
+	sb_hook_get_last_docid	(get_last_doc_id, 	NULL, NULL, HOOK_MIDDLE);
 }
 
 module did2_module=

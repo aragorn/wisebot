@@ -26,5 +26,6 @@ SB_DECLARE_HOOK(int,get_new_docid, \
 		(did_db_t* did_db, char *pKey, uint32_t *docid, uint32_t *olddid))
 SB_DECLARE_HOOK(int,get_docid, \
 		(did_db_t* did_db, char *pKey, uint32_t *docid))
+SB_DECLARE_HOOK(uint32_t,get_last_docid, (did_db_t* did_db))
 
 #endif
