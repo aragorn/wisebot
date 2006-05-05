@@ -2,7 +2,6 @@
 #include "common_core.h"
 #include "common_util.h"
 #include "util.h"  //for sb_trim()
-#include "util.h"
 #include "timelog.h"
 #include "memory.h"
 #include "mod_api/qp2.h"
@@ -35,6 +34,7 @@ static softbot_handler_key_t search_handler_tbl[] = {
 // qp request/response
 static request_t qp_request;
 static response_t qp_response;
+static doc_hit_t* g_dochits_buffer;
 
 // enum
 static char *constants[MAX_ENUM_NUM] = { NULL };
@@ -46,6 +46,19 @@ static uint32_t this_node_id; // 하위 4bit만 쓴다.
 //--------------------------------------------------------------//
 //  *   custom function 
 //--------------------------------------------------------------//
+
+static void print_virtual_document(virtual_document_t* vd)
+{
+	int i = 0;
+
+    debug("vid[%u]", vd->id);
+    debug("relevancy[%u]", vd->relevancy);
+    debug("dochit_cnt[%u]", vd->dochit_cnt);
+    debug("node_id[%u]", this_node_id);
+	for(;i < vd->dochit_cnt; i++) {
+		debug("did[%u]", vd->dochits[i].id);
+	}
+}
 
 static char* return_constants_str(int value)
 {
@@ -138,9 +151,10 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
         ap_rprintf(r, "<row no=\"%d\">\n", i);
         ap_rprintf(r, "<id>%u</id>\n", vd->id);
         ap_rprintf(r, "<relevancy>%u</relevancy>\n", vd->relevancy);
+        ap_rprintf(r, "<comment_count>%u</comment_count>\n", vd->dochit_cnt);
 
         for(j = 0; j < vd->dochit_cnt; j++) {
-            ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n", qp_response.comments[cmt_idx++]);
+            ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n", qp_response.comments[cmt_idx++].s);
 		}
 
         ap_rprintf(r, "</row>\n");
@@ -160,111 +174,123 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 ///////////////////////////////////////////////////////////////////////
 static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 {
-#if 0
-    request_t req; 
-    int rv = 0, i = 0;
-    int search_total_cnt = 0; // 총 검색결과수
-    int search_send_cnt = 0;  // 전송하는 검색결과 수
-	char query[MAX_QUERY_STRING_SIZE];
+    int rv = 0;
+    int i = 0;
 
-    if(make_request(s, &req, query) != SUCCESS) {
-        error("can not make request string");
+	rv = sb_run_qp_init();
+    if(rv != SUCCESS && rv != DECLINE) {
+        error("qp init failed");
         return FAIL;
     }
 
-    req.type = LIGHT_SEARCH;
+    rv = sb_run_qp_init_request(&qp_request, 
+                                (char *)apr_table_get(s->parameters_in, "q"));
+    if(rv != SUCCESS) {
+        error("can not init request");
+        return FAIL;
+    }
 
-    req.sb4error = 0;
-    req.result_list = NULL; 
+    rv = sb_run_qp_init_response(&qp_response);
+    if(rv != SUCCESS) {
+        error("can not init request");
+        return FAIL;
+    }
 
-	timelog("light_search_start");
-	rv = sb_run_qp_light_search(get_word_db(), &req);
-	timelog("light_search_finish");
+	timelog("sb_run_qp_light_search start");
+	rv = sb_run_qp_light_search(&qp_request, &qp_response);
+	timelog("sb_run_qp_light_search finish");
 	if (rv != SUCCESS) {
-		error("sb_run_qp_light_search failed: query[%s]", query);
+		error("sb_run_qp_light_search failed: query[%s]", qp_request.query);
 		return FAIL;
-	}
-
-	if (req.result_list == NULL) {
-        search_total_cnt = 0;
-        search_send_cnt = 0;
-
-		error("no result: query[%s]", query);
-	} else {
-        search_total_cnt = req.result_list->ndochits;
-        search_send_cnt = get_send_count(&req);
 	}
 
 	ap_set_content_type(r, "x-softbotd/binary");
 
 	timelog("send_result_start");
+
 	// 0. node id - 0 ~ 16 
 	ap_rwrite(&(this_node_id), sizeof(uint32_t), r);
 
 	// 1. 총 검색건수 
-	ap_rwrite(&(search_total_cnt), sizeof(uint32_t), r);
+	ap_rwrite(&(qp_response.search_result), sizeof(uint32_t), r);
 
 	// 2. 전송 검색건수
-	ap_rwrite(&(search_send_cnt), sizeof(uint32_t), r);
-	debug("send cnt[%d]", search_send_cnt);
+	ap_rwrite(&(qp_response.vdl->cnt), sizeof(uint32_t), r);
 
 	// 3. 검색 단어 리스트
-	ap_rwrite(req.word_list, sizeof(char)*STRING_SIZE, r);
+	ap_rwrite(qp_response.word_list, sizeof(char)*STRING_SIZE, r);
 
-	debug("search_total_cnt[%u], search_send_cnt[%u], word_list[%s]", 
-			search_total_cnt,
-			search_send_cnt,
-			req.word_list);
+	debug("search_result[%u], send_cnt[%u], word_list[%s]", 
+			qp_response.search_result,
+			qp_response.vdl->cnt,
+			qp_response.word_list);
 
     // 4. 검색결과 전송
-    index_list_t *result = req.result_list;
-    for(i = 0; i < search_send_cnt; i++) {
-        uint32_t docid = result->doc_hits[i].id;
-        docattr_t* attr;
+    for(i = 0; i < qp_response.vdl->cnt; i++) {
+		virtual_document_t* vd = &(qp_response.vdl->data[i]);
+   
+        print_virtual_document(vd);
 
-		// 4-1. 관련성 전송
-		ap_rwrite((void*)&result->doc_hits[i].hitratio, sizeof(uint32_t), r);
+		ap_rwrite((void*)&vd->id, sizeof(uint32_t), r);
 
-		// 4-2. doc_hits 전송
-		ap_rwrite((void*)&result->doc_hits[i], sizeof(doc_hit_t), r);
+		ap_rwrite((void*)&vd->relevancy, sizeof(uint32_t), r);
 
-		// 4-3. node id - 32bit
+		ap_rwrite((void*)&vd->dochit_cnt, sizeof(uint32_t), r);
+
+		ap_rwrite((void*)vd->dochits, sizeof(doc_hit_t)*vd->dochit_cnt, r);
+
 		ap_rwrite(&(this_node_id), sizeof(uint32_t), r);
 		debug("send node_id[%u]", this_node_id);
     
-		// 4-4. docattr 전송
-        if ( sb_run_docattr_ptr_get(docid, &attr) != SUCCESS ) {
-            docattr_t dummy;
-            memset(&dummy, 0x00, sizeof(docattr_t));
-            error("cannot get docattr element");
-
-            // dummy 전송. 최소한 상위 agent에서 오류나지 않도록한다.
-	        ap_rwrite((void*)&dummy, sizeof(docattr_t), r);
-            continue;
-        }
-
-	    ap_rwrite((void*)attr, sizeof(docattr_t), r);
+	    ap_rwrite((void*)vd->docattr, sizeof(docattr_t), r);
     }
 
     timelog("send_result_finish");
 
-	sb_run_qp_finalize_search(&req);
+	sb_run_qp_finalize_search(&qp_request, &qp_response);
 	timelog("qp_finalize");
-#endif
+
 	return SUCCESS;
 }
 
 static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 {
-#if 0
+    int rv = 0;
     int i = 0;
-    memfile *buf;
-    int recv_data_size = 0;
-    int recv_cancel_cnt = 0;
-	agent_request_t* req = NULL;
+	int recv_pos = 0;
+    memfile *buf = NULL;
+	virtual_document_t* vd = NULL;
 
-    init_agent_request(&req);
+	rv = sb_run_qp_init();
+    if(rv != SUCCESS && rv != DECLINE) {
+        error("qp init failed");
+        return FAIL;
+    }
 
+    rv = sb_run_qp_init_request(&qp_request, 
+                                (char *)apr_table_get(s->parameters_in, "q"));
+    if(rv != SUCCESS) {
+        error("can not init request");
+        return FAIL;
+    }
+
+    rv = sb_run_qp_init_response(&qp_response);
+    if(rv != SUCCESS) {
+        error("can not init request");
+        return FAIL;
+    }
+
+	/* 수신할 doc_hit 를 assign */
+	qp_response.vdl->cnt = 1;
+	vd = &(qp_response.vdl->data[0]);
+
+	if(g_dochits_buffer == NULL) {
+		g_dochits_buffer = (doc_hit_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(doc_hit_t));
+	}
+
+    vd->dochits = g_dochits_buffer; 
+
+	/* comment를 추출할 virtual document 정보 받기 */
 	CHECK_REQUEST_CONTENT_TYPE(r, "x-softbotd/binary");
 
 	if (sb_run_sbhandler_make_memfile(r, &buf) != SUCCESS) {
@@ -272,15 +298,13 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 		return FAIL;
 	}
 
-    // 1. 수신건수(agent에서 recv_cnt를 계산할수 없기 때문에 size로 해야 한다.)
-    req->ali.recv_cnt = memfile_getSize(buf) / (sizeof(doc_hit_t) + sizeof(uint32_t));
-	debug("recv cnt[%d]", req->ali.recv_cnt);
+    vd->dochit_cnt = memfile_getSize(buf) / (sizeof(doc_hit_t) + sizeof(uint32_t));
+    for (i = 0; i < vd->dochit_cnt; i++) {
+		uint32_t node_id = 0;
+		uint32_t recv_data_size = 0;
 
-    // 2. agent_doc_hits 수신
-    for (i=0; i<req->ali.recv_cnt; i++) {
-        // 2.1 doc_hit 수신
         recv_data_size = sizeof(doc_hit_t);
-        if ( memfile_read(buf, (char*)&req->ali.agent_doc_hits[i]->doc_hits, recv_data_size)
+        if ( memfile_read(buf, (char*)&(vd->dochits[recv_pos]), recv_data_size)
                 != recv_data_size ) {
             error("incomplete result at [%d]th node: doc_hits ", i);
             continue;
@@ -288,55 +312,55 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 
 		// 2. node_id 수신
 		recv_data_size = sizeof(uint32_t);
-		if ( memfile_read(buf, (char*)&req->ali.agent_doc_hits[i]->node_id, recv_data_size)
+		if ( memfile_read(buf, (char*)&node_id, recv_data_size)
 				!= recv_data_size ) {
 			error("incomplete result at [%d]th node: doc_hits ", i);
 			continue;
 		}
 
 		// 자신의 node_id가 아니면 error
-		if(get_node_id(req->ali.agent_doc_hits[i]->node_id) != this_node_id) {
+		if(get_node_id(node_id) != this_node_id) {
 			error("node_id[%u] not equals this_node_id[%u]",
-						  get_node_id(req->ali.agent_doc_hits[i]->node_id),
+						  get_node_id(node_id),
 						  this_node_id);
-			recv_cancel_cnt++; // 한건을 취소시킨다.
 			continue;
 		}
 
+		debug("did[%u], node_id[%u]", vd->dochits[recv_pos].id, node_id);
+
         // 자신의 node_id pop
-        req->ali.agent_doc_hits[i]->node_id = 
-			pop_node_id(req->ali.agent_doc_hits[i]->node_id);
-
-        // 수신해야할 comment 초기화
-        req->ali.comments[i][0] = '\0';
+        node_id = pop_node_id(node_id);
+		recv_pos++;
     }
+	vd->dochit_cnt = recv_pos;
 
-    req->ali.recv_cnt -= recv_cancel_cnt;
 
-	if (sb_run_qp_abstract_info(req) != SUCCESS) {
-		error("sb_run_qp_get_abstract_list failed");
+	/* comment 추출 */
+	timelog("sb_run_qp_abstract_search start");
+	rv = sb_run_qp_abstract_search(&qp_request, &qp_response);
+	timelog("sb_run_qp_abstract_search finish");
+	if (rv != SUCCESS) {
+		error("sb_run_qp_abstract_search failed: query[%s]", qp_request.query);
 		return FAIL;
 	}
 
     /////////// abstarct search 결과 전송 ////////////////////////////////////////
-    // binary로 전송한다.
     ap_set_content_type(r, "x-softbotd/binary");
 
     // 1. 전송건수.
-    ap_rwrite(&req->ali.recv_cnt, sizeof(uint32_t), r);
+    ap_rwrite(&vd->dochit_cnt, sizeof(uint32_t), r);
 	
-	// 2. agent_doc_hits 전송.
-    for (i=0; i<req->ali.recv_cnt; i++ ) {
+	// 2. doc_hits 전송.
+    for (i = 0; i < vd->dochit_cnt; i++ ) {
         // 2.1 doc_id 전송.
-        ap_rwrite(&req->ali.agent_doc_hits[i]->doc_hits.id, sizeof(uint32_t), r);
+        ap_rwrite(&vd->dochits[i].id, sizeof(uint32_t), r);
         // 2.2 node_id 전송.
         ap_rwrite(&this_node_id, sizeof(uint32_t), r);
         // 2.3. comment
-        ap_rwrite(req->ali.comments[i], LONG_LONG_STRING_SIZE, r);
-		debug("comments[%s]", req->ali.comments[i]);
+        ap_rwrite(qp_response.comments[i].s, LONG_LONG_STRING_SIZE, r);
+		debug("comments[%s]", qp_response.comments[i].s);
     }
 
-#endif
 	return SUCCESS;
 }
 
