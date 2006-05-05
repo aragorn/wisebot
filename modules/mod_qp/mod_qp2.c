@@ -2507,7 +2507,11 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 		return FAIL;
 	}
 
-	// VIRTUAL_ID
+	// VIRTUAL_ID : default did
+	if(strlen(req->virtual_rule.name) == 0) {
+        strcpy(req->virtual_rule.name, "DID");
+	}
+
 	rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[VIRTUAL_ID], req->virtual_rule.name);
 	if(rv < 0) {
 		error("can not appendF memfile");
