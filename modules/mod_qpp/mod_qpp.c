@@ -219,6 +219,8 @@ QPP_parse(void* word_db, char infix[],int max_infix_size, QueryNode postfix[], i
 	stObj.virtualfield_morpid = 20;
 	stObj.natural_search = 0;
 
+	quNode.original_word[0] = '\0'; // √ ±‚»≠
+
 	DEBUG("before entering while loop");
 	while (1) {
 		nRet = tk_getNextToken(&tkObj,&quNode,MAX_ORIGINAL_WORD_LEN);
