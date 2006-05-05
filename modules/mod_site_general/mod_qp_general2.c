@@ -1350,12 +1350,6 @@ static int qp_cb_orderby_virtual_document(const void* dest, const void* sour, vo
 	for ( i = 0; i < rules->cnt; i++ ) {
 		orderby_rule_t* order = &rules->list[i];
 
-	    return_docattr_field(order->rule.name, &field);
-		if(field == NULL) {
-			error("can not get docattr_field[%s]", order->rule.name);
-			return 0;
-		}
-
 		if ( order->rule.type == RELEVANCY ) {
 			diff = dest_vd->relevancy - sour_vd->relevancy;
 		}
@@ -1363,6 +1357,12 @@ static int qp_cb_orderby_virtual_document(const void* dest, const void* sour, vo
 		    diff = dest_vd->id - sour_vd->id;
 		}
 		else { // 일반 docattr field
+			return_docattr_field(order->rule.name, &field);
+			if(field == NULL) {
+				error("can not get docattr_field[%s]", order->rule.name);
+				return 0;
+			}
+
 			field->get_func( dest_vd->docattr, field, &value1 );
 			field->get_func( sour_vd->docattr, field, &value2 );
 
@@ -1399,12 +1399,6 @@ static int qp_cb_orderby_document(const void* dest, const void* sour, void* user
 	for ( i = 0; i < rules->cnt; i++ ) {
 		orderby_rule_t* order = &rules->list[i];
 
-	    return_docattr_field(order->rule.name, &field);
-		if(field == NULL) {
-			error("can not get docattr_field[%s]", order->rule.name);
-			return 0;
-		}
-
 		if ( order->rule.type == RELEVANCY ) {
 			diff = dest_d->hitratio - sour_d->hitratio;
 		}
@@ -1412,6 +1406,12 @@ static int qp_cb_orderby_document(const void* dest, const void* sour, void* user
 		    diff = dest_d->id - sour_d->id;
 		}
 		else { // 일반 docattr field
+			return_docattr_field(order->rule.name, &field);
+			if(field == NULL) {
+				error("can not get docattr_field[%s]", order->rule.name);
+				return 0;
+			}
+
 			void* dest_docattr = ud->docattr_base_ptr + 
 				            ud->docattr_record_size*(dest_d->id-1);
 			void* sour_docattr = ud->docattr_base_ptr + 
@@ -1454,7 +1454,7 @@ static config_t config[] = {
 static void register_hooks(void)
 {
 	sb_hook_qp_set_where_expression(qp_set_where_expression,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_qp_cb_where_virtual_document(qp_cb_where,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_cb_where(qp_cb_where,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_cb_orderby_virtual_document(qp_cb_orderby_virtual_document,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_cb_orderby_document(qp_cb_orderby_document,NULL,NULL,HOOK_MIDDLE);
 	/*
