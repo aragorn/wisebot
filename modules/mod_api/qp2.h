@@ -21,6 +21,7 @@ typedef struct operation_t operation_t;
 typedef struct operation_list_t operation_list_t;
 typedef struct select_list_t select_list_t;
 typedef struct user_data_t user_data_t;
+typedef struct comment_t comment_t;
 
 #include "docattr2.h"
 #include "indexer.h"
@@ -37,15 +38,30 @@ typedef struct user_data_t user_data_t;
 #define MAX_DOC_HITS_SIZE (1200000)
 #define MAX_GROUP_RESULT (200)
 
-#define MAX_AGENT_SEARCH_ROW_NUM    (1000)
-#define MAX_SEARCH_LIST_COUNT 		(100)
 
 // 최대 하위 노드 수
 // 4bit로 표현할수 있는 수.
-#define MAX_SEARCH_NODE (1 << 4) 
-#define DEFAULT_PORT "8000"
+#define MAX_SEARCH_NODE             (1 << 4) // 2^4 = 16(0은 사용 않함)
+#define MAX_AGENT_SEARCH_LIST_NUM   (10)
+#define MAX_AGENT_SEARCH_PAGE_NUM   (10)
+#define MAX_AGENT_DID_NUL_PER_VID   (10)
 
-#define MAX_AGENT_DOC_HITS_COUNT (MAX_SEARCH_NODE * MAX_AGENT_SEARCH_ROW_NUM)
+/*
+ * agent에서 처리할 수 있는 dochit의 갯수
+ * virtual_document를 기준으로 lc=10, pg=10,vid(did=10)=10
+ *
+ */
+#define MAX_AGENT_DOC_HITS_COUNT (MAX_SEARCH_NODE * \
+		                          MAX_AGENT_SEARCH_LIST_NUM * \
+		                          MAX_AGENT_SEARCH_PAGE_NUM * \
+		                          MAX_AGENT_DID_NUL_PER_VID)
+
+/*
+ * agent에서 처리할 수 있는 docattr의 갯수
+ */
+#define MAX_AGENT_DOCATTR_COUNT (MAX_SEARCH_NODE * \
+		                          MAX_AGENT_SEARCH_LIST_NUM * \
+		                          MAX_AGENT_SEARCH_PAGE_NUM) 
 
 enum index_list_type {
 	EXCLUDE,
@@ -77,6 +93,8 @@ struct virtual_document_t {
     int dochit_cnt;      // doc_hits의 갯수.
     docattr_t* docattr;  // 항상 하나임.
 	uint32_t relevancy;  // doc_hists::relevancy 의 합.
+
+	uint32_t node_id;
 };
 
 struct key_rule_t {
@@ -132,13 +150,13 @@ struct groupby_result_list_t {
 
 struct operation_t {
     enum clause_type type; // WHERE, GROUP_BY, ORDER_BY
-    char clause[SHORT_STRING_SIZE];
+    char clause[LONG_STRING_SIZE];
 
 	union {
 		groupby_rule_list_t groupby;
 		orderby_rule_list_t orderby;
         limit_t limit;
-        char* where;
+        char where[LONG_STRING_SIZE];
 	}rule;
 };
 
@@ -151,6 +169,12 @@ struct operation_list_t {
 struct select_list_t {
 	int cnt;
 	char field_name[MAX_EXT_FIELD][SHORT_STRING_SIZE];
+};
+
+struct comment_t {
+    char s[LONG_LONG_STRING_SIZE];
+	uint32_t did;
+	uint32_t node_id;
 };
 
 struct request_t {
@@ -167,7 +191,7 @@ struct response_t {
     groupby_result_list_t groupby_result_did;
 	virtual_document_list_t* vdl;
 	char word_list[STRING_SIZE];
-    char comments[COMMENT_LIST_SIZE][LONG_LONG_STRING_SIZE];
+    comment_t comments[COMMENT_LIST_SIZE];
     uint32_t node_id;
     limit_t limit;
     int search_result;
@@ -195,12 +219,13 @@ SB_DECLARE_HOOK(int, qp_init_response,(response_t* res))
 SB_DECLARE_HOOK(int, qp_light_search, (request_t *req, response_t *res))
 SB_DECLARE_HOOK(int, qp_full_search, (request_t *req, response_t *res))
 SB_DECLARE_HOOK(int, qp_abstract_search, (request_t *r, response_t *res))
-SB_DECLARE_HOOK(int, qp_do_filter_operate, (request_t *r, response_t *res, enum doc_type type))
+SB_DECLARE_HOOK(int, qp_do_filter_operation, (request_t *r, response_t *res, enum doc_type type))
+SB_DECLARE_HOOK(int, qp_get_query_string, (request_t *r, char query[MAX_QUERY_STRING_SIZE]))
 SB_DECLARE_HOOK(int, qp_finalize_search, (request_t *r, response_t *res))
 
 SB_DECLARE_HOOK(int, qp_cb_orderby_virtual_document, (const void *dest, const void *sour, void *userdata))
 SB_DECLARE_HOOK(int, qp_cb_orderby_document, (const void *dest, const void *sour, void *userdata))
-SB_DECLARE_HOOK(int, qp_cb_where_virtual_document, (const void *data))
+SB_DECLARE_HOOK(int, qp_cb_where, (const void *data))
 SB_DECLARE_HOOK(int, qp_set_where_expression, (char *clause))
 
 #endif
