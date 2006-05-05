@@ -8,6 +8,7 @@
 #include "util.h"
 #include "common_util.h"
 #include "mod_api/qp2.h"
+#include "memfile.h"
 #include "mod_api/qpp.h"
 #include "mod_api/indexdb.h"
 #include "mod_api/vrfi.h"
@@ -132,6 +133,7 @@ static int make_groupby_rule(char* clause, groupby_rule_t* rule);
 static int make_groupby_rule_list(char* clause, groupby_rule_list_t* rules);
 static int make_limit_rule(char* clause, limit_t* rule);
 static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules);
+static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE]);
 
 // document type별 operation
 static int virtual_document_orderby(orderby_rule_list_t* rules);
@@ -2279,15 +2281,17 @@ static void set_virtual_id(key_rule_t* rule, char* clause)
     /*
      * virtual_document는 did, docattr 만이 key가 될수 있다.
      */
-	if(strncasecmp(clause, "DID", 3) == 0) {
+	if(strlen(clause) == 0) {
+        rule->type = DID;
+        strncpy(rule->name, "DID", SHORT_STRING_SIZE-1);
+		info("virtual_id field is null, set default DID");
+	} else if(strncasecmp(clause, "DID", 3) == 0) {
         rule->type = DID;
         strncpy(rule->name, "DID", SHORT_STRING_SIZE-1);
 	} else {
         rule->type = DOCATTR;
         strncpy(rule->name, clause, SHORT_STRING_SIZE-1);
     }
-
-	debug("virtual_key name[%s]", rule->name);
 
     return;
 }
@@ -2299,12 +2303,9 @@ static int add_operation(operation_list_t* op_list, char* clause, int clause_typ
 		return FAIL;
 	}
 
-    op_list->list[op_list->cnt].type = clause_type;
-    strncpy(op_list->list[op_list->cnt].clause, clause, SHORT_STRING_SIZE);
-
     switch(clause_type) {
         case WHERE:
-            op_list->list[op_list->cnt].rule.where = op_list->list[op_list->cnt].clause;
+            strncpy(op_list->list[op_list->cnt].rule.where, clause, LONG_STRING_SIZE-1);
             break;
         case GROUP_BY:
             make_groupby_rule_list(clause, &(op_list->list[op_list->cnt].rule.groupby));
@@ -2323,6 +2324,57 @@ static int add_operation(operation_list_t* op_list, char* clause, int clause_typ
     op_list->cnt++;
     
     return SUCCESS;
+}
+
+static void print_operations(operation_list_t* op_list)
+{
+	int i = 0;
+	int j = 0;
+
+	for(j = 0; j < op_list->cnt; j++) {
+		operation_t* op = &op_list->list[j]; 
+
+		switch(op->type) {
+			case WHERE:
+				debug("where[%s]", op->clause);
+				break;
+			case GROUP_BY:
+			   {
+				   debug("group rule count[%d]", op->rule.groupby.cnt);
+				   for(i = 0; i < op->rule.groupby.cnt; i++) {
+					   print_groupby(&op->rule.groupby.list[i]);
+				   }
+			   }
+			   break;
+			case ORDER_BY:
+			   {
+				   debug("orderby rule count[%d]", op->rule.orderby.cnt);
+				   for(i = 0; i < op->rule.orderby.cnt; i++) {
+					   print_orderby(&op->rule.orderby.list[i]);
+				   }
+			   }
+			   break;
+			case LIMIT:
+			   print_limit(&op->rule.limit);
+			   break;
+			default:
+			   break;
+		}
+	}
+}
+
+static void print_request(request_t* req)
+{
+    debug("req->query[%s]", req->query);
+    debug("req->search[%s]", req->search);
+
+	print_select(&req->select_list);
+	debug("======= did operation count[%d]========", req->op_list_did.cnt);
+	print_operations(&req->op_list_did);
+	debug("======= vid operation count[%d]========", req->op_list_vid.cnt);
+	print_operations(&req->op_list_vid);
+
+	debug("virtual key[%s], type[%s]", req->virtual_rule.name, key_type_str[req->virtual_rule.type]);
 }
 
 static int init_request(request_t* req, char* query)
@@ -2368,7 +2420,7 @@ static int init_request(request_t* req, char* query)
 					set_select_clause(&req->select_list, s+len);
 					break;
 				case SEARCH:
-					strncpy(req->search, s+len, MAX_QUERY_STRING_SIZE-1);
+					strncpy(req->search, sb_trim(s+len), MAX_QUERY_STRING_SIZE-1);
 					break;
 				case VIRTUAL_ID:
 					set_virtual_id(&req->virtual_rule, s+len);
@@ -2384,6 +2436,9 @@ static int init_request(request_t* req, char* query)
 						} else {
 							op_list = &req->op_list_vid;
 						}
+
+					    strncpy(op_list->list[op_list->cnt].clause, s, LONG_STRING_SIZE);
+                        op_list->list[op_list->cnt].type = clause_type;
 
 						add_operation(op_list, s+len, clause_type);
 						break;
@@ -2404,7 +2459,121 @@ static int init_request(request_t* req, char* query)
 		s = e + 1;
     }
 
+	print_request(req);
+
     return SUCCESS;
+}
+
+static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
+{
+	int rv = 0;
+	int i = 0;
+	memfile *buffer = memfile_new();
+    operation_list_t* op_list = NULL;
+	select_list_t* sl = &req->select_list;
+
+	// SELECT
+	rv = memfile_appendF(buffer, "%s ", clause_type_str[SELECT]);
+	if(rv < 0) {
+		error("can not appendF memfile");
+		memfile_free(buffer);
+		return FAIL;
+	}
+
+
+	for(i = 0; i < sl->cnt; i++) {
+		if(i == (sl->cnt-1)) { // 마지막
+	        rv = memfile_appendF(buffer, "%s\n", sl->field_name[i]);
+			if(rv < 0) {
+				error("can not appendF memfile");
+		        memfile_free(buffer);
+				return FAIL;
+			}
+		} else {
+	        rv = memfile_appendF(buffer, "%s,", sl->field_name[i]);
+			if(rv < 0) {
+		        memfile_free(buffer);
+				error("can not appendF memfile");
+				return FAIL;
+			}
+		}
+    }
+
+	// SEARCH
+	rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[SEARCH], req->search);
+	if(rv < 0) {
+		error("can not appendF memfile");
+		memfile_free(buffer);
+		return FAIL;
+	}
+
+	// VIRTUAL_ID
+	rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[VIRTUAL_ID], req->virtual_rule.name);
+	if(rv < 0) {
+		error("can not appendF memfile");
+		memfile_free(buffer);
+		return FAIL;
+	}
+
+    // VIRTUAL_ID RULE
+	if(req->op_list_did.cnt > 0) {
+        op_list = &req->op_list_did;
+
+	    rv = memfile_append(buffer, "(\n", 2);
+		if(rv < 0) {
+			error("can not appendF memfile");
+		    memfile_free(buffer);
+			return FAIL;
+		}
+
+	    for(i = 0; i < op_list->cnt; i++) {
+		    operation_t* op = &(op_list->list[i]);
+			rv = memfile_appendF(buffer, "%s\n", op->clause);
+			if(rv < 0) {
+				error("can not appendF memfile");
+				memfile_free(buffer);
+				return FAIL;
+			}
+		}
+
+	    rv = memfile_append(buffer, ")\n", 2);
+		if(rv < 0) {
+			error("can not appendF memfile");
+		    memfile_free(buffer);
+			return FAIL;
+		}
+	}
+	
+	op_list = &req->op_list_vid;
+	for(i = 0; i < op_list->cnt; i++) {
+		operation_t* op = &(op_list->list[i]);
+		rv = memfile_appendF(buffer, "%s\n", op->clause);
+		if(rv < 0) {
+			error("can not appendF memfile");
+		    memfile_free(buffer);
+			return FAIL;
+		}
+	}
+
+	if(MAX_QUERY_STRING_SIZE < memfile_getSize(buffer)) {
+		error("enough buffer, buffer size[%d], query size[%ld]",
+				MAX_QUERY_STRING_SIZE, memfile_getSize(buffer));
+		memfile_free(buffer);
+		return FAIL;
+	}
+
+	memfile_setOffset(buffer, 0);
+	rv = memfile_read(buffer, query, memfile_getSize(buffer));
+	if(rv != memfile_getSize(buffer)) {
+		error("can not appendF memfile");
+		memfile_free(buffer);
+		return FAIL;
+	}
+
+	debug("query[\n%s]", query);
+
+	memfile_free(buffer);
+	return SUCCESS;
 }
 
 static int cb_index_list_sort(const void* dest, const void* sour, void* userdata)
@@ -2475,7 +2644,8 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
 
     for (i=0; i<list->ndochits;) {
         virtual_document_t* vd = &(g_vdl->data[g_vdl->cnt]);
-		/* virtual_document를 초기화 하고 만들어야 한다 일괄초기화를 피하기 위해. */
+
+		/* virtual_document를 초기화 하고 만들어야 한다 전체 초기화를 피하기위해 만들때 한다. */
 		memset(vd, 0x00, sizeof(virtual_document_t));
 
 		vd->docattr = g_docattr_base_ptr + 
@@ -2583,6 +2753,11 @@ static int make_groupby_rule_list(char* clause, groupby_rule_list_t* rules)
 
     s = sb_trim(clause);
     while(1) {
+		if(rules->cnt > MAX_GROUP_RULE) {
+			warn("over gropuby rule, max[%d]", MAX_GROUP_RULE);
+			break;
+		}
+
         e = strchr(s, ';');
         if(e == NULL && strlen(s) == 0) break;
 
@@ -2654,16 +2829,41 @@ static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules)
 
             if(p == NULL) {
                 strncpy(rules->list[cnt].rule.name, sb_trim(s), SHORT_STRING_SIZE);
-                rules->list[cnt].rule.type = ASC;
+
+				if(strncasecmp(s, 
+						       key_type_str[RELEVANCY], 
+							   strlen(key_type_str[RELEVANCY])) == 0) {
+                    rules->list[cnt].rule.type = RELEVANCY;
+				} else if(strncasecmp(s, 
+						       key_type_str[DID], 
+							   strlen(key_type_str[DID])) == 0) {
+                    rules->list[cnt].rule.type = DID;
+				} else {
+                    rules->list[cnt].rule.type = DOCATTR;
+				}
+
+                 rules->list[cnt].type = ASC;
             } else { 
                 *p = '\0';
                 sort_type = sb_trim(p+1);
 
                 strncpy(rules->list[cnt].rule.name, sb_trim(s), SHORT_STRING_SIZE);
+				if(strncasecmp(s, 
+						       key_type_str[RELEVANCY], 
+							   strlen(key_type_str[RELEVANCY])) == 0) {
+                    rules->list[cnt].rule.type = RELEVANCY;
+				} else if(strncasecmp(s, 
+						       key_type_str[DID], 
+							   strlen(key_type_str[DID])) == 0) {
+                    rules->list[cnt].rule.type = DID;
+				} else {
+                    rules->list[cnt].rule.type = DOCATTR;
+				}
+
                 if(strncasecmp(sort_type, "DESC", 4) == 0) {
-                    rules->list[cnt].rule.type = DESC;
+                    rules->list[cnt].type = DESC;
                 } else {
-                    rules->list[cnt].rule.type = ASC;
+                    rules->list[cnt].type = ASC;
                 }
             }
         }
@@ -2708,21 +2908,23 @@ static int document_where()
     int i = 0;
     int save_pos = 0;
     int rv = 0;
+	docattr_t* docattr = NULL;
 
-	for (i = 0; i < g_vdl->cnt ; i++) {
-        virtual_document_t* vd = (virtual_document_t*)&g_vdl->data[i];
+	for (i = 0; i < g_result_list->ndochits ; i++) {
+        doc_hit_t* d = (doc_hit_t*)&g_result_list->doc_hits[i];
+		docattr = g_docattr_base_ptr + g_docattr_record_size*(d->id-1);
 
-		rv = sb_run_qp_cb_where_virtual_document(vd->docattr);
+		rv = sb_run_qp_cb_where(docattr);
 		if ( rv == MINUS_DECLINE ) {
 			warn("callback function return [%d]", rv);
 			return TRUE;
 	    } else if ( rv ) {
-			memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
+			memcpy(&(g_result_list->doc_hits[save_pos]), &(g_result_list->doc_hits[i]), sizeof(doc_hit_t));
 			save_pos++;
 		}
 	}
 
-	g_vdl->cnt = save_pos;
+	g_result_list->ndochits = save_pos;
 
     return SUCCESS;
 }
@@ -2732,25 +2934,22 @@ static int virtual_document_where()
     int i = 0;
     int save_pos = 0;
     int rv = 0;
-	docattr_t* docattr = NULL;
 
-	for (i = 0; i < g_result_list->ndochits ; i++) {
-        doc_hit_t* doc_hit = (doc_hit_t*)&g_result_list->doc_hits[i];
-		docattr = g_docattr_base_ptr + g_docattr_record_size*(doc_hit->id-1);
+	for (i = 0; i < g_vdl->cnt ; i++) {
+		rv = sb_run_qp_cb_where(g_vdl->data[i].docattr);
 
-		rv = sb_run_qp_cb_where_virtual_document(docattr);
 		if ( rv == MINUS_DECLINE ) {
 			warn("callback function return [%d]", rv);
 			return TRUE;
 	    } else if ( rv ) {
-			memcpy(&(g_result_list->doc_hits[save_pos]), 
-					&g_result_list->doc_hits[i], 
-				    sizeof(doc_hit_t));
+			memcpy(&(g_vdl->data[save_pos]), 
+					&g_vdl->data[i], 
+				    sizeof(virtual_document_t));
 			save_pos++;
 		}
 	}
 
-	g_result_list->ndochits = save_pos;
+	g_vdl->cnt = save_pos;
 
     return SUCCESS;
 }
@@ -2829,7 +3028,7 @@ static int document_group_count(doc_hit_t* doc_hit, groupby_result_list_t* resul
 		} else {
 			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
 		}
-
+		
 		result->result[j][value]++;
 	}
 
@@ -2923,12 +3122,12 @@ static int operation_where(char* where, enum doc_type doc_type)
 		if (sb_run_qp_set_where_expression(where) == FAIL)
 			return FAIL;
 
-		rv = virtual_document_where(); 
+		rv = document_where(); 
 	} else {
 		if (sb_run_qp_set_where_expression(where) == FAIL)
 			return FAIL;
 
-		rv = document_where(); 
+		rv = virtual_document_where(); 
 	}
 
 	if(rv != SUCCESS) {
@@ -2991,12 +3190,22 @@ static int operation_limit(limit_t* rule, enum doc_type doc_type)
     int j = 0;
     int save_pos = 0;
 
-	for (i = rule->start; i < g_vdl->cnt && j < rule->cnt ; i++, j++) {
-		memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
-		save_pos++;
+	if(doc_type == DOCUMENT) {
+		for (i = rule->start; i < g_result_list->ndochits && j < rule->cnt ; i++, j++) {
+			memcpy(&(g_result_list->doc_hits[save_pos]), &(g_result_list->doc_hits[i]), sizeof(doc_hit_t));
+			save_pos++;
+		}
+
+		g_result_list->ndochits = save_pos;
+	} else {
+		for (i = rule->start; i < g_vdl->cnt && j < rule->cnt ; i++, j++) {
+			memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
+			save_pos++;
+		}
+
+	    g_vdl->cnt = save_pos;
 	}
 
-	g_vdl->cnt = save_pos;
 
     return SUCCESS;
 }
@@ -3025,8 +3234,10 @@ static void print_limit(limit_t* rule)
 
 static void print_groupby(groupby_rule_t* rule)
 {
+	debug("==== groupby start ====");
 	print_orderby(&rule->sort);
 	print_limit(&rule->limit);
+	debug("==== groupby end ====");
 }
 
 static int do_filter_operation(request_t* req, response_t* res, enum doc_type doc_type)
@@ -3074,21 +3285,7 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
                // response에 결과 출력을 위한 group 정보 저장.
 			   groupby_result->rules = op->rule.groupby;
 
-               {
-                   int k = 0;
-				   for(k = 0; k < op->rule.groupby.cnt; k++) {
-                       print_groupby(&op->rule.groupby.list[k]);
-				   }
-               }
-
 			   if(next_op->type == ORDER_BY) {
-				   {
-					   int k = 0;
-					   for(k = 0; k < next_op->rule.orderby.cnt; k++) {
-						   print_orderby(&next_op->rule.orderby.list[k]);
-					   }
-				   }
-
 				   rv = operation_groupby_orderby(&op->rule.groupby, 
                                           &next_op->rule.orderby, groupby_result, doc_type);
 				   if(rv != SUCCESS) {
@@ -3112,12 +3309,6 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 				   error("can not operate operation_orderby");
 				   return FAIL;
 			   }
-               {
-                   int k = 0;
-				   for(k = 0; k < op->rule.orderby.cnt; k++) {
-                       print_orderby(&op->rule.orderby.list[k]);
-				   }
-               }
 			   break;
 		   case WHERE:
 			   rv = operation_where(op->rule.where, doc_type);
@@ -3125,7 +3316,6 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 				   error("can not operate operation_where");
 				   return FAIL;
 			   }
-               debug("where clause[%s]", op->rule.where);
 			   break;
 		   case LIMIT:
 			   rv = operation_limit(&op->rule.limit, doc_type);
@@ -3133,8 +3323,6 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 				   error("can not operate operation_limit");
 				   return FAIL;
 			   }
-
-               print_limit(&op->rule.limit);
 			   break;
            default:
                warn("it is not operation : [%d][%s]", op->type, 
@@ -3183,7 +3371,6 @@ static int light_search (request_t *req, response_t *res)
 {
 	int num_of_node, rv;
 	QueryNode qnodes[MAX_QUERY_NODES];
-	index_list_t *result=NULL;
 
     init_response(res);
 
@@ -3233,7 +3420,7 @@ static int light_search (request_t *req, response_t *res)
 	}
 
     if (g_result_list->ndochits == 0) {
-		g_result_list = result;
+		g_result_list = NULL;
         return SUCCESS;
     }
 
@@ -3278,11 +3465,9 @@ static int virtual_document_fill_comment(request_t* req, response_t* res)
     int j = 0;
 	int cmt_idx = 0;
 
-    print_select(&req->select_list);
-
     for(i = 0; i < g_vdl->cnt; i++) {
         for(j = 0; j < g_vdl->data[i].dochit_cnt && cmt_idx < COMMENT_LIST_SIZE; j++) {
-		    get_comment(&g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx++]);
+		    get_comment(&g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx++].s);
 		}
     }
 
@@ -3459,7 +3644,8 @@ static void register_hooks(void)
 	sb_hook_qp_light_search(light_search,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_full_search(full_search,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_abstract_search(abstract_search,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_qp_do_filter_operate(do_filter_operation,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_do_filter_operation(do_filter_operation,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_get_query_string(get_query_string,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_finalize_search(finalize_search,NULL,NULL,HOOK_MIDDLE);
 }
 
