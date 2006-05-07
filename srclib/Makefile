@@ -17,12 +17,14 @@ all:
 	@echo " iconv-install - optional"
 	@echo " readline-install - optional"
 	@echo " ncurses-install - optional"
+	@echo " apr-install - optional"
+	@echo " apr-util-install - optional"
 	@echo "ex) make koma2c-install"
 ###############################################################################
 cvs-export: expat-export koma2c-export
-build: expat koma2c
-install: expat-install koma2c-install
-clean: expat-clean koma2c-clean
+build: expat koma2c apr apr-util
+install: expat-install koma2c-install apr-install apr-util-install
+clean: expat-clean koma2c-clean apr-clean apr-util-clean
 ###############################################################################
 expat-export:
 	[ -f expat/configure ] || (gzip -c -d expat.tar.gz | tar xf -)
@@ -50,6 +52,18 @@ ncurses-export:
 	cd ncurses-5.5 && \
 	./configure --prefix=$(prefix)
 
+apr-export:
+	[ -f apr/buildconf ] || (gzip -c -d apr.tar.gz | tar xf -)
+	cd apr && \
+	./buildconf && \
+	./configure --prefix=$(prefix)
+
+apr-util-export:
+	[ -f apr-util/buildconf ] || (gzip -c -d apr-util.tar.gz | tar xf -)
+	cd apr-util && \
+	./buildconf && \
+	./configure --prefix=$(prefix) --with-apr=$(shell pwd)/apr
+
 ###############################################################################
 expat: expat-export
 	cd expat && make
@@ -65,6 +79,12 @@ readline: readline-export
 
 ncurses: ncurses-export
 	cd ncurses-5.5 && make
+
+apr: apr-export
+	cd apr && make
+
+apr-util: apr-util-export
+	cd apr-util && make
 
 ###############################################################################
 expat-install: expat
@@ -82,6 +102,11 @@ readline-install: readline
 ncurses-install: ncurses
 	cd ncurses-5.5 && make install
 
+apr-install: apr
+	cd apr && make install
+
+apr-util-install: apr-util
+	cd apr-util && make install
 ###############################################################################
 expat-clean:
 	rm -rf expat
@@ -97,6 +122,12 @@ readline-clean:
 
 ncurses-clean:
 	rm -rf ncurses-5.5
+
+apr-clean:
+	rm -rf apr 
+
+apr-util-clean:
+	rm -rf apr-util
 
 ###############################################################################
 test:
