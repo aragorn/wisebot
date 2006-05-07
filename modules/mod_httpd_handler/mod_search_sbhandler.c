@@ -11,6 +11,7 @@
 #include "mod_api/http_client.h"
 #include "mod_standard_handler.h"
 #include "mod_httpd/http_protocol.h"
+#include "mod_httpd/http_util.h"
 #include "handler_util.h"
 
 #define MAX_ENUM_NUM        1024
@@ -83,6 +84,8 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
         error("qp init failed");
         return FAIL;
     }
+
+	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
 
     rv = sb_run_qp_init_request(&qp_request, 
                                 (char *)apr_table_get(s->parameters_in, "q"));
@@ -183,6 +186,8 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
         return FAIL;
     }
 
+	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
+
     rv = sb_run_qp_init_request(&qp_request, 
                                 (char *)apr_table_get(s->parameters_in, "q"));
     if(rv != SUCCESS) {
@@ -266,6 +271,8 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
         error("qp init failed");
         return FAIL;
     }
+
+	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
 
     rv = sb_run_qp_init_request(&qp_request, 
                                 (char *)apr_table_get(s->parameters_in, "q"));

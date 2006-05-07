@@ -161,33 +161,32 @@ static int agent_lightsearch(request_rec *r, request_t* req, response_t* res)
     limit_t* limit = NULL;
     limit_t limit_buffer;
 
-    if(req->op_list_vid.cnt <= 0) {
-        error("null operation");
-        return FAIL;
-    }
+    if(req->op_list_vid.cnt > 0) {
+		operation_t* op = &(req->op_list_vid.list[req->op_list_vid.cnt-1]);
+		if(op->type == LIMIT) {
+			limit = &op->rule.limit;
+			limit_buffer = *limit;
 
-    // 마지막에 반드시 LIMIT OPERATION이 존재해야 한다.
-	operation_t* op = &(req->op_list_vid.list[req->op_list_vid.cnt-1]);
-	if(op->type == LIMIT) {
-		limit = &op->rule.limit;
-        limit_buffer = *limit;
+			// agent는 하위노드에게 lc*(pg+1) 의 결과를 요청함.
+			limit->cnt = op->rule.limit.start + op->rule.limit.cnt;
+			limit->start = 0;
+			sprintf(op->clause, "LIMIT %d, %d", limit->start, limit->cnt);
 
-		// agent는 하위노드에게 lc*(pg+1) 의 결과를 요청함.
-		limit->cnt = op->rule.limit.start + op->rule.limit.cnt;
-		limit->start = 0;
-		sprintf(op->clause, "LIMIT %d, %d", limit->start, limit->cnt);
+			if(sb_run_qp_get_query_string(req, query) != SUCCESS) {
+				error("can not make request");
+				return FAIL;
+			}
+		} else {
+			warn("can not found limit operation, agent light search would be overflow data");
+			strcpy(query, req->query);
+		}
 	} else {
-        error("can not found limit operation");
-        return FAIL;
-    }
+		strcpy(query, req->query);
+	}
 
-    if(sb_run_qp_get_query_string(req, query) != SUCCESS) {
-        error("can not make request");
-        return FAIL;
-    }
 	
 	if ( snprintf(path, MAX_QUERY_STRING_SIZE, 
-                 "/search/light_search?q=%s", ap_escape_uri(r->pool, query)) <= 0 ){
+                 "/search/light_search?q=%s", escape_operator(r->pool, ap_escape_uri(r->pool, query))) <= 0 ){
 		error("query to long");
 		return FAIL;
 	}
@@ -356,7 +355,9 @@ static int agent_lightsearch(request_rec *r, request_t* req, response_t* res)
 	}
 
     // LIMIT operation 복귀
-    *limit = limit_buffer;
+	if(limit != NULL) {
+        *limit = limit_buffer;
+	}
     rv = sb_run_qp_do_filter_operation(req, res, VIRTUAL_DOCUMENT);
     if(rv == FAIL) {
         error("can not fileter operation - virtual_document");
@@ -372,7 +373,7 @@ static int agent_lightsearch(request_rec *r, request_t* req, response_t* res)
  */
 static int agent_abstractsearch(request_rec *r, request_t* req, response_t* res)
 {
-	int i = 0;
+	int i = 0, j = 0;
     int cmt_idx = 0;
 	memfile *msg_body_list[MAX_SEARCH_NODE];
     http_client_t* clients[MAX_SEARCH_NODE];
@@ -380,7 +381,7 @@ static int agent_abstractsearch(request_rec *r, request_t* req, response_t* res)
 
 	// make request line
 	if ( snprintf(path, MAX_QUERY_STRING_SIZE, 
-                 "/search/abstract_search?q=%s", ap_escape_uri(r->pool, req->query)) <= 0 ){
+                 "/search/abstract_search?q=%s", escape_operator(r->pool, ap_escape_uri(r->pool, req->query))) <= 0 ){
 		error("query to long");
 		return FAIL;
 	}
@@ -448,10 +449,10 @@ static int agent_abstractsearch(request_rec *r, request_t* req, response_t* res)
         buf = msg_body_list[client_idx];
 		
 	    //////////// abstract 요청 전송 ////////////////////////////////////////
-        for(i = 0; i < vd->dochit_cnt; i++) {
-			memfile_append(buf, (void *)&(vd->dochits[i]), sizeof(doc_hit_t));
+		debug("vid[%u], dochit_cnt[%d]", vd->id, vd->dochit_cnt);
+        for(j = 0; j < vd->dochit_cnt; j++) {
+			memfile_append(buf, (void *)&(vd->dochits[j]), sizeof(doc_hit_t));
 			memfile_append(buf, (void *)&node_id, sizeof(uint32_t));
-			debug("bufsize[%lu], abstractsearch docid[%u]", memfile_getSize(buf), vd->dochits[i].id);
         }
 	} 
 
@@ -565,6 +566,8 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
         error("qp init failed");
         return FAIL;
     }
+
+	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
 
     rv = sb_run_qp_init_request(&qp_request,
                                 (char *)apr_table_get(s->parameters_in, "q"));
@@ -683,6 +686,8 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s){
         return FAIL;
     }
 
+	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
+
     rv = sb_run_qp_init_request(&qp_request,
                                 (char *)apr_table_get(s->parameters_in, "q"));
     if(rv != SUCCESS) {
@@ -759,6 +764,8 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
         return FAIL;
     }
     
+	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
+
     rv = sb_run_qp_init_request(&qp_request, 
                                 (char *)apr_table_get(s->parameters_in, "q"));
     if(rv != SUCCESS) {
