@@ -154,6 +154,7 @@ static int document_group_count(doc_hit_t* d,
 static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
                                      orderby_rule_list_t* orderby_rules,
                                      groupby_result_list_t* result,
+									 key_rule_t* virtual_key,
 									 enum doc_type doc_type);
 static int operation_orderby(orderby_rule_list_t* rules, enum doc_type doc_type);
 static int operation_where(char* where, enum doc_type doc_type);
@@ -2233,7 +2234,6 @@ static char* get_clause_str(int clause_type)
 
 static void set_select_clause(select_list_t* sl, char* clause)
 {
-    int i = 0;
     char* s = NULL;
     char* e = NULL;
 
@@ -2265,12 +2265,12 @@ static void set_select_clause(select_list_t* sl, char* clause)
         }
 
 		if(e == NULL) break;
-        s = e+1;
-    }
+		if(sl->cnt >= MAX_EXT_FIELD) {
+			warn("over max select field[%d]", MAX_EXT_FIELD);
+			break;
+		}
 
-    //debug
-    for(i = 0; i < sl->cnt; i++) {
-        debug("select field[%s]", sl->field_name[i]);
+        s = e+1;
     }
 } 
 
@@ -2317,7 +2317,8 @@ static int add_operation(operation_list_t* op_list, char* clause, int clause_typ
             make_limit_rule(clause, &op_list->list[op_list->cnt].rule.limit); 
             break;
         default:
-            warn("it is not operation : [%s]", clause);
+            warn("it is not operator : [%d][%s] - [%s]", clause_type, 
+                                       get_clause_str(clause_type), clause);
             break;
     }
 
@@ -2358,6 +2359,8 @@ static void print_operations(operation_list_t* op_list)
 			   print_limit(&op->rule.limit);
 			   break;
 			default:
+               warn("it is not operator : [%d][%s]", op->type, 
+                                       get_clause_str(op->type));
 			   break;
 		}
 	}
@@ -2758,7 +2761,7 @@ static int make_groupby_rule_list(char* clause, groupby_rule_list_t* rules)
     s = sb_trim(clause);
     while(1) {
 		if(rules->cnt > MAX_GROUP_RULE) {
-			warn("over gropuby rule, max[%d]", MAX_GROUP_RULE);
+			warn("over gropuby rule max count[%d]", MAX_GROUP_RULE);
 			break;
 		}
 
@@ -2825,6 +2828,11 @@ static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules)
         char* s = sb_trim(sort_field);
         char* sort_type = NULL;
         char* p = NULL;
+
+		if(rules->cnt > MAX_SORT_RULE) {
+            warn("over orderby rule max count[%d]", MAX_SORT_RULE);
+			break;
+		}
 
 	    cnt = rules->cnt;
         
@@ -2895,11 +2903,17 @@ static int virtual_document_orderby(orderby_rule_list_t* rules)
 
 static int document_orderby(orderby_rule_list_t* rules)
 {
+	int i = 0;
+
 	user_data_t userdata;
 	userdata.doc_type = DOCUMENT;
 	userdata.rules = rules;
 	userdata.docattr_base_ptr = g_docattr_base_ptr;
 	userdata.docattr_record_size = g_docattr_record_size;
+
+	for(i = 0; i < rules->cnt; i++) {
+	    print_orderby(&rules->list[i]);
+	}
 
     qsort2(g_result_list->doc_hits, g_result_list->ndochits, sizeof(doc_hit_t), &userdata, 
           sb_run_qp_cb_orderby_document);
@@ -2978,9 +2992,9 @@ static int virtual_document_group_count(virtual_document_t* vd, groupby_result_l
 		}
 
 		if(value > MAX_CARDINALITY) {
-			error("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d]",
+			warn("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d]",
 				 rule->name, value, MAX_CARDINALITY);
-			return FAIL;
+			continue;
 		}
 
 		if(limit->start == -1 || limit->cnt == -1) {
@@ -3019,9 +3033,9 @@ static int document_group_count(doc_hit_t* doc_hit, groupby_result_list_t* resul
 		}
 
 		if(value > MAX_CARDINALITY) {
-			error("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d]",
+			warn("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d]",
 				 rule->name, value, MAX_CARDINALITY);
-			return FAIL;
+			continue;
 		}
 
 		if(limit->start == -1 || limit->cnt == -1) {
@@ -3032,7 +3046,6 @@ static int document_group_count(doc_hit_t* doc_hit, groupby_result_list_t* resul
 		} else {
 			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
 		}
-		
 		result->result[j][value]++;
 	}
 
@@ -3145,6 +3158,7 @@ static int operation_where(char* where, enum doc_type doc_type)
 static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
                                      orderby_rule_list_t* orderby_rules,
                                      groupby_result_list_t* result,
+									 key_rule_t* virtual_key,
 									 enum doc_type doc_type)
 {
     int i = 0;
@@ -3153,6 +3167,13 @@ static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
     orderby_rule_list_t join_orderby_rules;
 
     join_orderby_rules.cnt = 0;
+
+	// DID 기준으로 정렬할때는 가상문서 키로 정렬이 되어 있어야 한다.
+	if(doc_type == DOCUMENT && virtual_key->type != DID) {
+        join_orderby_rules.list[join_orderby_rules.cnt].rule = *virtual_key;
+        join_orderby_rules.list[join_orderby_rules.cnt].type = ASC;
+		join_orderby_rules.cnt++;
+    }
 
 	/* groupby, orerby의 조건을 하나로 합친다. 순서중요 */
 	for(i = 0; i < groupby_rules->cnt; i++) {
@@ -3291,14 +3312,14 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 
 			   if(next_op->type == ORDER_BY) {
 				   rv = operation_groupby_orderby(&op->rule.groupby, 
-                                          &next_op->rule.orderby, groupby_result, doc_type);
+                                          &next_op->rule.orderby, groupby_result, &req->virtual_rule, doc_type);
 				   if(rv != SUCCESS) {
 					   error("can not operate operation_groupby_orderby");
 					   return FAIL;
 				   }
 				   j++;
 			   } else {
-				   rv = operation_groupby_orderby(&op->rule.groupby, NULL, groupby_result, doc_type);
+				   rv = operation_groupby_orderby(&op->rule.groupby, NULL, groupby_result, &req->virtual_rule, doc_type);
 				   if(rv != SUCCESS) {
 					   error("can not operate operation_groupby_orderby");
 					   return FAIL;
@@ -3329,7 +3350,7 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 			   }
 			   break;
            default:
-               warn("it is not operation : [%d][%s]", op->type, 
+               warn("it is not operator : [%d][%s]", op->type, 
                                        get_clause_str(op->type));
                break;
 	    }
