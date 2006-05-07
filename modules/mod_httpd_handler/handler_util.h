@@ -7,7 +7,7 @@ char *replace_newline_to_space(char *str);
 uint32_t push_node_id(uint32_t node_id, uint32_t this_node_id);
 uint32_t pop_node_id(uint32_t node_id);
 uint32_t get_node_id(uint32_t node_id);
-char* escape_ampersand(apr_pool_t *p, const char *path);
+char* escape_operator(apr_pool_t *p, const char *path);
 int def_atoi(const char *s, int def);
 int hex(unsigned char h);
 void decodencpy(unsigned char *dst, unsigned char *src, int n);

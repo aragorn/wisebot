@@ -56,7 +56,7 @@ uint32_t get_node_id(uint32_t node_id)
  * URL reserved characters
  * $ & + , / : ; = ? @
  */
-char* escape_ampersand(apr_pool_t *p, const char *path)
+char* escape_operator(apr_pool_t *p, const char *path)
 {
     char *copy = apr_palloc(p, 3 * strlen(path) + 3);
     const unsigned char *s = (const unsigned char *)path;
