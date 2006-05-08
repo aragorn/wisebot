@@ -25,6 +25,7 @@ typedef struct comment_t comment_t;
 
 #include "docattr2.h"
 #include "indexer.h"
+#include "msg_record.h"
 
 #define MAX_QUERY_STRING_SIZE	LONG_STRING_SIZE
 #define MAX_ATTR_STRING_SIZE	LONG_STRING_SIZE
@@ -36,7 +37,6 @@ typedef struct comment_t comment_t;
 #define MAX_INCOMPLETE_INDEX_LIST_POOL	(30) 
 /* MAX_DOC_HITS_SIZE: size of the document set retrieved from VRF */
 #define MAX_DOC_HITS_SIZE (1200000)
-#define MAX_GROUP_RESULT (200)
 
 
 // 최대 하위 노드 수
@@ -184,6 +184,7 @@ struct request_t {
 	operation_list_t op_list_vid;
 	operation_list_t op_list_did;
 	key_rule_t virtual_rule;
+	msg_record_t msg;
 };
 
 struct response_t {
