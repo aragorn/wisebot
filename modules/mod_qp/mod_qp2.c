@@ -2319,7 +2319,7 @@ static int add_operation(operation_list_t* op_list, char* clause, int clause_typ
         default:
             warn("it is not operator : [%d][%s] - [%s]", clause_type, 
                                        get_clause_str(clause_type), clause);
-            break;
+            return FAIL;
     }
 
     op_list->cnt++;
@@ -2386,12 +2386,12 @@ static int init_request(request_t* req, char* query)
     char* e = NULL;
 	int did_rule_status = 0;
 
+    memset(req, 0x00, sizeof(request_t));
 	if(query == NULL) {
-        error("no query string"); 
+        MSG_RECORD(&req->msg, error, "no query string");
         return FAIL;
 	}
 
-    memset(req, 0x00, sizeof(request_t));
 	g_vdl->cnt = 0;
 	// default virtual_document key : did
 	req->virtual_rule.type = DID;
@@ -2414,7 +2414,8 @@ static int init_request(request_t* req, char* query)
         clause_type = get_clause_type(s);
 
         if(clause_type == UNKNOWN) {
-            warn("clause started by unknown symbol[%s]", s);
+            MSG_RECORD(&req->msg, warn, "clause started by unknown symbol[%s]", s);
+			return FAIL;
 		} else {
 			len = strlen(clause_type_str[clause_type]);
 			
@@ -2443,7 +2444,10 @@ static int init_request(request_t* req, char* query)
 					    strncpy(op_list->list[op_list->cnt].clause, s, LONG_STRING_SIZE);
                         op_list->list[op_list->cnt].type = clause_type;
 
-						add_operation(op_list, s+len, clause_type);
+						if(add_operation(op_list, s+len, clause_type) != SUCCESS) {
+                            MSG_RECORD(&req->msg, warn, "clause started by unknown symbol[%s]", s);
+							return FAIL;
+						}
 						break;
 					}
 				case START_DID_RULE:
@@ -2453,8 +2457,8 @@ static int init_request(request_t* req, char* query)
 					did_rule_status = 0;
 					break;
 				default:
-                    warn("clause started by unknown symbol[%s]", s);
-					break;
+                    MSG_RECORD(&req->msg, warn, "clause started by unknown symbol[%s]", s);
+					return FAIL;
 			}
 		}
 
@@ -2478,7 +2482,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 	// SELECT
 	rv = memfile_appendF(buffer, "%s ", clause_type_str[SELECT]);
 	if(rv < 0) {
-		error("can not appendF memfile");
+        MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		memfile_free(buffer);
 		return FAIL;
 	}
@@ -2488,15 +2492,15 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 		if(i == (sl->cnt-1)) { // 마지막
 	        rv = memfile_appendF(buffer, "%s\n", sl->field_name[i]);
 			if(rv < 0) {
-				error("can not appendF memfile");
+                MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		        memfile_free(buffer);
 				return FAIL;
 			}
 		} else {
 	        rv = memfile_appendF(buffer, "%s,", sl->field_name[i]);
 			if(rv < 0) {
+                MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		        memfile_free(buffer);
-				error("can not appendF memfile");
 				return FAIL;
 			}
 		}
@@ -2505,7 +2509,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 	// SEARCH
 	rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[SEARCH], req->search);
 	if(rv < 0) {
-		error("can not appendF memfile");
+        MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		memfile_free(buffer);
 		return FAIL;
 	}
@@ -2517,7 +2521,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 
 	rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[VIRTUAL_ID], req->virtual_rule.name);
 	if(rv < 0) {
-		error("can not appendF memfile");
+        MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		memfile_free(buffer);
 		return FAIL;
 	}
@@ -2528,7 +2532,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 
 	    rv = memfile_append(buffer, "(\n", 2);
 		if(rv < 0) {
-			error("can not appendF memfile");
+            MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		    memfile_free(buffer);
 			return FAIL;
 		}
@@ -2537,7 +2541,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 		    operation_t* op = &(op_list->list[i]);
 			rv = memfile_appendF(buffer, "%s\n", op->clause);
 			if(rv < 0) {
-				error("can not appendF memfile");
+                MSG_RECORD(&req->msg, error, "can not appendF memfile");
 				memfile_free(buffer);
 				return FAIL;
 			}
@@ -2545,7 +2549,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 
 	    rv = memfile_append(buffer, ")\n", 2);
 		if(rv < 0) {
-			error("can not appendF memfile");
+            MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		    memfile_free(buffer);
 			return FAIL;
 		}
@@ -2556,14 +2560,14 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 		operation_t* op = &(op_list->list[i]);
 		rv = memfile_appendF(buffer, "%s\n", op->clause);
 		if(rv < 0) {
-			error("can not appendF memfile");
+            MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		    memfile_free(buffer);
 			return FAIL;
 		}
 	}
 
 	if(MAX_QUERY_STRING_SIZE < memfile_getSize(buffer)) {
-		error("enough buffer, buffer size[%d], query size[%ld]",
+        MSG_RECORD(&req->msg, error, "enough buffer, buffer size[%d], query size[%ld]",
 				MAX_QUERY_STRING_SIZE, memfile_getSize(buffer));
 		memfile_free(buffer);
 		return FAIL;
@@ -2572,7 +2576,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 	memfile_setOffset(buffer, 0);
 	rv = memfile_read(buffer, query, memfile_getSize(buffer));
 	if(rv != memfile_getSize(buffer)) {
-		error("can not appendF memfile");
+        MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		memfile_free(buffer);
 		return FAIL;
 	}
@@ -3314,14 +3318,17 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 				   rv = operation_groupby_orderby(&op->rule.groupby, 
                                           &next_op->rule.orderby, groupby_result, &req->virtual_rule, doc_type);
 				   if(rv != SUCCESS) {
-					   error("can not operate operation_groupby_orderby");
+                       MSG_RECORD(&req->msg, error,
+                             "can not operate operation_groupby_orderby");
 					   return FAIL;
 				   }
 				   j++;
 			   } else {
-				   rv = operation_groupby_orderby(&op->rule.groupby, NULL, groupby_result, &req->virtual_rule, doc_type);
+				   rv = operation_groupby_orderby(&op->rule.groupby, NULL, 
+                                 groupby_result, &req->virtual_rule, doc_type);
 				   if(rv != SUCCESS) {
-					   error("can not operate operation_groupby_orderby");
+                       MSG_RECORD(&req->msg, error, 
+                             "can not operate operation_groupby_orderby");
 					   return FAIL;
 				   }
 			   }
@@ -3331,26 +3338,26 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 		   case ORDER_BY:
 			   rv = operation_orderby(&op->rule.orderby, doc_type);
 			   if(rv != SUCCESS) {
-				   error("can not operate operation_orderby");
+                   MSG_RECORD(&req->msg, error, "can not operate operation_orderby");
 				   return FAIL;
 			   }
 			   break;
 		   case WHERE:
 			   rv = operation_where(op->rule.where, doc_type);
 			   if(rv != SUCCESS) {
-				   error("can not operate operation_where");
+                   MSG_RECORD(&req->msg, error, "can not operate operation_where");
 				   return FAIL;
 			   }
 			   break;
 		   case LIMIT:
 			   rv = operation_limit(&op->rule.limit, doc_type);
 			   if(rv != SUCCESS) {
-				   error("can not operate operation_limit");
+                   MSG_RECORD(&req->msg, error, "can not operate operation_limit");
 				   return FAIL;
 			   }
 			   break;
            default:
-               warn("it is not operator : [%d][%s]", op->type, 
+               MSG_RECORD(&req->msg, warn, "it is not operator : [%d][%s]", op->type, 
                                        get_clause_str(op->type));
                break;
 	    }
@@ -3376,7 +3383,7 @@ static int full_search (request_t *req, response_t *res)
 
 	ret = light_search(req, res);
 	if (ret < 0) {
-		error("light search error");
+        MSG_RECORD(&req->msg, error, "light search error");
 		return FAIL;
 	}
 	INFO("light_search done");
@@ -3397,10 +3404,8 @@ static int light_search (request_t *req, response_t *res)
 	int num_of_node, rv;
 	QueryNode qnodes[MAX_QUERY_NODES];
 
-    init_response(res);
-
 	if (strlen(req->search) == 0) {
-		warn("length of query string is zero");
+        MSG_RECORD(&req->msg, warn, "length of query string is zero");
 		return FAIL;
 	}
 
@@ -3414,11 +3419,11 @@ static int light_search (request_t *req, response_t *res)
 #endif
 
 	if (num_of_node < 0) {
-		error("preprocess error");
+        MSG_RECORD(&req->msg, error, "preprocess error");
 		return FAIL;
 	}
 	else if (num_of_node == 0) {
-		warn("no operand is available");
+        MSG_RECORD(&req->msg, warn, "no operand is available");
 		// word_list는 가라로 만든다.
 		strncpy( res->word_list, " ", sizeof(res->word_list) );
 		g_result_list = NULL;
@@ -3433,14 +3438,14 @@ static int light_search (request_t *req, response_t *res)
 
 	rv = do_search_operation(qnodes, num_of_node, res->word_list, &g_result_list);
 	if (rv == FAIL) {
-		error("operation failed");
+        MSG_RECORD(&req->msg, error, "operation failed");
 		return FAIL;
 	}
 
 	/* in case no AND/OR/WITHIN.., operations are done */
 	g_result_list = read_index_list(g_result_list);
 	if (g_result_list == NULL) {
-		error("read_index_list failed");
+        MSG_RECORD(&req->msg, error, "read_index_list failed");
 		return FAIL;
 	}
 
@@ -3453,20 +3458,20 @@ static int light_search (request_t *req, response_t *res)
 
     rv = sb_run_docattr_get_base_ptr((docattr_t**)&g_docattr_base_ptr, &g_docattr_record_size);
     if(rv != SUCCESS) {
-        error("can not get docattr base ptr");
+        MSG_RECORD(&req->msg, error, "can not get docattr base ptr");
         return FAIL;
     }
 
     rv = do_filter_operation(req, res, DOCUMENT);
     if(rv == FAIL) {
-        error("can not fileter operation - document");
+        MSG_RECORD(&req->msg, error, "can not fileter operation - document");
 		release_list( g_result_list );
         return FAIL;
     }
 
     rv = make_virtual_document(g_result_list, &req->virtual_rule);
     if(rv == FAIL) {
-        error("can not make virtual document list");
+        MSG_RECORD(&req->msg, error, "can not make virtual document list");
 		release_list( g_result_list );
         return FAIL;
     }
@@ -3476,7 +3481,7 @@ static int light_search (request_t *req, response_t *res)
 
     rv = do_filter_operation(req, res, VIRTUAL_DOCUMENT);
     if(rv == FAIL) {
-        error("can not fileter operation - virtual_document");
+        MSG_RECORD(&req->msg, error, "can not fileter operation - virtual_document");
 		release_list( g_result_list );
         return FAIL;
     }
@@ -3491,8 +3496,18 @@ static int virtual_document_fill_comment(request_t* req, response_t* res)
 	int cmt_idx = 0;
 
     for(i = 0; i < g_vdl->cnt; i++) {
-        for(j = 0; j < g_vdl->data[i].dochit_cnt && cmt_idx < COMMENT_LIST_SIZE; j++) {
-		    get_comment(&g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx++].s);
+		if(cmt_idx >= COMMENT_LIST_SIZE) {
+			g_vdl->data[i].dochit_cnt = 0;
+			warn("over comment max count[%d]", COMMENT_LIST_SIZE);
+		} else {
+			for(j = 0; j < g_vdl->data[i].dochit_cnt && cmt_idx < COMMENT_LIST_SIZE; j++) {
+				get_comment(&g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx++].s);
+		        if(cmt_idx >= COMMENT_LIST_SIZE) {
+			        g_vdl->data[i].dochit_cnt = j+1;
+					warn("over comment max count[%d]", COMMENT_LIST_SIZE);
+					break;
+				}
+			}
 		}
     }
 
