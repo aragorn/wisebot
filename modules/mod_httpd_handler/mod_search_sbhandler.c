@@ -55,7 +55,7 @@ static void print_virtual_document(virtual_document_t* vd)
     debug("vid[%u]", vd->id);
     debug("relevancy[%u]", vd->relevancy);
     debug("dochit_cnt[%u]", vd->dochit_cnt);
-    debug("node_id[%u]", this_node_id);
+    debug("node_id[%0X]", this_node_id);
 	for(;i < vd->dochit_cnt; i++) {
 		debug("did[%u]", vd->dochits[i].id);
 	}
@@ -91,6 +91,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
                                 (char *)apr_table_get(s->parameters_in, "q"));
     if(rv != SUCCESS) {
         error("can not init request");
+		s->msg = qp_request.msg;
         return FAIL;
     }
 
@@ -106,6 +107,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 	timelog("full_search_finish");
 	if (rv != SUCCESS) {
 		error("sb_run_qp_full_search failed: query[%s]", qp_request.query);
+		s->msg = qp_request.msg;
 		return FAIL;
 	}
 
@@ -153,6 +155,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 
         ap_rprintf(r, "<row no=\"%d\">\n", i);
         ap_rprintf(r, "<id>%u</id>\n", vd->id);
+        ap_rprintf(r, "<node_id>%0X</node_id>\n", vd->node_id);
         ap_rprintf(r, "<relevancy>%u</relevancy>\n", vd->relevancy);
         ap_rprintf(r, "<comment_count>%u</comment_count>\n", vd->dochit_cnt);
 
@@ -171,6 +174,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 	sb_run_qp_finalize_search(&qp_request, &qp_response);
 	timelog("qp_finalize");
 
+	s->msg = qp_request.msg;
 	return SUCCESS;
 }
 
@@ -182,6 +186,7 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 
 	rv = sb_run_qp_init();
     if(rv != SUCCESS && rv != DECLINE) {
+	    s->msg = qp_request.msg;
         error("qp init failed");
         return FAIL;
     }
@@ -191,12 +196,14 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
     rv = sb_run_qp_init_request(&qp_request, 
                                 (char *)apr_table_get(s->parameters_in, "q"));
     if(rv != SUCCESS) {
+	    s->msg = qp_request.msg;
         error("can not init request");
         return FAIL;
     }
 
     rv = sb_run_qp_init_response(&qp_response);
     if(rv != SUCCESS) {
+	    s->msg = qp_request.msg;
         error("can not init request");
         return FAIL;
     }
@@ -205,6 +212,7 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 	rv = sb_run_qp_light_search(&qp_request, &qp_response);
 	timelog("sb_run_qp_light_search finish");
 	if (rv != SUCCESS) {
+	    s->msg = qp_request.msg;
 		error("sb_run_qp_light_search failed: query[%s]", qp_request.query);
 		return FAIL;
 	}
@@ -245,7 +253,7 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 		ap_rwrite((void*)vd->dochits, sizeof(doc_hit_t)*vd->dochit_cnt, r);
 
 		ap_rwrite(&(this_node_id), sizeof(uint32_t), r);
-		debug("send node_id[%u]", this_node_id);
+		debug("send node_id[%0X]", this_node_id);
     
 	    ap_rwrite((void*)vd->docattr, sizeof(docattr_t), r);
     }
@@ -268,6 +276,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 
 	rv = sb_run_qp_init();
     if(rv != SUCCESS && rv != DECLINE) {
+	    s->msg = qp_request.msg;
         error("qp init failed");
         return FAIL;
     }
@@ -277,12 +286,14 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
     rv = sb_run_qp_init_request(&qp_request, 
                                 (char *)apr_table_get(s->parameters_in, "q"));
     if(rv != SUCCESS) {
+	    s->msg = qp_request.msg;
         error("can not init request");
         return FAIL;
     }
 
     rv = sb_run_qp_init_response(&qp_response);
     if(rv != SUCCESS) {
+	    s->msg = qp_request.msg;
         error("can not init request");
         return FAIL;
     }
@@ -301,7 +312,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 	CHECK_REQUEST_CONTENT_TYPE(r, "x-softbotd/binary");
 
 	if (sb_run_sbhandler_make_memfile(r, &buf) != SUCCESS) {
-		error("make_memfile_from_postdata failed");
+	    MSG_RECORD(&s->msg, error, "make_memfile_from_postdata failed");
 		return FAIL;
 	}
 
@@ -313,27 +324,28 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
         recv_data_size = sizeof(doc_hit_t);
         if ( memfile_read(buf, (char*)&(vd->dochits[recv_pos]), recv_data_size)
                 != recv_data_size ) {
-            error("incomplete result at [%d]th node: doc_hits ", i);
-            continue;
+			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: doc_hits ", i);
+            return FAIL;
         }
 
 		// 2. node_id 수신
 		recv_data_size = sizeof(uint32_t);
 		if ( memfile_read(buf, (char*)&node_id, recv_data_size)
 				!= recv_data_size ) {
-			error("incomplete result at [%d]th node: doc_hits ", i);
-			continue;
+			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: node_id ", i);
+			return FAIL;
 		}
 
 		// 자신의 node_id가 아니면 error
 		if(get_node_id(node_id) != this_node_id) {
-			error("node_id[%u] not equals this_node_id[%u]",
+			MSG_RECORD(&s->msg, 
+			              error, "node_id[%u] not equals this_node_id[%0X]",
 						  get_node_id(node_id),
 						  this_node_id);
-			continue;
+			return FAIL;
 		}
 
-		debug("did[%u], node_id[%u]", vd->dochits[recv_pos].id, node_id);
+		debug("did[%u], node_id[%0X]", vd->dochits[recv_pos].id, node_id);
 
         // 자신의 node_id pop
         node_id = pop_node_id(node_id);
@@ -347,6 +359,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 	rv = sb_run_qp_abstract_search(&qp_request, &qp_response);
 	timelog("sb_run_qp_abstract_search finish");
 	if (rv != SUCCESS) {
+	    s->msg = qp_request.msg;
 		error("sb_run_qp_abstract_search failed: query[%s]", qp_request.query);
 		return FAIL;
 	}

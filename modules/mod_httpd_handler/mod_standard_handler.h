@@ -4,6 +4,7 @@
 
 #include "apr_tables.h"
 #include "mod_httpd/mod_httpd.h"
+#include "msg_record.h"
 
 typedef struct softbot_handler_rec softbot_handler_rec;
 
@@ -12,6 +13,7 @@ struct softbot_handler_rec {
 	char *request_name;
 	char *remain_uri;
 	apr_table_t	*parameters_in;
+	msg_record_t msg;
 };
 
 typedef struct {

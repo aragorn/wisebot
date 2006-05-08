@@ -123,16 +123,36 @@ static int append_file(request_rec *r, char *path){
     return SUCCESS;
 }
 
+
+static int append_xml_msg_record(request_rec *r, msg_record_t *msg){
+    int nRet;
+    char buf[MAX_RECORDED_MSG_LEN];
+
+    if (strncmp(r->content_type, "text/xml", 8) != 0 ){/*strlen("text/xml")*/
+        error("invalid content_type[%s]", r->content_type);
+        return FAIL;
+    }   
+        
+    ap_rprintf(r, "<messages>\n");
+    msg_record_rewind(msg);
+    while(1){
+        nRet = msg_record_read(msg, buf);
+        if ( nRet != SUCCESS )  break;
+        ap_rprintf(r, "\t<msgline><![CDATA[%s]]></msgline>\n", buf);
+    }   
+    ap_rprintf(r, "</messages>\n");
+    return SUCCESS;
+}  
+
 static void _make_fail_response(request_rec *r, softbot_handler_rec *s, int ret_code){
-/*
     ap_set_content_type(r, "text/xml");
     ap_rprintf(r,
             "<?xml version=\"1.0\" encoding=\"euc-kr\" ?>"
             "<xml>\n<retcode>%d</retcode>\n"
             "<result>Response Failed</result>\n", ret_code);
-    append_xml_msg_record(r, &s->msgs);
+	append_xml_msg_record(r, &s->msg);
     ap_rprintf(r, "</xml>");
-*/
+
     return;
 }
 
@@ -224,7 +244,7 @@ static int standard_handler(request_rec *r)
 
         nRet = _sub_handler(r, &s);
         if ( nRet != SUCCESS ) {
-                _make_fail_response(r, &s, nRet);
+            _make_fail_response(r, &s, nRet);
         }
         INFO(" handling request end: '%s/%s', '%s'", 
                         s.name_space, s.request_name, 
