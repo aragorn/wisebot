@@ -157,9 +157,9 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
         ap_rprintf(r, "<id>%u</id>\n", vd->id);
         ap_rprintf(r, "<node_id>%0X</node_id>\n", vd->node_id);
         ap_rprintf(r, "<relevancy>%u</relevancy>\n", vd->relevancy);
-        ap_rprintf(r, "<comment_count>%u</comment_count>\n", vd->dochit_cnt);
+        ap_rprintf(r, "<count>%u</count>\n", vd->dochit_cnt);
 
-        for(j = 0; j < vd->dochit_cnt; j++) {
+        for(j = 0; j < vd->comment_cnt; j++) {
             ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n", qp_response.comments[cmt_idx++].s);
 		}
 
@@ -168,7 +168,6 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 
 	ap_rprintf(r, "</search>\n</xml>\n");
 
-	//sb_run_sbhandler_append_msg_record(r, &(s->msgs));
 	timelog("send_result_finish");
 
 	sb_run_qp_finalize_search(&qp_request, &qp_response);

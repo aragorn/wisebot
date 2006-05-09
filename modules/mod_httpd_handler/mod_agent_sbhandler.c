@@ -183,7 +183,6 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 	} else {
 		strcpy(query, req->query);
 	}
-
 	
 	if ( snprintf(path, MAX_QUERY_STRING_SIZE, 
                  "/search/light_search?q=%s", escape_operator(r->pool, ap_escape_uri(r->pool, query))) <= 0 ){
@@ -200,8 +199,11 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
                                          search_nodes[i].ip, 
                                          search_nodes[i].port);
 			if ( search_nodes[i].client == NULL ) {
-				MSG_RECORD(&s->msg, error, "sb_run_http_client_new failed");
-				return FAIL;
+				MSG_RECORD(&s->msg, error, 
+						"sb_run_http_client_new failed, ip[%s], port[%s]", 
+						search_nodes[i].ip,
+					    search_nodes[i].port);
+				continue;
 			}
             client = search_nodes[i].client;
 		} else {
@@ -217,8 +219,11 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		http_print(client->http);
 
 		if ( sb_run_http_client_makeRequest(client, NULL)	!= SUCCESS ) {
-			MSG_RECORD(&s->msg, error, "sb_run_http_client_makeRequest failed");
-			return FAIL;
+			MSG_RECORD(&s->msg, error, 
+					"sb_run_http_client_makeRequest failed, ip[%s], port[%s]", 
+				    search_nodes[i].ip,
+				    search_nodes[i].port)
+			continue;
 		}
 
         clients[i] = client;
@@ -227,7 +232,6 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 
 	if ( sb_run_http_client_retrieve(search_node_num, clients) != SUCCESS ){
 		MSG_RECORD(&s->msg, error, "sb_run_http_client_retrieve failed");
-		return FAIL;
 	}
 
 	for (node_idx = 0; node_idx < search_node_num ; node_idx++ ) {
@@ -235,10 +239,22 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
         int recv_data_size = 0;
 		uint32_t total_cnt = 0;
 		uint32_t recv_cnt = 0;
+		uint32_t real_recv_cnt = 0;
 		memfile *buf = clients[node_idx]->http->content_buf;
 		if (!buf ) {
-			MSG_RECORD(&s->msg, error, "no targetnode result at [%d]th node", i);
-			return FAIL;
+			MSG_RECORD(&s->msg, error, 
+					"no targetnode result, ip[%s], port[%s]",
+				    search_nodes[node_idx].ip,
+				    search_nodes[node_idx].port);
+			continue;
+		}
+
+		if(clients[node_idx]->parsing_status.state != PARSING_COMPLETE) {
+			MSG_RECORD(&s->msg, error, 
+					"parse response error, ip[%s], port[%s]",
+			        search_nodes[node_idx].ip,
+			        search_nodes[node_idx].port);
+			continue;
 		}
 
         debug("recv data, address[%s]:[%s] :  size[%lu]", search_nodes[node_idx].ip,
@@ -251,14 +267,14 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
         recv_data_size = sizeof(uint32_t);
 		if ( memfile_read(buf, (char *)&search_nodes[node_idx].node_id, recv_data_size) != recv_data_size ){
 			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: tot_cnt ", i);
-			return FAIL;
+			continue; // 해당 node를 통채로 무시
 		}
 
         // 1. 총 검색건수 
         recv_data_size = sizeof(uint32_t);
 		if ( memfile_read(buf, (char *)&total_cnt, recv_data_size) != recv_data_size ){
 			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: tot_cnt ", i);
-			return FAIL;
+			continue; // 해당 node를 통채로 무시
 		}
 
 
@@ -266,61 +282,73 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
         recv_data_size = sizeof(uint32_t);
 		if ( memfile_read(buf, (char *)&recv_cnt, recv_data_size) != recv_data_size ){
 			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: num_row ", i);
-			return FAIL;
+			continue; // 해당 node를 통채로 무시
 		}
 
         // 3. 검색 단어 리스트, 모든 node가 같은 word_list를 전송해올것이다. 중복작업임.
         recv_data_size = STRING_SIZE;
 		if ( memfile_read(buf, res->word_list, STRING_SIZE) != recv_data_size ) {
 			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: search_words ", i);
-			return FAIL;
+			continue; // 해당 node를 통채로 무시
 		}
 
 		debug("node_id[%0X], total_cnt[%d], recv_cnt[%d], word_list[%s]", 
 				search_nodes[node_idx].node_id, total_cnt, recv_cnt, res->word_list);
 
+		// virtual_document, doc_hit, docattr buffer의 한계로 인해 실제로 받은 데이타의 수는 다를 수 있다.
+		real_recv_cnt = recv_cnt;
 		for( i = 0; i < recv_cnt; i++) {
             virtual_document_t* vd = &(res->vdl->data[res->vdl->cnt+i]);
 
 			if(res->vdl->cnt + i > MAX_DOC_HITS_SIZE) {
-				MSG_RECORD(&s->msg, error, "not enought agent_doc_hits buffer[%d], recv count[%d]", 
+				real_recv_cnt = i;
+
+				MSG_RECORD(&s->msg, error, "not enought virtual_document count[%d], recv count[%d]", 
 						MAX_AGENT_DOC_HITS_COUNT, res->vdl->cnt + i);
-			    return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
 			recv_data_size = sizeof(uint32_t);
 			if ( memfile_read(buf, (char*)&vd->id, recv_data_size) 
 					!= recv_data_size ) {
 				MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: vid ", i);
-			    return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
 			recv_data_size = sizeof(uint32_t);
 			if ( memfile_read(buf, (char*)&vd->relevancy, recv_data_size) 
 					!= recv_data_size ) {
 				MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: relevancy ", i);
-			    return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
 			recv_data_size = sizeof(uint32_t);
 			if ( memfile_read(buf, (char*)&vd->dochit_cnt, recv_data_size) 
 					!= recv_data_size ) {
 				MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: dochit_cnt ", i);
-			    return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
-			if(g_dochit_cnt + vd->dochit_cnt > 
-					MAX_AGENT_DOC_HITS_COUNT) {
+			vd->comment_cnt = vd->dochit_cnt;
+
+			if(g_dochit_cnt + vd->dochit_cnt > MAX_AGENT_DOC_HITS_COUNT) {
+				vd->comment_cnt = MAX_AGENT_DOC_HITS_COUNT - g_dochit_cnt;
 				MSG_RECORD(&s->msg, error, "over max hit count[%u]", MAX_AGENT_DOC_HITS_COUNT);
-				return FAIL;
+				//return FAIL; // 초과해도 정상적으로 출력되도록.
 			}
 
-			recv_data_size = sizeof(doc_hit_t)*vd->dochit_cnt;
+			recv_data_size = sizeof(doc_hit_t)*vd->comment_cnt;
 			if ( memfile_read(buf, 
                  (char*)&g_dochits_buffer[g_dochit_cnt],
                  recv_data_size) != recv_data_size ) {
 				MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: doc_hits ", i);
-			    return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
+			}
+
+			// 읽지 않은 부분을 skip한다.
+			if(vd->dochit_cnt != vd->comment_cnt) {
+				memfile_setOffset(buf,  
+						memfile_getOffset(buf) + sizeof(doc_hit_t)*(vd->dochit_cnt - vd->comment_cnt));
 			}
 
 			vd->dochits = &g_dochits_buffer[g_dochit_cnt];
@@ -330,12 +358,12 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 			if ( memfile_read(buf, (char*)&vd->node_id, recv_data_size) 
 					!= recv_data_size ) {
 				MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: node_id ", i);
-			    return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
 			if(g_docattr_cnt + 1 > MAX_AGENT_DOCATTR_COUNT) {
 				MSG_RECORD(&s->msg, error, "over max docattr count[%u]", MAX_AGENT_DOCATTR_COUNT);
-				return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
 			// 6. docattr
@@ -343,14 +371,17 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 			if ( memfile_read(buf, (char*)&g_docattr_buffer[g_docattr_cnt], recv_data_size) 
 					!= recv_data_size ) {
 				MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: docattr ", i);
-			    return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
+
 			vd->docattr = &g_docattr_buffer[g_docattr_cnt];
 			g_docattr_cnt++;
 
             print_virtual_document(vd);
 		}
-        res->vdl->cnt += recv_cnt;
+
+RECV_FAIL:
+        res->vdl->cnt += real_recv_cnt;
         res->search_result += total_cnt;
 	}
 
@@ -395,9 +426,12 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 			search_nodes[i].client = sb_run_http_client_new(
                                         search_nodes[i].ip, 
                                         search_nodes[i].port);
-			if ( !client ) {
-				MSG_RECORD(&s->msg, error, "sb_run_http_client_new failed");
-				return FAIL;
+			if ( search_nodes[i].client == NULL ) {
+				MSG_RECORD(&s->msg, error, 
+						"sb_run_http_client_new failed, ip[%s], port[%s]", 
+						search_nodes[i].ip,
+					    search_nodes[i].port);
+				continue;
 			}
             client = search_nodes[i].client;
 		} else {
@@ -461,14 +495,20 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 		memfile **buf = &(msg_body_list[i]);
 		http_client_t* client = search_nodes[i].client;
 		if ( *buf == NULL ) {
-			MSG_RECORD(&s->msg, error, "client is null, [%d]", i);
+			MSG_RECORD(&s->msg, error, 
+					"send buffer is null ip[%s], port[%s]",
+				    search_nodes[i].ip,
+				    search_nodes[i].port);
 			continue;
 		}
 
 		http_setMessageBody(client->http, *buf, "x-softbotd/binary", memfile_getSize(*buf));
 		if ( sb_run_http_client_makeRequest(client, NULL)	!= SUCCESS ) {
 			client->http->req_message_body = NULL;
-            MSG_RECORD(&s->msg, error, "sb_run_http_client_makeRequest failed");
+			MSG_RECORD(&s->msg, error, 
+					"b_run_http_client_makeRequest failed, ip[%s], port[%s]",
+				    search_nodes[i].ip,
+				    search_nodes[i].port);
 			free_mfile_list(msg_body_list);
 			return FAIL;
 		}
@@ -485,7 +525,6 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
     // recv...
 	if ( sb_run_http_client_retrieve(search_node_num, clients) != SUCCESS){
 		MSG_RECORD(&s->msg, error, "sb_run_http_client_retrieve failed");
-		//FIXME : return FAIL;
 	}
 	
 	for (i=0; i <search_node_num; i++ ) {
@@ -495,9 +534,21 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 
 		memfile *buf = clients[i]->http->content_buf;
 		if (!buf ) {
-			MSG_RECORD(&s->msg, error, "no targetnode result at [%d]th node", i);
-			return FAIL;
+			MSG_RECORD(&s->msg, error, 
+					"no targetnode result, ip[%s], port[%s]",
+				    search_nodes[i].ip,
+				    search_nodes[i].port);
+			continue;
 		}
+
+		if(clients[i]->parsing_status.state != PARSING_COMPLETE) {
+			MSG_RECORD(&s->msg, error, 
+					"parse response error, ip[%s], port[%s]",
+			        search_nodes[i].ip,
+			        search_nodes[i].port);
+			continue;
+		}
+
 		memfile_setOffset(buf, 0);
 
 	    /////////// abstarct search 결과 수신 ////////////////////////////////////////
@@ -505,7 +556,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
         recv_data_size = sizeof(uint32_t);
 		if ( memfile_read(buf, (char *)&recv_cnt, recv_data_size) != recv_data_size ){
 			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: num_row ", i);
-			return FAIL;
+			continue;
 		}
 
 		info("client[%d], recv_cnt[%u]", i, recv_cnt);
@@ -515,7 +566,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 
             if(cmt_idx > COMMENT_LIST_SIZE) {
 				MSG_RECORD(&s->msg, error, "over max comment count[%d]", COMMENT_LIST_SIZE);
-                return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
             }
 
 			// 2.2 did
@@ -523,7 +574,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 			if ( memfile_read(buf, (char*)&cmt->did, recv_data_size) 
 					!= recv_data_size ) {
 				MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: doc_id ", j);
-				return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
 			// 2.2 node_id
@@ -531,7 +582,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 			if ( memfile_read(buf, (char*)&cmt->node_id, recv_data_size) 
 					!= recv_data_size ) {
 				MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: node_id ", j);
-				return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
 			// 2.3 comment
@@ -539,13 +590,16 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 			if ( memfile_read(buf, (char*)cmt->s, recv_data_size) 
 					!= recv_data_size ) {
 				MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: comment ", j);
-				return FAIL;
+			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
             debug("did[%u], node_id[%0X], comments[%s]", 
                      cmt->did, cmt->node_id, cmt->s);
             cmt_idx++;
 		}
+
+RECV_FAIL:
+         ;// do nothing
 	}
 
 	return SUCCESS;
@@ -656,9 +710,9 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
         ap_rprintf(r, "<id>%u</id>\n", vd->id);
         ap_rprintf(r, "<node_id>%0X</node_id>\n", vd->node_id);
         ap_rprintf(r, "<relevancy>%u</relevancy>\n", vd->relevancy);
-        ap_rprintf(r, "<comment_count>%u</comment_count>\n", vd->dochit_cnt);
+        ap_rprintf(r, "<count>%u</count>\n", vd->dochit_cnt);
 
-        for(j = 0; j < vd->dochit_cnt; j++) {
+        for(j = 0; j < vd->comment_cnt; j++) {
             ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n", 
                find_comment(qp_response.comments, vd->dochits[j].id, pop_node_id(vd->node_id)));
         }
