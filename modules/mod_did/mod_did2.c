@@ -35,6 +35,10 @@ typedef struct _did_db_set_t {
 static did_db_set_t* did_set = NULL;
 static int current_did_set = -1;
 
+// open을 singleton으로 구현하기 위한 것
+static did_db_t* singleton_did_db[MAX_DID_SET];
+static int singleton_did_db_ref[MAX_DID_SET];
+
 #define ACQUIRE_LOCK() \
 	if ( acquire_lock( db->lock_id ) != SUCCESS ) return FAIL;
 #define RELEASE_LOCK() \
@@ -93,6 +97,15 @@ static int open_did_db(did_db_t** did_db, int opt)
 		return DECLINE;
 	}
 
+	// 다른 module에서 이미 열었던 건데.. 그것을 return한다.
+	if ( singleton_did_db[opt] != NULL ) {
+		*did_db = singleton_did_db[opt];
+		singleton_did_db_ref[opt]++;
+
+		info("reopened did db[set:%d, ref:%d]", opt, singleton_did_db_ref[opt]);
+		return SUCCESS;
+	}
+
 	if ( !did_set[opt].set_hash_set ) {
 		error("HashSet is not set [DidSet:%d]. see config", opt);
 		return FAIL;
@@ -136,6 +149,10 @@ static int open_did_db(did_db_t** did_db, int opt)
 	
 	(*did_db)->set = opt;
 	(*did_db)->db = (void*) db;
+
+	singleton_did_db[opt] = *did_db;
+	singleton_did_db_ref[opt] = 1;
+
 	return SUCCESS;
 
 error:
@@ -180,10 +197,20 @@ static int sync_did_db(did_db_t* did_db)
 static int close_did_db(did_db_t* did_db)
 {
 	did_db_custom_t* db;
+	int set;
 
 	if ( did_set == NULL || !did_set[did_db->set].set )
 		return DECLINE;
 	db = (did_db_custom_t*) did_db->db;
+	set = did_db->set;
+
+	// 아직 reference count가 남아있으면 close하지 말아야 한다.
+	singleton_did_db_ref[set]--;
+	if ( singleton_did_db_ref[set] ) {
+		info("did db[set:%d, ref:%d] is not closing now",
+				set, singleton_did_db_ref[set]);
+		return SUCCESS;
+	}
 
 	if ( sb_run_hash_close( db->hash ) != SUCCESS )
 		error("hash close failed");
@@ -193,6 +220,8 @@ static int close_did_db(did_db_t* did_db)
 
 	sb_free( did_db->db );
 	sb_free( did_db );
+
+	singleton_did_db[set] = NULL;
 
 	return SUCCESS;
 }
@@ -291,6 +320,8 @@ static int init()
 	lock.pid  = SYS5_DOCID;
 
 	for ( i = 0; i < MAX_DID_SET; i++ ) {
+		singleton_did_db[i] = NULL;
+
 		if ( !did_set[i].set ) continue;
 
 		if ( !did_set[i].set_shared_file ) {
