@@ -207,7 +207,12 @@ int main(int argc, char* argv[], char* envp[])
 		goto end;
 	}
 
-    if ( !show_state && ifs_defrag(ifs, NULL) != SUCCESS ) {
+	if ( show_state ) {
+		char buf[1];
+		ifs_read(indexdb, 1, 100000000, 1, buf);
+		// 이렇게 하면 모든 sfs가 loading된다
+	}
+	else if ( ifs_defrag(ifs, NULL) != SUCCESS ) {
 	    error("defragment fail");
 		exit_value = -1;
 	}
