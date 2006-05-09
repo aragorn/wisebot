@@ -39,8 +39,18 @@ typedef struct _word_db_set_t {
 static word_db_set_t* word_db_set = NULL;
 static int current_word_db_set = -1;
 
+// open을 singleton으로 구현하기 위한 것
+static word_db_t* g_word_db[MAX_WORD_DB_SET];
+static int g_word_db_ref[MAX_WORD_DB_SET];
+
 static int init()
 {
+	int i;
+
+	for ( i = 0; i < MAX_WORD_DB_SET; i++ ) {
+		g_word_db[i] = NULL;
+	}
+
 	return SUCCESS;
 }
 
@@ -101,6 +111,15 @@ static int open_word_db(word_db_t** word_db, int opt)
 	if ( !word_db_set[opt].set ) {
 		warn("WordDbSet[opt:%d] is not defined", opt);
 		return DECLINE;
+	}
+
+	// 다른 module에서 이미 열었던 건데.. 그것을 return한다.
+	if ( g_word_db[opt] != NULL ) {
+		*word_db = g_word_db[opt];
+		g_word_db_ref[opt]++;
+
+		info("reopened word db[set:%d, ref:%d]", opt, g_word_db_ref[opt]);
+		return SUCCESS;
 	}
 
 	if ( !word_db_set[opt].set_wordtoid_hash_set ) {
@@ -202,6 +221,14 @@ static int close_word_db(word_db_t* word_db)
 	db = (lexicon_t*) word_db->db;
 
 	info("word db[set:%d] closing...", word_db->set);
+
+	// 아직 reference count가 남아있으면 close하지 말아야 한다.
+	g_word_db_ref[word_db->set]--;
+	if ( g_word_db_ref[word_db->set] ) {
+		info("word db[set:%d, ref:%d] is not closing now",
+				word_db->set, g_word_db_ref[word_db->set]);
+		return SUCCESS;
+	}
 
 	if ( sb_run_hash_close( db->wordtoid_hash ) != SUCCESS )
 		error("word->id hash close failed");
