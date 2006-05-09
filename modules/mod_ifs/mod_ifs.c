@@ -7,6 +7,10 @@
 ifs_set_t* ifs_set = NULL;
 static int current_ifs_set = -1;
 
+// open을 singleton으로 구현하기 위한 것
+static index_db_t* singleton_index_db[MAX_INDEXDB_SET];
+static int singleton_index_db_ref[MAX_INDEXDB_SET];
+
 static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg);
 int __get_start_segment(ifs_t* ifs, int* pseg, int count, int file_id, int offset, 
 							   int* start_segment, int* start_offset);
@@ -41,6 +45,8 @@ int ifs_init()
     lock.pid = SYS5_IFS;
 
 	for ( i = 0; i < MAX_INDEXDB_SET; i++ ) {
+		singleton_index_db[i] = NULL;
+
 		if ( !ifs_set[i].set ) continue;
 
 		if ( !ifs_set[i].set_ifs_path ) {
@@ -265,6 +271,15 @@ int ifs_open(index_db_t** indexdb, int opt)
 		return DECLINE;
 	}
 
+	// 다른 module에서 이미 열었던 건데.. 그것을 return한다.
+	if ( singleton_index_db[opt] != NULL ) {
+		*indexdb = singleton_index_db[opt];
+		singleton_index_db_ref[opt]++;
+
+		info("reopened index db[set:%d, ref:%d]", opt, singleton_index_db_ref[opt]);
+		return SUCCESS;
+	}
+
 	if ( !ifs_set[opt].set_ifs_path ) {
 		error("IfsPath is not set [IndexDbSet:%d]. see config", opt);
 		return FAIL;
@@ -301,6 +316,9 @@ int ifs_open(index_db_t** indexdb, int opt)
 	index_db->set = opt;
 	index_db->db = (void*) ifs;
 
+	singleton_index_db[opt] = index_db;
+	singleton_index_db_ref[opt] = 1;
+
 	*indexdb = index_db;
 	return SUCCESS;
 
@@ -315,7 +333,7 @@ error:
 int ifs_close(index_db_t* indexdb)
 {
 	ifs_t* ifs;
-	int i = 0;
+	int i = 0, set;
 
 	if ( indexdb == NULL ) {
 		warn("indexdb is NULL. nothing to close");
@@ -324,6 +342,15 @@ int ifs_close(index_db_t* indexdb)
 
 	if ( ifs_set == NULL || !ifs_set[indexdb->set].set )
 		return DECLINE;
+	set = indexdb->set;
+
+	// 아직 reference count가 남아있으면 close하지 말아야 한다.
+	singleton_index_db_ref[set]--;
+	if ( singleton_index_db_ref[set] ) {
+		info("index db[set:%d, ref:%d] is not closing now",
+				set, singleton_index_db_ref[set]);
+		return SUCCESS;
+	}
 
 	ifs = (ifs_t*) indexdb->db;
 	if ( ifs == NULL ) {
@@ -351,6 +378,8 @@ int ifs_close(index_db_t* indexdb)
 
 	sb_free( indexdb->db );
 	sb_free( indexdb );
+
+	singleton_index_db[set] = NULL;
 
 	return SUCCESS;
 }
