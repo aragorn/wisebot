@@ -92,6 +92,8 @@ struct virtual_document_t {
     doc_hit_t* dochits;
     int dochit_cnt;      // doc_hits의 갯수.
     docattr_t* docattr;  // 항상 하나임.
+	int comment_cnt;
+
 	uint32_t relevancy;  // doc_hists::relevancy 의 합.
 
 	uint32_t node_id;
