@@ -3,6 +3,7 @@
 #include <sys/wait.h>
 
 #include "common_core.h"
+#include "mod_api/cdm2.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/did.h"
 #include "mod_api/xmlparser.h"
@@ -28,6 +29,10 @@ static did_db_t* did_db = NULL;
 static int word_db_set = -1;
 static word_db_t* word_db = NULL;
 static int b_log_query = 0; // != 0 이면 logs/query_log 에 검색쿼리 저장
+
+static int b_use_cdm = 0; // == 0 이면 mod_cdm.so 사용, 아니면 cdm2 api
+static cdm_db_t* cdm_db = NULL;
+static int cdm_set = -1;
 
 static int mCommentFieldNum=0;
 static char mCommentField[MAX_EXT_FIELD][SHORT_STRING_SIZE];
@@ -84,6 +89,8 @@ static int init()
 
 	if ( get_sem(&lock) != SUCCESS ) return FAIL;
 	rglog_lock = lock.id;
+
+	b_use_cdm = ( find_module("mod_cdm.c") != NULL );
 
 	return SUCCESS;
 }
@@ -150,11 +157,20 @@ int protocol_open()
 		errcnt++;
 	}
 
-	ret = sb_run_server_canneddoc_init();
-	if ( ret != SUCCESS && ret != DECLINE ) {
-		error( "cdm module init failed" );
-		errcnt++;
-	}                         
+	if ( b_use_cdm ) {
+		ret = sb_run_server_canneddoc_init();
+		if ( ret != SUCCESS && ret != DECLINE ) {
+			error( "cdm module init failed" );
+			errcnt++;
+		}                         
+	}
+	else {
+		ret = sb_run_cdm_open( &cdm_db, cdm_set );
+		if ( ret != SUCCESS && ret != DECLINE ) {
+			error( "cdm2 module open failed" );
+			errcnt++;
+		}
+	}
 
 	protocol_opened++;
 
@@ -165,6 +181,12 @@ int protocol_open()
 int protocol_close()
 {
 	int ret;
+
+	if ( !b_use_cdm) {
+		ret = sb_run_cdm_close( cdm_db );
+		if ( ret != SUCCESS && ret != DECLINE )
+			error("cdm db close failed");
+	}
 
 	ret = sb_run_close_did_db( did_db );
 	if ( ret != SUCCESS && ret != DECLINE )
@@ -689,21 +711,32 @@ int sb4s_get_doc(int sockfd)
 	docid = (uint32_t)atol(tmpbuf);
 
 	/* get document */
-	sb_run_buffer_initbuf(&varbuf);
-	rv = sb_run_server_canneddoc_get((uint32_t)docid, &varbuf);
-	if (rv < 0) {
-		error("cannot get document[%u]", docid);
-		send_nak(sockfd, SB4_ERD_DENY_DEL);
-		return FAIL;
+	if ( b_use_cdm ) {
+		sb_run_buffer_initbuf(&varbuf);
+		rv = sb_run_server_canneddoc_get((uint32_t)docid, &varbuf);
+		if (rv < 0) {
+			error("cannot get document[%u]", docid);
+			send_nak(sockfd, SB4_ERD_DENY_DEL);
+			return FAIL;
+		}
+		docsize = sb_run_buffer_getsize(&varbuf);
+		if (docsize > DOCUMENT_SIZE) {
+			error("docsize[%d] is bigger than system limit:DOCUMENT_SIZE[%d]",
+					docsize, DOCUMENT_SIZE);
+			send_nak(sockfd, SB4_ERD_TOO_BIG);
+			return FAIL;
+		}
+		sb_run_buffer_get(&varbuf, 0, docsize, canned_doc);
 	}
-	docsize = sb_run_buffer_getsize(&varbuf);
-	if (docsize > DOCUMENT_SIZE) {
-		error("docsize[%d] is bigger than system limit:DOCUMENT_SIZE[%d]",
-				docsize, DOCUMENT_SIZE);
-		send_nak(sockfd, SB4_ERD_TOO_BIG);
-		return FAIL;
+	else {
+		rv = sb_run_cdm_get_xmldoc(cdm_db, docid, canned_doc, DOCUMENT_SIZE);
+		if ( rv < 0 ) {
+			error("cannot get document[%u]", docid);
+			send_nak(sockfd, SB4_ERD_DENY_DEL);
+			return FAIL;
+		}
+		docsize = rv;
 	}
-	sb_run_buffer_get(&varbuf, 0, docsize, canned_doc);
 
 	/* 4. send ACK */
 	if ( TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE) != SUCCESS ) {
@@ -1286,83 +1319,6 @@ static int sb4s_register_doc(int sockfd)
 		sb_run_buffer_freebuf(&var_buf);
 		return FAIL;
 	}
-#if 0
-	/* make canned document from DIT, BODY */
-	sprintf(buf,    "<DocumentName>%s</DocumentName>"
-					"<OtherId>%s</OtherId>"
-					"<Author>%s</Author>"
-					"<Title><![CDATA[%s]]></Title>"
-					"<Keyword>%s</Keyword>"
-					"<Field1>%s</Field1>"
-					"<Field2>%s</Field2>"
-					"<Field3>%s</Field3>"
-					"<Field4>%s</Field4>"
-					"<Field5>%s</Field5>"
-					"<Field6>%s</Field6>"
-					"<Field7>%s</Field7>"
-					"<Field8>%s</Field8>",
-
-					(sb4_dit.DN[0] == '\0')?"":sb4_dit.DN,
-					(sb4_dit.OID[0] == '\0')?"":sb4_dit.OID,
-					(sb4_dit.AT[0] == '\0')? "":sb4_dit.AT,
-					(sb4_dit.TT[0] == '\0')? "":sb4_dit.TT,
-					(sb4_dit.KW[0] == '\0')? "":sb4_dit.KW,
-					(sb4_dit.FD1[0] == '\0')? "":sb4_dit.FD1,
-					(sb4_dit.FD2[0] == '\0')? "":sb4_dit.FD2,
-					(sb4_dit.FD3[0] == '\0')? "":sb4_dit.FD3,
-					(sb4_dit.FD4[0] == '\0')? "":sb4_dit.FD4,
-					(sb4_dit.FD5[0] == '\0')? "":sb4_dit.FD5,
-					(sb4_dit.FD6[0] == '\0')? "":sb4_dit.FD6,
-					(sb4_dit.FD7[0] == '\0')? "":sb4_dit.FD7,
-					(sb4_dit.FD8[0] == '\0')? "":sb4_dit.FD8
-	);
-
-	/* get size of BODY */
-	body_size = sb_run_buffer_getsize(&var_buf); 
-	if (body_size < 0) {
-		error("error occur while getting size of var_buf from variable buffer");
-		sb_run_buffer_freebuf(&var_buf); 
-		return FAIL;
-	}
-	/* memory allocation for canned document */
-	len = strlen("<Document>") + strlen(buf) 
-			+ strlen("<Body><![CDATA[") + body_size + strlen("]]></Body>")
-			+ strlen("</Document>") ;
-
-	if (len > DOCUMENT_SIZE-1) {
-		error("too big document");
-		sb_run_buffer_freebuf(&var_buf);
-		return FAIL;
-	}
-	if (canned_doc == NULL || len > alloclen) {
-		canned_doc = (char *)sb_realloc(canned_doc, len);
-		if (canned_doc == NULL) {
-			send_nak(sockfd, SB4_ERS_MEM_LACK);
-			sb_run_buffer_freebuf(&var_buf); 
-			return FAIL;
-		}
-		alloclen = len;
-	}
-	/* copy "Document" tag, dit informations */
-	strcpy(canned_doc, "<Document>");
-	strcat(canned_doc, buf);
-
-	/* copy var_buf */
-	strcat(canned_doc, "<Body><![CDATA[");
-	len = strlen(canned_doc);
-
-	n = sb_run_buffer_get(&var_buf, 0, body_size, canned_doc + len); 
-	if ( n < 0 ) {
-		error("cannot get var_buf from variable buffer");
-		sb_run_buffer_freebuf(&var_buf); 
-		return FAIL;
-	}
-	canned_doc[len + body_size] = '\0';
-	strcat(canned_doc, "]]></Body>");
-
-	/* copy "Document" end-tag */
-	strcat(canned_doc, "</Document>");
-#endif
 
 protocol_cdm:
 	
@@ -1374,91 +1330,58 @@ protocol_cdm:
 		return FAIL;
 	}
 
-	n = sb_run_buffer_append(&var_buf, strlen(canned_doc), canned_doc); 
-	if ( n < 0 ) {
-		RGLOG_ERROR("out of memory during register document. OID[%s]", sb4_dit.OID);
-		sb_run_buffer_freebuf(&var_buf); 
-		return FAIL;
-	}
 #ifdef DEBUG_REGISTER_DOC
 	gettimeofday(&tv2, NULL);
 	diff = timediff(&tv2, &tv1);
 	debug("[%2.2fsec] canned doc is ready", diff);
 #endif
 
-#if 0 
-	/* the point of creating docid is inserted into cdm */
-
-	/* get document id */
-	n = sb_run_client_get_new_docid(sb4_dit.OID, &docid, &olddocid); 
-	if ( n < 0 ) {
-		error ("cannot get new document id:error(%d)", n);
-		sb_run_buffer_freebuf(&var_buf); 
-		return FAIL;
-	}
-	rv_of_get_newid = n;
-
-	/* call canneddoc_put */
-	n = sb_run_server_canneddoc_put(docid, &var_buf); 
-	sb_run_buffer_freebuf(&var_buf); 
-	if ( n < 0 ) {
-		error("cannot register canned document[%ld] because of error(%d)", docid, n);
-
-		//XXX: 어째튼 옛날 아이디의 문서는 지워야 한다.
-		if (rv_of_get_newid == DI_OLD_REGISTERED) {
-			docattr_mask_t docmask;
-
-			DOCMASK_SET_ZERO(&docmask);
-			sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
-			sb_run_docattr_set_array(&olddocid, 1, SC_MASK, &docmask);
+	if ( b_use_cdm ) {
+		n = sb_run_buffer_append(&var_buf, strlen(canned_doc), canned_doc); 
+		if ( n < 0 ) {
+			RGLOG_ERROR("out of memory during register document. OID[%s]", sb4_dit.OID);
+			sb_run_buffer_freebuf(&var_buf); 
+			return FAIL;
 		}
-		return FAIL;
+		/************** fixed part *************************/
+		
+		n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &olddocid, &var_buf); 
+		sb_run_buffer_freebuf(&var_buf); 
+		switch ( n ) {
+			case CDM_NOT_WELL_FORMED_DOC:
+				RGLOG_ERROR("cannot register canned document[%s]. not well formed document", sb4_dit.OID);
+				break;
+			case CDM_STORAGE_FULL:
+				RGLOG_ERROR("cdm storage is full. document[%s] is not registered", sb4_dit.OID);
+				break;
+			case CDM_DELETE_OLD:
+				RGLOG_INFO("doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
+				break;
+			case SUCCESS:
+				RGLOG_INFO("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+				break;
+			default:
+				RGLOG_ERROR("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
+				break;
+		}
 	}
-
-	print_docid_oid_log(docid, sb4_dit.OID);
-
-#ifdef _NOT_
-	if (sb4_dit.RID[0]) {
-		docattr_mask_t docmask;
-
-		DOCMASK_SET_ZERO(&docmask);
-		//INFO("RIO: %s", sb4_dit.RID);
-		sb_run_docattr_set_docmask_function(&docmask, "Rid", sb4_dit.RID);
-		sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask);
-	}
-#endif	
-
-	if (rv_of_get_newid == DI_OLD_REGISTERED) {
-		docattr_mask_t docmask;
-
-		info("old docid[%ld] of OID[%s] is deleted. new docid is %ld", olddocid,
-				sb4_dit.OID, docid);
-		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
-		sb_run_docattr_set_array(&olddocid, 1, SC_MASK, &docmask);
-	}
-#endif
-
-	/************** fixed part *************************/
-	
-	n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &olddocid, &var_buf); 
-	sb_run_buffer_freebuf(&var_buf); 
-	switch ( n ) {
-		case CDM_NOT_WELL_FORMED_DOC:
-			RGLOG_ERROR("cannot register canned document[%s]. not well formed document", sb4_dit.OID);
-			break;
-		case CDM_STORAGE_FULL:
-			RGLOG_ERROR("cdm storage is full. document[%s] is not registered", sb4_dit.OID);
-			break;
-		case CDM_DELETE_OLD:
-			RGLOG_INFO("doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
-			break;
-		case SUCCESS:
-			RGLOG_INFO("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
-			break;
-		default:
-			RGLOG_ERROR("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
-			break;
+	else {
+		n = sb_run_cdm_put_xmldoc(cdm_db, did_db, sb4_dit.OID,
+				canned_doc, strlen(canned_doc), &docid, &olddocid);
+		switch ( n ) {
+			case CDM2_PUT_NOT_WELL_FORMED_DOC:
+				RGLOG_ERROR("cannot register canned document[%s]. not well formed document", sb4_dit.OID);
+				break;
+			case CDM2_PUT_OID_DUPLICATED:
+				RGLOG_INFO("doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
+				break;
+			case SUCCESS:
+				RGLOG_INFO("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+				break;
+			default:
+				RGLOG_ERROR("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
+				break;
+		}
 	}
 
 	if ( n < 0 ) return FAIL;
@@ -1622,26 +1545,62 @@ static int sb4s_register_doc2(int sockfd)
 		}
 
 		/************** fixed part *************************/
-		
-		n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &olddocid, &var_buf); 
-		sb_run_buffer_freebuf(&var_buf); 
 
-		switch ( n ) {
-			case CDM_NOT_WELL_FORMED_DOC:
-				RGLOG_ERROR("cannot register canned document[%s]. not well formed document", sb4_dit.OID);
-				break;
-			case CDM_STORAGE_FULL:
-				RGLOG_ERROR("cdm storage is full. document[%s] is not registered", sb4_dit.OID);
-				break;
-			case CDM_DELETE_OLD:
-				RGLOG_INFO("doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
-				break;
-			case SUCCESS:
-				RGLOG_INFO("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
-				break;
-			default:
-				RGLOG_ERROR("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
-				break;
+		if ( b_use_cdm ) {
+			n = sb_run_server_canneddoc_put_with_oid(did_db, sb4_dit.OID, &docid, &olddocid, &var_buf); 
+			sb_run_buffer_freebuf(&var_buf); 
+
+			switch ( n ) {
+				case CDM_NOT_WELL_FORMED_DOC:
+					RGLOG_ERROR("cannot register canned document[%s]. not well formed document", sb4_dit.OID);
+					break;
+				case CDM_STORAGE_FULL:
+					RGLOG_ERROR("cdm storage is full. document[%s] is not registered", sb4_dit.OID);
+					break;
+				case CDM_DELETE_OLD:
+					RGLOG_INFO("doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
+					break;
+				case SUCCESS:
+					RGLOG_INFO("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+					break;
+				default:
+					RGLOG_ERROR("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
+					break;
+			}
+		}
+		else {
+			n = sb_run_buffer_getsize(&var_buf); 
+			if (n > DOCUMENT_SIZE-1) {
+				RGLOG_ERROR("too big document. OID[%s]", sb4_dit.OID);
+				sb_run_buffer_freebuf(&var_buf);
+				if ( send_nak_with_message(sockfd, "too big document") != SUCCESS ) return FAIL;
+				continue;
+			}
+			n = sb_run_buffer_get(&var_buf, 0, n, canned_doc); 
+			if ( n < 0 ) {
+				RGLOG_ERROR("cannot get var_buf from variable buffer. OID [%s]", sb4_dit.OID);
+				sb_run_buffer_freebuf(&var_buf);
+				if ( send_nak_with_message(sockfd, "cannot get var_buf") != SUCCESS ) return FAIL;
+				continue;
+			}
+			canned_doc[n] = '\0';
+
+			n = sb_run_cdm_put_xmldoc(cdm_db, did_db, sb4_dit.OID, canned_doc, n, &docid, &olddocid);
+
+			switch ( n ) {
+				case CDM2_PUT_NOT_WELL_FORMED_DOC:
+					RGLOG_ERROR("cannot register canned document[%s]. not well formed document", sb4_dit.OID);
+					break;
+				case CDM2_PUT_OID_DUPLICATED:
+					RGLOG_INFO("doc[%u] is deleted. OID[%s] is registered by docid[%u]", olddocid, sb4_dit.OID, docid);
+					break;
+				case SUCCESS:
+					RGLOG_INFO("OID[%s] is registered by docid[%u]", sb4_dit.OID, docid);
+					break;
+				default:
+					RGLOG_ERROR("cannot register canned document[%s] because of error(%d)", sb4_dit.OID, n);
+					break;
+			}
 		}
 
 		if ( n < 0 ) {
@@ -1731,10 +1690,20 @@ int sb4s_last_docid(int sockfd)
 	}
 
 	/* get document id */
-	if ((docid = sb_run_server_canneddoc_last_registered_id()) < 0) {
-		error("cannot get new docid");
-		send_nak(sockfd, SB4_ERT_RECV_DATA);
-		return FAIL;
+	if ( b_use_cdm ) {
+		if ( (docid = sb_run_server_canneddoc_last_registered_id()) == ((uint32_t)-1) ) {
+			error("cannot get new docid");
+			send_nak(sockfd, SB4_ERT_RECV_DATA);
+			return FAIL;
+		}
+	}
+	else {
+		docid = sb_run_cdm_last_docid(cdm_db);
+		if ( docid == DECLINE || docid == (uint32_t)FAIL ) {
+			error("cannot get new docid");
+			send_nak(sockfd, SB4_ERT_RECV_DATA);
+			return FAIL;
+		}
 	}
 
 	sprintf(buf, "%u", docid);
@@ -2010,65 +1979,6 @@ int sb4c_delete_doc(int sockfd, uint32_t docid)
 	return SUCCESS;
 }
 
-#if 0
-int sb4s_delete_doc(int sockfd)
-{
-	char buf[SHORT_STRING_SIZE];
-	int len, n;
-/*	static int docattr_is_opened_already = 0;*/
-	uint32_t docid;
-/*	doc_mask3_t docattr_mask;*/
-
-	/* 1. Send OP_CODE*/
-	/* 2. Send ACK NAK */
-	if ( TCPSendData(sockfd, SB4_OP_ACK, 3) == FAIL ) {
-		error("cannot send OP_ACK");
-		return FAIL;
-	}
-
-	/* 3. Recv DID */
-	n = TCPRecvData(sockfd, buf, &len);
-	if ( n != SUCCESS ) {
-		error("cannot recv DID");
-		send_nak(sockfd, SB4_ERT_RECV_DATA);
-		return FAIL;
-	}
-	buf[len] = '\0';
-	docid = (uint32_t)get_int_item(buf, "DID=", '^');
-
-	/* 4. Send OP_ACK for successful receiving of Docid */
-	if ( TCPSendData(sockfd, SB4_OP_ACK, 3) == FAIL ) {
-		error("cannot send OP_ACK");
-		return FAIL;
-	}
-
-
-	/* delte doc of cdm */
-#if 0
-	n = sb_run_server_canneddoc_delete(docid);
-	if ( n < 0 ) {
-		return FAIL;
-	}
-#endif
-
-	/* delete mark to docattr */
-	{
-		docattr_mask_t docmask;
-
-		DOCMASK_SET_ZERO(&docmask);
-		sb_run_docattr_set_docmask_function(&docmask, "Delete", "1");
-		sb_run_docattr_set_array((uint32_t*)&docid, 1, SC_MASK, &docmask);
-	}
-
-	/* 5. Send OP_ACK for successful delete of Docid */
-	if ( TCPSendData(sockfd, SB4_OP_ACK, 3) == FAIL ) {
-		error("cannot send OP_ACK");
-		return FAIL;
-	}
-	return SUCCESS;
-}
-#endif
-
 int sb4s_delete_doc(int sockfd)
 {
 	char buf[LONG_STRING_SIZE];
@@ -2103,7 +2013,12 @@ int sb4s_delete_doc(int sockfd)
 	comma = buf;
 	arg = buf;
 
-	last = sb_run_server_canneddoc_last_registered_id();
+	if ( b_use_cdm ) {
+		last = sb_run_server_canneddoc_last_registered_id();
+	}
+	else {
+		last = sb_run_cdm_last_docid(cdm_db);
+	}
 	
 	for (i=0, j=0; arg[i]!='\0'; ) {
 		if (arg[i] == ',') {
@@ -4289,6 +4204,11 @@ static void register_hooks(void)
  *                config   stuff
  ***************************************************/
 
+static void get_cdm_set(configValue v)
+{
+	cdm_set = atoi( v.argument[0] );
+}
+
 static void get_did_set(configValue v)
 {
 	did_set = atoi( v.argument[0] );
@@ -4333,6 +4253,11 @@ static void get_commentfield(configValue v)
 		return;
 	}
 
+	if (strncasecmp("NO",v.argument[6],SHORT_STRING_SIZE) == 0) {
+		info("Field %s will not be returned to client", v.argument[1]);
+		return;
+	}
+
 	if (strncasecmp("RETURN",v.argument[6],SHORT_STRING_SIZE) != 0) {
 		error("Field: %s %s, 5th column should RETURN or blank.. not [%s]",
 				v.argument[0],v.argument[1],v.argument[6]);
@@ -4347,6 +4272,7 @@ static void get_commentfield(configValue v)
 }
 
 static config_t config[] = {
+	CONFIG_GET("CdmSet", get_cdm_set, 1, "Cdm Set 0~..."),
 	CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
 	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDb Set 0~..."),
 	CONFIG_GET("LogQuery", get_log_query, 1, "if True, write query log to server.c/QueryLog"),

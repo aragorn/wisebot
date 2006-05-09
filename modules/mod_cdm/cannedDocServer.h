@@ -2,22 +2,11 @@
 #ifndef _CANNED_DOC_PRIVATE_
 #define _CANNED_DOC_PRIVATE_ 1
 
-#include "softbot.h"
-
-#include "mod_cdm/mod_cdm.h"
-#include "mod_vbm/mod_vbm.h"
-#include "mod_api/cdm.h"
-#include "mod_api/vbm.h"
-
-//#include "syncManager.h"
-
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 #include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include <inttypes.h>
+
+//#include "mod_api/cdm.h"
 
 #define MAX_PARA_NUM		16
 

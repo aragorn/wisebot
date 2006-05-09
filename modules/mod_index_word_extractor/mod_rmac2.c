@@ -3,6 +3,7 @@
 
 #include "mp_api.h"
 #include "mod_api/cdm.h"
+#include "mod_api/cdm2.h"
 #include "mod_api/indexer.h"
 #include "mod_api/tcp.h"
 #include "mod_api/protocol4.h"
@@ -62,6 +63,10 @@ REGISTRY int          *last_used_rmas;
 #define RMAS_STATE_LOCK   1
 
 static int rmac_semid;
+static int b_use_cdm; // 1이면 mod_cdm사용. 아니면 cdm2 api사용
+// for cdm2 api
+static int cdm_set = -1;
+static cdm_db_t* cdm_db;
 
 /****************************************************************************/
 
@@ -130,20 +135,16 @@ static void _graceful_shutdown(int sig)
 #define CHECK_SHUTDOWN() \
 	if (scoreboard->shutdown || scoreboard->graceful_shutdown) { \
 		info("shutting down slot[%d]", slot->id); \
-		if ( pCdmData != NULL ) sb_free( pCdmData ); \
-		if ( pRmasData != NULL ) sb_free( pRmasData ); \
 		slot->state = SLOT_FINISH; \
-		return EXIT_SUCCESS; \
+		goto success; \
 	} 
 
 #define CHECK_SHUTDOWN_AND_RET(msg) \
 	CHECK_SHUTDOWN() \
 	if ( ret != SUCCESS ) { \
 		error( "slot[%d], docid[%u]: %s [%d]", slot->id, docid_to_index, msg, ret ); \
-		if ( pCdmData != NULL ) sb_free( pCdmData ); \
-		if ( pRmasData != NULL ) sb_free( pRmasData ); \
 		slot->state = SLOT_RESTART; /* restart하지 않으면 slot->docid 관리가 안된다. */ \
-		return 1; \
+		goto fail; \
 	}
 
 // 현재 process가 kill signal을 받으면 현재 작업중인 문서는 잃어버리게 되어 있다.
@@ -159,7 +160,7 @@ static int process_main (slot_t *slot)
 	int is_normal_doc;
 	void *pCdmData = NULL, *pRmasData = NULL;
 	long cdmLength = 0, rmasLength = 0;
-	char *err_str;
+	char *err_str = NULL;
 
 	// rmas가 없으면 할 일도 없다.
 	if ( num_of_rmas == 0 ) {
@@ -167,10 +168,21 @@ static int process_main (slot_t *slot)
 		return 0;
 	}
 
-	ret = sb_run_server_canneddoc_init();
-	if ( ret != SUCCESS ) {
-		error( "cdm module init failed" );
-		return 1;
+	b_use_cdm = ( find_module("mod_cdm.c") != NULL );
+
+	if ( b_use_cdm ) {
+		ret = sb_run_server_canneddoc_init();
+		if ( ret != SUCCESS ) {
+			error( "cdm module init failed" );
+			return 1;
+		}
+	}
+	else {
+		ret = sb_run_cdm_open( &cdm_db, cdm_set );
+		if ( ret != SUCCESS ) {
+			error( "cdm2 module open failed" );
+			return 1;
+		}
 	}
 
 	if ( slot->userptr == DOCID_NOTINIT ) {
@@ -214,12 +226,24 @@ static int process_main (slot_t *slot)
 		if ( is_normal_doc == TRUE ) {
 			set_title( "get document from cdm", docid_to_index );
 
-			cdmLength = sb_run_server_canneddoc_get_as_pointer( docid_to_index, pCdmData, DOCUMENT_SIZE );
-			if ( cdmLength <= 0 ) {
-				if ( cdmLength == CDM_NOT_EXIST ) err_str = "CDM_NOT_EXIST";
-				else if (cdmLength == CDM_DELETED ) err_str = "CDM_DELETED";
-				else err_str = NULL;
+			if ( b_use_cdm ) {
+				cdmLength = sb_run_server_canneddoc_get_as_pointer( docid_to_index, pCdmData, DOCUMENT_SIZE );
+				if ( cdmLength <= 0 ) {
+					if ( cdmLength == CDM_NOT_EXIST ) err_str = "CDM_NOT_EXIST";
+					else if (cdmLength == CDM_DELETED ) err_str = "CDM_DELETED";
+					else err_str = NULL;
+				}
+			}
+			else { // use cdm2 api
+				cdmLength = sb_run_cdm_get_xmldoc(cdm_db, docid_to_index, pCdmData, DOCUMENT_SIZE);
+				if ( cdmLength < 0 ) {
+					if ( cdmLength ==  CDM2_GET_INVALID_DOCID ) err_str = "CDM2_GET_INVALID_DOCID";
+					else if ( cdmLength == CDM_DELETED ) err_str = "CDM_DELETED";
+					else err_str = NULL;
+				}
+			}
 
+			if ( cdmLength < 0 ) {
 				if ( err_str == NULL )
 					error( "get_as_point() returned error [%d], docid[%u]",
 							(int)cdmLength, docid_to_index );
@@ -279,10 +303,29 @@ static int process_main (slot_t *slot)
 		}
 	} // while (1)
 
+success:
+	if ( !b_use_cdm ) {
+		ret = sb_run_cdm_close( cdm_db );
+		if ( ret != SUCCESS )
+			error("cdm db close failed");
+	}
+
 	if ( pCdmData != NULL ) sb_free( pCdmData );
 	if ( pRmasData != NULL ) sb_free( pRmasData );
 
 	return EXIT_SUCCESS;
+
+fail:
+	if ( !b_use_cdm ) {
+		ret = sb_run_cdm_close( cdm_db );
+		if ( ret != SUCCESS )
+			error("cdm db close failed");
+	}
+
+	if ( pCdmData != NULL ) sb_free( pCdmData );
+	if ( pRmasData != NULL ) sb_free( pRmasData );
+
+	return 1;
 } // main()
 
 #define RMAS_ERROR_WAIT 10
@@ -466,7 +509,12 @@ static int get_docid_to_index(slot_t *slot, uint32_t *docid)
 	int ret;
 	*docid = NODOCUMENT;
 
-	last_registered_id = sb_run_server_canneddoc_last_registered_id();
+	if ( b_use_cdm ) {
+		last_registered_id = sb_run_server_canneddoc_last_registered_id();
+	}
+	else {
+		last_registered_id = sb_run_cdm_last_docid(cdm_db);
+	}
 
 	ret = acquire_lockn(rmac_semid, RMAC_LOCK);
 	if (ret != SUCCESS) return FAIL;
@@ -812,6 +860,11 @@ static void set_rmas_retry(configValue v)
 	rmas_retry = atoi(v.argument[0]);
 }
 
+static void set_cdm_set(configValue v)
+{
+	cdm_set = atoi(v.argument[0]);
+}
+
 static registry_t registry[] = {
 	RUNTIME_REGISTRY("LAST_FETCHED_DOCID","last fetched document id",
 					 sizeof(uint32_t), init_last_fetched_docid, NULL, NULL),
@@ -823,13 +876,13 @@ static registry_t registry[] = {
 };
 
 static config_t config[] = {
-	CONFIG_GET("AddServer", set_ip_and_port, 1,
-			"rmas ip:port"),
+	CONFIG_GET("AddServer", set_ip_and_port, 1, "rmas ip:port"),
 	CONFIG_GET("Field", set_meta_data , VAR_ARG ,
             "field and mophological analizer id :  ex) title:0^author:1^ "),
 	CONFIG_GET("Threads", set_processes_num, 1, "number of processes"), // 호환성땜에...
 	CONFIG_GET("Processes", set_processes_num, 1, "number of processes"),
 	CONFIG_GET("RmasRetry", set_rmas_retry, 1, "retry rmas analyze"),
+	CONFIG_GET("CdmSet", set_cdm_set, 1, "select CDM set"),
 	{NULL}
 };
 

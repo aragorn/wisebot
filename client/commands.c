@@ -13,6 +13,7 @@
 #include "mod_api/tcp.h"
 #include "mod_api/protocol4.h"
 #include "mod_api/cdm.h"
+#include "mod_api/cdm2.h"
 #include "mod_api/docapi.h"
 #include "mod_api/tokenizer.h"
 #include "mod_api/qp.h"
@@ -489,7 +490,7 @@ int com_register_doc_i(char *arg)
 	return SUCCESS;
 }
 #endif
-#define GET_FROM_REMOTE
+//#define GET_FROM_REMOTE
 //#undef GET_FROM_REMOTE
 int com_get_doc(char *arg)
 {
@@ -528,18 +529,46 @@ int com_get_doc(char *arg)
 	printf("%s\n", buf);
 	free(buf);
 #else
-	VariableBuffer var;
+	if ( find_module("mod_cdm.c") != NULL ) {
+		VariableBuffer var;
 
-	sb_run_buffer_initbuf(&var);
+		sb_run_buffer_initbuf(&var);
 
-	result = sb_run_server_canneddoc_get(docid,&var);
-	if (result < 0) {
-		printf("canneddoc_get error.\n");
-		return FAIL;
+		result = sb_run_server_canneddoc_get(docid,&var);
+		if (result < 0) {
+			printf("canneddoc_get error.\n");
+			return FAIL;
+		}
+
+		sb_run_buffer_print(stdout, &var);
+		printf("\n");
 	}
+	else { // use mod_cdm2
+		char* buf;
+		size_t size = 10 * 1024 * 1024; // 10MB
 
-	sb_run_buffer_print(stdout, &var);
-	printf("\n");
+		if ( mCdmDb == NULL ) {
+			error("cdmdb not opened");
+			return FAIL;
+		}
+
+		buf = (char*) malloc(size);
+
+		result = sb_run_cdm_get_xmldoc(mCdmDb, docid, buf, size);
+		if ( result == CDM2_GET_INVALID_DOCID ) {
+			error("invalid docid");
+			return FAIL;
+		}
+		else if ( result < 0 ) {
+			error("cannot get document: %d", result);
+			free(buf);
+			return FAIL;
+		}
+
+		fwrite( buf, result, 1, stdout );
+		fputc( '\n', stdout );
+		free(buf);
+	}
 #endif
 
 	return SUCCESS;
@@ -628,9 +657,8 @@ int com_last_regi(char *arg)
 int com_get_field(char *arg) 
 { 
 	uint32_t docid; 
-	char fieldname[256], *value, filename[256]={0x00,}, buf[STRING_SIZE]; 
+	char fieldname[256], filename[256]={0x00,}, buf[STRING_SIZE]; 
 	int n=0, fd=0, iswrite_file=0; 
-	DocObject *doc; 
  
 	// get argument 
 	n = sscanf(arg, "%u %s %s", &docid, fieldname, filename); 
@@ -649,46 +677,91 @@ int com_get_field(char *arg)
 		iswrite_file = 1;
 	}
  
-	n = sb_run_doc_get(docid, &doc); 
-	if (n < 0) { 
-		sprintf(buf, "cannot get document object of document[%u]\n", docid);
+	if ( find_module("mod_cdm.c") != NULL ) { // use mod_cdm
+		DocObject *doc; 
+		char* value;
 
+		n = sb_run_doc_get(docid, &doc); 
+		if (n < 0) { 
+			sprintf(buf, "cannot get document object of document[%u]\n", docid);
+
+			if(iswrite_file) {
+				write(fd, buf, strlen(buf));
+			} else {
+				printf("%s", buf); 
+			}
+
+			close(fd);
+			return FAIL; 
+		} 
+	 
+		n = sb_run_doc_get_field(doc, NULL, fieldname, &value); 
+		if (n < 0) { 
+			sprintf(buf, "cannot get field[%s] from document object\n", fieldname);
+
+			if(iswrite_file) {
+				write(fd, buf, strlen(buf));
+			} else {
+				printf("%s", buf); 
+			}
+
+			close(fd);
+			return FAIL; 
+		} 
+	 
 		if(iswrite_file) {
-            write(fd, buf, strlen(buf));
+			sprintf(buf, "Document[%u]['%s']:", docid, fieldname);	
+			write(fd, buf, strlen(buf));
+			write(fd, value, strlen(value));
+			write(fd, "\n", 1);
+			close(fd);
 		} else {
-		    printf("%s", buf); 
+			printf("Document[%u]['%s']: %s\n", docid, fieldname, value); 
 		}
 
-		close(fd);
-		return FAIL; 
-	} 
- 
-	n = sb_run_doc_get_field(doc, NULL, fieldname, &value); 
-	if (n < 0) { 
-		sprintf(buf, "cannot get field[%s] from document object\n", fieldname);
+		free(value); 
+		sb_run_doc_free(doc); 
+	}
+	else { // use mod_cdm2
+		cdm_doc_t* doc;
+		char* buf;
+		size_t size = 1024 * 1024; // 1MB
 
-		if(iswrite_file) {
-            write(fd, buf, strlen(buf));
-		} else {
-		    printf("%s", buf); 
+		if ( mCdmDb == NULL ) {
+			error("cdmdb not opened");
+			return FAIL;
 		}
 
-		close(fd);
-		return FAIL; 
-	} 
- 
-	if(iswrite_file) {
-        sprintf(buf, "Document[%u]['%s']:", docid, fieldname);	
-		write(fd, buf, strlen(buf));
-		write(fd, value, strlen(value));
-		write(fd, "\n", 1);
-		close(fd);
-	} else {
-	    printf("Document[%u]['%s']: %s\n", docid, fieldname, value); 
+		n = sb_run_cdm_get_doc(mCdmDb, docid, &doc);
+		if ( n != SUCCESS ) {
+			error("cannot get document");
+			return FAIL;
+		}
+
+		buf = (char*) malloc(size);
+		n = sb_run_cdmdoc_get_field(doc, fieldname, buf, size);
+		if ( n == CDM2_FIELD_NOT_EXISTS ) {
+			warn("field is not exists");
+			free(buf);
+			sb_run_cdmdoc_destroy(doc);
+			return SUCCESS;
+		}
+		else if ( n == CDM2_NOT_ENOUGH_BUFFER ) {
+			warn("not enough buffer");
+		}
+		else if ( n < 0 ) {
+			warn("cannot get doc field");
+			free(buf);
+			sb_run_cdmdoc_destroy(doc);
+			return FAIL;
+		}
+
+		fwrite(buf, n, 1, stdout);
+		fputc( '\n', stdout );
+		free(buf);
+		sb_run_cdmdoc_destroy(doc);
 	}
 
-	free(value); 
-	sb_run_doc_free(doc); 
 	return SUCCESS; 
 } 
 int com_get_abstracted_field(char *arg)
@@ -733,6 +806,38 @@ int com_get_abstracted_field(char *arg)
  
 	free(value); 
 	return SUCCESS; 
+}
+
+int com_update_field(char *arg)
+{
+	uint32_t docid;
+	char fieldname[MAX_FIELD_NAME_LEN], fieldvalue[LONG_STRING_SIZE];
+	int n, ret;
+	n = sscanf(arg, "%u %s %s", &docid, fieldname, fieldvalue); 
+
+	if ( find_module("mod_cdm.c") == NULL ) { // use cdm2 api
+		cdm_doc_t* doc;
+
+		if ( mCdmDb == NULL ) {
+			error("cdmdb not opened");
+			return FAIL;
+		}
+
+		n = sb_run_cdm_get_doc(mCdmDb, docid, &doc);
+		if ( n != SUCCESS ) {
+			error("cannot get document");
+			return FAIL;
+		}
+
+		ret = sb_run_cdmdoc_update_field(doc, fieldname, fieldvalue, strlen(fieldvalue));
+		sb_run_cdmdoc_destroy(doc);
+
+		return ret;
+	}
+	else {
+		error("not updatable (use mod_cdm2.c)");
+		return FAIL;
+	}
 }
 
 int com_register4_doc(char *arg)

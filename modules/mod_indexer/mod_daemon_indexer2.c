@@ -17,6 +17,7 @@
 #include "mod_api/indexdb.h"
 #include "mod_api/tcp.h"
 #include "mod_api/cdm.h"
+#include "mod_api/cdm2.h"
 #include "mod_api/index_word_extractor.h"
 
 #include "mod_index_each_doc.h"
@@ -59,6 +60,7 @@ static int mTestFileNumber=0;
 /* member variables  */
 static char mLogDir[STRING_SIZE]="dat/indexer";
 static char mSocketFile[SHORT_STRING_SIZE] = "dat/indexer/socket";
+static int mCdmSet = -1;
 static int mWordDbSet = -1;
 static int mIndexDbSet = -1;
 #define BACKLOG (3)
@@ -322,6 +324,17 @@ void set_bytepos(void *data, int size)
         indexwords[i].bytepos = 0;
     }
 }
+
+static uint32_t last_registered_did(cdm_db_t* cdm_db)
+{
+	if ( cdm_db ) { // mod_cdm2.so
+		return sb_run_cdm_last_docid(cdm_db);
+	}
+	else { // mod_cdm.so
+		return sb_run_server_canneddoc_last_registered_id();
+	}
+}
+
 static int indexer_main(slot_t *slot)
 {
 	int ret = 0;
@@ -334,6 +347,10 @@ static int indexer_main(slot_t *slot)
 	/* data */
 	void *data = NULL; int size;
 	uint32_t last_registered_docid = 0, docid;
+
+	/* cdm db */
+	cdm_db_t* cdm_db = NULL;
+	int b_use_cdm;
 
 	/* word db */
 	word_db_t* word_db = NULL;
@@ -356,9 +373,18 @@ static int indexer_main(slot_t *slot)
 		goto error_return;
 	}
 
-	if ( sb_run_server_canneddoc_init() != SUCCESS ) {
-		error("cdm open failed");
-		goto error_return;
+	b_use_cdm = ( find_module("mod_cdm.c") != NULL );
+	if ( b_use_cdm ) {
+		if ( sb_run_server_canneddoc_init() != SUCCESS ) {
+			error("cdm open failed");
+			goto error_return;
+		}
+	}
+	else {
+		if ( sb_run_cdm_open( &cdm_db, mCdmSet ) != SUCCESS ) {
+			error("cdm2 open failed");
+			goto error_return;
+		}
 	}
 
 	if ( sb_run_open_word_db( &word_db, mWordDbSet ) != SUCCESS ) {
@@ -457,7 +483,7 @@ static int indexer_main(slot_t *slot)
 		}
 
 		// 진행상황 기록
-		last_registered_docid = sb_run_server_canneddoc_last_registered_id();
+		last_registered_docid = last_registered_did(cdm_db);
 		indexer_shared->last_indexed_docid = docid;
 
 		// 가끔씩 진행상황 출력
@@ -479,7 +505,7 @@ static int indexer_main(slot_t *slot)
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 		sleep( 5 );
 
-		last_registered_docid = sb_run_server_canneddoc_last_registered_id();
+		last_registered_docid = last_registered_did(cdm_db);
 		if (last_registered_docid != indexer_shared->last_indexed_docid) continue;
 
 		index_time = timediff( &end_time, &start_time );
@@ -495,6 +521,7 @@ static int indexer_main(slot_t *slot)
 		}
 	} /* endless while loop */
 
+	if ( !b_use_cdm ) sb_run_cdm_close( cdm_db );
 	sb_run_close_word_db( word_db ); //XXX: indexer should do this?
 	sb_run_indexdb_close( indexdb );
 
@@ -511,6 +538,7 @@ static int indexer_main(slot_t *slot)
 	return 0;
 
 error_return:
+	if ( cdm_db ) sb_run_cdm_close( cdm_db );
 	if ( word_db ) sb_run_close_word_db( word_db );
 	if ( indexdb ) sb_run_indexdb_close( indexdb );
 	if ( idxlog_fp ) fclose(idxlog_fp);
@@ -532,10 +560,28 @@ static int test_indexer_main(slot_t *slot)
 	void *data = NULL; int size;
 	uint32_t last_registered_docid = 0, docid;
 
+	/* cdm db */
+	cdm_db_t* cdm_db = NULL;
+	int b_use_cdm;
+
 	/* 통계 */
 	int indexed_num;
 	double index_time;
 	struct timeval start_time, end_time;
+
+	b_use_cdm = ( find_module("mod_cdm.c") != NULL );
+	if ( b_use_cdm ) {
+		if ( sb_run_server_canneddoc_init() != SUCCESS ) {
+			error("cdm open failed");
+			return FAIL;
+		}
+	}
+	else {
+		if ( sb_run_cdm_open( &cdm_db, mCdmSet ) != SUCCESS ) {
+			error("cdm2 open failed");
+			return FAIL;
+		}
+	}
 
 	/* must be called after forking because it allocates large junk of memory */
 	open_error_documents_file();
@@ -543,6 +589,9 @@ static int test_indexer_main(slot_t *slot)
 
 	if (sb_run_tcp_local_bind_listen(mSocketFile, BACKLOG, &listenfd) != SUCCESS) {
    		error("tcp_local_bind_listen: %s", strerror(errno));
+		if ( !b_use_cdm ) {
+			sb_run_cdm_close( cdm_db );
+		}
    		return FAIL;
     }
    	setproctitle("softbotd: mod_daemon_indexer2.c (listening[%s])",mSocketFile);
@@ -606,7 +655,7 @@ static int test_indexer_main(slot_t *slot)
 	    SEND_RET_AND_CLOSE(ret);
 
 		// 진행상황 기록
-		last_registered_docid = sb_run_server_canneddoc_last_registered_id();
+		last_registered_docid = last_registered_did(cdm_db);
 		indexer_shared->last_indexed_docid = docid;
 
 		// 가끔씩 진행상황 출력
@@ -628,7 +677,7 @@ static int test_indexer_main(slot_t *slot)
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 		sleep( 5 );
 
-		last_registered_docid = sb_run_server_canneddoc_last_registered_id();
+		last_registered_docid = last_registered_did(cdm_db);
 		if (last_registered_docid != indexer_shared->last_indexed_docid) continue;
 
 		index_time = timediff( &end_time, &start_time );
@@ -644,6 +693,8 @@ static int test_indexer_main(slot_t *slot)
 		}
 
 	} /* endless while loop */
+
+	sb_run_cdm_close( cdm_db );
 
 	close(mErrorFileFd);
 	close(mDocFileFd);
@@ -1083,6 +1134,11 @@ static void set_max_word_hit(configValue v)
 	max_word_hit = atoi( v.argument[0] );
 }
 
+static void set_cdm_set(configValue v)
+{
+	mCdmSet = atoi( v.argument[0] );
+}
+
 static void set_indexdb_set(configValue v)
 {
 	mIndexDbSet = atoi( v.argument[0] );
@@ -1105,6 +1161,7 @@ static config_t config[] = {
 			"indexer log path (e.g: LogDir dat/indexer)"),
 	CONFIG_GET("MaxWordHit",set_max_word_hit,1, \
 			"maximum word hit count per document (e.g: MaxWordHit 400000)"),
+	CONFIG_GET("CdmSet",set_cdm_set,1,"select CDM db set"),
 	CONFIG_GET("IndexDbSet",set_indexdb_set,1,"<e.g: IndexDbSet 1>"),
 	CONFIG_GET("WordDbSet",set_word_db_set,1,"<e.g: WordDbSet 1>"),
 	CONFIG_GET("SharedFile",set_shared_file,1,"(e.g: SharedFile dat/indexer/indexer.shared)"),
@@ -1115,6 +1172,7 @@ static uint32_t last_indexed_did(void)
 {
 	return indexer_shared->last_indexed_docid;
 }
+
 // 원본을 return하므로 손상하지 않도록 주의한다.
 static const char* get_socket_file(void)
 {

@@ -24,6 +24,8 @@ static int clc_log_level=0;
 static int clc_listen_port=0;
 static int clc_server_root=0;
 
+int mCdmSet = -1;
+cdm_db_t* mCdmDb = NULL;
 int mWordDbSet = -1;
 word_db_t* mWordDb = NULL;
 int mDidSet = -1;
@@ -66,6 +68,7 @@ COMMAND commands[] = {
 	{ "rebuild_rid",com_rebuild_rid,"rebuild docattr db" },
 	{ "getabstractfield",com_get_abstracted_field,
 									"get field of abstracted document" },
+	{ "updatefield",com_update_field, "update field value of cdm2 document" },
 	{ BLANKLINE, NULL, ""},
 
 	{ "connectdb",com_connectdb,"connect cdm db e.g) connect dbname dbpath" },
@@ -321,7 +324,7 @@ int client_main()
 		return 1;
 	}
 
-	// gWordDB 대신 이걸 쓰자
+	sb_run_cdm_open( &mCdmDb, mCdmSet );
 	sb_run_open_word_db( &mWordDb, mWordDbSet );
 	sb_run_open_did_db( &mDidDb, mDidSet );
 
@@ -712,6 +715,10 @@ static void setRebuildDocAttrField(configValue v) {
     info("read RebuidDocAttrField[%s]", docattrFields[iCount]);
 }
 
+static void setCdmSet(configValue v) {
+	mCdmSet = atoi( v.argument[0] );
+}
+
 static void setDidSet(configValue v) {
 	mDidSet = atoi( v.argument[0] );
 }
@@ -739,6 +746,7 @@ static config_t config[] = {
 	CONFIG_GET("RebuildDocAttrField", setRebuildDocAttrField, VAR_ARG, \
 				"fields inserted into docattr db"),
 
+	CONFIG_GET("CdmSet", setCdmSet, 1, "CdmSet 0~..."),
 	CONFIG_GET("DidSet", setDidSet, 1, "DidSet 0~..."),
 	CONFIG_GET("WordDbSet", setWordDbSet, 1, "WordDbSet 0~..."),
 	{ NULL }

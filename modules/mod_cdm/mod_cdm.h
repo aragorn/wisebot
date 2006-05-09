@@ -4,9 +4,7 @@
 
 // private header
 
-#include "softbot.h"
 #include "mod_api/vbm.h"
-#include "mod_api/cdm.h"
 
 /* followings are definitions that's 
  * shared by mod_cdm, mod_cdmclt
@@ -20,10 +18,6 @@
 
 #define SLAVE_PROCESS_NUM                   10
 #define SLAVE_CHECK_ALARM_TIME              60
-
-#ifndef MAX_FIELD_NUM
-#define MAX_FIELD_NUM				32
-#endif
 
 int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc);
 int CDM_get(uint32_t docId, VariableBuffer *pCannedDoc);

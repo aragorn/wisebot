@@ -3,6 +3,7 @@
 #include <fcntl.h> /* O_RDONLY */
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h> // for PRIu32
 #include "common_core.h"
 #include "memory.h"
 #include "util.h"
@@ -12,8 +13,8 @@
 #include "mod_api/indexdb.h"
 #include "mod_api/vrfi.h"
 #include "mod_api/lexicon.h"
-#include "mod_api/cdm.h"
 #include "mod_api/docapi.h"
+#include "mod_api/cdm2.h"
 #include "mod_api/indexer.h"
 #include "mod_api/protocol4.h" /* sb4 related error codes */
 
@@ -52,6 +53,9 @@ static void show_dochitlist(doc_hit_t dochits[], uint32_t start, uint32_t nelm,
 static int field_count = 0;
 static field_info_t field_info[MAX_EXT_FIELD];
 ///////////////////////////////////////////////////////////
+// 구버전 cdm 사용여부
+static int b_use_cdm = 0;
+///////////////////////////////////////////////////////////
 
 enum DbType {
 	TYPE_VRFI,
@@ -62,6 +66,9 @@ static enum DbType        mDbType = TYPE_VRFI;
 
 static VariableRecordFile *mVRFI = NULL;
 static index_db_t         *mIfs  = NULL;
+
+static int                mCdmSet = -1;
+static cdm_db_t           *mCdm = NULL;
 
 static char mIdxFilePath[MAX_PATH_LEN]= "dat/indexer/index"; // used by vrfi
 static int mIdxDbSet = -1;
@@ -2084,7 +2091,11 @@ static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
 	int k=0;
 	//XXX: result_list->doc_hit index and other index differs.
 	DocObject *docBody = 0x00; 
+	cdm_doc_t* cdmdoc;
+
+#define MAX_COMMENT_BYTES 1024
 	char *field_value = 0x00; 
+	char _field_value[MAX_COMMENT_BYTES];
 	int sizeleft = 0;
 	int ret = 0;
 	uint32_t docid = doc_hits->id;
@@ -2095,9 +2106,14 @@ static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
 	}
 
 	// 여기서 문서를 한번 가져온다
-	ret = sb_run_doc_get(docid, &docBody); 
+	if ( b_use_cdm ) { // mod_cdm
+		ret = sb_run_doc_get(docid, &docBody); 
+	}
+	else { // cdm2 api
+		ret = sb_run_cdm_get_doc(mCdm, docid, &cdmdoc);
+	}
 	if (ret < 0) { 
-		warn("cannot get document object of document[%u]\n", docid); 
+		warn("cannot get document object of document[%u]", docid); 
 		return FAIL;
 	} 
 
@@ -2111,13 +2127,22 @@ static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
 			continue;
 		}
 
-		#define max_comment_bytes 1024
 		field_value = NULL;
 
-		ret = sb_run_doc_get_field(docBody, NULL, field_info[k].name, &field_value);
-		if (ret < 0) {
-			error("doc_get_field error for doc[%d], field[%s]", docid, field_info[k].name);
-			continue;
+		if ( b_use_cdm ) { // mod_cdm
+			ret = sb_run_doc_get_field(docBody, NULL, field_info[k].name, &field_value);
+			if (ret < 0) {
+				error("doc_get_field error for doc[%d], field[%s]", docid, field_info[k].name);
+				continue;
+			}
+		}
+		else { // cdm2 api
+			field_value = _field_value;
+			ret = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, MAX_COMMENT_BYTES);
+			if ( ret < 0 && ret != CDM2_NOT_ENOUGH_BUFFER ) {
+				error("cannot get field[%s] from doc[%"PRIu32"]", field_info[k].name, docid);
+				continue;
+			}
 		}
 
 		// 구성 : FIELD_NAME:
@@ -2133,7 +2158,7 @@ static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
 		switch(field_info[k].type) {
 			case RETURN:
 				// 길이가 너무 길면 좀 자른다. 한글 안다치게...
-				cut_string( field_value, max_comment_bytes );
+				cut_string( field_value, MAX_COMMENT_BYTES );
 
 				strncat(comment, field_value, sizeleft);
 				sizeleft -= strlen(field_value);
@@ -2177,7 +2202,7 @@ static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
 		strncat(comment,";;",sizeleft);
 		sizeleft -= 2;
 		sizeleft = (sizeleft < 0) ? 0:sizeleft;
-		sb_free(field_value);
+		if ( b_use_cdm ) sb_free(field_value);
 
 		if (sizeleft <= 0) {
 			error("req->comments size lack while pushing comment(field:%s, doc:%u)", field_info[k].name, docid);
@@ -2187,7 +2212,8 @@ static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
 		}
 	}
 
-	sb_run_doc_free(docBody);
+	if ( b_use_cdm ) sb_run_doc_free(docBody);
+	else sb_run_cdmdoc_destroy(cdmdoc);
 
 	return SUCCESS;
 }
@@ -2808,11 +2834,24 @@ static int private_init(void)
 		return FAIL;
 	}
 
+	if ( !b_use_cdm ) {
+		if ( mCdmSet == -1 ) {
+			error("invalid CdmSet[%d]. set CdmSet in <"__FILE__">", mCdmSet);
+			return FAIL;
+		}
+		ret = sb_run_cdm_open( &mCdm, mCdmSet );
+		if ( ret != SUCCESS ) {
+			error("cdm[set:%d] open failed", mCdmSet);
+			return FAIL;
+		}
+	}
+
 	return SUCCESS;
 }
 
 static int module_init(void)
 {
+	b_use_cdm = (find_module("mod_cdm.c") != NULL);
 	return SUCCESS;
 }
 
@@ -2836,6 +2875,11 @@ static void setIndexDbPath(configValue v)
 static void setIndexDbSet(configValue v)
 {
 	mIdxDbSet = atoi( v.argument[0] );
+}
+
+static void setCdmSet(configValue v)
+{
+	mCdmSet = atoi( v.argument[0] );
 }
 
 static void get_commentfield(configValue v)
@@ -2887,6 +2931,8 @@ static config_t config[] = {
 			"inv indexer db path (only vrfi) (e.g: IndexDbPath /home/)"),
 	CONFIG_GET("IndexDbSet",setIndexDbSet,1,
 			"index db set (type is indexdb) (e.g: IndexDbSet 1)"),
+	CONFIG_GET("CdmSet",setCdmSet,1,
+			"cdm db set (e.g: CdmSet 1)"),
 
 	CONFIG_GET("Field",get_commentfield,VAR_ARG, "Field which needs to be shown in result"),
 	CONFIG_GET("FieldSortingOrder",get_FieldSortingOrder,2, "Field sorting order"),

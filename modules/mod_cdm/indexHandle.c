@@ -1,10 +1,14 @@
 /* $Id$ */
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include "common_core.h"
 #include "cannedDocServer.h"
 
 #define JUMP_NUM		1
 
 // extern variables
-extern unsigned long dwMaxDocNum;
+//extern unsigned long dwMaxDocNum;
 
 static unsigned long HashFunc(uint32_t docId) {
 //	return docId % dwMaxDocNum;
@@ -131,7 +135,13 @@ static int HashDelete(int fdIndexFile, uint32_t docId) {
 		return FAIL;
 	}
 	firstOffset = currentOffset;
+
+	if ( docId != ele.docId ) {
+		error("index file crash!");
+		return FAIL;
+	}
 	
+#if 0
 	while (ele.docId != 0) {
 		if (docId == ele.docId) {
 			break;
@@ -145,12 +155,15 @@ static int HashDelete(int fdIndexFile, uint32_t docId) {
 		}
 		if (currentOffset == firstOffset) return FAIL;
 	}
+#endif
 
 	iResult = write(fdIndexFile, &index, sizeof(IndexFileElement));
 	if (iResult == -1) {
 		error("error in write(): %s", strerror(errno));
 		return FAIL;
 	}
+// collision 처리할 필요 없다 - chaeyk
+#if 0
 /*	fwrite(&index, sizeof(IndexFileElement), 1, fdIndexFile);
 	if (ferror(fdIndexFile)) {
 		error("error in fwrite()");
@@ -209,7 +222,7 @@ static int HashDelete(int fdIndexFile, uint32_t docId) {
 			return FAIL;
 		}
 	}
-	
+#endif	
 	return SUCCESS;
 }
 

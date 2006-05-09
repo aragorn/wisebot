@@ -207,7 +207,7 @@ memfile_read2memfile (memfile *this, memfile *mFile, int size){
 }
 //-------------------------------------------------------------------
 int
-memfile_append(memfile *this, char *buf, int size){
+memfile_append(memfile *this, const char *buf, int size){
 	int neededBlk, blkIdx, blkOffset;
 	int dSize;
 

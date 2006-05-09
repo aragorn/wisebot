@@ -9,6 +9,7 @@
 #include "mod_api/lexicon.h"
 #include "mod_api/did.h"
 #include "mod_api/cdm.h"
+#include "mod_api/cdm2.h"
 #include "ansi_color.h"
 
 char *stripwhite(char *line);
@@ -30,6 +31,7 @@ typedef struct {
 
 extern COMMAND commands[];
 
+extern cdm_db_t* mCdmDb;
 extern did_db_t* mDidDb;
 extern word_db_t* mWordDb;
 

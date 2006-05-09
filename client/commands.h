@@ -43,6 +43,7 @@ int com_set_docattr(char *);
 int com_set_docattr_by_oid(char *);
 int com_get_abstracted_doc(char *);
 int com_get_abstracted_field(char *);
+int com_update_field(char *);
 
 int com_get_wordid(char *);
 int com_get_word_by_wordid(char *);

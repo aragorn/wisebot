@@ -3,11 +3,20 @@
  */
 
 #include <strings.h>
-#include "cannedDocServer.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include "common_core.h"
+#include "common_util.h"
+#include "ipc.h"
+#include "memory.h"
 #include "mod_api/morpheme.h"
 #include "mod_api/xmlparser.h"
 #include "mod_api/docattr.h"
 #include "mod_api/did.h"
+#include "mod_api/cdm.h"
+#include "mod_cdm.h"
+#include "cannedDocServer.h"
 
 #ifdef CYGWIN
 #include "expat.h"
