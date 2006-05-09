@@ -166,6 +166,10 @@ static int open_word_db(word_db_t** word_db, int opt)
 
 	(*word_db)->set = opt;
 	(*word_db)->db = (void*) db;
+
+	singleton_word_db[opt] = *word_db;
+	singleton_word_db_ref[opt] = 1;
+
 	return SUCCESS;
 
 error:
@@ -215,18 +219,20 @@ static int sync_word_db(word_db_t* word_db)
 static int close_word_db(word_db_t* word_db)
 {	
 	lexicon_t* db;
+	int set;
 
 	if ( word_db_set == NULL || !word_db_set[word_db->set].set )
 		return DECLINE;
 	db = (lexicon_t*) word_db->db;
+	set = word_db->set;
 
-	info("word db[set:%d] closing...", word_db->set);
+	info("word db[set:%d] closing...", set);
 
 	// 아직 reference count가 남아있으면 close하지 말아야 한다.
-	singleton_word_db_ref[word_db->set]--;
-	if ( singleton_word_db_ref[word_db->set] ) {
+	singleton_word_db_ref[set]--;
+	if ( singleton_word_db_ref[set] ) {
 		info("word db[set:%d, ref:%d] is not closing now",
-				word_db->set, singleton_word_db_ref[word_db->set]);
+				set, singleton_word_db_ref[set]);
 		return SUCCESS;
 	}
 
@@ -243,6 +249,8 @@ static int close_word_db(word_db_t* word_db)
 
 	sb_free( word_db->db );
 	sb_free( word_db );
+
+	singleton_word_db[set] = NULL;
 
 	return SUCCESS;
 }
