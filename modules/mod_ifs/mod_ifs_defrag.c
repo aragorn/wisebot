@@ -12,7 +12,7 @@ static int buffer_size = 0;
 int defrag_group_size = 5;
 static int defrag_delay = 3600;
 static int indexdb_set = -1;
-defrag_mode_t defrag_mode = DEFRAG_MODE_BUBBLE;
+defrag_mode_t defrag_mode = DEFRAG_MODE_COPY;
 
 #define OPTION (O_HASH_ROOT_DIR)
 
