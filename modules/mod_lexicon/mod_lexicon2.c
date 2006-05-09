@@ -40,15 +40,15 @@ static word_db_set_t* word_db_set = NULL;
 static int current_word_db_set = -1;
 
 // open을 singleton으로 구현하기 위한 것
-static word_db_t* g_word_db[MAX_WORD_DB_SET];
-static int g_word_db_ref[MAX_WORD_DB_SET];
+static word_db_t* singleton_word_db[MAX_WORD_DB_SET];
+static int singleton_word_db_ref[MAX_WORD_DB_SET];
 
 static int init()
 {
 	int i;
 
 	for ( i = 0; i < MAX_WORD_DB_SET; i++ ) {
-		g_word_db[i] = NULL;
+		singleton_word_db[i] = NULL;
 	}
 
 	return SUCCESS;
@@ -114,11 +114,11 @@ static int open_word_db(word_db_t** word_db, int opt)
 	}
 
 	// 다른 module에서 이미 열었던 건데.. 그것을 return한다.
-	if ( g_word_db[opt] != NULL ) {
-		*word_db = g_word_db[opt];
-		g_word_db_ref[opt]++;
+	if ( singleton_word_db[opt] != NULL ) {
+		*word_db = singleton_word_db[opt];
+		singleton_word_db_ref[opt]++;
 
-		info("reopened word db[set:%d, ref:%d]", opt, g_word_db_ref[opt]);
+		info("reopened word db[set:%d, ref:%d]", opt, singleton_word_db_ref[opt]);
 		return SUCCESS;
 	}
 
@@ -223,10 +223,10 @@ static int close_word_db(word_db_t* word_db)
 	info("word db[set:%d] closing...", word_db->set);
 
 	// 아직 reference count가 남아있으면 close하지 말아야 한다.
-	g_word_db_ref[word_db->set]--;
-	if ( g_word_db_ref[word_db->set] ) {
+	singleton_word_db_ref[word_db->set]--;
+	if ( singleton_word_db_ref[word_db->set] ) {
 		info("word db[set:%d, ref:%d] is not closing now",
-				word_db->set, g_word_db_ref[word_db->set]);
+				word_db->set, singleton_word_db_ref[word_db->set]);
 		return SUCCESS;
 	}
 
