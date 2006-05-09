@@ -2664,6 +2664,7 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
 		vd->relevancy += list->doc_hits[i].hitratio;
 		vd->dochits = &list->doc_hits[i];
 		vd->dochit_cnt++;
+		vd->comment_cnt++;
 
 		if(rule->type == DOCATTR) {
 			if (sb_run_docattr_get_field_integer_function(vd->docattr, 
@@ -2693,6 +2694,7 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
 		    if(virtual_id == next_virtual_id) {
 				vd->relevancy += list->doc_hits[i].hitratio;
 				vd->dochit_cnt++;
+		        vd->comment_cnt++;
             } else {
                 break;
             }
@@ -3497,13 +3499,13 @@ static int virtual_document_fill_comment(request_t* req, response_t* res)
 
     for(i = 0; i < g_vdl->cnt; i++) {
 		if(cmt_idx >= COMMENT_LIST_SIZE) {
-			g_vdl->data[i].dochit_cnt = 0;
+			g_vdl->data[i].comment_cnt = 0;
 			warn("over comment max count[%d]", COMMENT_LIST_SIZE);
 		} else {
 			for(j = 0; j < g_vdl->data[i].dochit_cnt && cmt_idx < COMMENT_LIST_SIZE; j++) {
 				get_comment(&g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx++].s);
 		        if(cmt_idx >= COMMENT_LIST_SIZE) {
-			        g_vdl->data[i].dochit_cnt = j+1;
+			        g_vdl->data[i].comment_cnt = j+1;
 					warn("over comment max count[%d]", COMMENT_LIST_SIZE);
 					break;
 				}
