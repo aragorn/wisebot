@@ -662,8 +662,8 @@ static int close_word_db(word_db_t* word_db)
 	info("word db[%s] closing...", db->path);
 
 	// 아직 reference count가 남아있으면 close하지 말아야 한다.
-	singleton_word_db_ref[word_db->set]--;
-	if ( singleton_word_db_ref[word_db->set] ) {
+	singleton_word_db_ref[set]--;
+	if ( singleton_word_db_ref[set] ) {
 		info("word db[set:%d, ref:%d] is not closing now",
 				set, singleton_word_db_ref[set]);
 		return SUCCESS;
