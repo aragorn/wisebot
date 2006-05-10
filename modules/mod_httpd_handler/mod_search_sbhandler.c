@@ -494,10 +494,10 @@ static int get_table(char *name_space, void **tab)
 static config_t config[] = {
     CONFIG_GET("NodeId", set_node_id, 1, "set node id : NodeId [no]"),
     CONFIG_GET("Enum", set_enum, 2, "constant"),
-	CONFIG_GET("TimeOut", set_timeout, 2, "constant"),
-	CONFIG_GET("KeepAliveTimeOut", set_keep_alive_timeout, 2, "constant"),
-	CONFIG_GET("KeepAliveMax", set_keep_alive_max, 2, "constant"),
-	CONFIG_GET("KeepAlive", set_keep_alive, 2, "constant"),
+	CONFIG_GET("TimeOut", set_timeout, 1, "constant"),
+	CONFIG_GET("KeepAliveTimeOut", set_keep_alive_timeout, 1, "constant"),
+	CONFIG_GET("KeepAliveMax", set_keep_alive_max, 1, "constant"),
+	CONFIG_GET("KeepAlive", set_keep_alive, 1, "constant"),
     {NULL}
 };
 
