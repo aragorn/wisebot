@@ -140,6 +140,7 @@ static int append_xml_msg_record(request_rec *r, msg_record_t *msg){
         if ( nRet != SUCCESS )  break;
         ap_rprintf(r, "\t<msgline><![CDATA[%s]]></msgline>\n", buf);
     }   
+
     ap_rprintf(r, "</messages>\n");
     return SUCCESS;
 }  

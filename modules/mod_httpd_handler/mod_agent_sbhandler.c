@@ -67,6 +67,12 @@ static int g_docattr_cnt;
 static char *constants[MAX_ENUM_NUM] = { NULL };
 static int constants_value[MAX_ENUM_NUM];
 
+// connection 
+static apr_int64_t timeout = 3000000;
+static apr_int64_t keep_alive_timeout = 60000000;
+static int keep_alive_max = 100;
+static int keep_alive = 1;
+
 //--------------------------------------------------------------//
 //	*   custom function	
 //--------------------------------------------------------------//
@@ -145,6 +151,19 @@ debug("[%d] : cmt_did[%u], cmt_node_id[%0X]", i, com_list[i].did, com_list[i].no
 	}
 
     return NULL;
+}
+
+static void set_con_config(server_rec* rec)
+{
+    rec->timeout = timeout;
+    rec->keep_alive_timeout = keep_alive_timeout;
+    rec->keep_alive_max = keep_alive_max;
+    rec->keep_alive = keep_alive;
+
+	info("server timeout[%lld]", timeout);
+	info("server keep_alive_timeout[%lld]", keep_alive_timeout);
+	info("server keep_alive_max[%d]", keep_alive_max);
+	info("server keep_alive[%d]", keep_alive);
 }
 
 //--------------------------------------------------------------//
@@ -613,14 +632,21 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
     int i = 0, j = 0;
     groupby_result_list_t* groupby_result = NULL;
 
+	set_con_config(r->server);
     init_agent();
+	msg_record_init(&s->msg);
 
     rv = sb_run_qp_init();
     if(rv != SUCCESS && rv != DECLINE) {
-		s->msg = qp_request.msg;
-        error("qp init failed");
+	    MSG_RECORD(&s->msg, error, "qp init failed");
         return FAIL;
     }
+
+	if(apr_table_get(s->parameters_in, "q") == NULL ||
+			strlen(apr_table_get(s->parameters_in, "q")) == 0) {
+	    MSG_RECORD(&s->msg, error, "query is null, must use http get method");
+        return FAIL;
+	}
 
 	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
 
@@ -736,14 +762,21 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s){
     int rv = 0;
     int i = 0;
 
+	set_con_config(r->server);
     init_agent();
+	msg_record_init(&s->msg);
 
     rv = sb_run_qp_init();
     if(rv != SUCCESS && rv != DECLINE) {
-		s->msg = qp_request.msg;
-        error("qp init failed");
+	    MSG_RECORD(&s->msg, error, "qp init failed");
         return FAIL;
     }
+
+	if(apr_table_get(s->parameters_in, "q") == NULL ||
+			strlen(apr_table_get(s->parameters_in, "q")) == 0) {
+	    MSG_RECORD(&s->msg, error, "query is null, must use http get method");
+        return FAIL;
+	}
 
 	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
 
@@ -817,15 +850,22 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
     memfile *buf = NULL;
     virtual_document_t* vd = NULL;
     
+	set_con_config(r->server);
     init_agent();
+	msg_record_init(&s->msg);
 
     rv = sb_run_qp_init(); 
     if(rv != SUCCESS && rv != DECLINE) {
-		s->msg = qp_request.msg;
-        error("qp init failed");
+	    MSG_RECORD(&s->msg, error, "qp init failed");
         return FAIL;
     }
     
+	if(apr_table_get(s->parameters_in, "q") == NULL ||
+			strlen(apr_table_get(s->parameters_in, "q")) == 0) {
+	    MSG_RECORD(&s->msg, error, "query is null, must use http get method");
+        return FAIL;
+	}
+
 	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
 
     rv = sb_run_qp_init_request(&qp_request, 
@@ -974,11 +1014,35 @@ static void set_search_node(configValue v)
     search_node_num++;
 }
 
+static void set_timeout(configValue v)
+{
+    timeout = atoll(v.argument[0]);
+}
+
+static void set_keep_alive_timeout(configValue v)
+{
+    keep_alive_timeout = atoll(v.argument[0]);
+}
+
+static void set_keep_alive_max(configValue v)
+{
+    keep_alive_max = atoi(v.argument[0]);
+}
+
+static void set_keep_alive(configValue v)
+{
+    keep_alive = atoi(v.argument[0]);
+}
+
 static config_t config[] = {
     CONFIG_GET("AddSearchNode", set_search_node, 1,
             "add search machine : AddSearchNode [ip:port]"),
     CONFIG_GET("NodeId", set_node_id, 1, "set node id : NodeId [no]"),
     CONFIG_GET("Enum", get_enum, 2, "constant"),
+	CONFIG_GET("TimeOut", set_timeout, 2, "constant"),
+	CONFIG_GET("KeepAliveTimeOut", set_keep_alive_timeout, 2, "constant"),
+	CONFIG_GET("KeepAliveMax", set_keep_alive_max, 2, "constant"),
+	CONFIG_GET("KeepAlive", set_keep_alive, 2, "constant"),
     {NULL}
 };
 

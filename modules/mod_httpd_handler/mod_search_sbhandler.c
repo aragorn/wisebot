@@ -44,6 +44,12 @@ static int constants_value[MAX_ENUM_NUM];
 // node info
 static uint32_t this_node_id; // 하위 4bit만 쓴다.
 
+// connection 
+static apr_int64_t timeout = 3000000;
+static apr_int64_t keep_alive_timeout = 60000000;
+static int keep_alive_max = 100;
+static int keep_alive = 1;
+
 //--------------------------------------------------------------//
 //  *   custom function 
 //--------------------------------------------------------------//
@@ -73,17 +79,39 @@ static char* return_constants_str(int value)
     return NULL;
 }
 
+static void set_con_config(server_rec* rec)
+{
+    rec->timeout = timeout;
+    rec->keep_alive_timeout = keep_alive_timeout;
+    rec->keep_alive_max = keep_alive_max;
+    rec->keep_alive = keep_alive;
+
+	info("server timeout[%lld]", timeout);
+	info("server keep_alive_timeout[%lld]", keep_alive_timeout);
+	info("server keep_alive_max[%d]", keep_alive_max);
+	info("server keep_alive[%d]", keep_alive);
+}
+
 static int search_handler(request_rec *r, softbot_handler_rec *s)
 {
     int rv = 0;
     int i = 0, j = 0, cmt_idx = 0;
 	groupby_result_list_t* groupby_result = NULL;
+	msg_record_init(&s->msg);
+
+	set_con_config(r->server);
 
 	rv = sb_run_qp_init();
     if(rv != SUCCESS && rv != DECLINE) {
-        error("qp init failed");
+	    MSG_RECORD(&s->msg, error, "qp init failed");
         return FAIL;
     }
+
+	if(apr_table_get(s->parameters_in, "q") == NULL ||
+			strlen(apr_table_get(s->parameters_in, "q")) == 0) {
+	    MSG_RECORD(&s->msg, error, "query is null, must use http get method");
+        return FAIL;
+	}
 
 	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
 
@@ -157,7 +185,8 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
         ap_rprintf(r, "<id>%u</id>\n", vd->id);
         ap_rprintf(r, "<node_id>%0X</node_id>\n", vd->node_id);
         ap_rprintf(r, "<relevancy>%u</relevancy>\n", vd->relevancy);
-        ap_rprintf(r, "<count>%u</count>\n", vd->dochit_cnt);
+        ap_rprintf(r, "<total_count>%u</total_count>\n", vd->dochit_cnt);
+        ap_rprintf(r, "<result_count>%u</result_count>\n", vd->comment_cnt);
 
         for(j = 0; j < vd->comment_cnt; j++) {
             ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n", qp_response.comments[cmt_idx++].s);
@@ -170,10 +199,11 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 
 	timelog("send_result_finish");
 
+	s->msg = qp_request.msg;
+
 	sb_run_qp_finalize_search(&qp_request, &qp_response);
 	timelog("qp_finalize");
 
-	s->msg = qp_request.msg;
 	return SUCCESS;
 }
 
@@ -183,12 +213,20 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
     int rv = 0;
     int i = 0;
 
+	set_con_config(r->server);
+	msg_record_init(&s->msg);
+
 	rv = sb_run_qp_init();
     if(rv != SUCCESS && rv != DECLINE) {
-	    s->msg = qp_request.msg;
-        error("qp init failed");
+	    MSG_RECORD(&s->msg, error, "qp init failed");
         return FAIL;
     }
+
+	if(apr_table_get(s->parameters_in, "q") == NULL ||
+			strlen(apr_table_get(s->parameters_in, "q")) == 0) {
+	    MSG_RECORD(&s->msg, error, "query is null, must use http get method");
+        return FAIL;
+	}
 
 	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
 
@@ -259,6 +297,7 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 
     timelog("send_result_finish");
 
+	s->msg = qp_request.msg;
 	sb_run_qp_finalize_search(&qp_request, &qp_response);
 	timelog("qp_finalize");
 
@@ -273,12 +312,20 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
     memfile *buf = NULL;
 	virtual_document_t* vd = NULL;
 
+	set_con_config(r->server);
+	msg_record_init(&s->msg);
+
 	rv = sb_run_qp_init();
     if(rv != SUCCESS && rv != DECLINE) {
-	    s->msg = qp_request.msg;
-        error("qp init failed");
+	    MSG_RECORD(&s->msg, error, "qp init failed");
         return FAIL;
     }
+
+	if(apr_table_get(s->parameters_in, "q") == NULL ||
+			strlen(apr_table_get(s->parameters_in, "q")) == 0) {
+	    MSG_RECORD(&s->msg, error, "query is null, must use http get method");
+        return FAIL;
+	}
 
 	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
 
@@ -380,6 +427,8 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 		debug("comments[%s]", qp_response.comments[i].s);
     }
 
+	s->msg = qp_request.msg;
+
 	return SUCCESS;
 }
 
@@ -392,7 +441,7 @@ static void set_node_id(configValue v)
     }
 }
 
-static void get_enum(configValue v)
+static void set_enum(configValue v)
 {
     int i;
 
@@ -411,6 +460,26 @@ static void get_enum(configValue v)
     debug("Enum[%s]: %d", constants[i], constants_value[i]);
 }
 
+static void set_timeout(configValue v)
+{
+    timeout = atoll(v.argument[0]);
+}
+
+static void set_keep_alive_timeout(configValue v)
+{
+    keep_alive_timeout = atoll(v.argument[0]);
+}
+
+static void set_keep_alive_max(configValue v)
+{
+    keep_alive_max = atoi(v.argument[0]);
+}
+
+static void set_keep_alive(configValue v)
+{
+    keep_alive = atoi(v.argument[0]);
+}
+
 static int get_table(char *name_space, void **tab)
 {
 	if ( strcmp(name_space, "search") != 0 ){
@@ -424,7 +493,11 @@ static int get_table(char *name_space, void **tab)
 
 static config_t config[] = {
     CONFIG_GET("NodeId", set_node_id, 1, "set node id : NodeId [no]"),
-    CONFIG_GET("Enum", get_enum, 2, "constant"),
+    CONFIG_GET("Enum", set_enum, 2, "constant"),
+	CONFIG_GET("TimeOut", set_timeout, 2, "constant"),
+	CONFIG_GET("KeepAliveTimeOut", set_keep_alive_timeout, 2, "constant"),
+	CONFIG_GET("KeepAliveMax", set_keep_alive_max, 2, "constant"),
+	CONFIG_GET("KeepAlive", set_keep_alive, 2, "constant"),
     {NULL}
 };
 
