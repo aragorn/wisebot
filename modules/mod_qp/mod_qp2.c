@@ -3604,6 +3604,7 @@ static int private_init(void)
 		return FAIL;
 	}
     		
+	b_use_cdm = (fine_module("mod_cdm.c") != NULL);
 	if ( b_use_cdm ) {
 		// cdm db open
 		ret = sb_run_server_canneddoc_init();
