@@ -3656,6 +3656,11 @@ static void setIndexDbSet(configValue v)
 	mIdxDbSet = atoi( v.argument[0] );
 }
 
+static void setCdmSet(configValue v)
+{
+	mCdmSet = atoi( v.argument[0] );
+}
+
 static void get_commentfield(configValue v)
 {
 	if (v.argNum < 7) return;
@@ -3711,6 +3716,7 @@ static config_t config[] = {
 			"inv indexer db path (only vrfi) (e.g: IndexDbPath /home/)"),
 	CONFIG_GET("IndexDbSet",setIndexDbSet,1,
 			"index db set (type is indexdb) (e.g: IndexDbSet 1)"),
+	CONFIG_GET("CdmSet",setCdmSet,1, "cdm db set (e.g: CdmSet 1)"),
 
 	CONFIG_GET("Field",get_commentfield,VAR_ARG, "Field which needs to be shown in result"),
 	CONFIG_GET("FieldSortingOrder",get_FieldSortingOrder,2, "Field sorting order"),
