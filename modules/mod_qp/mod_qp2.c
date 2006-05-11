@@ -123,6 +123,7 @@ static char* clause_type_str[] = {
     "LIMIT",
 	"(",
 	")",
+	"#",
 };
 
 static char* key_type_str[] = { "DOCATTR", "DID", "RELEVANCY", };
@@ -2119,7 +2120,6 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
 		strncat(comment,";;",sizeleft);
 		sizeleft -= 2;
 		sizeleft = (sizeleft < 0) ? 0:sizeleft;
-		sb_free(field_value);
 
 		if (sizeleft <= 0) {
 			error("req->comments size lack while pushing comment(field:%s, doc:%u)", field_info[k].name, docid);
@@ -2438,6 +2438,17 @@ static int init_request(request_t* req, char* query)
             *e = '\0';
 		}
 
+		// 공백라인 skip
+		if(s != NULL) {
+		    if(strlen(sb_trim(s)) == 0) {
+				if(e == NULL) break;
+				s = e + 1;
+
+				debug("blank line");
+				continue;
+			}
+		}
+
         clause_type = get_clause_type(s);
 
         if(clause_type == UNKNOWN) {
@@ -2483,6 +2494,9 @@ static int init_request(request_t* req, char* query)
 				case END_DID_RULE:
 					did_rule_status = 0;
 					break;
+				case COMMENT:
+					debug("comment[%s]", s);
+					break;
 				default:
                     MSG_RECORD(&req->msg, warn, "clause started by unknown symbol[%s]", s);
 					return FAIL;
@@ -2505,6 +2519,8 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 	memfile *buffer = memfile_new();
     operation_list_t* op_list = NULL;
 	select_list_t* sl = &req->select_list;
+
+	memset(query, 0x00, MAX_QUERY_STRING_SIZE);
 
 	// SELECT
 	rv = memfile_appendF(buffer, "%s ", clause_type_str[SELECT]);
