@@ -31,6 +31,7 @@ SOURCE_FILES = mod_api.c mod_api.h \
 SOURCE_FILES2 = mod_api.c mod_api.h \
 			   lexicon.c lexicon.h \
 			   cdm.c cdm.h \
+			   cdm2.c cdm2.h \
 			   did.c did.h \
 			   vbm.c vbm.h \
 			   tcp.c tcp.h \
