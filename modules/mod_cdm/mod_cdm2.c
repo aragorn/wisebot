@@ -574,6 +574,7 @@ static int cdmdoc_update_field(cdm_doc_t* doc, char* fieldname, char* buf, size_
 		((intptr_t)doc_custom->shortfield_values[idx] - (intptr_t)doc_custom->data);
 
 	INDEX_WR_LOCK(db, return FAIL);
+	// shortfield_size+1은 이미 \0이므로 굳이 기록하지 않아도 된다.
 	ret = write_cdm(db, doc_custom, offset, _buf, shortfield_size);
 	INDEX_UN_LOCK(db, );
 	sb_free(_buf);
