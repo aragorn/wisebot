@@ -3,6 +3,7 @@
 #include <fcntl.h> /* O_RDONLY */
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h> // for PRIu32
 #include "common_core.h"
 #include "memory.h"
 #include "util.h"
@@ -14,6 +15,7 @@
 #include "mod_api/vrfi.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/cdm.h"
+#include "mod_api/cdm2.h"
 #include "mod_api/docapi.h"
 #include "mod_api/indexer.h"
 #include "mod_api/protocol4.h" /* sb4 related error codes */
@@ -60,6 +62,9 @@ static word_db_t* word_db = NULL;
 static int field_count = 0;
 static field_info_t field_info[MAX_EXT_FIELD];
 ///////////////////////////////////////////////////////////
+// 구버전 cdm 사용여부
+static int b_use_cdm = 0;
+///////////////////////////////////////////////////////////
 
 enum DbType {
 	TYPE_VRFI,
@@ -70,6 +75,9 @@ static enum DbType        mDbType = TYPE_VRFI;
 
 static VariableRecordFile *mVRFI = NULL;
 static index_db_t         *mIfs  = NULL;
+
+static int                mCdmSet = -1;
+static cdm_db_t           *mCdm    = NULL;
 
 static char mIdxFilePath[MAX_PATH_LEN]= "dat/indexer/index"; // used by vrfi
 static int mIdxDbSet = -1;
@@ -1990,7 +1998,11 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
 	int i = 0, k = -1;
 	//XXX: result_list->doc_hit index and other index differs.
 	DocObject *docBody = 0x00; 
+	cdm_doc_t* cdmdoc;
+
+#define MAX_COMMENT_BYTES 1024
 	char *field_value = 0x00; 
+	char _field_value[MAX_COMMENT_BYTES];
 	int sizeleft = 0;
 	int ret = 0;
 	uint32_t docid = doc_hits->id;
@@ -2001,7 +2013,12 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
 	}
 
 	// 여기서 문서를 한번 가져온다
-	ret = sb_run_doc_get(docid, &docBody); 
+	if ( b_use_cdm ) { // mod_cdm
+		ret = sb_run_doc_get(docid, &docBody); 
+	}
+	else { // cdm2 api
+		ret = sb_run_cdm_get_doc(mCdm, docid, &cdmdoc);
+	}
 	if (ret < 0) { 
 		warn("cannot get document object of document[%u]\n", docid); 
 		return FAIL;
@@ -2027,13 +2044,22 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
             continue;
         }
 
-		#define max_comment_bytes 1024
 		field_value = NULL;
 
-		ret = sb_run_doc_get_field(docBody, NULL, field_info[k].name, &field_value);
-		if (ret < 0) {
-			error("doc_get_field error for doc[%d], field[%s]", docid, field_info[k].name);
-			continue;
+		if ( b_use_cdm ) { // mod_cdm
+			ret = sb_run_doc_get_field(docBody, NULL, field_info[k].name, &field_value);
+			if (ret < 0) {
+				error("doc_get_field error for doc[%d], field[%s]", docid, field_info[k].name);
+				continue;
+			}
+		}
+		else { // cdm2 api
+			field_value = _field_value;
+			ret = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, MAX_COMMENT_BYTES);
+			if ( ret < 0 && ret != CDM2_NOT_ENOUGH_BUFFER ) {
+				error("cannot get field[%s] from doc[%"PRIu32"]", field_info[k].name, docid);
+				continue;
+			}
 		}
 
 		// 구성 : FIELD_NAME:
@@ -2049,7 +2075,7 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
 		switch(field_info[k].type) {
 			case RETURN:
 				// 길이가 너무 길면 좀 자른다. 한글 안다치게...
-				cut_string( field_value, max_comment_bytes );
+				cut_string( field_value, MAX_COMMENT_BYTES );
 
 				strncat(comment, field_value, sizeleft);
 				sizeleft -= strlen(field_value);
@@ -2103,7 +2129,8 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
 		}
 	}
 
-	sb_run_doc_free(docBody);
+	if ( b_use_cdm ) sb_run_doc_free(docBody);
+	else sb_run_cdmdoc_destroy(cdmdoc);
 
 	return SUCCESS;
 }
@@ -3577,11 +3604,24 @@ static int private_init(void)
 		return FAIL;
 	}
     		
-	// cdm db open
-	ret = sb_run_server_canneddoc_init();
-	if ( ret != SUCCESS && ret != DECLINE ) {
-		error("cdm db open failed");
-		return FAIL;
+	if ( b_use_cdm ) {
+		// cdm db open
+		ret = sb_run_server_canneddoc_init();
+		if ( ret != SUCCESS && ret != DECLINE ) {
+			error("cdm db open failed");
+			return FAIL;
+		}
+	}
+	else { // use cdm2 api
+		if ( mCdmSet == -1 ) {
+			error("invalid CdmSet[%d]. set CdmSet in <"__FILE__">", mCdmSet);
+			return FAIL;
+		}
+		ret = sb_run_cdm_open( &mCdm, mCdmSet );
+		if ( ret != SUCCESS ) {
+			error("cdm[set:%d] open failed", mCdmSet);
+			return FAIL;
+		}
 	}
 
 	if(g_vdl == NULL) {
