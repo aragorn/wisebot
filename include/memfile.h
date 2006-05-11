@@ -40,7 +40,7 @@ int           memfile_read2memfile(memfile *pMF, memfile *mFile, int size);
 
 // memfile에  buf가 가리키는 곳부터 size만큼의 양을 append한다.
 // append 된 사이즈를 반환한다.
-int           memfile_append(memfile *pMF, char *buf, int size );
+int           memfile_append(memfile *pMF, const char *buf, int size );
 
 // memfile에 format에 해당하는 내용을 프린트해넣는다.
 // append 된 사이즈를 반환한다.
