@@ -2760,6 +2760,7 @@ static int make_groupby_rule(char* clause, groupby_rule_t* rule)
     char* token = NULL;
     int field = 0;
 
+	rule->is_enum = 1;              // default : enum filed임
     rule->sort.rule.type = DOCATTR; // default
     rule->sort.type = ASC;          // default
     rule->limit.start = -1;         // default : 제한없음.
@@ -2773,7 +2774,9 @@ static int make_groupby_rule(char* clause, groupby_rule_t* rule)
             field = 1;
             strncpy(rule->sort.rule.name, token, SHORT_STRING_SIZE);
         } else {
-            if(strncasecmp(token, "ASC", 3) == 0) {
+			if(strncasecmp(token, "INT", 3) == 0) {
+                rule->is_enum = 0;
+			} else if(strncasecmp(token, "ASC", 3) == 0) {
                 rule->sort.type = ASC;
             } else if(strncasecmp(token, "DESC", 4) == 0) {
                 rule->sort.type = DESC;
@@ -2793,7 +2796,9 @@ static int make_groupby_rule(char* clause, groupby_rule_t* rule)
                     rule->limit.start = atoi(token);
                     rule->limit.cnt = atoi(split+1);
                 }
-            }
+            } else {
+				warn("unknown symbol[%s]", token);
+			}
         }
 
         token = strtok(NULL, " ");
@@ -3620,7 +3625,7 @@ static int private_init(void)
 		return FAIL;
 	}
     		
-	b_use_cdm = (fine_module("mod_cdm.c") != NULL);
+	b_use_cdm = (find_module("mod_cdm.c") != NULL);
 	if ( b_use_cdm ) {
 		// cdm db open
 		ret = sb_run_server_canneddoc_init();
