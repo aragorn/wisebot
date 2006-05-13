@@ -698,6 +698,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 	/* word_list char * req->word_list */
     ap_rprintf(r,  
             "<xml>"
+			"<retcode>1</retcode>" 
             "<search>\n"
             "<summary>\n"
             "<query><![CDATA[%s]]></query>\n"
