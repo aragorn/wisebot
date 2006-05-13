@@ -164,15 +164,22 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 	groupby_result = &qp_response.groupby_result_vid;
     for(i = 0; i < groupby_result->rules.cnt; i++) {
         orderby_rule_t* sort_rule = &(groupby_result->rules.list[i].sort);
-        //limit_t* limit_rule = &(groupby_result->rules.list[i].limit);
+		int is_enum = groupby_result->rules.list[i].is_enum;
 
 		// group °á°ú
 		for(j = 0; j < MAX_CARDINALITY; j++) {
 			if(groupby_result->result[i][j] != 0) {
-				ap_rprintf(r, "<group name=\"%s\" field=\"%s\" count=\"%d\" />\n", 
-						      return_constants_str(j), 
-							  sort_rule->rule.name,
-							  groupby_result->result[i][j]);
+				if(is_enum) {
+					ap_rprintf(r, "<group name=\"%s\" field=\"%s\" count=\"%d\" />\n", 
+								  return_constants_str(j), 
+								  sort_rule->rule.name,
+								  groupby_result->result[i][j]);
+				} else {
+					ap_rprintf(r, "<group name=\"%d\" field=\"%s\" count=\"%d\" />\n", 
+								  j, 
+								  sort_rule->rule.name,
+								  groupby_result->result[i][j]);
+				}
             }
 		}
     }
