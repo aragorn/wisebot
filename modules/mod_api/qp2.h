@@ -84,7 +84,7 @@ enum sortarraytype { INDEX_LIST, AGENT_INFO, };
 enum order_type { DESC=-1, ASC=1, };
 enum clause_type { UNKNOWN = -1, SELECT, SEARCH, VIRTUAL_ID,
     WHERE, GROUP_BY, ORDER_BY, LIMIT, 
-	START_DID_RULE, END_DID_RULE, MAX_CLAUSE_TYPE};
+	START_DID_RULE, END_DID_RULE, COMMENT, MAX_CLAUSE_TYPE};
 
 struct virtual_document_t {
     uint32_t id;
@@ -121,6 +121,7 @@ struct orderby_rule_t {
 
 struct groupby_rule_t {
     orderby_rule_t sort;
+	int is_enum;           // docattr의 field type
     limit_t limit;
     int cnt; // group의 건수
 };
