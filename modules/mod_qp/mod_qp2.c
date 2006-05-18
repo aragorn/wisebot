@@ -124,11 +124,13 @@ static char* clause_type_str[] = {
 	"(",
 	")",
 	"#",
+	"OUTPUT_STYLE",
 };
 
 static char* key_type_str[] = { "DOCATTR", "DID", "RELEVANCY", };
 static char* order_type_str[] = { "DESC", "", "ASC", }; // DESC:-1, ASC:1
 static char* doc_type_str[] = { "DOCUMENT", "VIRTUAL_DOCUMENT", };
+static char* output_style_str[] = { "XML", "SOFTBOT4", };
 
 // function protoype
 static int	get_start_comment(char *pszStr, int lPosition);
@@ -143,6 +145,9 @@ static int make_groupby_rule_list(char* clause, groupby_rule_list_t* rules);
 static int make_limit_rule(char* clause, limit_t* rule);
 static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules);
 static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE]);
+
+static void set_output_style(request_t* req, char* clause);
+static void set_virtual_id(request_t* req, char* clause);
 
 // document type별 operation
 static int virtual_document_orderby(orderby_rule_list_t* rules);
@@ -174,6 +179,7 @@ static int operation_limit(limit_t* rule, enum doc_type doc_type);
 
 static int virtual_document_fill_comment(request_t* req, response_t* res);
 static int do_filter_operation(request_t* req, response_t* res, enum doc_type doc_type);
+static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, char* comment);
 
 static void print_orderby(orderby_rule_t* rule);
 static void print_limit(limit_t* rule);
@@ -1994,39 +2000,42 @@ static int is_exist_return_field(char* field_name, int* idx)
     return FALSE;        
 }
 
-static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment) 
+static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, char* comment) 
 {
 	int i = 0, k = -1;
 	//XXX: result_list->doc_hit index and other index differs.
 	DocObject *docBody = 0x00; 
 	cdm_doc_t* cdmdoc;
+	memfile *buffer = memfile_new();
 
 #define MAX_COMMENT_BYTES 1024
 	char *field_value = 0x00; 
 	char _field_value[MAX_COMMENT_BYTES];
-	int sizeleft = 0;
-	int ret = 0;
+	int rv = 0;
 	uint32_t docid = doc_hits->id;
+	enum output_style output_style = req->output_style;
 
 	if (docid == 0) {
-		crit("docid(%u) < 0",(uint32_t)docid);
+		MSG_RECORD(&req->msg, error, "docid(%u) < 0",(uint32_t)docid);
+		memfile_free(buffer);
 		return FAIL;
 	}
 
 	// 여기서 문서를 한번 가져온다
 	if ( b_use_cdm ) { // mod_cdm
-		ret = sb_run_doc_get(docid, &docBody); 
+		rv = sb_run_doc_get(docid, &docBody); 
 	}
 	else { // cdm2 api
-		ret = sb_run_cdm_get_doc(mCdm, docid, &cdmdoc);
+		rv = sb_run_cdm_get_doc(mCdm, docid, &cdmdoc);
 	}
-	if (ret < 0) { 
-		warn("cannot get document object of document[%u]\n", docid); 
+
+	if (rv < 0) { 
+		MSG_RECORD(&req->msg, error, "cannot get document object of document[%u]\n", docid); 
+		memfile_free(buffer);
 		return FAIL;
 	} 
 
-	comment[0]='\0'; /* ready for strcat */
-	sizeleft = LONG_LONG_STRING_SIZE-1;
+	memset(comment, 0x00, LONG_LONG_STRING_SIZE); 
 
 	if(sl->field_name[0][0] == '*')
 		sl->cnt = field_count;
@@ -2048,39 +2057,61 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
 		field_value = NULL;
 
 		if ( b_use_cdm ) { // mod_cdm
-			ret = sb_run_doc_get_field(docBody, NULL, field_info[k].name, &field_value);
-			if (ret < 0) {
+			rv = sb_run_doc_get_field(docBody, NULL, field_info[k].name, &field_value);
+			if (rv < 0) {
 				error("doc_get_field error for doc[%d], field[%s]", docid, field_info[k].name);
 				continue;
 			}
 		}
 		else { // cdm2 api
 			field_value = _field_value;
-			ret = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, MAX_COMMENT_BYTES);
-			if ( ret < 0 && ret != CDM2_NOT_ENOUGH_BUFFER ) {
+			rv = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, MAX_COMMENT_BYTES);
+			if ( rv < 0 && rv != CDM2_NOT_ENOUGH_BUFFER ) {
 				error("cannot get field[%s] from doc[%"PRIu32"]", field_info[k].name, docid);
 				continue;
 			}
 		}
 
 		// 구성 : FIELD_NAME:
-		strncat(comment, field_info[k].name, sizeleft);
-		sizeleft -= strlen(field_info[k].name);
-		sizeleft = (sizeleft < 0) ? 0:sizeleft;
-
-		strncat(comment,":",sizeleft);
-		sizeleft -= 1;
-		sizeleft = (sizeleft < 0) ? 0:sizeleft;
+	    if(output_style == STYLE_XML) {
+			rv = memfile_appendF(buffer, "<%s>", field_info[k].name);
+			if(rv < 0) {
+				MSG_RECORD(&req->msg, error, "can not appendF memfile");
+				memfile_free(buffer);
+				return FAIL;
+			}
+		} else {
+			rv = memfile_appendF(buffer, "%s:", field_info[k].name);
+			if(rv < 0) {
+				MSG_RECORD(&req->msg, error, "can not appendF memfile");
+				memfile_free(buffer);
+				return FAIL;
+			}
+		}
 
 		// 구성 : VALUE;;
 		switch(field_info[k].type) {
 			case RETURN:
+			{
 				// 길이가 너무 길면 좀 자른다. 한글 안다치게...
 				cut_string( field_value, MAX_COMMENT_BYTES );
 
-				strncat(comment, field_value, sizeleft);
-				sizeleft -= strlen(field_value);
-				sizeleft = (sizeleft < 0) ? 0:sizeleft;
+	            if(output_style == STYLE_XML) {
+					rv = memfile_appendF(buffer, "<![CDATA[%s]]>", field_value);
+					if(rv < 0) {
+						MSG_RECORD(&req->msg, error, "can not appendF memfile");
+						memfile_free(buffer);
+						return FAIL;
+					}
+				} else {
+					rv = memfile_appendF(buffer, "%s", field_value);
+					if(rv < 0) {
+						MSG_RECORD(&req->msg, error, "can not appendF memfile");
+						memfile_free(buffer);
+						return FAIL;
+					}
+				}
+			}
 			break;
 			case SUM:
 			case SUM_OR_FIRST:
@@ -2111,27 +2142,60 @@ static int get_comment(doc_hit_t* doc_hits, select_list_t* sl, char* comment)
 						cut_string( summary, 200 );
 					}
 
-					strncat(comment, summary, sizeleft);
-					sizeleft -= strlen(summary);
-					sizeleft = (sizeleft < 0) ? 0:sizeleft;
+					if(output_style == STYLE_XML) {
+						rv = memfile_appendF(buffer, "<![CDATA[%s]]>", summary);
+						if(rv < 0) {
+							MSG_RECORD(&req->msg, error, "can not appendF memfile");
+							memfile_free(buffer);
+							return FAIL;
+						}
+					} else {
+						rv = memfile_appendF(buffer, "%s", summary);
+						if(rv < 0) {
+							MSG_RECORD(&req->msg, error, "can not appendF memfile");
+							memfile_free(buffer);
+							return FAIL;
+						}
+					}
 				}
 			break;
 		}
-		strncat(comment,";;",sizeleft);
-		sizeleft -= 2;
-		sizeleft = (sizeleft < 0) ? 0:sizeleft;
 
-		if (sizeleft <= 0) {
-			error("req->comments size lack while pushing comment(field:%s, doc:%u)", field_info[k].name, docid);
-			comment[LONG_LONG_STRING_SIZE-1] = '\0';
-			error("%s", comment);
-			break;
+	    if(output_style == STYLE_XML) {
+			rv = memfile_appendF(buffer, "</%s>\n", field_info[k].name);
+			if(rv < 0) {
+				MSG_RECORD(&req->msg, error, "can not appendF memfile");
+				memfile_free(buffer);
+				return FAIL;
+			}
+		} else {
+			rv = memfile_appendF(buffer, "%s;;", field_info[k].name);
+			if(rv < 0) {
+				MSG_RECORD(&req->msg, error, "can not appendF memfile");
+				memfile_free(buffer);
+				return FAIL;
+			}
 		}
+	}
+
+	memfile_setOffset(buffer, 0);
+	if(memfile_getSize(buffer) > LONG_LONG_STRING_SIZE-1) {
+		MSG_RECORD(&req->msg, error, "over comment size, max[%d]", LONG_LONG_STRING_SIZE);
+		memfile_free(buffer);
+		return FAIL;
+	}
+
+	rv = memfile_read(buffer, comment, memfile_getSize(buffer));
+	if(rv != memfile_getSize(buffer)) {
+		MSG_RECORD(&req->msg, error, "can not appendF memfile");
+		memfile_free(buffer);
+		return FAIL;
 	}
 
 	if ( b_use_cdm ) sb_run_doc_free(docBody);
 	else sb_run_cdmdoc_destroy(cdmdoc);
 
+	memfile_free(buffer);
 	return SUCCESS;
 }
 
@@ -2233,6 +2297,7 @@ static int init_response(response_t* res)
     memset(res, 0x00, sizeof(response_t));
 
 	res->vdl = g_vdl;
+
     return SUCCESS;
 }
 
@@ -2300,6 +2365,19 @@ static void set_select_clause(select_list_t* sl, char* clause)
         s = e+1;
     }
 } 
+
+static void set_output_style(request_t* req, char* clause)
+{
+    char* s = NULL;
+
+    s = sb_trim(clause);
+
+	if(s == NULL || strncasecmp(s, "XML", 3) == 0) {
+		req->output_style = STYLE_XML;
+	} else if(strncasecmp(s, "SOFTBOT4", 8) == 0) {
+		req->output_style = STYLE_SOFTBOT4;
+	}
+}
 
 static void set_virtual_id(request_t* req, char* clause)
 {
@@ -2438,6 +2516,8 @@ static void print_request(request_t* req)
 
 	    debug("virtual key[%s], type[%s]", rule->name, key_type_str[rule->type]);
 	}
+
+	debug("output style[%s]", output_style_str[req->output_style]);
 }
 
 static int init_request(request_t* req, char* query)
@@ -2483,7 +2563,7 @@ static int init_request(request_t* req, char* query)
         clause_type = get_clause_type(s);
 
         if(clause_type == UNKNOWN) {
-            MSG_RECORD(&req->msg, warn, "clause started by unknown symbol[%s]", s);
+            MSG_RECORD(&req->msg, warn, "clause started with unknown symbol[%s]", s);
 			return FAIL;
 		} else {
 			len = strlen(clause_type_str[clause_type]);
@@ -2527,6 +2607,10 @@ static int init_request(request_t* req, char* query)
 					break;
 				case COMMENT:
 					debug("comment[%s]", s);
+					break;
+				case OUTPUT_STYLE:
+					debug("out_style[%s]", s);
+					set_output_style(req, s+len);
 					break;
 				default:
                     MSG_RECORD(&req->msg, warn, "clause started by unknown symbol[%s]", s);
@@ -3626,7 +3710,7 @@ static int virtual_document_fill_comment(request_t* req, response_t* res)
 			for(j = 0; j < g_vdl->data[i].dochit_cnt && cmt_idx < COMMENT_LIST_SIZE; j++) {
 				debug("cmt_idx[%d]", cmt_idx);
 
-				get_comment(&g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx++].s);
+				get_comment(req, &g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx++].s);
 		        if(cmt_idx >= COMMENT_LIST_SIZE) {
 			        g_vdl->data[i].comment_cnt = j+1;
                     MSG_RECORD(&req->msg, error, "over comment max count[%d]", COMMENT_LIST_SIZE);

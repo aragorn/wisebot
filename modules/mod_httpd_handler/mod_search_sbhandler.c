@@ -197,7 +197,11 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
         ap_rprintf(r, "<result_count>%u</result_count>\n", vd->comment_cnt);
 
         for(j = 0; j < vd->comment_cnt; j++) {
-            ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n", qp_response.comments[cmt_idx++].s);
+			if(qp_request.output_style == STYLE_XML) {
+                ap_rprintf(r, "<comment>%s</comment>\n", qp_response.comments[cmt_idx++].s);
+			} else {
+                ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n", qp_response.comments[cmt_idx++].s);
+			}
 		}
 
         ap_rprintf(r, "</row>\n");

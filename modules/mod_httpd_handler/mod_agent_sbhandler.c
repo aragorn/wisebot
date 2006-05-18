@@ -747,8 +747,13 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
         ap_rprintf(r, "<count>%u</count>\n", vd->dochit_cnt);
 
         for(j = 0; j < vd->comment_cnt; j++) {
-            ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n", 
-               find_comment(qp_response.comments, vd->dochits[j].id, pop_node_id(vd->node_id)));
+			if(qp_request.output_style == STYLE_XML) {
+                ap_rprintf(r, "<comment>%s</comment>\n", 
+						find_comment(qp_response.comments, vd->dochits[j].id, pop_node_id(vd->node_id)));
+			} else {
+                ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n",
+						find_comment(qp_response.comments, vd->dochits[j].id, pop_node_id(vd->node_id)));
+			}
         }
 
         ap_rprintf(r, "</row>\n");
