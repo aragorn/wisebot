@@ -405,12 +405,8 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
             print_virtual_document(vd);
 		}
 
-RECV_FAIL:
-		return FAIL;
-		/*
         res->vdl->cnt += real_recv_cnt;
         res->search_result += total_cnt;
-		*/
 	}
 
     // LIMIT operation º¹±Í
@@ -424,6 +420,9 @@ RECV_FAIL:
     }
 	
 	return SUCCESS;
+
+RECV_FAIL:
+	return FAIL;
 }
 
 
@@ -625,12 +624,12 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
                      cmt->did, cmt->node_id, cmt->s);
             cmt_idx++;
 		}
-
-RECV_FAIL:
-         return FAIL;
 	}
 
 	return SUCCESS;
+
+RECV_FAIL:
+    return FAIL;
 }
 
 /*
