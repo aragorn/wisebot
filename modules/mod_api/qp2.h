@@ -78,13 +78,14 @@ enum requesttype {
 	NO_HANDLER
 };
 
+enum output_style { STYLE_XML, STYLE_SOFTBOT4, };
 enum doc_type { DOCUMENT, VIRTUAL_DOCUMENT, };
 enum key_type { DOCATTR, DID, RELEVANCY, };
 enum sortarraytype { INDEX_LIST, AGENT_INFO, };
 enum order_type { DESC=-1, ASC=1, };
 enum clause_type { UNKNOWN = -1, SELECT, SEARCH, VIRTUAL_ID,
     WHERE, GROUP_BY, ORDER_BY, LIMIT, 
-	START_DID_RULE, END_DID_RULE, COMMENT, MAX_CLAUSE_TYPE};
+	START_DID_RULE, END_DID_RULE, COMMENT, OUTPUT_STYLE, MAX_CLAUSE_TYPE};
 
 struct virtual_document_t {
     uint32_t id;
@@ -180,14 +181,17 @@ struct comment_t {
 	uint32_t node_id;
 };
 
+#define MAX_VID_RULE 5
 struct request_t {
 	char query[MAX_QUERY_STRING_SIZE];
     char search[MAX_QUERY_STRING_SIZE];
     select_list_t select_list;
 	operation_list_t op_list_vid;
 	operation_list_t op_list_did;
-	key_rule_t virtual_rule;
+	key_rule_t virtual_rule[MAX_VID_RULE];
+	int virtual_rule_cnt;
 	msg_record_t msg;
+    enum output_style output_style;
 };
 
 struct response_t {
