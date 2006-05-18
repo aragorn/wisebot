@@ -2169,7 +2169,6 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						cut_string( summary, 200 );
 					}
 
-					warn("field_value[%s], summary[%s]", field_value, summary);
 					if(output_style == STYLE_XML) {
 						rv = memfile_appendF(buffer, "<![CDATA[%s]]>", summary);
 						if(rv < 0) {
