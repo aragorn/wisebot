@@ -42,26 +42,6 @@ typedef struct comment_t comment_t;
 // 최대 하위 노드 수
 // 4bit로 표현할수 있는 수.
 #define MAX_SEARCH_NODE             (1 << 4) // 2^4 = 16(0은 사용 않함)
-#define MAX_AGENT_SEARCH_LIST_NUM   (10)
-#define MAX_AGENT_SEARCH_PAGE_NUM   (10)
-#define MAX_AGENT_DID_NUL_PER_VID   (10)
-
-/*
- * agent에서 처리할 수 있는 dochit의 갯수
- * virtual_document를 기준으로 lc=10, pg=10,vid(did=10)=10
- *
- */
-#define MAX_AGENT_DOC_HITS_COUNT (MAX_SEARCH_NODE * \
-		                          MAX_AGENT_SEARCH_LIST_NUM * \
-		                          MAX_AGENT_SEARCH_PAGE_NUM * \
-		                          MAX_AGENT_DID_NUL_PER_VID)
-
-/*
- * agent에서 처리할 수 있는 docattr의 갯수
- */
-#define MAX_AGENT_DOCATTR_COUNT (MAX_SEARCH_NODE * \
-		                          MAX_AGENT_SEARCH_LIST_NUM * \
-		                          MAX_AGENT_SEARCH_PAGE_NUM) 
 
 enum index_list_type {
 	EXCLUDE,

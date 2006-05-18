@@ -63,6 +63,10 @@ static docattr_t* g_docattr_buffer;
 static int g_docattr_cnt;
 
 
+/////////////////////////////////////////////////////////////////////
+// agent에서 처리할 수 있는 doc_hit 수
+static int max_doc_hit_count = 2000000;
+
 // enum
 static char *constants[MAX_ENUM_NUM] = { NULL };
 static int constants_value[MAX_ENUM_NUM];
@@ -124,12 +128,14 @@ static void init_agent()
 {
     g_dochit_cnt = 0;
     if(g_dochits_buffer == NULL) {
-        g_dochits_buffer = (doc_hit_t*)sb_calloc(MAX_AGENT_DOC_HITS_COUNT, sizeof(doc_hit_t));
+        g_dochits_buffer = (doc_hit_t*)sb_calloc(max_doc_hit_count, sizeof(doc_hit_t));
+		info("doc_hit count[%d], memory size[%d]", max_doc_hit_count, max_doc_hit_count*sizeof(doc_hit_t));
     }
 
     g_docattr_cnt = 0;
     if(g_docattr_buffer == NULL) {
-        g_docattr_buffer = (docattr_t*)sb_calloc(MAX_AGENT_DOCATTR_COUNT, sizeof(docattr_t));
+        g_docattr_buffer = (docattr_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(docattr_t));
+		info("docattr count[%d], memory size[%d]", MAX_DOC_HITS_SIZE, MAX_DOC_HITS_SIZE*sizeof(docattr_t));
     }
 }
 
@@ -323,7 +329,7 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 				real_recv_cnt = i;
 
 				MSG_RECORD(&s->msg, error, "not enought virtual_document count[%d], recv count[%d]", 
-						MAX_AGENT_DOC_HITS_COUNT, res->vdl->cnt + i);
+						max_doc_hit_count, res->vdl->cnt + i);
 			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
@@ -350,9 +356,9 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 
 			vd->comment_cnt = vd->dochit_cnt;
 
-			if(g_dochit_cnt + vd->dochit_cnt > MAX_AGENT_DOC_HITS_COUNT) {
-				vd->comment_cnt = MAX_AGENT_DOC_HITS_COUNT - g_dochit_cnt;
-				MSG_RECORD(&s->msg, error, "over max hit count[%u]", MAX_AGENT_DOC_HITS_COUNT);
+			if(g_dochit_cnt + vd->dochit_cnt > max_doc_hit_count) {
+				vd->comment_cnt = max_doc_hit_count - g_dochit_cnt;
+				MSG_RECORD(&s->msg, error, "over max hit count[%u]", max_doc_hit_count);
 				//return FAIL; // 초과해도 정상적으로 출력되도록.
 			}
 
@@ -380,8 +386,8 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
-			if(g_docattr_cnt + 1 > MAX_AGENT_DOCATTR_COUNT) {
-				MSG_RECORD(&s->msg, error, "over max docattr count[%u]", MAX_AGENT_DOCATTR_COUNT);
+			if(g_docattr_cnt + 1 > MAX_DOC_HITS_SIZE) {
+				MSG_RECORD(&s->msg, error, "over max docattr count[%u]", MAX_DOC_HITS_SIZE);
 			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
@@ -1047,6 +1053,11 @@ static void set_keep_alive(configValue v)
     keep_alive = atoi(v.argument[0]);
 }
 
+static void set_max_doc_hit_count(configValue v)
+{
+    max_doc_hit_count = atoi(v.argument[0]);
+}
+
 static config_t config[] = {
     CONFIG_GET("AddSearchNode", set_search_node, 1,
             "add search machine : AddSearchNode [ip:port]"),
@@ -1056,6 +1067,7 @@ static config_t config[] = {
 	CONFIG_GET("KeepAliveTimeOut", set_keep_alive_timeout, 1, "constant"),
 	CONFIG_GET("KeepAliveMax", set_keep_alive_max, 1, "constant"),
 	CONFIG_GET("KeepAlive", set_keep_alive, 1, "constant"),
+	CONFIG_GET("MaxDochitCount", set_max_doc_hit_count, 1, "max dochit count"),
     {NULL}
 };
 
