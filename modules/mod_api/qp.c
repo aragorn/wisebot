@@ -40,6 +40,6 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_filter,  \
 		 int rank_func(rank_t*,rank_t*,uint32_t*)), \
 		(s1,s2,d,f,rank_func), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_rank, \
-		(rank_t *r1,rank_t *r2,uint32_t *relevancy), \
-		(r1,r2,relevancy), DECLINE)
+		(rank_t *r1,rank_t *r2,uint32_t *relevance), \
+		(r1,r2,relevance), DECLINE)
 #endif	

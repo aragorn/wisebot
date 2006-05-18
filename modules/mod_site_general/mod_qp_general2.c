@@ -1351,7 +1351,7 @@ static int qp_cb_orderby_virtual_document(const void* dest, const void* sour, vo
 		orderby_rule_t* order = &rules->list[i];
 
 		if ( order->rule.type == RELEVANCY ) {
-			diff = dest_vd->relevancy - sour_vd->relevancy;
+			diff = dest_vd->relevance - sour_vd->relevance;
 		}
 		else if ( order->rule.type == DID ) {
 		    diff = dest_vd->id - sour_vd->id;

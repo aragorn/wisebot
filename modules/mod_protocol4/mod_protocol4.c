@@ -2430,7 +2430,7 @@ static int sb4s_search_doc(int sockfd)
 		/*
 		sprintf(buf, "DID=%d^HIT=%d^TT=%s^CMT=%s^OID=%s^",
 					req.result_list->doc_hits[i].docid,
-					req.result_list->relevancy[i],
+					req.result_list->relevance[i],
 					req.titles[i],
 					replace_newline_to_space(req.comments[i]),
 					req.otherId[i]	
@@ -2438,7 +2438,7 @@ static int sb4s_search_doc(int sockfd)
 		sprintf(buf, "DID=%d^HIT=%d^WH=%d^CMT=%s^",
 					req.result_list->doc_hits[i].id,
 					req.result_list->doc_hits[i].hitratio,
-					//req.result_list->relevancy[i],
+					//req.result_list->relevance[i],
 					req.result_list->doc_hits[i].nhits,
 					replace_newline_to_space(req.comments[i])
 				); 			

@@ -100,7 +100,7 @@ typedef struct {
 	uint32_t id;
 	uint32_t ndochits; /* < MAX_DOCHITS_PER_DOCUMENT */
 	uint32_t field;
-	uint32_t *relevancy[MAX_DOCHITS_PER_DOCUMENT];
+	uint32_t *relevance[MAX_DOCHITS_PER_DOCUMENT];
 	doc_hit_t *dochits[MAX_DOCHITS_PER_DOCUMENT];
 
 	int dochit_idx;
@@ -290,8 +290,8 @@ static index_list_t *alloc_complete_index_list(index_list_t *prev, index_list_t 
 		error("fail calling calloc: %s", strerror(errno));
 		return NULL;
 	}
-	this->relevancy = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
-	if (this->relevancy == NULL) {
+	this->relevance = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
+	if (this->relevance == NULL) {
 		error("fail calling calloc: %s", strerror(errno));
 		return NULL;
 	}
@@ -322,7 +322,7 @@ static index_list_t *get_complete_list(void)
 {
 	index_list_t *this = NULL;
 	doc_hit_t *doc_hits = NULL;
-	uint32_t *relevancy = NULL;
+	uint32_t *relevance = NULL;
 
 	if ( complete_free_list_root == NULL ) {
 		warn("complete_free_list_root is NULL - extending set dynamically");
@@ -335,16 +335,16 @@ static index_list_t *get_complete_list(void)
 
 	// pointer가 가리키는 값들을 잃어버리지 않도록..
 	doc_hits = this->doc_hits;
-	relevancy = this->relevancy;
+	relevance = this->relevance;
 
 	memset(this,0x00,sizeof(index_list_t));
 
 	this->doc_hits = doc_hits;
-	this->relevancy = relevancy;
+	this->relevance = relevance;
 	this->list_size = MAX_DOC_HITS_SIZE; /* XXX: to where?? */
 
 //	memset(this->doc_hits, 0, sizeof(doc_hit_t) * MAX_DOC_HITS_SIZE);
-//	memset(this->relevancy, 0, sizeof(uint32_t) * MAX_DOC_HITS_SIZE);
+//	memset(this->relevance, 0, sizeof(uint32_t) * MAX_DOC_HITS_SIZE);
 
 //	CRIT("get complete list: %p", this);
 
@@ -394,9 +394,9 @@ static void init_complete_free_list()
 					MAX_DOC_HITS_SIZE * (int)sizeof(doc_hit_t), strerror(errno));
 			return;
 		}
-		this->relevancy = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
-		if (this->relevancy == NULL) {
-			error("relevancy calloc(%d bytes) failed: %s",
+		this->relevance = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
+		if (this->relevance == NULL) {
+			error("relevance calloc(%d bytes) failed: %s",
 					MAX_DOC_HITS_SIZE * (int)sizeof(uint32_t), strerror(errno));
 			return;
 		}
@@ -517,7 +517,7 @@ static void release_list(index_list_t *this)
 		if ( this < complete_index_list_pool
 				|| this >= complete_index_list_pool+MAX_INDEX_LIST_POOL ) {
 			warn( "release allocated complete list memory" );
-			sb_free( this->relevancy );
+			sb_free( this->relevance );
 			sb_free( this->doc_hits );
 			sb_free( this );
 		}
@@ -751,7 +751,7 @@ printf("Title_hit:%d(%d)\n", Title_hit, field);
 				
 				tot_index_doccnt = sb_run_last_indexed_did();
 
-				list->relevancy[idx-1] = (((int)log10( (tot_index_doccnt*3) / (ndochits))+1 ) * nWordHit)+Title_hit;
+				list->relevance[idx-1] = (((int)log10( (tot_index_doccnt*3) / (ndochits))+1 ) * nWordHit)+Title_hit;
 
 										
 			}
@@ -760,7 +760,7 @@ printf("Title_hit:%d(%d)\n", Title_hit, field);
 	}
 	else {
 		// 초기화 해야 한다
-		memset( list->relevancy, 0, sizeof(uint32_t)*ndochits );
+		memset( list->relevance, 0, sizeof(uint32_t)*ndochits );
 	}
 
 	INFO("[%d:%s] ndochits(%u)(after field filtered) (before field filtered:%u)",
@@ -808,7 +808,7 @@ static void insert_one_to_result(index_list_t *dest, int idx,
 	DEBUG("pos_weight[%d]",pos_weight);
 	
 	dest->doc_hits[idx] = l1->doc_hits[idx1];
-	dest->relevancy[idx] = l1->relevancy[idx1];
+	dest->relevance[idx] = l1->relevance[idx1];
 
 	return;
 }
@@ -929,7 +929,7 @@ static void init_index_document(index_document_t *doc,
 
 	for (i=0; i<nelm; i++) {
 		doc->dochits[i] = &(list->doc_hits[i+start]);
-		doc->relevancy[i] = &(list->relevancy[i+start]);
+		doc->relevance[i] = &(list->relevance[i+start]);
 	}
 }
 static void init_result_document(index_document_t *doc,
@@ -944,11 +944,11 @@ static void init_result_document(index_document_t *doc,
 
 	for (i=0; i<nelm; i++) {
 		doc->dochits[i] = &(list->doc_hits[i+start]);
-		doc->relevancy[i] = &(list->relevancy[i+start]);
+		doc->relevance[i] = &(list->relevance[i+start]);
 
 		doc->dochits[i]->nhits = 0;
 		doc->dochits[i]->field = 0;
-		*(doc->relevancy[i]) = 0;
+		*(doc->relevance[i]) = 0;
 	}
 }
 static hit_t *get_next_hit(index_document_t *doc)
@@ -979,7 +979,7 @@ static uint32_t append_to_result_document(index_document_t *doc,
 
 	for (i=0; i<doc->ndochits && i<max; i++) {
 		*(result->dochits[i]) = *(doc->dochits[i]);
-		*(result->relevancy[i]) = *(doc->relevancy[i]);
+		*(result->relevance[i]) = *(doc->relevance[i]);
 	}
 	result->ndochits = doc->ndochits < max ? doc->ndochits : max;
 
@@ -1320,7 +1320,7 @@ static uint32_t operate_within_each_document(index_document_t *doc1,
 				(result->dochits[dochit_idx]->nhits)++;
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit2;
 
-				*(result->relevancy[dochit_idx]) += (*(doc2->relevancy[doc2->dochit_idx]))+ (*(doc1->relevancy[doc1->dochit_idx])); //  *(doc1->relevancy[dochit_idx]);
+				*(result->relevance[dochit_idx]) += (*(doc2->relevance[doc2->dochit_idx]))+ (*(doc1->relevance[doc1->dochit_idx])); //  *(doc1->relevance[dochit_idx]);
 				
 				hit_idx++;
 
@@ -1372,7 +1372,7 @@ static uint32_t operate_phrase_each_document(index_document_t *doc1,
 				/* phrase operation 시에는 앞 단어의 position을 들고가야 한다 */
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit1;  
 
-				*(result->relevancy[dochit_idx]) += (*(doc2->relevancy[doc2->dochit_idx]))+ (*(doc1->relevancy[doc1->dochit_idx])); //  *(doc1->relevancy[dochit_idx]);
+				*(result->relevance[dochit_idx]) += (*(doc2->relevance[doc2->dochit_idx]))+ (*(doc1->relevance[doc1->dochit_idx])); //  *(doc1->relevance[dochit_idx]);
 												
 				hit_idx++;
 				
@@ -2208,7 +2208,7 @@ static void reduce_dochits_to_one_per_doc(index_list_t *list)
 	for (i=0; i<list->ndochits; i++) {
 		if (list->doc_hits[i].id != current_docid) {
 			list->doc_hits[idx] = list->doc_hits[i];
-			list->relevancy[idx] = list->relevancy[i];
+			list->relevance[idx] = list->relevance[i];
 			idx++;
 
 			current_docid = list->doc_hits[i].id;
@@ -2216,13 +2216,13 @@ static void reduce_dochits_to_one_per_doc(index_list_t *list)
 		}
 		else
 		{
-			list->relevancy[idx-1] += list->relevancy[i];
+			list->relevance[idx-1] += list->relevance[i];
 		}
 	}
 
 	for (j=0; j < idx; j++)
 	{
-		list->doc_hits[j].hitratio = list->relevancy[j];
+		list->doc_hits[j].hitratio = list->relevance[j];
 	}
 	
 	list->ndochits = idx;
@@ -2704,7 +2704,7 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
 
 		vd->docattr = g_docattr_base_ptr + 
 					  g_docattr_record_size*(list->doc_hits[i].id - 1); // did는 1 base임.
-		vd->relevancy += list->doc_hits[i].hitratio;
+		vd->relevance += list->doc_hits[i].hitratio;
 		vd->dochits = &list->doc_hits[i];
 		vd->dochit_cnt++;
 		vd->comment_cnt++;
@@ -2735,7 +2735,7 @@ static int make_virtual_document(index_list_t* list, key_rule_t* rule)
 			}
 
 		    if(virtual_id == next_virtual_id) {
-				vd->relevancy += list->doc_hits[i].hitratio;
+				vd->relevance += list->doc_hits[i].hitratio;
 				vd->dochit_cnt++;
 		        vd->comment_cnt++;
             } else {

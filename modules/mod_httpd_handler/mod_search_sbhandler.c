@@ -59,7 +59,7 @@ static void print_virtual_document(virtual_document_t* vd)
 	int i = 0;
 
     debug("vid[%u]", vd->id);
-    debug("relevancy[%u]", vd->relevancy);
+    debug("relevance[%u]", vd->relevance);
     debug("dochit_cnt[%u]", vd->dochit_cnt);
     debug("node_id[%0X]", this_node_id);
 	for(;i < vd->dochit_cnt; i++) {
@@ -192,7 +192,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
         ap_rprintf(r, "<row no=\"%d\">\n", i);
         ap_rprintf(r, "<id>%u</id>\n", vd->id);
         ap_rprintf(r, "<node_id>%0X</node_id>\n", vd->node_id);
-        ap_rprintf(r, "<relevancy>%u</relevancy>\n", vd->relevancy);
+        ap_rprintf(r, "<relevance>%u</relevance>\n", vd->relevance);
         ap_rprintf(r, "<total_count>%u</total_count>\n", vd->dochit_cnt);
         ap_rprintf(r, "<result_count>%u</result_count>\n", vd->comment_cnt);
 
@@ -291,7 +291,7 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 
 		ap_rwrite((void*)&vd->id, sizeof(uint32_t), r);
 
-		ap_rwrite((void*)&vd->relevancy, sizeof(uint32_t), r);
+		ap_rwrite((void*)&vd->relevance, sizeof(uint32_t), r);
 
 		ap_rwrite((void*)&vd->dochit_cnt, sizeof(uint32_t), r);
 

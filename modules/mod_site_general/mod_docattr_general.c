@@ -721,7 +721,7 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 	        if(type == INDEX_LIST) {
 			    diff = ((doc_hit_t*) dest)->hitratio - ((doc_hit_t*) sour)->hitratio;
 			} else if(type == AGENT_INFO) {
-			    //diff = ((agent_doc_hits_t*) dest)->relevancy - ((agent_doc_hits_t*) sour)->relevancy;
+			    //diff = ((agent_doc_hits_t*) dest)->relevance - ((agent_doc_hits_t*) sour)->relevance;
 			    diff = ((agent_doc_hits_t*) dest)->doc_hits.hitratio - ((agent_doc_hits_t*) sour)->doc_hits.hitratio;
 			}
 		}

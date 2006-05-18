@@ -85,7 +85,7 @@ typedef struct {
 	uint32_t id;
 	uint32_t ndochits; /* < MAX_DOCHITS_PER_DOCUMENT */
 	uint32_t field;
-	uint32_t *relevancy[MAX_DOCHITS_PER_DOCUMENT];
+	uint32_t *relevance[MAX_DOCHITS_PER_DOCUMENT];
 	doc_hit_t *dochits[MAX_DOCHITS_PER_DOCUMENT];
 
 	int dochit_idx;
@@ -164,8 +164,8 @@ static index_list_t *alloc_complete_index_list(index_list_t *prev, index_list_t 
 		error("fail calling calloc: %s", strerror(errno));
 		return NULL;
 	}
-	this->relevancy = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
-	if (this->relevancy == NULL) {
+	this->relevance = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
+	if (this->relevance == NULL) {
 		error("fail calling calloc: %s", strerror(errno));
 		return NULL;
 	}
@@ -196,7 +196,7 @@ index_list_t *get_complete_list(void)
 {
 	index_list_t *this = NULL;
 	doc_hit_t *doc_hits = NULL;
-	uint32_t *relevancy = NULL;
+	uint32_t *relevance = NULL;
 
 	if ( complete_free_list_root == NULL ) {
 		warn("complete_free_list_root is NULL - extending set dynamically");
@@ -209,16 +209,16 @@ index_list_t *get_complete_list(void)
 
 	// pointer가 가리키는 값들을 잃어버리지 않도록..
 	doc_hits = this->doc_hits;
-	relevancy = this->relevancy;
+	relevance = this->relevance;
 
 	memset(this,0x00,sizeof(index_list_t));
 
 	this->doc_hits = doc_hits;
-	this->relevancy = relevancy;
+	this->relevance = relevance;
 	this->list_size = MAX_DOC_HITS_SIZE; /* XXX: to where?? */
 
 //	memset(this->doc_hits, 0, sizeof(doc_hit_t) * MAX_DOC_HITS_SIZE);
-//	memset(this->relevancy, 0, sizeof(uint32_t) * MAX_DOC_HITS_SIZE);
+//	memset(this->relevance, 0, sizeof(uint32_t) * MAX_DOC_HITS_SIZE);
 
 //	CRIT("get complete list: %p", this);
 
@@ -268,9 +268,9 @@ static void init_complete_free_list()
 					MAX_DOC_HITS_SIZE * (int)sizeof(doc_hit_t), strerror(errno));
 			return;
 		}
-		this->relevancy = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
-		if (this->relevancy == NULL) {
-			error("relevancy calloc(%d bytes) failed: %s",
+		this->relevance = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
+		if (this->relevance == NULL) {
+			error("relevance calloc(%d bytes) failed: %s",
 					MAX_DOC_HITS_SIZE * (int)sizeof(uint32_t), strerror(errno));
 			return;
 		}
@@ -391,7 +391,7 @@ static void release_list(index_list_t *this)
 		if ( this < complete_index_list_pool
 				|| this >= complete_index_list_pool+MAX_INDEX_LIST_POOL ) {
 			warn( "release allocated complete list memory" );
-			sb_free( this->relevancy );
+			sb_free( this->relevance );
 			sb_free( this->doc_hits );
 			sb_free( this );
 		}
@@ -621,7 +621,7 @@ printf("Title_hit:%d(%d)\n", Title_hit, field);
 				
 				tot_index_doccnt = sb_run_last_indexed_did();
 
-				list->relevancy[idx-1] = (((int)log10( (tot_index_doccnt*3) / (ndochits))+1 ) * nWordHit)+Title_hit;
+				list->relevance[idx-1] = (((int)log10( (tot_index_doccnt*3) / (ndochits))+1 ) * nWordHit)+Title_hit;
 
 										
 			}
@@ -630,7 +630,7 @@ printf("Title_hit:%d(%d)\n", Title_hit, field);
 	}
 	else {
 		// 초기화 해야 한다
-		memset( list->relevancy, 0, sizeof(uint32_t)*ndochits );
+		memset( list->relevance, 0, sizeof(uint32_t)*ndochits );
 	}
 
 	INFO("[%d:%s] ndochits(%u)(after field filtered) (before field filtered:%u)",
@@ -703,7 +703,7 @@ static void get_weight(QueryNode *qnode, DocId total_doc_number,  index_list_t *
 	temp = (2*total_doc_number) / qnode->word_st.word_attr.df;
 	
 	for (i=0 ; i<list->ndochits ; i++) {
-		list->relevancy[i] = list->doc_hits[i].nhits * (uint32_t)log(temp);
+		list->relevance[i] = list->doc_hits[i].nhits * (uint32_t)log(temp);
 	}
 	
 	return;
@@ -866,7 +866,7 @@ void insert_one_to_result(index_list_t *dest, int idx,
 	DEBUG("pos_weight[%d]",pos_weight);
 	
 	dest->doc_hits[idx] = l1->doc_hits[idx1];
-	dest->relevancy[idx] = l1->relevancy[idx1];
+	dest->relevance[idx] = l1->relevance[idx1];
 
 	return;
 }
@@ -882,8 +882,8 @@ void insert_to_result(index_list_t *dest, int idx,
 /*    dest->doc_hits[idx] = l2->doc_hits[idx2];*/
 	memcpy(&(dest->doc_hits[idx]), result_hits, sizeof(doc_hit_t));
 
-	dest->relevancy[idx] = ( l1->relevancy[idx1] / 2 ) +
-							( l2->relevancy[idx2] / 2 ) +
+	dest->relevance[idx] = ( l1->relevance[idx1] / 2 ) +
+							( l2->relevance[idx2] / 2 ) +
 							( pos_weight ) / 2;
 	return;
 }
@@ -1009,7 +1009,7 @@ static void init_index_document(index_document_t *doc,
 
 	for (i=0; i<nelm; i++) {
 		doc->dochits[i] = &(list->doc_hits[i+start]);
-		doc->relevancy[i] = &(list->relevancy[i+start]);
+		doc->relevance[i] = &(list->relevance[i+start]);
 	}
 }
 static void init_result_document(index_document_t *doc,
@@ -1024,11 +1024,11 @@ static void init_result_document(index_document_t *doc,
 
 	for (i=0; i<nelm; i++) {
 		doc->dochits[i] = &(list->doc_hits[i+start]);
-		doc->relevancy[i] = &(list->relevancy[i+start]);
+		doc->relevance[i] = &(list->relevance[i+start]);
 
 		doc->dochits[i]->nhits = 0;
 		doc->dochits[i]->field = 0;
-		*(doc->relevancy[i]) = 0;
+		*(doc->relevance[i]) = 0;
 	}
 }
 static hit_t *get_next_hit(index_document_t *doc)
@@ -1059,7 +1059,7 @@ static uint32_t append_to_result_document(index_document_t *doc,
 
 	for (i=0; i<doc->ndochits && i<max; i++) {
 		*(result->dochits[i]) = *(doc->dochits[i]);
-		*(result->relevancy[i]) = *(doc->relevancy[i]);
+		*(result->relevance[i]) = *(doc->relevance[i]);
 	}
 	result->ndochits = doc->ndochits < max ? doc->ndochits : max;
 
@@ -1429,7 +1429,7 @@ static uint32_t operate_within_each_document(index_document_t *doc1,
 				(result->dochits[dochit_idx]->nhits)++;
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit2;
 
-				*(result->relevancy[dochit_idx]) += (*(doc2->relevancy[doc2->dochit_idx]))+ (*(doc1->relevancy[doc1->dochit_idx])); //  *(doc1->relevancy[dochit_idx]);
+				*(result->relevance[dochit_idx]) += (*(doc2->relevance[doc2->dochit_idx]))+ (*(doc1->relevancy[doc1->dochit_idx])); //  *(doc1->relevance[dochit_idx]);
 				
 				hit_idx++;
 
@@ -1481,7 +1481,7 @@ static uint32_t operate_phrase_each_document(index_document_t *doc1,
 				/* phrase operation 시에는 앞 단어의 position을 들고가야 한다 */
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit1;  
 
-				*(result->relevancy[dochit_idx]) += (*(doc2->relevancy[doc2->dochit_idx]))+ (*(doc1->relevancy[doc1->dochit_idx])); //  *(doc1->relevancy[dochit_idx]);
+				*(result->relevance[dochit_idx]) += (*(doc2->relevance[doc2->dochit_idx]))+ (*(doc1->relevancy[doc1->dochit_idx])); //  *(doc1->relevance[dochit_idx]);
 												
 				hit_idx++;
 				
@@ -2082,7 +2082,7 @@ static void fill_title_and_comment_server(request_t *req)
 	//XXX: ask jiwon or dong-hun
 	for (i=req->first_result,j=0; i<last; i++,j++) {
 		req->result_list->doc_hits[j].id = req->result_list->doc_hits[i].id;
-		req->result_list->relevancy[j] = req->result_list->relevancy[i];
+		req->result_list->relevance[j] = req->result_list->relevance[i];
 		req->result_list->doc_hits[j].hitratio = req->result_list->doc_hits[i].hitratio;
 	}
 }
@@ -2577,7 +2577,7 @@ static void reduce_dochits_to_one_per_doc(index_list_t *list)
 		if (list->doc_hits[i].id != current_docid) {
 //			DEBUG("list->doc_hits[%d].id:%u", i, list->doc_hits[i].id);
 			list->doc_hits[idx] = list->doc_hits[i];
-			list->relevancy[idx] = list->relevancy[i];
+			list->relevance[idx] = list->relevance[i];
 			idx++;
 
 			current_docid = list->doc_hits[i].id;
@@ -2585,13 +2585,13 @@ static void reduce_dochits_to_one_per_doc(index_list_t *list)
 		}
 		else
 		{
-			list->relevancy[idx-1] += list->relevancy[i];
+			list->relevance[idx-1] += list->relevance[i];
 		}
 	}
 
 	for (j=0; j < idx; j++)
 	{
-		list->doc_hits[j].hitratio = list->relevancy[j];
+		list->doc_hits[j].hitratio = list->relevance[j];
 	}
 	
 	list->ndochits = idx;
@@ -2751,7 +2751,7 @@ static int docattr_sorting(sort_base_t *list, char *sortquery)
 
 
 
-void sort_list_recursive(uint32_t *relevancy, doc_hit_t *doc_hits,
+void sort_list_recursive(uint32_t *relevance, doc_hit_t *doc_hits,
 						 uint32_t lo, uint32_t hi)
 {
 	uint32_t h,l,p;
@@ -2761,17 +2761,17 @@ void sort_list_recursive(uint32_t *relevancy, doc_hit_t *doc_hits,
 	if (lo < hi) {
 		l = lo;
 		h = hi;
-		p = relevancy[hi];
+		p = relevance[hi];
 		
 		do {
-			while ( (l<h) && (relevancy[l]<= p) )
+			while ( (l<h) && (relevance[l]<= p) )
 				l++;
-			while ( (h>l) && (relevancy[h]>= p) )
+			while ( (h>l) && (relevance[h]>= p) )
 				h--;
 			if (l<h) {
-				tmp = relevancy[l];
-				relevancy[l] = relevancy[h];
-				relevancy[h] = tmp;
+				tmp = relevance[l];
+				relevance[l] = relevance[h];
+				relevance[h] = tmp;
 
 				tmp_doc_hit = doc_hits[l];
 				doc_hits[l] = doc_hits[h];
@@ -2779,24 +2779,24 @@ void sort_list_recursive(uint32_t *relevancy, doc_hit_t *doc_hits,
 			}
 		} while (l<h);
 
-		tmp = relevancy[l];
-		relevancy[l] = relevancy[hi];
-		relevancy[hi] = tmp;
+		tmp = relevance[l];
+		relevance[l] = relevance[hi];
+		relevance[hi] = tmp;
 
 		tmp_doc_hit = doc_hits[l];
 		doc_hits[l] = doc_hits[hi];
 		doc_hits[hi] = tmp_doc_hit;
 
 		if (lo < l)
-			sort_list_recursive(relevancy,doc_hits,lo,l-1);
+			sort_list_recursive(relevance,doc_hits,lo,l-1);
 		if (l < hi)
-			sort_list_recursive(relevancy,doc_hits,l+1,hi);
+			sort_list_recursive(relevance,doc_hits,l+1,hi);
 	}
 }
 
 void sort_list(index_list_t *list)
 {
-	sort_list_recursive(list->relevancy,list->doc_hits,0,list->ndochits-1);
+	sort_list_recursive(list->relevance,list->doc_hits,0,list->ndochits-1);
 }
 
 static int private_init(void)

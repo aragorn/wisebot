@@ -86,7 +86,7 @@ gint test_hit_bitposition(autounit_test_t *t) {
 gint test_operator_and(autounit_test_t *t) {
 	sb_stack_t stack;
 	doc_hit_t dochit1[2],dochit2[2];
-	uint32_t relevancy1[2],relevancy2[2];
+	uint32_t relevance1[2],relevance2[2];
 	index_list_t *result,operand1,operand2;
 	QueryNode node;
 
@@ -95,8 +95,8 @@ gint test_operator_and(autounit_test_t *t) {
 
 	operand1.doc_hits = dochit1;
 	operand2.doc_hits = dochit2;
-	operand1.relevancy = relevancy1;
-	operand2.relevancy = relevancy2;
+	operand1.relevance = relevance1;
+	operand2.relevance = relevance2;
 	operand1.ndocs = 2;
 	operand2.ndocs = 2;
 
@@ -148,13 +148,13 @@ void debug_print_result(index_list_t *result_list)
 	for ( i = 0; i < result_list->ndocs && i < 20; i++ ){
 		debug("  %ld  [%ld] [%ld]", i,
 				result_list->doc_hits[i].docid,
-				result_list->relevancy[i]);
+				result_list->relevance[i]);
 	}
 }
 gint test_sort(autounit_test_t *t)
 {
 	index_list_t unsorted;
-	uint32_t relevancy[10] = {7,6,4,8,2,4,1,3,5,5};
+	uint32_t relevance[10] = {7,6,4,8,2,4,1,3,5,5};
 	doc_hit_t doc_hits[10];
 
 	doc_hits[0].docid = 1;
@@ -168,7 +168,7 @@ gint test_sort(autounit_test_t *t)
 	doc_hits[8].docid = 9;
 	doc_hits[9].docid = 10;
 
-	unsorted.relevancy = relevancy;
+	unsorted.relevance = relevance;
 	unsorted.doc_hits = doc_hits;
 	unsorted.ndocs = 10;
 
@@ -189,16 +189,16 @@ gint test_sort(autounit_test_t *t)
 	au_assert(t,"",unsorted.doc_hits[8].docid == 1);
 	au_assert(t,"",unsorted.doc_hits[9].docid == 4);
 
-	au_assert(t,"",unsorted.relevancy[0] == 1);
-	au_assert(t,"",unsorted.relevancy[1] == 2);
-	au_assert(t,"",unsorted.relevancy[2] == 3);
-	au_assert(t,"",unsorted.relevancy[3] == 4);
-	au_assert(t,"",unsorted.relevancy[4] == 4);
-	au_assert(t,"",unsorted.relevancy[5] == 5);
-	au_assert(t,"",unsorted.relevancy[6] == 5);
-	au_assert(t,"",unsorted.relevancy[7] == 6);
-	au_assert(t,"",unsorted.relevancy[8] == 7);
-	au_assert(t,"",unsorted.relevancy[9] == 8);
+	au_assert(t,"",unsorted.relevance[0] == 1);
+	au_assert(t,"",unsorted.relevance[1] == 2);
+	au_assert(t,"",unsorted.relevance[2] == 3);
+	au_assert(t,"",unsorted.relevance[3] == 4);
+	au_assert(t,"",unsorted.relevance[4] == 4);
+	au_assert(t,"",unsorted.relevance[5] == 5);
+	au_assert(t,"",unsorted.relevance[6] == 5);
+	au_assert(t,"",unsorted.relevance[7] == 6);
+	au_assert(t,"",unsorted.relevance[8] == 7);
+	au_assert(t,"",unsorted.relevance[9] == 8);
 /*	debug_print_result(&unsorted);*/
 	return TRUE;
 }
