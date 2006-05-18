@@ -158,16 +158,14 @@ static void set_virtual_id(request_t* req, char* clause);
 static int virtual_document_orderby(orderby_rule_list_t* rules);
 static int virtual_document_where();
 static int virtual_document_grouping(groupby_result_list_t* result);
-static int virtual_document_group_count(virtual_document_t* vd, 
-		                                groupby_result_list_t* result, 
-										int* is_remove);
+static int virtual_document_get_group_values(virtual_document_t* vd, 
+                                             int group_values[MAX_GROUP_RULE], 
+                                             groupby_rule_list_t* rules);
 
 static int document_orderby(orderby_rule_list_t* rules);
 static int document_where();
 static int document_grouping(groupby_result_list_t* result);
-static int document_group_count(doc_hit_t* d, 
-		                                groupby_result_list_t* result, 
-										int* is_remove);
+static int document_get_group_values(doc_hit_t* doc_hit, int group_values[MAX_GROUP_RULE], groupby_rule_list_t* rules);
 
 // document operation
 static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
@@ -3197,81 +3195,37 @@ static int virtual_document_where()
     return SUCCESS;
 }
 
-static int virtual_document_group_count(virtual_document_t* vd, groupby_result_list_t* result, int* is_remove)
+static int virtual_document_get_group_values(virtual_document_t* vd, int group_values[MAX_GROUP_RULE], groupby_rule_list_t* rules)
 {
 	int j = 0;
-	uint32_t value = 0;
 	key_rule_t* rule = NULL;
-	limit_t* limit = NULL;
-    groupby_rule_list_t* rules = NULL;
-
-	rules = &result->rules;
 
 	for(j = 0; j < rules->cnt; j++) {
 		rule = &rules->list[j].sort.rule;
-		limit = &rules->list[j].limit;
 
-		if (sb_run_docattr_get_field_integer_function(vd->docattr, rule->name, &value) == -1) {
+		if (sb_run_docattr_get_field_integer_function(vd->docattr, rule->name, &group_values[j]) == -1) {
 			error("cannot get value of [%s] field", rule->name);
 			return FAIL;
 		}
-
-		if(value > MAX_CARDINALITY) {
-			warn("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d]",
-				 rule->name, value, MAX_CARDINALITY);
-			continue;
-		}
-
-		if(limit->start == -1 || limit->cnt == -1) {
-			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
-		} else if(result->result[j][value] < limit->start ||
-				result->result[j][value] > (limit->start + limit->cnt -1)) {
-			*is_remove = (*is_remove == 0) ? 1 : *is_remove;
-		} else {
-			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
-		}
-
-		result->result[j][value]++;
 	}
 
 	return SUCCESS;
 }
-static int document_group_count(doc_hit_t* doc_hit, groupby_result_list_t* result, int* is_remove)
+
+static int document_get_group_values(doc_hit_t* doc_hit, int group_values[MAX_GROUP_RULE], groupby_rule_list_t* rules)
 {
 	int j = 0;
-	uint32_t value = 0;
 	key_rule_t* rule = NULL;
-	limit_t* limit = NULL;
-    groupby_rule_list_t* rules = NULL;
 	docattr_t* docattr = NULL;
-
-	rules = &result->rules;
 
 	for(j = 0; j < rules->cnt; j++) {
 		rule = &rules->list[j].sort.rule;
-		limit = &rules->list[j].limit;
 		docattr = g_docattr_base_ptr + g_docattr_record_size*(doc_hit->id-1);
 
-		if (sb_run_docattr_get_field_integer_function(docattr, rule->name, &value) == -1) {
+		if (sb_run_docattr_get_field_integer_function(docattr, rule->name, &group_values[j]) == -1) {
 			error("cannot get value of [%s] field", rule->name);
 			return FAIL;
 		}
-
-		if(value > MAX_CARDINALITY) {
-			warn("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d]",
-				 rule->name, value, MAX_CARDINALITY);
-			continue;
-		}
-
-		if(limit->start == -1 || limit->cnt == -1) {
-			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
-		} else if(result->result[j][value] < limit->start ||
-				result->result[j][value] > (limit->start + limit->cnt -1)) {
-			*is_remove = (*is_remove == 0) ? 1 : *is_remove;
-		} else {
-			*is_remove = (*is_remove == 0) ? 0 : *is_remove;
-		}
-		result->result[j][value]++;
 	}
 
 	return SUCCESS;
@@ -3280,25 +3234,88 @@ static int document_group_count(doc_hit_t* doc_hit, groupby_result_list_t* resul
 static int virtual_document_grouping(groupby_result_list_t* result)
 {
 	int i = 0;
+	int j = 0;
 	int save_pos = 0;
-	int is_remove = 0;
-	virtual_document_t* vd = NULL;
+    virtual_document_t* vd = NULL;
 
-    if(result->rules.cnt == 0) 
+	int curr_group_values[MAX_GROUP_RULE];
+	int next_group_values[MAX_GROUP_RULE];
+	int group_count[MAX_GROUP_RULE];
+
+	groupby_rule_list_t* rules = &result->rules;
+
+    if(rules->cnt == 0) 
 		return SUCCESS; 
 
 	for(i = 0; i < g_vdl->cnt; i++) {
 		vd = &(g_vdl->data[i]);
-		is_remove = 0;
 
-		if(virtual_document_group_count(vd, result, &is_remove) != SUCCESS) {
-			error("can not count group");
+	    memset(group_count, 0x00, sizeof(int)*MAX_GROUP_RULE);
+
+		/* vid의 group value를 가져온다 */
+		if(virtual_document_get_group_values(vd, curr_group_values, rules) != SUCCESS) {
+			error("can not get group value");
 			return FAIL;
 		}
 
-		if(is_remove == 0) {
-			memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
-			save_pos++;
+		// group counting
+		for(j = 0; j < rules->cnt; j++) {
+			int value = curr_group_values[j];
+			groupby_rule_t* rule = &rules->list[j];
+
+			if(value > MAX_CARDINALITY) {
+				warn("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d], count skip",
+					 rule->sort.rule.name, value, MAX_CARDINALITY);
+			} else {
+				result->result[j][value]++;
+			}
+
+			if(curr_group_values[j] == next_group_values[j]) {
+				group_count[j]++;
+			}
+		}
+
+	    for(i++; i < g_vdl->cnt; i++) {
+		    vd = &(g_vdl->data[i]);
+
+		    /* 다음 vid의 group value를 가져온다 */
+			if(virtual_document_get_group_values(vd, next_group_values, rules) != SUCCESS) {
+				error("can not get group value");
+				return FAIL;
+			}
+
+			// group counting
+			for(j = 0; j < rules->cnt; j++) {
+                int value = curr_group_values[j];
+                groupby_rule_t* rule = &rules->list[j];
+
+				if(value > MAX_CARDINALITY) {
+					warn("group(%s) enum[%d] should be smaller than MAX_CARDINALITY[%d], count skip",
+						 rule->sort.rule.name, value, MAX_CARDINALITY);
+				} else {
+                    result->result[j][value]++;
+                }
+
+				if(curr_group_values[j] == next_group_values[j]) {
+					group_count[j]++;
+				}
+			}
+
+			for(j = 0; j < rules->cnt; j++) {
+				limit_t* limit = &rules->list[j].limit;
+
+				if(limit->start == -1 || limit->cnt == -1) {
+					// 무조건 저장.
+				} else if(group_count[j] < limit->start ||
+						  group_count[j] > (limit->start + limit->cnt - 1)) {
+					// 조건을 만족하지 못하면 뛰어 넘는다.
+					break;
+				}
+
+				// 조건을 만족하면 저장한다.
+				memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
+				save_pos++;
+			}
 		}
 	}
 
@@ -3310,26 +3327,69 @@ static int virtual_document_grouping(groupby_result_list_t* result)
 static int document_grouping(groupby_result_list_t* result)
 {
 	int i = 0;
+	int j = 0;
 	int save_pos = 0;
-	int is_remove = 0;
 	doc_hit_t* doc_hit = NULL;
 
-    if(result->rules.cnt == 0) 
+	int curr_group_values[MAX_GROUP_RULE];
+	int next_group_values[MAX_GROUP_RULE];
+	int group_count[MAX_GROUP_RULE];
+
+	groupby_rule_list_t* rules = &result->rules;
+
+    if(rules->cnt == 0) 
 		return SUCCESS; 
 
 	for(i = 0; i < g_result_list->ndochits; i++) {
 		doc_hit = &(g_result_list->doc_hits[i]);
-		is_remove = 0;
 
-		if(document_group_count(doc_hit, result, &is_remove) != SUCCESS) {
-			error("can not count group");
+	    memset(group_count, 0x00, sizeof(int)*MAX_GROUP_RULE);
+
+		/* did의 group value를 가져온다 */
+		if(document_get_group_values(doc_hit, curr_group_values, rules) != SUCCESS) {
+			error("can not get group value");
 			return FAIL;
 		}
 
-		if(is_remove == 0) {
-			memcpy(&(g_result_list->doc_hits[save_pos]), 
-				   &(g_result_list->doc_hits[i]), sizeof(doc_hit_t));
-			save_pos++;
+		// group counting
+		for(j = 0; j < rules->cnt; j++) {
+			if(curr_group_values[j] == next_group_values[j]) {
+				group_count[j]++;
+			}
+		}
+
+		for(i++; i < g_result_list->ndochits; i++) {
+			doc_hit = &(g_result_list->doc_hits[i]);
+
+		    /* 다음 did의 group value를 가져온다 */
+			if(document_get_group_values(doc_hit, next_group_values, rules) != SUCCESS) {
+				error("can not get group value");
+				return FAIL;
+			}
+
+			// group counting
+			for(j = 0; j < rules->cnt; j++) {
+				if(curr_group_values[j] == next_group_values[j]) {
+					group_count[j]++;
+				}
+			}
+
+			for(j = 0; j < rules->cnt; j++) {
+				limit_t* limit = &rules->list[j].limit;
+
+				if(limit->start == -1 || limit->cnt == -1) {
+					// 무조건 저장.
+				} else if(group_count[j] < limit->start ||
+						  group_count[j] > (limit->start + limit->cnt - 1)) {
+					// 조건을 만족하지 못하면 뛰어 넘는다.
+					break;
+				}
+
+				// 조건을 만족하면 저장한다.
+				memcpy(&(g_result_list->doc_hits[save_pos]), 
+					   &(g_result_list->doc_hits[i]), sizeof(doc_hit_t));
+				save_pos++;
+			}
 		}
 	}
 
