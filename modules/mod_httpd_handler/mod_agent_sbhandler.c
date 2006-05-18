@@ -406,8 +406,11 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		}
 
 RECV_FAIL:
+		return FAIL;
+		/*
         res->vdl->cnt += real_recv_cnt;
         res->search_result += total_cnt;
+		*/
 	}
 
     // LIMIT operation º¹±Í
@@ -624,7 +627,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 		}
 
 RECV_FAIL:
-         ;// do nothing
+         return FAIL;
 	}
 
 	return SUCCESS;
