@@ -76,7 +76,7 @@ struct sort_base_t {
 struct agent_doc_hits_t {
     uint32_t node_id;
     docattr_t docattr;
-	uint32_t  relevancy;
+	uint32_t  relevance;
 	doc_hit_t doc_hits;
 };
 
@@ -118,15 +118,15 @@ struct index_list_t {
 
 	uint32_t	ndochits; /* min of ndochits and MAX_DOC_HITS_SIZE 
 						  (and could be smaller if filtered by field) */
-	uint32_t 	list_size; /* size of doc_hits array/idf/relevancy */
+	uint32_t 	list_size; /* size of doc_hits array/idf/relevance */
 	uint32_t	nhits;
-	uint32_t	*relevancy;
+	uint32_t	*relevance;
 	doc_hit_t	*doc_hits;
 	uint32_t	field;
 	uint32_t	wordid;
 	enum		index_list_type list_type;
 	char		word[STRING_SIZE];
-	char 		is_complete_list; /* if doc_hits, relevancy, idf is allocated, its true */
+	char 		is_complete_list; /* if doc_hits, relevance, idf is allocated, its true */
 
 	group_result_t group_result[MAX_GROUP_RESULT];
 	int group_result_count;
@@ -170,6 +170,6 @@ SB_DECLARE_HOOK(int, qp_filter,\
 		(index_list_t *s1, index_list_t *s2, index_list_t *d, filter_t *f, \
 		 int rank_func(rank_t*,rank_t*,uint32_t*)))
 SB_DECLARE_HOOK(int, qp_rank, \
-		(rank_t *r1, rank_t *r2, uint32_t *relevancy))
+		(rank_t *r1, rank_t *r2, uint32_t *relevance))
 #endif	
 #endif

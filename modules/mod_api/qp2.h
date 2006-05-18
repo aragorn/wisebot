@@ -94,7 +94,7 @@ struct virtual_document_t {
     docattr_t* docattr;  // 항상 하나임.
 	int comment_cnt;
 
-	uint32_t relevancy;  // doc_hists::relevancy 의 합.
+	uint32_t relevance;  // doc_hists::relevance 의 합.
 
 	uint32_t node_id;
 };
@@ -205,16 +205,16 @@ struct index_list_t {
 	index_list_t *prev; /* for managing free index list */
 	index_list_t *next;
 
-	uint32_t	ndochits; /* size of doc_hits array/idf/relevancy */
+	uint32_t	ndochits; /* size of doc_hits array/idf/relevance */
 	uint32_t 	list_size; /* MAX_DOC_HITS_SIZE */
 	uint32_t	nhits;
-	uint32_t	*relevancy;
+	uint32_t	*relevance;
 	doc_hit_t	*doc_hits;
 	uint32_t	field;
 	uint32_t	wordid;
 	enum		index_list_type list_type;
 	char		word[STRING_SIZE];
-	char 		is_complete_list; /* if doc_hits, relevancy, idf is allocated, its true */
+	char 		is_complete_list; /* if doc_hits, relevance, idf is allocated, its true */
 };
 
 SB_DECLARE_HOOK(int, qp_init,(void))

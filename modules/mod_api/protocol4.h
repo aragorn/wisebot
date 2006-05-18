@@ -81,7 +81,7 @@ typedef struct {
 #define SB4_MAX_DOC_FD	(64)	/* length of field */
 
 typedef struct {
-	int HIT; /* hit: relevancy */
+	int HIT; /* hit: relevance */
 	int DID; /* doc: document id */
 	int DST; /* delete status: whether document is deleted */
 	int DIC; /* document import count: number of category link */

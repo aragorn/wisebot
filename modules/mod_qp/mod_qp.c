@@ -1429,7 +1429,7 @@ static uint32_t operate_within_each_document(index_document_t *doc1,
 				(result->dochits[dochit_idx]->nhits)++;
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit2;
 
-				*(result->relevance[dochit_idx]) += (*(doc2->relevance[doc2->dochit_idx]))+ (*(doc1->relevancy[doc1->dochit_idx])); //  *(doc1->relevance[dochit_idx]);
+				*(result->relevance[dochit_idx]) += (*(doc2->relevance[doc2->dochit_idx]))+ (*(doc1->relevance[doc1->dochit_idx])); //  *(doc1->relevance[dochit_idx]);
 				
 				hit_idx++;
 
@@ -1481,7 +1481,7 @@ static uint32_t operate_phrase_each_document(index_document_t *doc1,
 				/* phrase operation 시에는 앞 단어의 position을 들고가야 한다 */
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit1;  
 
-				*(result->relevance[dochit_idx]) += (*(doc2->relevance[doc2->dochit_idx]))+ (*(doc1->relevancy[doc1->dochit_idx])); //  *(doc1->relevance[dochit_idx]);
+				*(result->relevance[dochit_idx]) += (*(doc2->relevance[doc2->dochit_idx]))+ (*(doc1->relevance[doc1->dochit_idx])); //  *(doc1->relevance[dochit_idx]);
 												
 				hit_idx++;
 				
