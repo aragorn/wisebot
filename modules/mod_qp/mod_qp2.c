@@ -61,6 +61,11 @@ static word_db_t* word_db = NULL;
 // field의 갯수 
 static int field_count = 0;
 static field_info_t field_info[MAX_EXT_FIELD];
+
+///////////////////////////////////////////////////////////
+// 최대 요약문 크기
+static int max_comment_bytes = 1024;
+
 ///////////////////////////////////////////////////////////
 // 구버전 cdm 사용여부
 static int b_use_cdm = 0;
@@ -194,12 +199,35 @@ static int abstract_search (request_t *req, response_t *res);
 /////////////////////////////////////////////////////////
 /*    start util                                       */
 /////////////////////////////////////////////////////////
+// cdm2 에서는 한글이 다쳐서 리턴될 수 있다.
+static void check_han(char* text, int len)
+{
+    int i = 0;
+	int han_completed = 1;
+
+	if(len <= 0) return;
+
+	for(i = 0; i < len; i++) {
+        if((unsigned char)text[i] & 0x80) {
+			han_completed = !han_completed;
+		}
+	}
+
+	if(han_completed == 0) {
+		text[len-1] = '\0';
+	}
+}
+
 // 마지막 NULL 은 빼고 길이를 maxLen 으로 맞춘다. 그러니까 text는 최소한 maxLen+1
 // 한글을 고려해서 자른다.
 static void cut_string(char* text, int maxLen)
 {
 	int korCnt = 0, engIdx;
 	int textLen = strlen( text );
+
+	check_han(text, textLen);
+
+	textLen = strlen( text );
 
 	if ( textLen <= maxLen ) return;
 	else textLen = maxLen;
@@ -2008,9 +2036,8 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	cdm_doc_t* cdmdoc;
 	memfile *buffer = memfile_new();
 
-#define MAX_COMMENT_BYTES 1024
 	char *field_value = 0x00; 
-	char _field_value[MAX_COMMENT_BYTES];
+	char _field_value[LONG_LONG_STRING_SIZE];
 	int rv = 0;
 	uint32_t docid = doc_hits->id;
 	enum output_style output_style = req->output_style;
@@ -2065,7 +2092,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 		}
 		else { // cdm2 api
 			field_value = _field_value;
-			rv = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, MAX_COMMENT_BYTES);
+			rv = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, max_comment_bytes);
 			if ( rv < 0 && rv != CDM2_NOT_ENOUGH_BUFFER ) {
 				error("cannot get field[%s] from doc[%"PRIu32"]", field_info[k].name, docid);
 				continue;
@@ -2094,7 +2121,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 			case RETURN:
 			{
 				// 길이가 너무 길면 좀 자른다. 한글 안다치게...
-				cut_string( field_value, MAX_COMMENT_BYTES );
+				cut_string( field_value, max_comment_bytes );
 
 	            if(output_style == STYLE_XML) {
 					rv = memfile_appendF(buffer, "<![CDATA[%s]]>", field_value);
@@ -2142,6 +2169,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						cut_string( summary, 200 );
 					}
 
+					warn("field_value[%s], summary[%s]", field_value, summary);
 					if(output_style == STYLE_XML) {
 						rv = memfile_appendF(buffer, "<![CDATA[%s]]>", summary);
 						if(rv < 0) {
@@ -2169,7 +2197,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 				return FAIL;
 			}
 		} else {
-			rv = memfile_appendF(buffer, "%s;;", field_info[k].name);
+			rv = memfile_appendF(buffer, ";;");
 			if(rv < 0) {
 				MSG_RECORD(&req->msg, error, "can not appendF memfile");
 				memfile_free(buffer);
@@ -3835,6 +3863,17 @@ static void setIndexDbSet(configValue v)
 	mIdxDbSet = atoi( v.argument[0] );
 }
 
+static void set_max_comment_bytes(configValue v)
+{
+    max_comment_bytes = atoi(v.argument[0]);
+
+	if(max_comment_bytes >= LONG_LONG_STRING_SIZE) {
+		max_comment_bytes = LONG_LONG_STRING_SIZE-1;
+
+		warn("fixed max comment bytes[%d]", LONG_LONG_STRING_SIZE-1);
+	}
+}
+
 static void setCdmSet(configValue v)
 {
 	mCdmSet = atoi( v.argument[0] );
@@ -3899,6 +3938,7 @@ static config_t config[] = {
 
 	CONFIG_GET("Field",get_commentfield,VAR_ARG, "Field which needs to be shown in result"),
 	CONFIG_GET("FieldSortingOrder",get_FieldSortingOrder,2, "Field sorting order"),
+	CONFIG_GET("MaxCommentBytes",set_max_comment_bytes, 1, "Max comment bytes"),
 	{NULL}
 };
 
