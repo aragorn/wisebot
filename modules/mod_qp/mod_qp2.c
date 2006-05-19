@@ -3307,7 +3307,7 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
     if(rules->cnt == 0) 
 		return SUCCESS; 
 
-	for(i = 0; i < g_result_list->ndochits; i++) {
+	for(i = 0; i < g_result_list->ndochits;) {
 		doc_hit = &(g_result_list->doc_hits[i]);
         is_remove = 0;
 
