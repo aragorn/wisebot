@@ -2435,13 +2435,14 @@ static void set_virtual_id(request_t* req, char* clause)
 			 * virtual_document는 did, docattr 만이 key가 될수 있다.
 			 */
 			rule = &req->virtual_rule[req->virtual_rule_cnt++];
+            s = sb_trim(s);
 
-			if(strncasecmp(clause, "DID", 3) == 0) {
+			if(strncasecmp(s, "DID", 3) == 0) {
 				rule->type = DID;
 				strncpy(rule->name, "DID", SHORT_STRING_SIZE-1);
 			} else {
 				rule->type = DOCATTR;
-				strncpy(rule->name, sb_trim(s), SHORT_STRING_SIZE-1);
+				strncpy(rule->name, s, SHORT_STRING_SIZE-1);
 			}
 
 			if(e == NULL) break;
