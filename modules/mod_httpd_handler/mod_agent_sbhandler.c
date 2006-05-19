@@ -752,7 +752,8 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
         ap_rprintf(r, "<id>%u</id>\n", vd->id);
         ap_rprintf(r, "<node_id>%0X</node_id>\n", vd->node_id);
         ap_rprintf(r, "<relevance>%u</relevance>\n", vd->relevance);
-        ap_rprintf(r, "<count>%u</count>\n", vd->dochit_cnt);
+        ap_rprintf(r, "<total_count>%u</total_count>\n", vd->dochit_cnt);
+        ap_rprintf(r, "<result_count>%u</result_count>\n", vd->comment_cnt);
 
         for(j = 0; j < vd->comment_cnt; j++) {
 			if(qp_request.output_style == STYLE_XML) {
