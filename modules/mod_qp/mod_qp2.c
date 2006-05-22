@@ -3365,6 +3365,34 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
             is_remove = 0;
 			doc_hit = &(g_result_list->doc_hits[i]);
 
+            /* 같은 가상문서인지를 먼저 체크해야 한다. */ 
+		    for(j = 0; j < req->virtual_rule_cnt; j++) {
+			    key_rule_t* rule = &req->virtual_rule[j];
+
+				if(rule->type == DOCATTR) {
+		            docattr = g_docattr_base_ptr + g_docattr_record_size*(doc_hit->id-1);
+
+					if (sb_run_docattr_get_field_integer_function(docattr, 
+													 rule->name, &next_virtual_id_list[j]) == -1) {
+						error("cannot get value of [%s] field", rule->name);
+						return FAIL;
+					}
+				} else { // virtual_document의 key는 RELEVANCY가 될수 없다.
+				    next_virtual_id_list[j] = doc_hit->id;
+				}
+			}
+
+		    for(j = 0; j < req->virtual_rule_cnt; j++) {
+				if(virtual_id_list[j] != next_virtual_id_list[j]) {
+					equals_vid = 0;
+					break;
+				}
+			}
+
+		    if(equals_vid == 0) {
+                break;
+            }
+
 		    /* 다음 did의 group value를 가져온다 */
 			if(document_get_group_values(doc_hit, next_group_values, rules) != SUCCESS) {
 				error("can not get group value");
@@ -3398,32 +3426,6 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
 				}
 			}
 
-		    for(j = 0; j < req->virtual_rule_cnt; j++) {
-			    key_rule_t* rule = &req->virtual_rule[j];
-
-				if(rule->type == DOCATTR) {
-		            docattr = g_docattr_base_ptr + g_docattr_record_size*(doc_hit->id-1);
-
-					if (sb_run_docattr_get_field_integer_function(docattr, 
-													 rule->name, &next_virtual_id_list[j]) == -1) {
-						error("cannot get value of [%s] field", rule->name);
-						return FAIL;
-					}
-				} else { // virtual_document의 key는 RELEVANCY가 될수 없다.
-				    next_virtual_id_list[j] = doc_hit->id;
-				}
-			}
-
-		    for(j = 0; j < req->virtual_rule_cnt; j++) {
-				if(virtual_id_list[j] != next_virtual_id_list[j]) {
-					equals_vid = 0;
-					break;
-				}
-			}
-
-		    if(equals_vid == 0) {
-                break;
-            }
 		}
 	}
 
