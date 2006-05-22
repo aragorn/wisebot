@@ -8,7 +8,8 @@ pkglib_LTLIBRARIES  = mod_bigram.la \
                        mod_rmas.la mod_rmac2.la \
                        mod_koma.la \
                        mod_dummy_ma.la \
-                       mod_kor2chn_translator.la
+                       mod_kor2chn_translator.la \
+                       mod_daum_koma.la
 
 lib_LTLIBRARIES      = liboldcodetrans.la
 
@@ -49,6 +50,8 @@ mod_koma_la_SOURCES = mod_koma.c mod_koma.h \
                       mod_koma_complex_noun_support.h
 mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 
+mod_daum_koma_la_SOURCES = mod_daum_koma.c
+mod_daum_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
 EXTRA_DIST = lib
 
 dist-hook:
