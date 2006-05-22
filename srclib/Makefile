@@ -14,6 +14,7 @@ all:
 	@echo "available packages:"
 	@echo " expat-install  - optional"
 	@echo " koma2c-install - required"
+	@echo " daum_koma-install - optional"
 	@echo " iconv-install - optional"
 	@echo " readline-install - optional"
 	@echo " ncurses-install - optional"
@@ -22,9 +23,9 @@ all:
 	@echo "ex) make koma2c-install"
 ###############################################################################
 cvs-export: expat-export koma2c-export
-build: expat koma2c apr apr-util
-install: expat-install koma2c-install apr-install apr-util-install
-clean: expat-clean koma2c-clean apr-clean apr-util-clean
+build: expat koma2c
+install: expat-install koma2c-install
+clean: expat-clean koma2c-clean
 ###############################################################################
 expat-export:
 	[ -f expat/configure ] || (gzip -c -d expat.tar.gz | tar xf -)
@@ -36,6 +37,12 @@ koma2c-export:
 	cd koma2c && \
 	./buildconf && \
 	./configure --prefix=$(prefix) --includedir=$(prefix)/include/koma
+
+daum_koma-export:
+	[ -f daum_koma/bootstrap ] || (gzip -c -d daum_koma.tar.gz | tar xf -)
+	cd daum_koma && \
+	./bootstrap && \
+	./configure --prefix=$(prefix) --includedir=$(prefix)/include/daum_koma
 
 iconv-export:
 	[ -f libiconv-1.9.1/configure ] || (gzip -c -d libiconv-1.9.1.tar.gz | tar xf -)
@@ -71,6 +78,9 @@ expat: expat-export
 koma2c: koma2c-export
 	cd koma2c && make
 
+daum_koma: daum_koma-export
+	cd daum_koma && make
+
 iconv: iconv-export
 	cd libiconv-1.9.1 && make
 
@@ -93,6 +103,9 @@ expat-install: expat
 koma2c-install: koma2c
 	cd koma2c && make install
 
+daum_koma-install: daum_koma
+	cd daum_koma && make install
+
 iconv-install: iconv
 	cd libiconv-1.9.1 && make install
 
@@ -113,6 +126,9 @@ expat-clean:
 
 koma2c-clean:
 	rm -rf koma2c
+
+daum_koma-clean:
+	rm -rf daum_koma
 
 iconv-clean:
 	rm -rf libiconv-1.9.1
