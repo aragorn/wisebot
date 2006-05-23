@@ -91,6 +91,8 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t inde
 		indexwords[count].pos = cur_pos;
 		indexwords[count].len = strlen(word);
 
+		rptr++;
+		word = rptr;
 		count++;
 	}
 
