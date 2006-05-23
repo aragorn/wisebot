@@ -11,6 +11,7 @@
 static char dha_config_path[512]=CONF_PATH;
 static int cur_pos = 0;
 static char *cur_text = NULL;
+static int done = 0; // 처리 했는지의 유무
 
 static index_word_extractor_t* create_daum_dha_handler(int id)
 {
@@ -47,6 +48,8 @@ static int daum_dha_set_text(index_word_extractor_t* extractor, char* text)
 
 	cur_text = text;
 	cur_pos = 0;
+	done = 0;
+
 	return SUCCESS;
 }
 
@@ -60,6 +63,12 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t inde
 	if (extractor->id != MY_EXTRACTOR_ID)
 		return MINUS_DECLINE;
 
+	// 한번 처리 했으면 word count를 0을 리턴.
+	if(done == 1) {
+		return 0;
+	}
+
+	memset(result, 0x00, MAX_OUTPUT);
 	/*
 	 * DHA의 입력은 어절(띄어쓰기) 단위입니다.
 	 */
@@ -71,8 +80,10 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t inde
 	if (*ptr == '\0') return 0;
 
 	// find next whitespace
+	/*
 	while (!is_whitespace(*ptr) && *ptr != '\0') ptr++;
 	*ptr = '\0';
+	*/
 
 	// analyze
 	dha_analyze(extractor->handle, NULL, cur_text, MAX_OUTPUT, result);
@@ -98,6 +109,8 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t inde
 
 	cur_text = ++ptr;
 	cur_pos++;
+	done = 1;
+
 	return count;
 }
 
