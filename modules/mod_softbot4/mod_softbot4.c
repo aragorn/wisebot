@@ -7,7 +7,7 @@
 #include "mod_api/did.h"
 
 
-#define MAX_THREADS		(10)
+#define MAX_THREADS		(100)
 #define WAIT_TIMEOUT	(3)
 #define MONITORING_PERIOD	(2)
 
@@ -160,7 +160,7 @@ static int module_main (slot_t *slot)
 	}
 	setproctitle("softbotd: mod_softbot4.c (listening[%s:%s])",mBindAddr,mBindPort);
 
-	scoreboard->size = needed_threads;
+	scoreboard->size = (needed_threads < MAX_THREADS) ? needed_threads : MAX_THREADS;
 
 	debug("softbot4.c: module_main() init");
 	sb_run_init_scoreboard(scoreboard);
@@ -214,6 +214,8 @@ static void set_listen_backlog(configValue v)
 static void set_threads_num(configValue v)
 {
 	needed_threads = atoi(v.argument[0]);
+	if (needed_threads > MAX_THREADS)
+		warn("You should not set Threads value more than MAX_THREADS(%d).", MAX_THREADS);
 }
 
 static void set_max_requests_per_child(configValue v)

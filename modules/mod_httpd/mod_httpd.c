@@ -14,8 +14,9 @@
 #include "apr_poll.h"
 #include "apr_lib.h"
 
-#undef THREAD_VER /* XXX:should run process version for the time being. --jiwon */
-#define MAX_THREADS		(10)
+/* XXX:should run process version for the time being. --jiwon */
+#undef THREAD_VER
+#define MAX_THREADS		(100)
 #define WAIT_TIMEOUT	(30)
 #define MONITORING_PERIOD	(2)
 #define APACHE_STYLE_CONF "etc/mod_httpd.conf"
@@ -31,9 +32,9 @@ static int mMaxRequests = 10000;
 static int mExtendedStatus = 1;
 #ifdef THREAD_VER
 static pthread_mutex_t accept_lock;
-static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(32) };
+static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(MAX_THREADS) };
 #else
-static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(32) };
+static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(MAX_THREADS) };
 #endif
 static int num_listensocks = 0;
 
@@ -371,7 +372,7 @@ static int module_main (slot_t *slot)
 	}
 #endif
 
-	scoreboard->size = process_num;
+	scoreboard->size = (process_num < MAX_THREADS) ? process_num : MAX_THREADS;
 
 	sb_run_init_scoreboard(scoreboard);
 
@@ -434,6 +435,8 @@ static void set_max_requests_per_child(configValue v)
 static void set_threads_num(configValue v)
 {
 	process_num = atoi(v.argument[0]);
+	if (process_num > MAX_THREADS)
+		warn("You should not set Threads value more than MAX_THREADS(%d).", MAX_THREADS);
 }
 
 static config_t config[] = {
