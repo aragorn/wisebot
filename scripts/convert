@@ -1,0 +1,129 @@
+#!/usr/bin/perl
+# dump 파일 변환 프로그램 - $Id$
+#
+# 수정이력
+# 2006/05/24 - SKT BMT를 위해 처음 작성
+
+use strict;
+
+my $mode = shift;
+my $input = shift;
+my $output = shift;
+unless ($mode and $input and $output)
+{
+  print <<END;
+Usage: $0 <mode> <input> <output>
+  mode      : IMS   - IMS dump to IMS BMT data (SKT BMT)
+              BLOG  - BLOG dump to BLOG BMT data (SKT BMT)
+              IMS_CDM   - IMS BMT data to CDM (SKT BMT)
+              BLOG_CDM  - BLOG BMT data to CDM (SKT BMT)
+  input     : input file name
+  output    : output file name (or file name prefix)
+END
+  exit;
+}
+
+
+if ( $mode eq "IMS" )
+{
+  my $IN = ims_input_handler($input);
+
+  my @docs_to_delete;
+  my @docs_to_update;
+  OUTER_LOOP: foreach my $out_cnt ( 1..1000 ) {
+
+    my $OUT = ims_output_handler($output, $out_cnt);
+
+    my @docs_to_delete_next_time;
+    my @docs_to_update_next_time;
+    foreach my $cnt ( 1..10_000 ) {
+      my $doc = get_ims_document($IN) or last OUTER_LOOP;
+      push @docs_to_delete_next_time, $doc if $cnt % 20 == 13;
+      push @docs_to_update_next_time, $doc if $cnt % 20 == 17;
+      put_ims_document($OUT, "INSERT", $doc, $out_cnt);
+      put_ims_document($OUT, "DELETE", shift @docs_to_delete, $out_cnt) if $cnt % 20 == 13;
+      put_ims_document($OUT, "UPDATE", shift @docs_to_update, $out_cnt) if $cnt % 20 == 17;
+    }
+    close($OUT);
+  }
+
+  close($IN);
+}
+
+sub put_ims_document
+{
+  my $fh = shift;
+  my $state = shift;
+  my $doc = shift or return;
+  my $cnt = shift;
+
+#  print "$state fh=$fh cnt=$cnt\n";
+#  print { $fh } "$state fh=$fh cnt=$cnt\n";
+  if ($state eq "INSERT")
+  {
+    print { $fh } $state, "\t", $doc;
+    return;
+  }
+
+  my @fields = split(/\t/, $doc);
+  if ($state eq "UPDATE")
+  {
+    $fields[5] = "변경" . $cnt . " " . $fields[5];
+  } else {
+    foreach my $i ( 1..16 ) {  $fields[$i] = ""; }
+    $fields[17] = "D\n";
+  }
+  print { $fh } join("\t", $state, @fields);
+  return;
+=rem
+0 oid
+1 menu_id
+2 tree_id
+3 system_id
+4 category_id
+5 menu_name
+6 author
+7 body
+8 menu_url
+9 menu_type
+10 rgst_date
+11 age_yn
+12 device_attr_mode
+13 device_group_list
+14 menu_path
+15 depth
+16 ord
+17 useyn
+=cut
+}
+
+sub get_ims_document
+{
+  my $fh = shift;
+
+  my $l = <$fh> or return undef;
+#print "test = $l";
+
+  return $l;
+}
+
+sub ims_input_handler
+{
+  my $input = shift;
+
+  local *local_fh; my $fh = *local_fh; undef *local_fh;
+  open($fh, $input) or die "cannot open ims input file[$input]: $!";
+
+  return $fh;
+}
+
+sub ims_output_handler
+{
+  my $output = shift;
+  my $out_cnt = shift;
+
+  local *local_fh; my $fh = *local_fh; undef *local_fh;
+  open($fh, ">$output.$out_cnt") or die "cannot open ims output file[$output.$out_cnt]: $!";
+
+  return $fh;
+}
