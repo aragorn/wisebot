@@ -24,31 +24,151 @@ END
 }
 
 
-if ( $mode eq "IMS" )
+if ( $mode eq "IMS" or $mode eq "BLOG" )
 {
-  my $IN = ims_input_handler($input);
+  my $IN = input_handler($input);
 
   my @docs_to_delete;
   my @docs_to_update;
   OUTER_LOOP: foreach my $out_cnt ( 1..1000 ) {
+    print "$out_cnt", "'th loop.\n";
 
-    my $OUT = ims_output_handler($output, $out_cnt);
+    my $OUT = output_handler($output, $out_cnt);
 
     my @docs_to_delete_next_time;
     my @docs_to_update_next_time;
     foreach my $cnt ( 1..10_000 ) {
-      my $doc = get_ims_document($IN) or last OUTER_LOOP;
+      my $doc = get_document($mode, $IN) or last OUTER_LOOP;
       push @docs_to_delete_next_time, $doc if $cnt % 20 == 13;
       push @docs_to_update_next_time, $doc if $cnt % 20 == 17;
-      put_ims_document($OUT, "INSERT", $doc, $out_cnt);
-      put_ims_document($OUT, "DELETE", shift @docs_to_delete, $out_cnt) if $cnt % 20 == 13;
-      put_ims_document($OUT, "UPDATE", shift @docs_to_update, $out_cnt) if $cnt % 20 == 17;
+      put_document($mode, $OUT, "INSERT", $doc, $out_cnt);
+      put_document($mode, $OUT, "DELETE", shift @docs_to_delete, $out_cnt) if $cnt % 20 == 13;
+      put_document($mode, $OUT, "UPDATE", shift @docs_to_update, $out_cnt) if $cnt % 20 == 17;
     }
+
+    @docs_to_delete = @docs_to_delete_next_time;
+    @docs_to_update = @docs_to_update_next_time;
     close($OUT);
   }
 
   close($IN);
 }
+
+exit;
+
+sub get_document
+{
+  my $mode = shift;
+  if ($mode eq "IMS")
+  {
+    return get_ims_document(@_);
+  } else {
+    return get_blog_document(@_);
+  }
+
+}
+
+sub put_document
+{
+  my $mode = shift;
+  if ($mode eq "IMS")
+  {
+    return put_ims_document(@_);
+  } else {
+    return put_blog_document(@_);
+  }
+
+}
+
+###############################################################################
+# BLOG
+
+
+sub put_blog_document
+{
+  my $fh = shift;
+  my $state = shift;
+  my $doc = shift or return;
+  my $cnt = shift;
+
+#print "$state fh=$fh cnt=$cnt\n";
+
+  my @fields = split(/\n/, $doc);
+  my %field;
+  foreach ( @fields ) {
+    my ($key, $value) = split(/>/, $_, 2);
+    $key .= ">";
+    $field{$key} = $value;
+  }
+
+  if ($state eq "INSERT")
+  {
+    # do nothing
+  } elsif ($state eq "UPDATE") {
+    $field{"<P_TITLE>"} = "º¯°æ" . $cnt . " " . $field{"<P_TITLE>"};
+  } else {
+    foreach my $k ( qw( <MESSAGEID> <B_TITLE> <B_LINK> <B_SOURCE>
+                      <B_USERID> <B_AUTHOR> <P_TITLE> <P_CATE> <P_REGDATE>
+                      <P_REGTIME> <P_XML_CRAWLDATE> <P_XML_CRAWLTIME> <P_CONTENT_CRAWLDATE>
+                      <P_CONTENT_CRAWLTIME> <P_CONTENT> <TRANSDATE> ) )
+    {
+      $field{$k} = "";
+    }
+  }
+
+  foreach my $k ( qw( <MESSAGEID> <B_DOCID> <P_DOCID> <B_TITLE> <B_LINK> <B_SOURCE>
+                      <B_USERID> <B_AUTHOR> <P_TITLE> <P_LINK> <P_CATE> <P_REGDATE>
+                      <P_REGTIME> <P_XML_CRAWLDATE> <P_XML_CRAWLTIME> <P_CONTENT_CRAWLDATE>
+                      <P_CONTENT_CRAWLTIME> <P_CONTENT> <TRANSDATE> ) )
+  {
+    print { $fh } $k, $field{$k}, "\n";
+#print $k, $field{$k}, "\n"; select(undef,undef,undef,0.1);
+  }
+  print { $fh } "<BMT_STATE>", $state, "\n";
+#print "<BMT_STATE>", $state, "\n";
+
+  return;
+=rem
+0 <MESSAGEID>
+1 <B_DOCID>
+2 <P_DOCID> 
+3 <B_TITLE> 
+4 <B_LINK>
+5 <B_SOURCE>
+6 <B_USERID>
+7 <B_AUTHOR>
+8 <P_TITLE>
+9 <P_LINK>
+10 <P_CATE>
+11 <P_REGDATE>
+12 <P_REGTIME>
+13 <P_XML_CRAWLDATE>
+14 <P_XML_CRAWLTIME>
+15 <P_CONTENT_CRAWLDATE>
+16 <P_CONTENT_CRAWLTIME>
+17 <P_CONTENT>
+18 <TRANSDATE>
+19 <BMT_STATE>
+=cut
+}
+
+sub get_blog_document
+{
+  my $fh = shift;
+
+#print "get_blog_document\n";
+  my $doc = "";
+  while ( <$fh> )
+  {
+    $doc .= $_;
+#print "DEBUG $_"; select(undef,undef,undef,0.1);
+
+    /^\<TRANSDATE\>/ and return $doc;
+  }
+}
+
+###############################################################################
+# IMS
 
 sub put_ims_document
 {
@@ -107,7 +227,10 @@ sub get_ims_document
   return $l;
 }
 
-sub ims_input_handler
+###############################################################################
+# common
+#
+sub input_handler
 {
   my $input = shift;
 
@@ -117,13 +240,14 @@ sub ims_input_handler
   return $fh;
 }
 
-sub ims_output_handler
+sub output_handler
 {
   my $output = shift;
   my $out_cnt = shift;
+  my $name = sprintf("%s.%03d", $output, $out_cnt);
 
   local *local_fh; my $fh = *local_fh; undef *local_fh;
-  open($fh, ">$output.$out_cnt") or die "cannot open ims output file[$output.$out_cnt]: $!";
+  open($fh, ">$name") or die "cannot open ims output file[$name]: $!";
 
   return $fh;
 }
