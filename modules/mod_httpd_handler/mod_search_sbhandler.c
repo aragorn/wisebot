@@ -92,6 +92,36 @@ static void set_con_config(server_rec* rec)
 	info("server keep_alive[%d]", keep_alive);
 }
 
+static int print_group(request_rec *r, groupby_result_list_t* groupby_result)
+{
+	int i = 0;
+	int j = 0;
+
+    for(i = 0; i < groupby_result->rules.cnt; i++) {
+        orderby_rule_t* sort_rule = &(groupby_result->rules.list[i].sort);
+		int is_enum = groupby_result->rules.list[i].is_enum;
+
+		// group 결과
+		for(j = 0; j < MAX_CARDINALITY; j++) {
+			if(groupby_result->result[i][j] != 0) {
+				if(is_enum) {
+					ap_rprintf(r, "<group name=\"%s\" field=\"%s\" count=\"%d\" />\n", 
+								  return_constants_str(j), 
+								  sort_rule->rule.name,
+								  groupby_result->result[i][j]);
+				} else {
+					ap_rprintf(r, "<group name=\"%d\" field=\"%s\" count=\"%d\" />\n", 
+								  j, 
+								  sort_rule->rule.name,
+								  groupby_result->result[i][j]);
+				}
+            }
+		}
+    }
+
+	return SUCCESS;
+}
+
 static int search_handler(request_rec *r, softbot_handler_rec *s)
 {
     int rv = 0;
@@ -160,31 +190,14 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
             qp_response.search_result, 
             qp_response.vdl->cnt);
     /* group result */
-    ap_rprintf(r, "<groups>\n");
-
-	groupby_result = &qp_response.groupby_result_vid;
-    for(i = 0; i < groupby_result->rules.cnt; i++) {
-        orderby_rule_t* sort_rule = &(groupby_result->rules.list[i].sort);
-		int is_enum = groupby_result->rules.list[i].is_enum;
-
-		// group 결과
-		for(j = 0; j < MAX_CARDINALITY; j++) {
-			if(groupby_result->result[i][j] != 0) {
-				if(is_enum) {
-					ap_rprintf(r, "<group name=\"%s\" field=\"%s\" count=\"%d\" />\n", 
-								  return_constants_str(j), 
-								  sort_rule->rule.name,
-								  groupby_result->result[i][j]);
-				} else {
-					ap_rprintf(r, "<group name=\"%d\" field=\"%s\" count=\"%d\" />\n", 
-								  j, 
-								  sort_rule->rule.name,
-								  groupby_result->result[i][j]);
-				}
-            }
-		}
-    }
+    ap_rprintf(r, "<groups type=\"vid\">\n");
+	print_group(r, &qp_response.groupby_result_vid);
     ap_rprintf(r, "</groups>\n");
+
+    ap_rprintf(r, "<groups type=\"did\">\n");
+	print_group(r, &qp_response.groupby_result_did);
+    ap_rprintf(r, "</groups>\n");
+
 	/* each result */
     for(i = 0; i < qp_response.vdl->cnt; i++) {
         virtual_document_t* vd = (virtual_document_t*)&qp_response.vdl->data[i];
