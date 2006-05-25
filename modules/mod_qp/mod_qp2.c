@@ -2129,11 +2129,13 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						return FAIL;
 					}
 				} else {
-					rv = memfile_appendF(buffer, " %s ", field_value);
-					if(rv < 0) {
-						MSG_RECORD(&req->msg, error, "can not appendF memfile");
-						memfile_free(buffer);
-						return FAIL;
+					if(strlen(field_value) != 0) {
+						rv = memfile_appendF(buffer, "%s", field_value);
+						if(rv < 0) {
+							MSG_RECORD(&req->msg, error, "can not appendF memfile");
+							memfile_free(buffer);
+							return FAIL;
+						}
 					}
 				}
 			}
@@ -2175,11 +2177,13 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 							return FAIL;
 						}
 					} else {
-						rv = memfile_appendF(buffer, " %s ", summary);
-						if(rv < 0) {
-							MSG_RECORD(&req->msg, error, "can not appendF memfile");
-							memfile_free(buffer);
-							return FAIL;
+					    if(strlen(field_value) != 0) {
+							rv = memfile_appendF(buffer, "%s", summary);
+							if(rv < 0) {
+								MSG_RECORD(&req->msg, error, "can not appendF memfile");
+								memfile_free(buffer);
+								return FAIL;
+							}
 						}
 					}
 				}
