@@ -3334,7 +3334,12 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
 			} else {
 				is_remove = (is_remove == 0) ? 0 : is_remove;
 			}
+		
+		    if(curr_group_values[j] < MAX_CARDINALITY) {
+			    result->result[j][curr_group_values[j]]++;
+			}
 		}
+
 
 		// 조건을 만족하면 저장한다.
 		if(is_remove == 0) {
@@ -3414,6 +3419,10 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
 				} else {
 					is_remove = (is_remove == 0) ? 0 : is_remove;
 				}
+
+				if(next_group_values[j] < MAX_CARDINALITY) {
+					result->result[j][curr_group_values[j]]++;
+				}
 			}
 
 			// 조건을 만족하면 저장한다.
@@ -3429,7 +3438,6 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
 					group_count[j]++;
 				}
 			}
-
 		}
 	}
 
