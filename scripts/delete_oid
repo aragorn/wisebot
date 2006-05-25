@@ -1,0 +1,41 @@
+#!/usr/bin/perl -w
+
+use lib "../lib/perl";
+use lib "./lib/perl";
+use strict;
+use Getopt::Std;
+use SoftWise::SoftBot;
+
+local $| = 1;
+my $host = shift;
+my $port = shift;
+my $file = shift;
+my $confirm = shift || 0;
+
+unless ($host and $port and $file) {
+	print <<END;
+Usage: $0 <host> <port> <file> [<confirm>]
+    host  - hostname of search server
+    port  - port number that softbot use
+    file  - text oid file(OID=XXX)
+    confirm - set 1 if you want to confirm every document by key input
+END
+	exit;
+}
+
+print "processing $file...\n";
+local *local_fh; my $fh = *local_fh; undef *local_fh;
+open($fh, $file) or die "cannot open file: $!";
+
+while (<$fh>) {
+  /OID=(.+)(\^|$)/ and do {
+    my $oid = $1;
+    my $sb = new SoftWise::SoftBot($host, $port) or die "cannot connect to softbot: $!\n";
+    my $ret = $sb->delete_oid($oid);
+    if ($ret) { print "deleted OID=$oid\n"; }
+    else { print "failed to delete OID=$oid\n"; }
+  };
+}
+
+exit;
+
