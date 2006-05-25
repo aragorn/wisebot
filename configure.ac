@@ -115,6 +115,9 @@ AH_VERBATIM([1_NEAR_TOP__],[
    see include/timelog.h, platform/unix/sb_tstat.[ch]. */
 #define USE_TIMELOG 0
 
+/* whether to use Daum Communication's Korean MA or not. */
+#define USE_DAUM_KOMA 0
+
 /* If you don't have setproctitle, SB_ARGV_TYPE needs to be set to either
 * SB_ARGV_NEW (replace argv[] arguments), SB_ARGV_WRITEABLE (overwrite
 * argv[]), SB_ARGV_PSTAT (use the pstat function), or SB_ARGV_PSSTRINGS
@@ -171,6 +174,15 @@ then
     AC_DEFINE(USE_TIMELOG,0)
 else
     AC_DEFINE(USE_TIMELOG,1)
+fi
+])
+
+AM_CONDITIONAL(USE_DAUM_KOMA,0)
+AC_ARG_WITH(daum-koma,
+[  --with-daum-koma        build with Daum's koma.          [default=no]], [
+if test "$withval" != yes
+then
+    AM_CONDITIONAL(USE_DAUM_KOMA,1)
 fi
 ])
 
