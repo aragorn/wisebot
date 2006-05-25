@@ -37,7 +37,7 @@ if ( $mode eq "IMS" or $mode eq "BLOG" )
 
     my @docs_to_delete_next_time;
     my @docs_to_update_next_time;
-    foreach my $cnt ( 1..10_000 ) {
+    foreach my $cnt ( 1..10_0000 ) {
       my $doc = get_document($mode, $IN) or last OUTER_LOOP;
       push @docs_to_delete_next_time, $doc if $cnt % 20 == 13;
       push @docs_to_update_next_time, $doc if $cnt % 20 == 17;
@@ -52,9 +52,24 @@ if ( $mode eq "IMS" or $mode eq "BLOG" )
   }
 
   close($IN);
+
+} elsif ( $mode eq "IMS_CDM" or $mode eq "BLOG_CDM" ) {
+
+  my $IN = input_handler($input);
+  my $OUT = output_handler($output, 1);
+
+  foreach my $cnt ( 1..100_0000 ) {
+      my $doc = get_document($mode, $IN) or last;
+      put_document($mode, $OUT, "INSERT", $doc, 0);
+  }
+
+  close($OUT);
+  close($IN);
 }
 
 exit;
+
+###############################################################################
 
 sub get_document
 {
@@ -62,10 +77,13 @@ sub get_document
   if ($mode eq "IMS")
   {
     return get_ims_document(@_);
-  } else {
+  } elsif ($mode eq "BLOG") {
     return get_blog_document(@_);
+  } elsif ($mode eq "BLOG_CMD") {
+    return get_blog_cdm_document(@_);
+  } else {
+    return get_ims_document(@_);
   }
-
 }
 
 sub put_document
@@ -164,6 +182,21 @@ sub get_blog_document
 #print "DEBUG $_"; select(undef,undef,undef,0.1);
 
     /^\<TRANSDATE\>/ and return $doc;
+  }
+}
+
+sub get_blog_cdm_document
+{
+  my $fh = shift;
+
+#print "get_blog_document\n";
+  my $doc = "";
+  while ( <$fh> )
+  {
+    $doc .= $_;
+#print "DEBUG $_"; select(undef,undef,undef,0.1);
+
+    /^\<BMT_STATE\>/ and return $doc;
   }
 }
 
