@@ -910,6 +910,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
     
     if (sb_run_sbhandler_make_memfile(r, &buf) != SUCCESS) {
 	    MSG_RECORD(&s->msg, error, "make_memfile_from_postdata failed");
+        if(buf != NULL) memfile_free(buf);
         return FAIL;
     }
     
@@ -922,6 +923,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
         if ( memfile_read(buf, (char*)&(vd->dochits[recv_pos]), recv_data_size)
                 != recv_data_size ) {
 			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: doc_hits ", i);
+            if(buf != NULL) memfile_free(buf);
             return FAIL;
         }
 
@@ -929,6 +931,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
         if ( memfile_read(buf, (char*)&node_id, recv_data_size)
                 != recv_data_size ) {
 			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: node_id ", i);
+            if(buf != NULL) memfile_free(buf);
             return FAIL;
         }
 
@@ -936,6 +939,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 			MSG_RECORD(&s->msg, error, "node_id[%u] not equals this_node_id[%0X]",
                           get_node_id(node_id),
                           this_node_id);
+            if(buf != NULL) memfile_free(buf);
             return FAIL;
         }
 
@@ -948,6 +952,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 	rv = agent_abstractsearch(r, s, &qp_request, &qp_response);
 	if( rv != SUCCESS ) {
 		MSG_RECORD(&s->msg, error, "agent_abstractsearch failed");
+        if(buf != NULL) memfile_free(buf);
 		return FAIL;
 	}
 	timelog("agent_abstractsearch_end");
@@ -967,6 +972,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
                     qp_response.comments[i].node_id);
     }
 
+    if(buf != NULL) memfile_free(buf);
 	return SUCCESS;
 }
 
