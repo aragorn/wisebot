@@ -45,9 +45,9 @@ static void sock_disable_nagle(int s)
 
 	debug("called (sock_disable_nagle)!");
 	
-	if (setsockopt(s, IPPROTO_TCP, TCP_NODELAY,
+	if (setsockopt(s, SOL_TCP, TCP_NODELAY,
 			(char *) &just_say_no, sizeof(int)) < 0) {
-		debug("setsockopt (TCP_NODELAY): %s", strerror(errno));
+		warn("setsockopt (TCP_NODELAY): %s", strerror(errno));
 		/* not a fatal error */
 	}
 }
@@ -95,7 +95,7 @@ static void sock_enable_linger(int s)
 	li.l_onoff = 1;
 	li.l_linger = MAX_SECS_TO_LINGER;
 
-	if (setsockopt(s, SOL_SOCKET, SO_LINGER,
+	if (setsockopt(s, SOL_TCP, SO_LINGER,
 			(char *) &li, sizeof(struct linger)) < 0) {
 		warn("setsockopt (SO_LINGER): %s", strerror(errno));
 		/* not a fatal error */
@@ -154,7 +154,7 @@ static int tcp_connect(int *sockfd, char *host, char *port)
 	if ( n == SUCCESS ) { /* connected */
 		debug("connected to %s:%d...", host, ntohs(addr.sin_port) );
 		optval = 1;
-		setsockopt(*sockfd, IPPROTO_TCP, TCP_NODELAY, (void*)&optval, sizeof(optval));
+		setsockopt(*sockfd, SOL_TCP, TCP_NODELAY, (void*)&optval, sizeof(optval));
 	} else {
 		error("unable to connect %s:%d...", host, ntohs(addr.sin_port) );
 		close(*sockfd);
@@ -208,7 +208,7 @@ static int tcp_connect(int *sockfd, char *host, char *port)
 
 		if ( n == SUCCESS ) { /* connecting success */
 			optval = 1;
-			setsockopt(*sockfd, IPPROTO_TCP, TCP_NODELAY, (void*)&optval, sizeof(optval));
+			setsockopt(*sockfd, SOL_TCP, TCP_NODELAY, (void*)&optval, sizeof(optval));
 			break;
 		} else {
 			close(*sockfd);
