@@ -190,12 +190,19 @@ sub put_blog_cdm_document
     # do nothing
     return;
   } else {
+    my $source = $field{"<B_SOURCE>"};
+    if ( $source =~ m/daum.net/ )        { $source = "daum"; }
+    elsif ( $source =~ m/naver.com/ )    { $source = "naver"; }
+    elsif ( $source =~ m/dreamwiz.com/ ) { $source = "dreamwiz"; }
+    elsif ( $source =~ m/empas.com/ )    { $source = "empas"; }
+    else  { $source = "etc"; }
+
     print { $fh } "-" x 80, "\n";
     print { $fh } "PT=CDM^OID=", $field{"<P_LINK>"}, "^\n\n";
     print { $fh } <<END;
 <Document>
 <title><![CDATA[$field{"<P_TITLE>"}]]></title>
-<body><![CDATA[$field{"<P_CONTENT>"}]]></body>
+<body><![CDATA[$field{"<P_CONTENT>"} ]]></body>
 <pattern>softwisezzz</pattern>
 <author><![CDATA[$field{"<P_AUTHOR>"}]]></author>
 <oid><![CDATA[$field{"<P_LINK>"}]]></oid>
@@ -205,7 +212,7 @@ sub put_blog_cdm_document
 <p_id><![CDATA[$field{"<P_DOCID>"}]]></p_id>
 <date>$field{"<P_REGDATE>"}</date>
 <p_link><![CDATA[$field{"<P_REGDATE>"}]]></p_link>
-<source><![CDATA[$field{"<B_SOURCE>"}]]></source>
+<source><![CDATA[$source]]></source>
 </Document>
 END
   }
