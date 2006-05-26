@@ -197,7 +197,7 @@ sub put_blog_cdm_document
 <title><![CDATA[$field{"<P_TITLE>"}]]></title>
 <body><![CDATA[$field{"<P_CONTENT>"}]]></body>
 <pattern>softwisezzz</pattern>
-<author><![CDATA[$$field{"<P_AUTHOR>"}]]></author>
+<author><![CDATA[$field{"<P_AUTHOR>"}]]></author>
 <oid><![CDATA[$field{"<P_LINK>"}]]></oid>
 <b_id><![CDATA[$field{"<B_DOCID>"}]]></b_id>
 <b_title><![CDATA[$field{"<B_TITLE>"}]]></b_title>
