@@ -2095,7 +2095,8 @@ static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
 
 #define MAX_COMMENT_BYTES 1024
 	char *field_value = 0x00; 
-	char _field_value[MAX_COMMENT_BYTES];
+#define MAX_FIELD_LEN (1024*1024)    // 1M-> cdm2에서는 본문을 모두 가져오기 위해 큰값을 지정해야 한다.
+	char _field_value[MAX_FIELD_LEN];
 	int sizeleft = 0;
 	int ret = 0;
 	uint32_t docid = doc_hits->id;
@@ -2138,7 +2139,7 @@ static int fill_title_and_comment(doc_hit_t* doc_hits, char* comment) {
 		}
 		else { // cdm2 api
 			field_value = _field_value;
-			ret = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, MAX_COMMENT_BYTES);
+			ret = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, MAX_FIELD_LEN);
 			if ( ret < 0 && ret != CDM2_NOT_ENOUGH_BUFFER ) {
 				error("cannot get field[%s] from doc[%"PRIu32"]", field_info[k].name, docid);
 				continue;
