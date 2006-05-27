@@ -347,6 +347,14 @@ sub put_ims_cdm_document
     if ($device_attr_mode eq "Y") { $dgcop = 1; }
     else                          { $dgcop = 0; }
     my @dgc = split(/;/, $device_group_list);
+
+    foreach my $cnt ( 1..10 ) {
+      if($dgc[$cnt] eq "") {
+      } else {
+        $dgc[$cnt] = "A" . $dgc[$cnt];
+      }
+    }
+
     my $dgccnt = @dgc; $dgccnt -= 1; $dgccnt = 0 if $dgccnt < 0;
 
     print { $fh } "-" x 80, "\n";
@@ -366,16 +374,16 @@ sub put_ims_cdm_document
 <date><![CDATA[$rgst_date]]></date>
 <age_yn><![CDATA[$age_yn]]></age_yn>
 <dgcop><![CDATA[$dgcop]]></dgcop>
-<dgc1><![CDATA[A$dgc[1]]]></dgc1>
-<dgc2><![CDATA[A$dgc[2]]]></dgc2>
-<dgc3><![CDATA[A$dgc[3]]]></dgc3>
-<dgc4><![CDATA[A$dgc[4]]]></dgc4>
-<dgc5><![CDATA[A$dgc[5]]]></dgc5>
-<dgc6><![CDATA[A$dgc[6]]]></dgc6>
-<dgc7><![CDATA[A$dgc[7]]]></dgc7>
-<dgc8><![CDATA[A$dgc[8]]]></dgc8>
-<dgc9><![CDATA[A$dgc[9]]]></dgc9>
-<dgc10><![CDATA[A$dgc[10]]]></dgc10>
+<dgc1><![CDATA[$dgc[1]]]></dgc1>
+<dgc2><![CDATA[$dgc[2]]]></dgc2>
+<dgc3><![CDATA[$dgc[3]]]></dgc3>
+<dgc4><![CDATA[$dgc[4]]]></dgc4>
+<dgc5><![CDATA[$dgc[5]]]></dgc5>
+<dgc6><![CDATA[$dgc[6]]]></dgc6>
+<dgc7><![CDATA[$dgc[7]]]></dgc7>
+<dgc8><![CDATA[$dgc[8]]]></dgc8>
+<dgc9><![CDATA[$dgc[9]]]></dgc9>
+<dgc10><![CDATA[$dgc[10]]]></dgc10>
 <dgccnt><![CDATA[$dgccnt]]></dgccnt>
 <menu_path><![CDATA[$menu_path]]></menu_path>
 <pattern>softwisezzz</pattern>
