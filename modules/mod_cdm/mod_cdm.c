@@ -18,13 +18,9 @@
 #include "mod_cdm.h"
 #include "cannedDocServer.h"
 
-#ifdef CYGWIN
 #include "expat.h"
-#else
-#include "expat/expat.h"
-#endif
 
-#define MAX_FILE_SIZE		250000000
+#define MAX_FILE_SIZE		(1*1000*1000*1000)
 
 #define TOTAL_LOCK_NUM		(dwMaxDBFileNum + 1)
 #define TOTAL_COND_NUM		0
