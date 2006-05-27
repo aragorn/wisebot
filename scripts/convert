@@ -78,16 +78,14 @@ exit;
 sub get_document
 {
   my $mode = shift;
-  if ($mode eq "IMS")
-  {
-    return get_ims_document(@_);
-  } elsif ($mode eq "BLOG" or $mode eq "BLOG2") {
-    return get_blog_document(@_);
-  } elsif ($mode eq "BLOG_CDM") {
-    return get_blog_cdm_document(@_);
-  } else {
-    die "unknown document type: $mode";
-  }
+  if ($mode eq "IMS" or $mode eq "IMS_CDM")
+  { return get_ims_document(@_); }
+  elsif ($mode eq "BLOG" or $mode eq "BLOG2")
+  { return get_blog_document(@_); }
+  elsif ($mode eq "BLOG_CDM")
+  { return get_blog_cdm_document(@_); }
+  else
+  { die "unknown document type: $mode"; }
 }
 
 sub put_document
@@ -95,11 +93,14 @@ sub put_document
   my $mode = shift;
   if ($mode eq "BLOG_CDM")
   { return put_blog_cdm_document(@_); }
+  elsif ($mode eq "BLOG")
+  { return put_blog_document(@_); }
+  elsif ($mode eq "IMS_CDM")
+  { return put_ims_cdm_document(@_); }
   elsif ($mode eq "IMS")
   { return put_ims_document(@_); }
   else
-  { return put_blog_document(@_); }
-
+  { die "unknown document type: $mode"; }
 }
 
 ###############################################################################
@@ -303,6 +304,87 @@ sub put_ims_document
     $fields[17] = "D\n";
   }
   print { $fh } join("\t", $state, @fields);
+  return;
+=rem
+0 oid
+1 menu_id
+2 tree_id
+3 system_id
+4 category_id
+5 menu_name
+6 author
+7 body
+8 menu_url
+9 menu_type
+10 rgst_date
+11 age_yn
+12 device_attr_mode
+13 device_group_list
+14 menu_path
+15 depth
+16 ord
+17 useyn
+=cut
+}
+
+sub put_ims_cdm_document
+{
+  my $fh = shift;
+  my $doc = shift or return;
+
+  my ($state, $oid, $menu_id, $tree_id, $system_id, $category_id, $menu_name,
+      $author, $body, $menu_url, $menu_type, $rgst_date, $age_yn, $device_attr_mode,
+      $device_group_list, $menu_path, $depth, $ord, $useyn) = split(/\t/, $doc);
+
+  if ($state eq "DELETE")
+  {
+    print { $fh } "-" x 80, "\n";
+    print { $fh } "PT=DELETE^OID=", $oid, "^\n\n";
+    # do nothing
+  } else {
+    $rgst_date = substr($rgst_date, 0, 8);
+    my $dgcop;
+    if ($device_attr_mode eq "Y") { $dgcop = 1; }
+    else                          { $dgcop = 0; }
+    my @dgc = split(/;/, $device_group_list);
+    my $dgccnt = @dgc; $dgccnt -= 1; $dgccnt = 0 if $dgccnt < 0;
+
+    print { $fh } "-" x 80, "\n";
+    print { $fh } "PT=CDM^OID=", $oid, "^\n\n";
+    print { $fh } <<END;
+<Document>
+<oid><![CDATA[$oid]]></oid>
+<menu_id><![CDATA[$menu_id]]></menu_id>
+<tree_id><![CDATA[$tree_id]]></tree_id>
+<system_id><![CDATA[$system_id]]></system_id>
+<cate><![CDATA[A$category_id]]></cate>
+<menu_name><![CDATA[$menu_name]]></menu_name>
+<author><![CDATA[$author]]></author>
+<body><![CDATA[$body]]></body>
+<menu_url><![CDATA[$menu_url]]></menu_url>
+<menu_type><![CDATA[$menu_type]]></menu_type>
+<date><![CDATA[$rgst_date]]></date>
+<age_yn><![CDATA[$age_yn]]></age_yn>
+<dgcop><![CDATA[$dgcop]]></dgcop>
+<dgc1><![CDATA[A$dgc[1]]]></dgc1>
+<dgc2><![CDATA[A$dgc[2]]]></dgc2>
+<dgc3><![CDATA[A$dgc[3]]]></dgc3>
+<dgc4><![CDATA[A$dgc[4]]]></dgc4>
+<dgc5><![CDATA[A$dgc[5]]]></dgc5>
+<dgc6><![CDATA[A$dgc[6]]]></dgc6>
+<dgc7><![CDATA[A$dgc[7]]]></dgc7>
+<dgc8><![CDATA[A$dgc[8]]]></dgc8>
+<dgc9><![CDATA[A$dgc[9]]]></dgc9>
+<dgc10><![CDATA[A$dgc[10]]]></dgc10>
+<dgccnt><![CDATA[$dgccnt]]></dgccnt>
+<menu_path><![CDATA[$menu_path]]></menu_path>
+<pattern>softwisezzz</pattern>
+<depth><![CDATA[$menu_path]]></depth>
+<ord><![CDATA[$ord]]></ord>
+</Document>
+END
+  }
+
   return;
 =rem
 0 oid
