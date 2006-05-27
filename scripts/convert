@@ -2,6 +2,7 @@
 # dump 파일 변환 프로그램 - $Id$
 #
 # 수정이력
+# 2006/05/27 - 1만건씩 파일을 분리하는 BLOG2 mode 추가
 # 2006/05/24 - SKT BMT를 위해 처음 작성
 
 use strict;
@@ -13,8 +14,9 @@ unless ($mode and $input and $output)
 {
   print <<END;
 Usage: $0 <mode> <input> <output>
-  mode      : IMS   - IMS dump to IMS BMT data (SKT BMT)
-              BLOG  - BLOG dump to BLOG BMT data (SKT BMT)
+  mode      : IMS    - IMS dump to IMS BMT data (SKT BMT)
+              BLOG   - BLOG dump to BLOG BMT data, splitted by 100k (SKT BMT)
+              BLOG2  - BLOG dump to BLOG BMT data, splitted by 10k  (SKT BMT)
               IMS_CDM   - IMS BMT data to CDM (SKT BMT)
               BLOG_CDM  - BLOG BMT data to CDM (SKT BMT)
   input     : input file name
@@ -24,7 +26,7 @@ END
 }
 
 
-if ( $mode eq "IMS" or $mode eq "BLOG" )
+if ( $mode eq "IMS" or $mode eq "BLOG" or $mode eq "BLOG2" )
 {
   my $IN = input_handler($input);
 
@@ -37,7 +39,9 @@ if ( $mode eq "IMS" or $mode eq "BLOG" )
 
     my @docs_to_delete_next_time;
     my @docs_to_update_next_time;
-    foreach my $cnt ( 1..10_0000 ) {
+    my $max_num = 100_000;
+    $max_num = 10_000 if $mode eq "BLOG2";
+    foreach my $cnt ( 1..$max_num ) {
       my $doc = get_document($mode, $IN) or last OUTER_LOOP;
       push @docs_to_delete_next_time, $doc if $cnt % 20 == 13;
       push @docs_to_update_next_time, $doc if $cnt % 20 == 17;
@@ -77,7 +81,7 @@ sub get_document
   if ($mode eq "IMS")
   {
     return get_ims_document(@_);
-  } elsif ($mode eq "BLOG") {
+  } elsif ($mode eq "BLOG" or $mode eq "BLOG2") {
     return get_blog_document(@_);
   } elsif ($mode eq "BLOG_CDM") {
     return get_blog_cdm_document(@_);
