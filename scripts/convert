@@ -355,7 +355,9 @@ sub put_ims_cdm_document
       }
     }
 
-    my $dgccnt = @dgc; $dgccnt -= 1; $dgccnt = 0 if $dgccnt < 0;
+    my $dgccnt = @dgc; $dgccnt -= 1; 
+	$dgccnt = 0 if $dgccnt < 0;
+	$dgccnt = 1 if $dgccnt > 0;
 
     print { $fh } "-" x 80, "\n";
     print { $fh } "PT=CDM^OID=", $oid, "^\n\n";
