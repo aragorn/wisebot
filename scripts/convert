@@ -389,6 +389,7 @@ sub put_ims_cdm_document
 <pattern>softwisezzz</pattern>
 <depth><![CDATA[$menu_path]]></depth>
 <ord><![CDATA[$ord]]></ord>
+<useyn><![CDATA[$useyn]]></useyn>
 </Document>
 END
   }
