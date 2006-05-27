@@ -16,11 +16,7 @@
 #  include <iconv.h>
 #endif
 
-#ifdef SRCLIB_EXPAT
-#  include "expat/expat.h"
-#else
-#  include <expat.h>
-#endif
+#include "expat.h"
 
 #include "stack.h"
 #include "dh.h"

@@ -11,11 +11,7 @@
 #include "mod_api/xmlparser.h"
 
 #include <errno.h>
-#ifdef CYGWIN
 #include "expat.h"
-#else
-#include "expat/expat.h"
-#endif
 
 #define MAX_ATTR_NUM			32
 
