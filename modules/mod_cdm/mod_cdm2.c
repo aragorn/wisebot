@@ -1,3 +1,4 @@
+/* $Id */
 #include <string.h> /* strncpy */
 #include <stdlib.h> /* atoi */
 #include <errno.h>
@@ -957,7 +958,7 @@ static char* get_field_type_name(enum field_type_t type)
 /*********** module stuff ***********/
 
 #define DEFAULT_CDM_PATH "dat/cdm"
-#define DEFAULT_CDM_FILE_SIZE (512*1024*1024) // 512MB
+#define DEFAULT_CDM_FILE_SIZE (1024*1024*1024) // 1024MB
 #define DEFAULT_MAX_DOC_NUM 1000000
 
 static int init()

@@ -20,7 +20,7 @@
 
 #include "expat.h"
 
-#define MAX_FILE_SIZE		(1*1000*1000*1000)
+#define MAX_FILE_SIZE		(1024*1024*1024)
 
 #define TOTAL_LOCK_NUM		(dwMaxDBFileNum + 1)
 #define TOTAL_COND_NUM		0
