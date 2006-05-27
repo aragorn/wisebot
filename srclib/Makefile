@@ -30,7 +30,7 @@ clean: expat-clean koma2c-clean
 expat-export:
 	[ -f expat/configure ] || (gzip -c -d expat.tar.gz | tar xf -)
 	cd expat && \
-	./configure --prefix=$(prefix) --includedir=$(prefix)/include/expat
+	./configure --prefix=$(prefix)
 
 koma2c-export:
 	[ -f koma2c/buildconf ] || (cvs co koma2c)
