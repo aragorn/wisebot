@@ -92,6 +92,7 @@ AH_BOTTOM([
 AH_VERBATIM([1_NEAR_TOP__],[
 /* checking system environment */
 #undef LINUX
+#undef LINUX_64
 #undef CYGWIN
 #undef FREEBSD
 #undef SOLARIS
@@ -210,13 +211,22 @@ SHORT_HOST=""
 SOFTBOTD_LDFLAGS=""
 SOFTBOTCLI_LDFLAGS=""
 case "$host" in 
-  *linux* )
+  x86_64-*-linux-gnu )
+    SHORT_HOST="linux_64"
+    # sets #define LINUX in auto_config.h
+    AC_DEFINE(LINUX_64,1)
+    OS_TYPE="unix"
+    THREAD_LIB="-lpthread"
+    DYN_LIB="-ldl"
+    ;;
+  i?86-*-linux-gnu )
     SHORT_HOST="linux"
     # sets #define LINUX in auto_config.h
     AC_DEFINE(LINUX,1)
     OS_TYPE="unix"
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
+    EXTRA_CFLAGS="-m32"
     ;;
   *pc-cygwin* )
     SHORT_HOST="cygwin"
@@ -261,12 +271,13 @@ case "$host" in
 esac
 
 # You can use if-condition in Makefile.am
-AM_CONDITIONAL(LINUX,   test x$SHORT_HOST = xlinux)
-AM_CONDITIONAL(CYGWIN,  test x$SHORT_HOST = xcygwin)
-AM_CONDITIONAL(FREEBSD, test x$SHORT_HOST = xfreebsd)
-AM_CONDITIONAL(SOLARIS, test x$SHORT_HOST = xsolaris)
-AM_CONDITIONAL(AIX5,    test x$SHORT_HOST = xaix5)
-AM_CONDITIONAL(HPUX,    test x$SHORT_HOST = xhpux)
+AM_CONDITIONAL(LINUX,    test x$SHORT_HOST = xlinux)
+AM_CONDITIONAL(LINUX_64, test x$SHORT_HOST = xlinux_64)
+AM_CONDITIONAL(CYGWIN,   test x$SHORT_HOST = xcygwin)
+AM_CONDITIONAL(FREEBSD,  test x$SHORT_HOST = xfreebsd)
+AM_CONDITIONAL(SOLARIS,  test x$SHORT_HOST = xsolaris)
+AM_CONDITIONAL(AIX5,     test x$SHORT_HOST = xaix5)
+AM_CONDITIONAL(HPUX,     test x$SHORT_HOST = xhpux)
 
 #########################################
 # srclib installation
