@@ -27,7 +27,7 @@ typedef struct sort_base_t sort_base_t;
 #define MAX_INDEX_LIST_POOL	(3)
 #define MAX_INCOMPLETE_INDEX_LIST_POOL	(30) 
 /* MAX_DOC_HITS_SIZE: size of the document set retrieved from VRF */
-#define MAX_DOC_HITS_SIZE (1200000)
+#define MAX_DOC_HITS_SIZE (3000000)
 #define MAX_GROUP_RESULT (200)
 
 //FIXME move this definition to appropriate place
