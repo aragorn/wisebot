@@ -1155,6 +1155,8 @@ static int sb4s_register_doc(int sockfd)
 		error("cannot send OP_ACK");
 		sb_run_buffer_freebuf(&var_buf); 
 		return FAIL;
+	} else {
+		sb_run_tcp_close(sockfd);
 	}
 
 	/* below codes is not allowed to send nak op_code,
