@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 #$Id$ 
 
+use lib "/home/softwise/wisebot/lib/perl";
 use lib "./lib/perl";
 use lib "../lib/perl";
 use strict;
@@ -230,7 +231,9 @@ END
 			select(undef,undef,undef,0.1);
 			next;
 		}
-		my $r = $sb->regist_doc($dit2, $body);
+		my $r;
+		$r = $sb->regist_doc($dit2, $body) if $dit{PT} eq "CDM";
+		$r = $sb->delete_oid($dit{OID}, $body) if $dit{PT} eq "DELETE";
 		last if $stop;
 
 		if ( defined $r and $r > 0 ) {
