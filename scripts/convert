@@ -216,7 +216,7 @@ sub put_blog_cdm_document
 <b_link><![CDATA[$field{"<B_LINK>"}]]></b_link>
 <p_id><![CDATA[$field{"<P_DOCID>"}]]></p_id>
 <date>$field{"<P_REGDATE>"}</date>
-<p_link><![CDATA[$field{"<P_REGDATE>"}]]></p_link>
+<p_link><![CDATA[$field{"<P_LINK>"}]]></p_link>
 <source><![CDATA[$source]]></source>
 </Document>
 END
@@ -356,8 +356,8 @@ sub put_ims_cdm_document
     }
 
     my $dgccnt = @dgc; $dgccnt -= 1; 
-	$dgccnt = 0 if $dgccnt < 0;
-	$dgccnt = 1 if $dgccnt > 0;
+        $dgccnt = 0 if $dgccnt < 0;
+        $dgccnt = 1 if $dgccnt > 0;
 
     print { $fh } "-" x 80, "\n";
     print { $fh } "PT=CDM^OID=", $oid, "^\n\n";
