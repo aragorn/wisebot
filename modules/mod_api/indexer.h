@@ -19,7 +19,7 @@ typedef struct {
 	uint32_t position	:18; /* max 2^18-1=262143 */
 	uint8_t type		:1; /* 0 */
 	uint8_t field		:5; /* max 2^5-1=31 */
-	uint8_t dummy;
+//	uint8_t dummy;
 }__attribute__((packed)) standard_hit_t;
 
 typedef struct {
@@ -41,7 +41,7 @@ struct doc_hit_t {
 	uint32_t 	hitratio; /* °ü·Ã¼º khyang*/
 	hit_t		hits[STD_HITS_LEN];
 	uint8_t	nhits;
-	uint8_t dummy[3]; // for address align
+//	uint8_t dummy[3]; // for address align
 }__attribute__((packed));
 
 #define MAX_DOCHITS_PER_DOCUMENT 512
