@@ -48,7 +48,7 @@ union hit_t {
 #define MAX_NHITS 255
 #ifdef SKT_BMT
 struct doc_hit_t {
-	uint32_t	id :24;
+	uint32_t	id;
 	uint8_t	field;  /* bitmask for occurence of each field */
 //	uint32_t	field;  /* bitmask for occurence of each field */
 	uint8_t 	hitratio; /* °ü·Ã¼º khyang*/
