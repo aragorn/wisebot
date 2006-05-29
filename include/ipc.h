@@ -55,6 +55,7 @@ struct ipc_t {
 #define SYS5_VRM		'v'
 #define SYS5_FRM		'f'
 #define SYS5_IFS		'i'
+#define SYS5_CDM		'd'
 
 // refer to man page of semctl(2) for followings
 #if defined(__GNU_LIBRARY__) && !defined(_SEM_SEMUN_UNDEFINED)
