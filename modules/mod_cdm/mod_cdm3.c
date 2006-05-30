@@ -418,6 +418,8 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		return DECLINE;
 	db = (cdm_db_custom_t*) cdm_db->db;
 
+    CRIT("=======size[%d], strlen[%d], txt[%s]", size, strlen(xmldoc), xmldoc+strlen(xmldoc)-20);
+
 	p = sb_run_xmlparser_parselen("CP949", xmldoc, size);
 	if ( p == NULL ) {
 		error("cannot parse document[%s]", oid);
