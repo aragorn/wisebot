@@ -333,12 +333,12 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
 		crit("cdm_db(ifs) read failed. did[%d], ret: %d", docid, ret);
 		return FAIL;
 	}
-    xml_doc[length] = '\0';
+    xml_doc[read_bytes] = '\0';
 
 	DEBUG("ret[%d] of cdm_db(ifs) read with did:%u)",ret, docid);
-	if ( ret < length ) {
-		warn( "ret[%d] is less than length[%d]", ret, length);
-        return FAIL;
+	if(ret != read_bytes) {
+		crit("read bytes[%d] different from requested bytes[%d]",
+				ret, read_bytes);
 	}
 
 	p = sb_run_xmlparser_parselen("CP949", xml_doc, length);
@@ -553,12 +553,12 @@ static int cdm_get_xmldoc(cdm_db_t* cdm_db, uint32_t docid, char* buf, size_t si
 		return FAIL;
 	}
 
-    buf[size] = '\0';
+    buf[read_bytes] = '\0';
 
 	DEBUG("ret[%d] of cdm_db(ifs) read with did:%u)",ret, docid);
-	if ( ret < length ) {
-		warn( "ret[%d] is less than length[%d]", ret, length);
-        return FAIL;
+	if(ret != read_bytes) {
+		crit("read bytes[%d] different from requested bytes[%d]",
+				ret, read_bytes);
 	}
 
 	return ret;
