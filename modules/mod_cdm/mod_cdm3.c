@@ -76,6 +76,7 @@ char *_trim(char *str, int *len)
 /////////////////////////////////////////////////////////////
 static int init()
 {
+    char path[MAX_PATH_LEN];
 	ipc_t lock;
 	int i = 0;
 
@@ -92,7 +93,8 @@ static int init()
 
 		if ( !cdm_set[i].set ) continue;
 
-        lock.pathname = cdm_set[current_cdm_set].cdm_path;
+		snprintf( path, sizeof(path), "%s/cdm3.lock", cdm_set[i].cdm_path );
+        lock.pathname = path;
 
         if ( get_sem(&lock) != SUCCESS )
             return FAIL;
@@ -321,15 +323,16 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
 		return FAIL;
 	}
 
+	// 다 읽지 못하면 어차피 parsing을 할수 없다.
     if(length >= DOCUMENT_SIZE) {
-	    warn("document[%d] size[%d] larger than buffer size[%d]", docid, length, DOCUMENT_SIZE);
-		read_bytes = DOCUMENT_SIZE-1;
+	    error("document[%d] size[%d] larger than buffer size[%d]", docid, length, DOCUMENT_SIZE);
+		return FAIL;
 	} else {
-        read_bytes = length-1;
+        read_bytes = length;
 	}
 
 	ret = sb_run_indexdb_read( db->ifs, docid, 0, read_bytes, (void*)xml_doc );
-	if ( ret < 0 ) {
+	if ( ret != read_bytes ) {
 		crit("cdm_db(ifs) read failed. did[%d], ret: %d", docid, ret);
 		return FAIL;
 	}
@@ -381,11 +384,11 @@ static int cdmdoc_get_field_by_bytepos(cdm_doc_t* doc, const char* fieldname, in
 
 	len = f->size;
 	val = _trim(f->value, &len);
-	len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
-	strncpy(buf, val+bytepos, size);
-	buf[size-1] = '\0';
+	len = (len>size-1)?size-1:len;
+	strncpy(buf, val+bytepos, len);
+	buf[len] = '\0';
 
-    return SUCCESS;
+    return len;
 }
 
 static int cdmdoc_get_field(cdm_doc_t* doc, const char* fieldname, char* buf, size_t size)
@@ -483,11 +486,13 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		oid_duplicated = 1;
 	}
 
+	/////////////////////////////////////////
+    ACQUIRE_LOCK()
 	if ( *newdocid != db->shared->last_docid+1 ) {
 		warn("newdocid[%"PRIu32"] != last_docid of cdm[%"PRIu32"]+1",
 				*newdocid, db->shared->last_docid);
 	}
-	/////////////////////////////////////////
+	db->shared->last_docid = *newdocid;
 
 	/* mask에 넣었던 docattr실제로 저장 (need newdocid) */
 	if ( sb_run_docattr_set_array(newdocid, 1, SC_MASK, &docmask) != SUCCESS ) {
@@ -501,13 +506,12 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		error("cdm_db(ifs) append failed. did[%u], oid[%s]", *newdocid, oid);
         return FAIL;
 	}
+    RELEASE_LOCK()
+	/////////////////////////////////////////
 
 	/************************
 	 * shared memory update *
 	 ************************/
-    ACQUIRE_LOCK()
-	db->shared->last_docid = *newdocid;
-    RELEASE_LOCK()
 
 	if ( oid_duplicated ) {
 		return CDM2_PUT_OID_DUPLICATED;
@@ -540,15 +544,16 @@ static int cdm_get_xmldoc(cdm_db_t* cdm_db, uint32_t docid, char* buf, size_t si
 		return FAIL;
 	}
 
+	// 어차피 다 못읽으면 parsing을 할수 없다.
     if(length >= size) {
-	    warn("document[%d] size[%d] larger than buffer size[%d]", docid, length, size);
-		read_bytes = size-1;
+	    error("document[%d] size[%d] larger than buffer size[%d]", docid, length, size);
+		return FAIL;
 	} else {
-		read_bytes = length-1;
+		read_bytes = length;
 	}
 
 	ret = sb_run_indexdb_read( db->ifs, docid, 0, read_bytes, (void*)buf );
-	if ( ret < 0 ) {
+	if ( ret != read_bytes ) {
 		crit("cdm_db(ifs) read failed. did[%u], ret: %d", docid, ret);
 		return FAIL;
 	}
