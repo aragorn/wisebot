@@ -43,7 +43,35 @@ static char field_root_name[SHORT_STRING_SIZE] = "Document";
 #define RELEASE_LOCK() \
     if ( release_lock( db->lock_id ) != SUCCESS ) { \
         error("release_lock failed. but go on..."); \
+        return FAIL; \
     } 
+
+/////////////////////////////////////////////////////////////
+char *_trim(char *str, int *len)
+{   
+    char *tmp, *start;
+        
+    if (*len == 0) return str;
+
+    start = str;
+    for (tmp=str; tmp<str+*len; tmp++) { 
+        if (*tmp != ' ' && *tmp != '\t' && *tmp != '\n' && *tmp != '\r') {
+            start = tmp;
+            break;
+        }
+    }
+    if (tmp == str + *len) {
+        *len = 0;
+        return str;
+    }
+    for (tmp=str+*len-1; tmp>=start; tmp--) {
+        if (*tmp != ' ' && *tmp != '\t' && *tmp != '\n' && *tmp != '\r') {
+            break;
+        }
+    }
+    *len = tmp - start + 1;
+    return start;
+}
 
 /////////////////////////////////////////////////////////////
 static int init()
@@ -347,7 +375,7 @@ static int cdmdoc_get_field_by_bytepos(cdm_doc_t* doc, const char* fieldname, in
 	}
 
 	len = f->size;
-	val = sb_trim(f->value);
+	val = _trim(f->value, &len);
 	len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
 	strncpy(buf, val+bytepos, size);
 	buf[len] = '\0';
@@ -419,7 +447,7 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
         }
 
         len = f->size;
-        val = sb_trim(f->value);
+        val = _trim(f->value, &len);
         len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
         strncpy(value, val, len);
         value[len] = '\0';
@@ -435,13 +463,15 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
         }
     }
 
+	sb_run_xmlparser_free_parser(p);
+
 	/////////////////////////////////////////
 	// did 생성 가져오기
 	ret = sb_run_get_new_docid(did_db, oid, newdocid, olddocid);
 	if ( ret < 0 ) {
 		error("cannot get new document id of oid[%s]:error(%s)",
 				oid, strerror(errno));
-		goto error;
+        return FAIL;
 	}
 	else if ( ret == DOCID_OLD_REGISTERED ) {
 		info("old docid[%u] of OID[%s] is deleted. new docid is %u",
@@ -466,7 +496,7 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 	 *******************/
 	if ( sb_run_indexdb_append( db->ifs, *newdocid, size, (void*)xmldoc ) == FAIL ) {
 		error("cdm_db(ifs) append failed. did[%u], oid[%s]", *newdocid, oid);
-		goto error;
+        return FAIL;
 	}
 
 	/************************
@@ -477,15 +507,13 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
     RELEASE_LOCK()
 
 	if ( oid_duplicated ) {
-	    sb_run_xmlparser_free_parser(p);
 		return CDM2_PUT_OID_DUPLICATED;
 	}
 	else {
 	    sb_run_xmlparser_free_parser(p);
 		return SUCCESS;
 	}
-error:
-	sb_run_xmlparser_free_parser(p);
+
 	return FAIL;
 }
 
