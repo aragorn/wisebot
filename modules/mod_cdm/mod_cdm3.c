@@ -426,6 +426,7 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 
 	p = sb_run_xmlparser_parselen("CP949", xmldoc, size);
 	if ( p == NULL ) {
+		tmp_size[size-1] = '\0';
 		error("real size[%d], xml[%d][%x]", tmp_size, tmp_xml, tmp_xml);
 		error("cannot parse document[%s], size[%d], xml[%d][%x]", oid, size, xmldoc, xmldoc);
 		return CDM2_PUT_NOT_WELL_FORMED_DOC;
