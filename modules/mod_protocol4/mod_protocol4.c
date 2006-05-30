@@ -2437,7 +2437,7 @@ static int sb4s_search_doc(int sockfd)
 					replace_newline_to_space(req.comments[i]),
 					req.otherId[i]	
 				); */
-		sprintf(buf, "DID=%d^HIT=%d^WH=%d^CMT=%s^",
+		snprintf(buf, SB4_MAX_SEND_SIZE, "DID=%d^HIT=%d^WH=%d^CMT=%s^",
 					req.result_list->doc_hits[i].id,
 					req.result_list->doc_hits[i].hitratio,
 					//req.result_list->relevance[i],
