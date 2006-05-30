@@ -417,13 +417,17 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
     char *val, value[STRING_SIZE];
     char path[STRING_SIZE];
 
+	char* tmp_xml = xmldoc;
+	int tmp_size = size;
+
 	if ( cdm_set == NULL || !cdm_set[cdm_db->set].set )
 		return DECLINE;
 	db = (cdm_db_custom_t*) cdm_db->db;
 
 	p = sb_run_xmlparser_parselen("CP949", xmldoc, size);
 	if ( p == NULL ) {
-		error("cannot parse document[%s], xml[%s], size[%d]", oid, xmldoc, size);
+		error("real size[%d], xml[%d][%x]", tmp_size, tmp_xml, tmp_xml);
+		error("cannot parse document[%s], size[%d], xml[%d][%x]", oid, size, xmldoc, xmldoc);
 		return CDM2_PUT_NOT_WELL_FORMED_DOC;
 	}
 
