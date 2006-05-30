@@ -185,6 +185,9 @@ sub put_blog_cdm_document
   foreach ( @fields ) {
     my ($key, $value) = split(/>/, $_, 2);
     $key .= ">";
+	$value =~ s/|\^|;/ /g;
+	$value =~ s/\<\!\[CDATA\[/(CDATA/g;
+	$value =~ s/\]\]>/)>/g;
     $field{$key} = $value;
   }
 
