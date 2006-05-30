@@ -503,7 +503,7 @@ static int indexer_main(slot_t *slot)
 		// 잠깐 쉬어보고 진짜로 없는지...
 		gettimeofday( &end_time, NULL );
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
-		sleep( 5 );
+		sleep( 1 );
 
 		last_registered_docid = last_registered_did(cdm_db);
 		if (last_registered_docid != indexer_shared->last_indexed_docid) continue;
