@@ -47,7 +47,7 @@ static void sock_disable_nagle(int s)
 	
 	if (setsockopt(s, SOL_TCP, TCP_NODELAY,
 			(char *) &just_say_no, sizeof(int)) < 0) {
-		warn("setsockopt (TCP_NODELAY): %s", strerror(errno));
+		debug("setsockopt (TCP_NODELAY): %s", strerror(errno));
 		/* not a fatal error */
 	}
 }
