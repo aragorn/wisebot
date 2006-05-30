@@ -480,7 +480,10 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
     RELEASE_LOCK()
 
 	if ( oid_duplicated ) return CDM2_PUT_OID_DUPLICATED;
-	else return SUCCESS;
+	else {
+	    sb_run_xmlparser_free_parser(p);
+		return SUCCESS;
+	}
 error:
 	sb_run_xmlparser_free_parser(p);
 	return FAIL;
