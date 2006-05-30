@@ -504,6 +504,7 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 	 *******************/
 	if ( sb_run_indexdb_append( db->ifs, *newdocid, size, (void*)xmldoc ) == FAIL ) {
 		error("cdm_db(ifs) append failed. did[%u], oid[%s]", *newdocid, oid);
+        RELEASE_LOCK()
         return FAIL;
 	}
     RELEASE_LOCK()
