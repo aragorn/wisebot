@@ -195,7 +195,10 @@ sub put_blog_cdm_document
   {
     print { $fh } "-" x 80, "\n";
     print { $fh } "PT=DELETE^OID=", $field{"<P_LINK>"}, "^\n\n";
-    # do nothing
+    print { $fh } <<END;
+<Document>
+</Document>
+END
     return;
   } else {
     my $source = $field{"<B_SOURCE>"};
@@ -343,7 +346,10 @@ sub put_ims_cdm_document
   {
     print { $fh } "-" x 80, "\n";
     print { $fh } "PT=DELETE^OID=", $oid, "^\n\n";
-    # do nothing
+    print { $fh } <<END;
+<Document>
+</Document>
+END
   } else {
     $rgst_date = substr($rgst_date, 0, 8);
     my $dgcop;
