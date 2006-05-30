@@ -383,7 +383,7 @@ static int cdmdoc_get_field_by_bytepos(cdm_doc_t* doc, const char* fieldname, in
 	val = _trim(f->value, &len);
 	len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
 	strncpy(buf, val+bytepos, size);
-	buf[len] = '\0';
+	buf[size-1] = '\0';
 
     return SUCCESS;
 }
