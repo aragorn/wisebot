@@ -396,7 +396,7 @@ static int cdmdoc_destroy(cdm_doc_t* doc)
 	if ( cdm_set == NULL || !cdm_set[doc->cdm_db->set].set )
 		return MINUS_DECLINE;
 
-    free_parser((parser_t*)doc->data);
+    sb_run_xmlparser_free_parser((parser_t*)doc->data);
 	sb_free(doc);
 
 	return SUCCESS;
@@ -417,8 +417,6 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 	if ( cdm_set == NULL || !cdm_set[cdm_db->set].set )
 		return DECLINE;
 	db = (cdm_db_custom_t*) cdm_db->db;
-
-    CRIT("=======size[%d], strlen[%d], txt[%s]", size, strlen(xmldoc), xmldoc+strlen(xmldoc)-20);
 
 	p = sb_run_xmlparser_parselen("CP949", xmldoc, size);
 	if ( p == NULL ) {
@@ -512,7 +510,6 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		return CDM2_PUT_OID_DUPLICATED;
 	}
 	else {
-	    sb_run_xmlparser_free_parser(p);
 		return SUCCESS;
 	}
 
@@ -550,6 +547,8 @@ static int cdm_get_xmldoc(cdm_db_t* cdm_db, uint32_t docid, char* buf, size_t si
 		crit("cdm_db(ifs) read failed. did[%u], ret: %d", docid, ret);
 		return FAIL;
 	}
+
+    buf[size] = '\0';
 
 	DEBUG("ret[%d] of cdm_db(ifs) read with did:%u)",ret, docid);
 	if ( ret < length ) {
