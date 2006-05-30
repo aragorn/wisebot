@@ -743,6 +743,12 @@ static int init() {
 	if ( ipc.attr == MMAP_CREATED )
 		memset( indexer_shared, 0, ipc.size );
 
+	/* some information about some data structure */
+	info("sizeof(standard_hit_t) = %d", sizeof(standard_hit_t));
+	info("sizeof(hit_t) = %d", sizeof(hit_t));
+	info("sizeof(doc_hit_t) = %d", sizeof(doc_hit_t));
+	info("STD_HITS_LEN = %d", STD_HITS_LEN);
+
 	return SUCCESS;
 }
 

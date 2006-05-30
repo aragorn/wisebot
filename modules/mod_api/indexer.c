@@ -8,7 +8,6 @@ HOOK_STRUCT(
 	HOOK_LINK(index_each_doc)
 	HOOK_LINK(index_one_doc)
 	HOOK_LINK(last_indexed_did)
-	HOOK_LINK(print_forwardidx)
 
 	HOOK_LINK(get_para_position)
 	HOOK_LINK(get_position)
@@ -27,11 +26,6 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int,index_one_doc,\
 		(did,wordhit,hitsize,hitidx),DECLINE )
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(uint32_t,last_indexed_did, (void),(),MINUS_DECLINE)
-
-SB_IMPLEMENT_HOOK_RUN_FIRST(int,print_forwardidx,\
-	(VariableRecordFile *v,uint32_t did,\
-	 char *field, char bprinthits, FILE* stream),\
-	(v,did,field,bprinthits,stream),DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int,get_para_position,(hit_t *hit), (hit), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(uint32_t,get_position,(hit_t *hit), (hit), DECLINE)

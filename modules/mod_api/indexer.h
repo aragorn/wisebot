@@ -2,11 +2,11 @@
 #ifndef INDEXER_H
 #define INDEXER_H 1
 
+#include <stdint.h> /* uint32_t */
+
 #define MAX_STD_FIELD	32
 #define MAX_EXT_FIELD	64 /* XXX: obsolete? no, it's used in mod_qpp/tokenizer.c FIXME*/
 #define MAX_FIELD_STRING SHORT_STRING_SIZE
-
-#include "vrfi.h"
 
 typedef union hit_t hit_t;
 typedef struct doc_hit_t doc_hit_t;
@@ -22,7 +22,6 @@ typedef struct {
 	uint32_t position	:12; /* max 2^12-1=4095 */
 	uint8_t type		:1; /* 0 */
 	uint8_t field		:3; /* max 2^3-1=7 */
-//	uint8_t dummy;
 }__attribute__((packed)) standard_hit_t;
 #else
 typedef struct {
@@ -49,16 +48,14 @@ union hit_t {
 #ifdef SKT_BMT
 struct doc_hit_t {
 	uint32_t	id;
-	uint8_t	field;  /* bitmask for occurence of each field */
-//	uint32_t	field;  /* bitmask for occurence of each field */
-	uint8_t 	hitratio; /* 包访己 khyang*/
+	uint8_t     field;  /* bitmask for occurence of each field */
+	uint8_t     hitratio; /* 包访己 khyang*/
 	hit_t		hits[STD_HITS_LEN];
 	uint8_t	nhits;
-//	uint8_t dummy[3]; // for address align
 }__attribute__((packed));
 #else
 struct doc_hit_t {
-	uint32_t	id :24;
+	uint32_t	id;
 	uint32_t	field;  /* bitmask for occurence of each field */
 	uint8_t 	hitratio; /* 包访己 khyang*/
 	hit_t		hits[STD_HITS_LEN];
@@ -102,9 +99,6 @@ SB_DECLARE_HOOK(int,index_each_doc, \
 SB_DECLARE_HOOK(int,index_one_doc, \
 	(uint32_t did,word_hit_t *wordhit,uint32_t hitsize,uint32_t *hitidx) )
 SB_DECLARE_HOOK(uint32_t,last_indexed_did,(void))
-SB_DECLARE_HOOK(int, print_forwardidx,\
-  (VariableRecordFile *v, uint32_t did, \
-   char *field, char bprinthits, FILE* stream))
 
 SB_DECLARE_HOOK(int,get_para_position,(hit_t *hit))
 SB_DECLARE_HOOK(uint32_t,get_position,(hit_t *hit))

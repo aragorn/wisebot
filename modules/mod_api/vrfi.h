@@ -2,6 +2,8 @@
 #ifndef VRFI_H
 #define VRFI_H 1
 
+#warning *** Using vrfi.h is deprecated as of 2006/05/30. Please use ifs instead. ***
+
 #include <stdint.h> /* uint32_t */
 
 typedef struct VariableRecordFile VariableRecordFile;
