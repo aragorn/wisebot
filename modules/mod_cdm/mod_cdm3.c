@@ -266,7 +266,8 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
     }
 
 	if ( cdm_set == NULL || !cdm_set[cdm_db->set].set )
-		return DECLINE;
+		return MINUS_DECLINE;
+
 	db = (cdm_db_custom_t*) cdm_db->db;
 
 	if ( docid > db->shared->last_docid ) return CDM2_GET_INVALID_DOCID;
@@ -280,10 +281,6 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
     (*doc)->cdm_db = cdm_db;
     (*doc)->docid = docid;
     (*doc)->deleted = deleted;
-
-	if ( cdm_set == NULL || !cdm_set[cdm_db->set].set )
-		return MINUS_DECLINE;
-	db = (cdm_db_custom_t*) cdm_db->db;
 
 	length = sb_run_indexdb_getsize( db->ifs, docid );
 	if ( length == INDEXDB_FILE_NOT_EXISTS ) {
@@ -469,7 +466,7 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 	 *******************/
 	if ( sb_run_indexdb_append( db->ifs, *newdocid, size, (void*)xmldoc ) == FAIL ) {
 		error("cdm_db(ifs) append failed. did[%u], oid[%s]", *newdocid, oid);
-		return FAIL;
+		goto error;
 	}
 
 	/************************
@@ -479,7 +476,10 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 	db->shared->last_docid = *newdocid;
     RELEASE_LOCK()
 
-	if ( oid_duplicated ) return CDM2_PUT_OID_DUPLICATED;
+	if ( oid_duplicated ) {
+	    sb_run_xmlparser_free_parser(p);
+		return CDM2_PUT_OID_DUPLICATED;
+	}
 	else {
 	    sb_run_xmlparser_free_parser(p);
 		return SUCCESS;
