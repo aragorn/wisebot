@@ -322,6 +322,8 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
 
     if(length >= DOCUMENT_SIZE) {
 	    warn("document[%d] size[%d] larger than buffer size[%d]", docid, length, DOCUMENT_SIZE);
+	} else {
+        length = DOCUMENT_SIZE-1;
 	}
 
 	ret = sb_run_indexdb_read( db->ifs, docid, 0, length, (void*)xml_doc );
@@ -329,6 +331,7 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
 		crit("cdm_db(ifs) read failed. did[%d], ret: %d", docid, ret);
 		return FAIL;
 	}
+    xml_doc[length] = '\0';
 
 	DEBUG("ret[%d] of cdm_db(ifs) read with did:%u)",ret, docid);
 	if ( ret < length ) {
@@ -539,7 +542,7 @@ static int cdm_get_xmldoc(cdm_db_t* cdm_db, uint32_t docid, char* buf, size_t si
     if(length >= size) {
 	    warn("document[%d] size[%d] larger than buffer size[%d]", docid, length, size);
 	} else {
-        size = length;
+        size = length-1;
 	}
 
 	ret = sb_run_indexdb_read( db->ifs, docid, 0, size, (void*)buf );
