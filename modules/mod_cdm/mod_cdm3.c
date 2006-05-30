@@ -282,6 +282,7 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
 	cdm_db_custom_t* db;
 	int deleted, ret;
     int length = 0;
+	int read_bytes = 0;
 	parser_t* p = NULL;
 
     static char *xml_doc = NULL;
@@ -322,11 +323,12 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
 
     if(length >= DOCUMENT_SIZE) {
 	    warn("document[%d] size[%d] larger than buffer size[%d]", docid, length, DOCUMENT_SIZE);
+		read_bytes = DOCUMENT_SIZE-1;
 	} else {
-        length = DOCUMENT_SIZE-1;
+        read_bytes = length-1;
 	}
 
-	ret = sb_run_indexdb_read( db->ifs, docid, 0, length, (void*)xml_doc );
+	ret = sb_run_indexdb_read( db->ifs, docid, 0, read_bytes, (void*)xml_doc );
 	if ( ret < 0 ) {
 		crit("cdm_db(ifs) read failed. did[%d], ret: %d", docid, ret);
 		return FAIL;
@@ -394,8 +396,6 @@ static int cdmdoc_get_field(cdm_doc_t* doc, const char* fieldname, char* buf, si
 
 static int cdmdoc_destroy(cdm_doc_t* doc)
 {
-	cdm_doc_custom_t* doc_custom;
-
 	if ( cdm_set == NULL || !cdm_set[doc->cdm_db->set].set )
 		return MINUS_DECLINE;
 
@@ -523,6 +523,7 @@ static int cdm_get_xmldoc(cdm_db_t* cdm_db, uint32_t docid, char* buf, size_t si
 {
     int ret = 0;
     int length = 0;
+	int read_bytes = 0;
     cdm_db_custom_t* db = NULL;
 
 	if ( cdm_set == NULL || !cdm_set[cdm_db->set].set )
@@ -541,11 +542,12 @@ static int cdm_get_xmldoc(cdm_db_t* cdm_db, uint32_t docid, char* buf, size_t si
 
     if(length >= size) {
 	    warn("document[%d] size[%d] larger than buffer size[%d]", docid, length, size);
+		read_bytes = size-1;
 	} else {
-        size = length-1;
+		read_bytes = length-1;
 	}
 
-	ret = sb_run_indexdb_read( db->ifs, docid, 0, size, (void*)buf );
+	ret = sb_run_indexdb_read( db->ifs, docid, 0, read_bytes, (void*)buf );
 	if ( ret < 0 ) {
 		crit("cdm_db(ifs) read failed. did[%u], ret: %d", docid, ret);
 		return FAIL;
