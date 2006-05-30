@@ -32,13 +32,22 @@ mod_xmlparser_la_CFLAGS  = -fno-strict-aliasing
 check_PROGRAMS = teststree testparser
 
 testparser_SOURCES = testparser.c parser.c dh.c stack.c checksum.c
-testparser_CFLAGS  = -fno-strict-aliasing
-testparser_LDADD   = $(libdir)/libcommon_core.la \
-                     $(LIBEXPAT_LA) $(LIBICONV_LA)
-testparser_LDFLAGS = -export-dynamic $(DYN_LIB) $(THREAD_LIB)
+if SOLARIS
+testparser_LDADD = $(libdir)/libexpat.la \
+                   $(libdir)/libiconv.la \
+                   $(libdir)/libsoftbot.la
+else
+if CYGWIN
+testparser_LDADD = $(libdir)/libsoftbot.la
+else
+testparser_LDADD = $(libdir)/libexpat.la \
+                   $(libdir)/libsoftbot.la
+endif
+endif
+testparser_LDFLAGS = -export-dynamic $(DYN_LIB)
 
-teststree_SOURCES  = teststree.c simpletree.c
-teststree_CFLAGS  = -fno-strict-aliasing
-teststree_LDADD    = $(libdir)/libcommon_core.la
+teststree_SOURCES = teststree.c simpletree.c
+teststree_LDADD   = $(libdir)/libsoftbot.la
+teststree_LDFLAGS = -export-dynamic $(DYN_LIB)
 
 include ../install-pkglib.mk
