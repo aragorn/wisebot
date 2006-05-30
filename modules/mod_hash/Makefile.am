@@ -8,7 +8,7 @@ mod_bdb_hash_la_SOURCES = mod_bdb_hash.c
 mod_bdb_hash_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_bdb_hash_la_LIBADD = $(libdir)/libcommon_core.la \
                          $(libdir)/libdb-4.3.la \
-                         $(libdir)/$(PACKAGE)/mod_api.la
+                         $(pkglibdir)/mod_api.la
 
 include ../install-pkglib.mk
 

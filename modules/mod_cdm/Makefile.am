@@ -10,7 +10,7 @@ mod_cdm_la_SOURCES = mod_cdm.c indexHandle.c \
 #					 syncManager.c cannedDocServer.h mod_cdm.h 
 mod_cdm_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_cdm_la_LIBADD  = $(libdir)/libcommon_core.la \
-                     $(libdir)/$(PACKAGE)/mod_api.la
+                     $(pkglibdir)/mod_api.la
 
 mod_cdm2_la_SOURCES = mod_cdm2.c indexHandle.c cannedDocServer.h \
                       mod_cdm2_lock.h \

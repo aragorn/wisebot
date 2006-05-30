@@ -8,10 +8,8 @@ pkglib_LTLIBRARIES   = mod_bigram.la \
                        mod_rmas.la mod_rmac2.la \
                        mod_koma.la \
                        mod_dummy_ma.la \
-                       mod_kor2chn_translator.la
-if USE_DAUM_KOMA
-pkglib_LTLIBRARIES  += mod_daum_koma.la
-endif
+                       mod_kor2chn_translator.la \
+                       mod_daum_koma.la
 
 lib_LTLIBRARIES      = liboldcodetrans.la
 
@@ -55,6 +53,9 @@ mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 if USE_DAUM_KOMA
 mod_daum_koma_la_SOURCES = mod_daum_koma.c
 mod_daum_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
+else
+mod_daum_koma_la_SOURCES = 
+mod_daum_koma_la_LDFLAGS = -module -avoid-version 
 endif
 
 include ../install-pkglib.mk

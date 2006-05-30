@@ -16,6 +16,7 @@ mod_httpd_la_LDFLAGS = -module -avoid-version -no-undefined \
                        $(APR_LDFLAGS) $(APU_LDFLAGS)
 mod_httpd_la_LIBADD  = $(libdir)/libcommon_core.la \
                        $(libdir)/libcommon_util.la \
+                       $(pkglibdir)/mod_api.la \
                        $(APR_LIBS) $(APU_LIBS) 
 mod_httpd_la_CFLAGS  = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
 mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \

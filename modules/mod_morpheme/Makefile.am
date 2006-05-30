@@ -4,8 +4,6 @@ include $(top_builddir)/Make.defs
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
 pkglib_LTLIBRARIES = mod_morpheme.la
-#					  mod_bigram.la 
-#					  mod_koma.la 
 
 mod_morpheme_la_SOURCES = mod_morpheme.c \
 				lib/ma.c lib/ma_kor.c lib/ma_eng.c \
@@ -14,23 +12,7 @@ mod_morpheme_la_SOURCES = mod_morpheme.c \
 				lib/ma_data.c lib/mak_data.c lib/ma_code.c \
 				lib/lb_std.c lib/lb_lex.c \
 				mod_morpheme.h 
-mod_morpheme_la_LDFLAGS = -module -avoid-version
-
-#mod_koma_la_SOURCES = mod_koma.c \
-#				koma/FST.cc koma/HanTagAPI.cc \
-#				koma/Koma.cc koma/KomaAPI.cc \
-#				koma/KomaRsc.cc koma/Taganal.cc \
-#				koma/Tagger.cc koma/TaggerRsc.cc \
-#				koma/core.cc koma/hcc98.cc \
-#				koma/ph.cc koma/predict.cc\
-#				koma/conv_chn.cc \
-#				mod_koma.h
-#mod_koma_la_LDFLAGS = -module -avoid-version
-
-#mod_bigram_la_SOURCES = mod_bigram.c mod_bigram.h \
-						lib/ma_code.c lib/ma_chn.h 
-
-#mod_bigram_la_LDFLAGS = -module -avoid-version
+mod_morpheme_la_LDFLAGS = -module -avoid-version -no-undefined
 
 EXTRA_DIST = lib
 

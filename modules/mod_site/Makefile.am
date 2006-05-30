@@ -19,7 +19,7 @@ mod_supreme_court_la_SOURCES = $(mod_supreme_court_precedent_la_SOURCES) \
 		$(mod_supreme_court_regulation_la_SOURCES) \
 		$(mod_supreme_court_statute_la_SOURCES) \
 		$(mod_supreme_court_legalj_la_SOURCES)
-mod_supreme_court_la_LDFLAGS = -module -avoid-version
+mod_supreme_court_la_LDFLAGS = -module -avoid-version -no-undefined
 
 mod_supreme_court_precedent_la_SOURCES = mod_docattr_supreme_precedent.c \
 									     mod_docattr_supreme_precedent.h \

@@ -13,12 +13,12 @@ mod_http_client_la_SOURCES = mod_http_client.c mod_http_client.h \
 mod_http_client_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_http_client_la_LIBADD = $(libdir)/libcommon_core.la \
                             $(libdir)/libcommon_util.la \
-                            $(libdir)/$(PACKAGE)/mod_api.la
+                            $(pkglibdir)/mod_api.la
 
 test_http_client_la_SOURCES = test_http_client.c 
 test_http_client_la_LDFLAGS = -module -avoid-version -no-undefined
 test_http_client_la_LIBADD = $(libdir)/libcommon_core.la \
                              $(libdir)/libcommon_util.la \
-                             $(libdir)/$(PACKAGE)/mod_api.la
+                             $(pkglibdir)/mod_api.la
 
 include ../install-pkglib.mk

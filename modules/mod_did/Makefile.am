@@ -16,14 +16,14 @@ mod_did_la_SOURCES = mod_did.c mod_did.h
 mod_did_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_did_la_LIBADD  = $(libdir)/libcommon_core.la \
                      $(libdir)/libcommon_util.la \
-                     $(libdir)/$(PACKAGE)/mod_api.la
+                     $(pkglibdir)/mod_api.la
 
 
 mod_did2_la_SOURCES = mod_did2.c
 mod_did2_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_did2_la_LIBADD  = $(libdir)/libcommon_core.la \
                       $(libdir)/libcommon_util.la \
-                      $(libdir)/$(PACKAGE)/mod_api.la
+                      $(pkglibdir)/mod_api.la
 
 #mod_did_daemon_la_SOURCES = mod_did_daemon.c \
 #							mod_did_client.h mod_did_daemon.h \

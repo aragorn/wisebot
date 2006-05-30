@@ -4,7 +4,6 @@
 SUBDIRS = mod_api \
 	mod_mp \
 	mod_tcp mod_udp \
-	mod_vrfi\
 	mod_vbm \
 	mod_cdm \
 	mod_docattr \
@@ -27,7 +26,8 @@ SUBDIRS = mod_api \
 	mod_http_client \
     #
 #	mod_hash
-	
+#
+#	mod_vrfi\
 #	mod_spool \
 #	mod_vrf \
 #	mod_oldlexicon \
