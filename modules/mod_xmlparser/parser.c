@@ -780,6 +780,9 @@ static int parse_with_expat(parser_t *p, const char *xmltext, const int len)
 		error("cannot parse xml document: at line %d: %s",
 		       XML_GetCurrentLineNumber(expat),
 		       XML_ErrorString(XML_GetErrorCode(expat)));
+		st_destroy(data.st);
+		sb_free(stack);
+		XML_ParserFree(expat);
 		ret = -1;
 	}
 
