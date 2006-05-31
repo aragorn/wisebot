@@ -165,6 +165,7 @@ int __sfs_deactivate(ifs_t* ifs, int p)
 	sfs_destroy(ifs->local.sfs[p]);
 
 	ifs->local.sfs[p] = NULL;
+	ifs->local.sfs_fd[p] = 0;
 
 	return SUCCESS;
 }
