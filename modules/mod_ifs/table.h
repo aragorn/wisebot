@@ -16,7 +16,7 @@
 #define DEFRAGMENT     (2)     /* defragment process에 의해서 할당되는 segment - defragment process 만이 변경가능함 */
 #define TEMP           (3)     /* ALLOCATED -> EMPTY로 전이할때의 중간단계 append process에 의해 변경 */
 
-#define MAX_SECTOR_COUNT  100    /* max sector */
+#define MAX_SECTOR_COUNT  200    /* max sector */
 #define MAX_SEGMENT_COUNT (16)   /* MAX_FILE_SIZE / segement_size(256M) */
 #define MAX_LOGICAL_COUNT (MAX_SECTOR_COUNT*MAX_SEGMENT_COUNT*2) /* NOT_USE를 커버하기 위해.. */
 

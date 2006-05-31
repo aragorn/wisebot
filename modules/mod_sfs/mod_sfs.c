@@ -773,8 +773,8 @@ static int __write_superblock(sfs_t* sfs)
 	// mmap이므로 따로 기록할 필요 없음
 	if ( sfs->type != O_UNLOAD ) return SUCCESS;
 	
-	if(sfs_block_write(sfs, SUPER_BLOCK_NUM * sfs->super_block->block_size,
-				sizeof(super_block_t), (void*) sfs->super_block) != SUCCESS) {
+	if (sfs_block_write(sfs, SUPER_BLOCK_NUM * sfs->super_block->block_size,
+				sizeof(super_block_t), (void*) sfs->super_block) != SUCCESS ) {
 		error("cannot write super block");
 		return FAIL;
 	}

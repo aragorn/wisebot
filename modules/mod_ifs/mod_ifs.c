@@ -67,16 +67,16 @@ int ifs_init()
 	return SUCCESS;
 }
 
-int __file_open(ifs_t* ifs, int sec)
+int __file_open(ifs_t* ifs, int sector)
 {
-	if(ifs->local.sfs_fd[sec] <= 0) {
-		sprintf(ifs->local.full_path[sec], "%s%c%s_%d", ifs->shared->root_path, PATH_SEP, SFS_FILE_NAME, sec);
-		info("open %s", ifs->local.full_path[sec]);
-		ifs->local.sfs_fd[sec] = sb_open(ifs->local.full_path[sec], O_RDWR|O_CREAT, S_IREAD|S_IWRITE);
-		if(ifs->local.sfs_fd[sec] == -1) {
-			error("can't open file[%s] : %s", ifs->local.full_path[sec], strerror(errno));
+	if(ifs->local.sfs_fd[sector] <= 0) {
+		sprintf(ifs->local.full_path[sector], "%s%c%s_%d", ifs->shared->root_path, PATH_SEP, SFS_FILE_NAME, sector);
+		ifs->local.sfs_fd[sector] = sb_open(ifs->local.full_path[sector], O_RDWR|O_CREAT, S_IREAD|S_IWRITE);
+		if(ifs->local.sfs_fd[sector] == -1) {
+			error("can't open file[%s] for sector[%d]: %s", ifs->local.full_path[sector], sector, strerror(errno));
 			return FAIL;
 		}
+		info("open(%s) for sector[%d] returned fd[%d]", ifs->local.full_path[sector], sector, ifs->local.sfs_fd[sector]);
 	}
 
 	return SUCCESS;
@@ -115,6 +115,7 @@ int __sfs_activate(ifs_t* ifs, int p, int type, int do_format, int format_option
 				  p, ifs->local.sfs_fd[p], offset);
 			return FAIL;
 		}
+		info("created a sfs, sfs[%d], fd[%d], offset[%d]", p, ifs->local.sfs_fd[p], offset);
 	}
 
 	if( do_format ) {
@@ -440,7 +441,7 @@ int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf)
 	        info("sfs is full, append_segment[%d], size[%d], append_byte[%d]", append_segment, size, append_byte);
 
 			if(table_allocate(&ifs->shared->mapping_table, &free_segment, INDEX) != SUCCESS) {
-				error("cannot allocation fail, state[%d]", INDEX);
+				error("failed to allocate a free segment, state[%d]", INDEX);
 				goto fail;
 			}
 
@@ -454,7 +455,7 @@ int ifs_append(index_db_t* indexdb, int file_id, int size, void* buf)
 			acquire_lock(ifs->local.lock);
 
 			if(table_update_last_logical_segment(&ifs->shared->mapping_table, free_segment) != SUCCESS) {
-				error("cannot add logical segment, maybe logical segment is full, segment[%d]",
+				error("cannot add the logical segment, maybe logical segment is full, segment[%d]",
 					physical_segment);
 				goto fail;
 			}
