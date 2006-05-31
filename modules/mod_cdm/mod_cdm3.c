@@ -471,6 +471,7 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 
 	sb_run_xmlparser_free_parser(p);
 
+    ACQUIRE_LOCK()
 	/////////////////////////////////////////
 	// did 생성 가져오기
 	ret = sb_run_get_new_docid(did_db, oid, newdocid, olddocid);
@@ -487,7 +488,6 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 	}
 
 	/////////////////////////////////////////
-    ACQUIRE_LOCK()
 	if ( *newdocid != db->shared->last_docid+1 ) {
 		warn("newdocid[%"PRIu32"] != last_docid of cdm[%"PRIu32"]+1",
 				*newdocid, db->shared->last_docid);
