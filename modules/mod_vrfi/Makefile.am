@@ -8,8 +8,8 @@ mod_vrfi_la_SOURCES = mod_vrfi.c mod_vrfi.h \
 					  data_handle.c data_handle.h \
 					  header_handle.c header_handle.h
 mod_vrfi_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_vbm_la_LIBADD  = $(libdir)/libcommon_core.la \
-                     $(pkglibdir)/mod_api.la
+mod_vrfi_la_LIBADD  = $(libdir)/libcommon_core.la \
+                      $(pkglibdir)/mod_api.la
 
 check_PROGRAMS = mod_vrfi_test
 mod_vrfi_test_SOURCES = mod_vrfi.c mod_vrfi.h \

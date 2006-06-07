@@ -10,7 +10,6 @@ mod_qp_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_qp_la_LIBADD  = $(libdir)/libcommon_core.la \
                     $(pkglibdir)/mod_api.la \
                     -lm
-mod_qp_la_LDFLAGS = -module -avoid-version -lm
 
 mod_qp2_la_SOURCES = mod_qp2.c
 mod_qp2_la_LDFLAGS = -module -avoid-version -no-undefined
