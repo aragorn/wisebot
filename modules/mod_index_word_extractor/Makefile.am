@@ -50,13 +50,13 @@ mod_koma_la_SOURCES = mod_koma.c mod_koma.h \
                       mod_koma_complex_noun_support.h
 mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 
-#if USE_DAUM_KOMA
+if USE_DAUM_KOMA
 mod_daum_koma_la_SOURCES = mod_daum_koma.c
 mod_daum_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
-#else
-#mod_daum_koma_la_SOURCES = 
-#mod_daum_koma_la_LDFLAGS = -module -avoid-version 
-#endif
+else
+mod_daum_koma_la_SOURCES = 
+mod_daum_koma_la_LDFLAGS = -module -avoid-version 
+endif
 
 include ../install-pkglib.mk
 

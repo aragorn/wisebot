@@ -26,17 +26,17 @@ add_index_word (index_word_t *index_word, token_t *token, int32_t pos)
 */
 
 static void
-append_index_word (index_word_t *index_word, char *token, int32_t pos)
+append_index_word (index_word_t *index_word, token_t *token, int32_t pos)
 {
 	int left;
 	index_word->pos = pos;
 	left = MAX_WORD_LEN - index_word->len > 0 ? MAX_WORD_LEN - index_word->len : 0;
-	strncat(index_word->word, token, left);
+	strncat(index_word->word, token->string, left);
 	if (left == 0) {
 		index_word->word[MAX_WORD_LEN-1] = '\0';
 	}
 
-	index_word->len += strlen(token);
+	index_word->len += token->len;
 	if (index_word->len > MAX_WORD_LEN-1) index_word->len = MAX_WORD_LEN-1;
 
 
