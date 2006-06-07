@@ -128,6 +128,11 @@ static int append_xml_msg_record(request_rec *r, msg_record_t *msg){
     int nRet;
     char buf[MAX_RECORDED_MSG_LEN];
 
+    if(msg == NULL) {
+        warn("msg is null");
+        return FAIL;
+    }
+
     if (strncmp(r->content_type, "text/xml", 8) != 0 ){/*strlen("text/xml")*/
         error("invalid content_type[%s]", r->content_type);
         return FAIL;
