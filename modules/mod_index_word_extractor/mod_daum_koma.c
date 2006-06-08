@@ -143,7 +143,6 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t *ind
 					
 					rptr++;
 					word = rptr;
-					(*pos)++;
 
 					//index_word[index_word_idx].bytepos = current_token->byte_position;
 					index_word_idx++;
@@ -154,6 +153,8 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t *ind
 			case TOKEN_END_OF_WORD:      // 종결 토큰 
 			case TOKEN_END_OF_SENTENCE: 
 			case TOKEN_END_OF_PARAGRAPH:
+				// word 포지션 증가.
+				(*pos)++;
 				break; 
 
 		} // switch  
