@@ -139,6 +139,7 @@ static char* output_style_str[] = { "XML", "SOFTBOT4", };
 
 // function protoype
 static int	get_start_comment(char *pszStr, int lPosition);
+static int	get_start_comment_dha(char *txt, int start_word_pos);
 
 static int init_response(response_t* res);
 static int init_request(request_t* res, char* query);
@@ -2154,7 +2155,12 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 							int summary_pos = 0;
 							memset(summary, 0x00, 210);
 
-							summary_pos = get_start_comment(field_value, doc_hits->hits[m].std_hit.position-4);
+#ifdef USE_DAUM_KOMA
+							summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
+#else
+							summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
+#endif
+//warn("field_value[%s], summary_pos[%d], position[%u]", field_value, summary_pos, doc_hits->hits[m].std_hit.position);
 							strncpy(summary, field_value + summary_pos, 201);
 							cut_string( summary, 200 );
 							exist_summary = 1;
@@ -2226,6 +2232,52 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 
 	memfile_free(buffer);
 	return SUCCESS;
+}
+
+
+#define IS_WHITE(c)     ((c == ' ') || (c == '\t') || (c == '\r') || (c == '\n'))
+static int	get_start_comment_dha(char *txt, int start_word_pos)
+{
+    int word_pos = 0;
+    char* p = txt;
+    int byte_pos = 0;
+    int c = 0;
+
+	if (p == NULL) return 0;
+    if (start_word_pos < 0) return 0;
+
+    while(1) {
+        if(p == NULL) break;
+
+        c = *p;
+
+		if(IS_WHITE(c)) {
+/*
+           char buf[128];
+           strncpy(buf, p, 32);
+           buf[32] = '\0';
+           debug("word[%s]", buf);
+*/
+		   word_pos++;
+		}
+
+		byte_pos++;
+
+        p++;
+//info("word_pos[%d], byte_pos[%d]", word_pos, byte_pos);
+        if(word_pos == start_word_pos) break;
+		if(*p == '\0') return 0;
+    } 
+
+	// 뒤가 너무 짧으면.
+	/*
+	if( strlen(txt) - byte_pos < 150) {
+		byte_pos = strlen(txt) - 150; // summary를 210만 출력한다. 150 정도로 해준다.
+		if(byte_pos < 0) byte_pos = 0;
+	}
+	*/
+
+    return byte_pos;
 }
 
 static int	get_start_comment(char *pszStr, int lPosition)
