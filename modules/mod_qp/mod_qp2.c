@@ -2158,7 +2158,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 #ifdef USE_DAUM_KOMA
 							summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
 #else
-							summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
+							summary_pos = get_start_comment(field_value, doc_hits->hits[m].std_hit.position-4);
 #endif
 //warn("field_value[%s], summary_pos[%d], position[%u]", field_value, summary_pos, doc_hits->hits[m].std_hit.position);
 							strncpy(summary, field_value + summary_pos, 201);
