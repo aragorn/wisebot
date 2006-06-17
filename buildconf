@@ -3,9 +3,9 @@
 #
 # buildconf: Build the autoconfiguration files.
 
-#set -x
+set -x
 
-trap 'rm -f aclocal.m4 ; exit 0' 0 1 2 3 13 15
+trap 'rm -f aclocal.m4 ; exit 0' 1 2 3 13 15
 
 while test $# -gt 0
 do
@@ -24,30 +24,16 @@ do
   shift
 done
 
-
 ###############################################################################
-echo building ${SB_VERSION_STRING}
-
-#rm -f aclocal.m4
-echo running aclocal -I build ...
 aclocal -I build
 
-echo running libtoolize --automake --force --copy ...
 #rm -f libtool
-ln -s configure.ac configure.in
+#ln -s configure.ac configure.in
 libtoolize --automake --force --copy
-rm -f configure.in
+#rm -f configure.in
 
-echo running autoheader ...
-#rm -f include/auto_config.h.in
 autoheader
-#  chmod 444 include/auto_config.h.in
-
-echo running automake --foreign --add-missing --copy --force ...
-automake --foreign --add-missing --copy --force
-
-echo running autoconf to build configure
-#rm -f configure
+automake --add-missing --copy --force
 autoconf
 
 exit 0

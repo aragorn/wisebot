@@ -14,10 +14,8 @@ AC_CONFIG_AUX_DIR([build])
 
 AC_CANONICAL_HOST()
 
-# AM_INIT_AUTOMAKE with package, version argument is deprecated in above automake 1.5.
-# The third argument of no-define indicates that this options are not valid.
-# --aragorn, 2005/02/22
-AM_INIT_AUTOMAKE(SoftBot, 6.0.0, no-define)
+AM_INIT_AUTOMAKE([foreign])
+#AM_INIT_AUTOMAKE([foreign no-dependencies])
 AM_CONFIG_HEADER([include/auto_config.h])
 dnl AC_CONFIG_HEADER(include/auto_config.h)
 
