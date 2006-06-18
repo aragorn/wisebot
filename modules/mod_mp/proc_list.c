@@ -1,5 +1,8 @@
+/* $Id$ */
+#include <time.h>
+#include "common_core.h"
+#include "memory.h"
 #include "proc_list.h"
-#include "softbot.h"
 
 #define RESTART_DELAY 10
 

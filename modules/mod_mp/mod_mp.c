@@ -14,7 +14,6 @@
 #include "scoreboard.h"
 #include "modules.h"
 #include "memory.h"
-#include "mp_api.h"
 #include "mod_mp.h"
 #include "proc_list.h"
 
