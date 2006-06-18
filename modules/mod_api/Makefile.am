@@ -1,8 +1,8 @@
 # $Id$
 include $(top_builddir)/Make.defs
 
-noinst_LIBRARIES = libapi_common.a
-libapi_common_a_SOURCES = \
+lib_LTLIBRARIES = libapi_common.la
+libapi_common_la_SOURCES = \
 				mod_api.c mod_api.h \
 				lexicon.c lexicon.h \
 				cdm.c cdm.h \
@@ -27,8 +27,9 @@ libapi_common_a_SOURCES = \
 				http_client.c http_client.h \
 				httpd.c httpd.h \
 				sbhandler.c sbhandler.h
-libapi_common_a_CFLAGS  = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
-#libapi_common_a_LDFLAGS = -static 
+libapi_common_la_CFLAGS  = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+libapi_common_la_LDFLAGS = -shared -avoid-version -no-undefined
+libapi_common_la_LIBADD  = $(libdir)/libcommon_core.la $(APR_LIBS) $(APU_LIBS)
 
 SOURCE_FILES1 = qp.c qp.h \
 				docattr.c docattr.h
@@ -39,10 +40,14 @@ SOURCE_FILES2 = qp2.c qp2.h \
 pkglib_LTLIBRARIES = mod_api.la mod_api2.la
 mod_api_la_SOURCES = $(SOURCE_FILES1)
 mod_api_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_api_la_LIBADD  = libapi_common.a $(libdir)/libcommon_core.la $(APR_LIBS) $(APU_LIBS)
+mod_api_la_LIBADD  = libapi_common.la $(libdir)/libcommon_core.la
 
 mod_api2_la_SOURCES = $(SOURCE_FILES2)
 mod_api2_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_api2_la_LIBADD  = libapi_common.a $(libdir)/libcommon_core.la $(APR_LIBS) $(APU_LIBS)
+mod_api2_la_LIBADD  = libapi_common.la $(libdir)/libcommon_core.la
 
-include ../install-pkglib.mk
+#
+# README
+#   Some modules requires lib/softbot/mod_api.la or mod_api2.la,
+#   so we need to comment the next line out.
+#include ../install-pkglib.mk
