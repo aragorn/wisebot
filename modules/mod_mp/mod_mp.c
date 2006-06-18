@@ -1,5 +1,5 @@
 /* $Id$ */
-
+#include "common_core.h"
 #include <pthread.h>
 #include <unistd.h>  /* usleep(3) */
 #include <signal.h>
@@ -8,7 +8,6 @@
 #include <stdlib.h>  /* EXIT_SUCCESS .. */
 //#include <sys/types.h>
 #include <sys/wait.h>  /* waitpid(2) */
-#include "common_core.h"
 #include "hook.h"
 #include "log_error.h"
 #include "scoreboard.h"
@@ -20,7 +19,7 @@
 static void slow_start()
 {
 	//sleep(1);
-	usleep(100000); /* in micro second */
+	usleep(100*1000); /* 0.1 sec in micro second */
 }
 
 static void _do_nothing(int sig)
@@ -52,20 +51,6 @@ static void _reopen_log_error(int sig)
 {
 	reopen_error_log(gErrorLogFile, gQueryLogFile);
 	return;
-}
-
-static int set_sighandlers(int signum, void (*handler)(int))
-{
-	struct sigaction act;
-
-	memset(&act, 0x00, sizeof(act));
-//	act.sa_flags = SA_RESTART;
-	sigfillset(&act.sa_mask);
-
-	act.sa_handler = handler;
-	sigaction(signum, &act, NULL);
-
-	return SUCCESS;
 }
 
 static int set_default_sighandlers(void (*shutdown_handler)(int),
@@ -609,34 +594,22 @@ static int init_scoreboard(scoreboard_t *scoreboard)
 	return SUCCESS;
 }
 
-static void irst_init_scoreboard(scoreboard_t *s, char *name, int type, int slotnum)
-{
-	s->type = type;
-	s->name = name;
-	s->size = slotnum;
-	s->init = 0;
-	s->core = NULL;
-	s->shutdown = 0;
-	s->graceful_shutdown = 0;
-	s->period = 0;
-	s->slot = NULL;
-}
-	
 /*****************************************************************************/
 static void register_hooks(void)
 {
 	sb_hook_set_default_sighandlers(set_default_sighandlers,NULL,NULL,HOOK_MIDDLE);/*{{{*/
 	sb_hook_init_scoreboard(init_scoreboard,NULL,NULL,HOOK_MIDDLE);
+
 	sb_hook_spawn_processes(spawn_processes,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_monitor_processes(monitor_processes,NULL,NULL,HOOK_MIDDLE);
 
-	//sb_hook_monitor_threads(monitor_threads,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_spawn_threads(spawn_threads,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_monitor_threads(monitor_threads,NULL,NULL,HOOK_MIDDLE);
+
 	//sb_hook_spawn_process(spawn_process,NULL,NULL,HOOK_MIDDLE);
-	//sb_hook_spawn_threads(spawn_threads,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_spawn_processes_for_each_module(spawn_processes_for_each_module,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_spawn_process_for_module(spawn_process_for_module,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_monitor_processes_for_modules(monitor_processes_for_modules,NULL,NULL,HOOK_MIDDLE);
-	//sb_hook_first_init_scoreboard(first_init_scoreboard,NULL,NULL,HOOK_MIDDLE);
 }
 
 module mp_module = {
