@@ -1,7 +1,11 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "common_util.h"
 #include "mod_api/tcp.h"
 
+#include <errno.h>        /* errno */
+#include <unistd.h>       /* close(2) */
+#include <stdlib.h>       /* atoi(3) */
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>        /* getaddrinfo(3) */
