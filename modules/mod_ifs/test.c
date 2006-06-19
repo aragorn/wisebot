@@ -1,9 +1,17 @@
-#include "test.h"
-#include "../mod_sfs/mod_sfs.h"
-#include "../mod_sfs/shared_memory.h"
+/* $Id$ */
+#include "common_core.h"
+#include "ipc.h"
+#include "memory.h"
+#include "mod_sfs/shared_memory.h"
+#include "mod_sfs/mod_sfs.h"
 #include "mod_ifs_defrag.h"
+#include "test.h"
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h> /* O_RDWR,O_CREAT,... */
 
-static char path[]="../../dat/test/ifs";
+
+static char path[]="dat/test/ifs";
 
 /******************************************************************************/
 module *static_modules;
@@ -289,7 +297,7 @@ static void __read(ifs_test_input_t* t)
     for (i = 0; i < t->shared->append_count; i++) {
 		info("read testing[%d]...", i);
         id = t->local.test_order[i];
-        test_get_file_info(t, id-1, &f);
+        test_get_file_info(t, id, &f);
         ret = read_file(t, &f);
         if (ret == FAIL) {
                 crit("read_file(id[%d]) failed.", id);
@@ -338,7 +346,7 @@ static int __append(ifs_test_input_t* t)
 //		error("i = %d, max_append_count = %d", i, t->local.max_append_count);
 		
 			id = t->local.test_order[i];
-            test_get_file_info(t, id-1, &f);
+            test_get_file_info(t, id, &f);
             ret = append_file(t, &f);
             if (ret == FAIL) {
                     error("%d'th append_file(id[%d]) failed. this may mean that segment is full.", i, id);
@@ -346,7 +354,7 @@ static int __append(ifs_test_input_t* t)
                     return FAIL;
             }
 
-            test_set_file_info(t, id-1, &f);
+            test_set_file_info(t, id, &f);
             total_written_bytes += f.written_bytes;
             test_update_append_count(t, 1);
     }
@@ -361,7 +369,6 @@ int main(int argc, char* argv[], char* envp[])
 	ifs_test_input_t* t = NULL;
 	ifs_set_t local_ifs_set[MAX_INDEXDB_SET];
 
-	init_set_proc_title(argc, argv, envp);
 	log_setlevelstr("info");
 
 	temp_alive_time = 0;
