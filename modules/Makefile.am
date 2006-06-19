@@ -24,6 +24,7 @@ SUBDIRS = mod_api \
 	mod_httpd \
 	mod_httpd_handler \
 	mod_http_client \
+	mod_test \
     #
 #	mod_hash
 #

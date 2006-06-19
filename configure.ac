@@ -316,6 +316,7 @@ dnl AC_AIX
 
 
 CFLAGS="-Wall -g3 -O2"
+INCLUDES= "-I$(top_builddir)/modules"
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
@@ -503,5 +504,7 @@ AC_CONFIG_FILES([
     modules/mod_httpd/Makefile
     modules/mod_httpd_handler/Makefile
     modules/mod_http_client/Makefile
+
+    modules/mod_test/Makefile
 ])
 AC_OUTPUT
