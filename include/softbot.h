@@ -4,12 +4,13 @@
 
 #warning *** Using softbot.h is deprecated as of 2006/03/13. Please use common_core.h instead. ***
 
+#define _GNU_SOURCE
+
+#include "common_core.h"
+#include "common_util.h"
+
 
 #ifdef AIX5
-
-/* XXX AIX Porting FAQ 등을 좀 더 찾아볼 것. */
-//#define UNIX98  /* this makes _XOPEN_SOURCE defined as 500 */
-
 /* XXX install iconv library from srclib : make iconv-install
  *     we declare some iconv functions to be exported in server/sb.exp .
  */
@@ -23,17 +24,7 @@
 SB_DECLARE(iconv_t) iconv_open (const char* tocode, const char* fromcode);
 SB_DECLARE(size_t) iconv(iconv_t cd,  const char** inbuf, size_t *inbytesleft, char* * outbuf, size_t *outbytesleft);
 SB_DECLARE(int) iconv_close(iconv_t cd);
-
-#include <pthread.h>
-SB_DECLARE(int) pthread_mutex_init (pthread_mutex_t *, const pthread_mutexattr_t *);
-
-SB_DECLARE(int) pthread_mutex_lock (pthread_mutex_t *);
-SB_DECLARE(int) pthread_mutex_trylock (pthread_mutex_t *);
-
-SB_DECLARE(int) pthread_mutex_unlock (pthread_mutex_t *);
-SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #endif /* AIX5 */
-
 
 #include <assert.h>
 #include <signal.h>
@@ -56,9 +47,8 @@ SB_DECLARE(int) pthread_mutex_destroy (pthread_mutex_t *);
 #endif
 #include <inttypes.h>
 #include <getopt.h>
+#include <pthread.h>
 
-#include "common_core.h"
-#include "common_util.h"
 /* modules.h depends on registry.h and config.h and the order matters */
 #include "registry.h"
 #include "config.h"
