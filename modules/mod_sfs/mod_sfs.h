@@ -1,12 +1,6 @@
 /* $Id$ */
-#ifndef __MOD_SFS_H__
-#define __MOD_SFS_H__
-
-#ifdef WIN32
-#  include "wisebot.h"
-#else
-#  include "softbot.h"
-#endif
+#ifndef MOD_SFS_H
+#define MOD_SFS_H
 
 #include "sfs_types.h"
 

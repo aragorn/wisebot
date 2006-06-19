@@ -1,5 +1,7 @@
 /* $Id$ */
+#include "common_core.h"
 #include "super_block.h"
+#include <string.h> /* memcpy(3) */
 
 int superblock_add_file_count(super_block_t* s, int file_id)
 {

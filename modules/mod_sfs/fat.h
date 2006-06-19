@@ -1,7 +1,6 @@
 /* $Id$ */
-
-#ifndef __FAT_H__
-#define  __FAT_H__
+#ifndef FAT_H
+#define FAT_H
 
 #include "sfs_types.h"
 

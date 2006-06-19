@@ -1,5 +1,11 @@
 /* $Id$ */
+#include "common_core.h"
+#include "setproctitle.h"
 #include "mod_sfs.h"
+#include <errno.h>
+#include <string.h>
+#include <fcntl.h> /* O_RDWR,O_CREAT,... */
+#include <unistd.h> /* close(2) */
 #include <time.h>
 #include <stdlib.h>
 
@@ -8,12 +14,8 @@ static int block_size = 128;
 #ifdef WIN32
 static char path[]="sfs0";
 #else
-static char path[]="../../dat/test/sfs0";
+static char path[]="dat/test/sfs0";
 
-/******************************************************************************/
-char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
-char gErrorLogFile[MAX_PATH_LEN] = DEFAULT_ERROR_LOG_FILE;
-module *static_modules;
 /******************************************************************************/
 #endif
 
@@ -360,7 +362,7 @@ int main(int argc, char* argv[], char *envp[])
 	test_input_t t;
 
 #ifndef WIN32
-	init_set_proc_title(argc, argv, envp);
+	init_setproctitle(argc, argv, envp);
 	log_setlevelstr("debug");
 #endif
 
@@ -368,6 +370,7 @@ int main(int argc, char* argv[], char *envp[])
 	allocate_test_input(&t);
 
 	t.fd = open_test_file();
+	if (t.fd < 0) exit(EXIT_FAILURE);
 
 	TEST("sfs format", FORMAT, &t);
 	TEST("sfs load",   LOAD_AND_UNLOAD, &t);

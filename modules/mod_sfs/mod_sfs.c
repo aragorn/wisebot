@@ -1,9 +1,15 @@
-#include "mod_sfs.h"
+/* $Id$ */
+#include "common_core.h"
+#include "memory.h" /* see include/memory.h */
 #include "fat.h"
 #include "directory.h"
 #include "super_block.h"
 #include "shared_memory.h"
-#include "memory.h" /* see include/memory.h */
+#include "mod_sfs.h"
+
+#include <errno.h>
+#include <sys/types.h> /* lseek(2) */
+#include <unistd.h>    /* lseek(2) */
 
 #ifndef WIN32
 #include <string.h>

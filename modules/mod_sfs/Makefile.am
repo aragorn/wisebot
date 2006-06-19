@@ -17,13 +17,13 @@ check_PROGRAMS = test_sfs test2_sfs
 test_sfs_SOURCES = test.c
 test_sfs_LDADD   = $(libdir)/libcommon_core.la \
                    $(pkglibdir)/mod_api.la \
-                   $(pkglibdir)/mod_sfs.la
-test_sfs_LDFLAGS = -L$(libdir) -export-dynamic -static -ldl
+                   mod_sfs.la
+test_sfs_LDFLAGS = -export-dynamic -static -ldl
 
 test2_sfs_SOURCES = test2.c
 test2_sfs_LDADD   = $(libdir)/libcommon_core.la \
                     $(pkglibdir)/mod_api.la \
-                    $(pkglibdir)/mod_sfs.la
-test2_sfs_LDFLAGS = -L$(libdir) -export-dynamic -static -ldl
+                    mod_sfs.la
+test2_sfs_LDFLAGS = -export-dynamic -static -ldl
 
 include ../install-pkglib.mk

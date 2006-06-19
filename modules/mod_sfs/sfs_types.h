@@ -1,7 +1,7 @@
-#ifndef _SFS_TYPES_H_
-#define _SFS_TYPES_H_
+#ifndef SFS_TYPES_H
+#define SFS_TYPES_H
 
-#include "softbot.h"
+#include <stdint.h>
 
 #define SFS_MAGIC "SFS0"
  
@@ -21,7 +21,7 @@
 #define SUPER_BLOCK_NUM   (0)   // must be zero
 #define SUPER_BLOCK_COUNT (2)
 
-typedef struct _super_block_t {
+typedef struct {
     char magic[4];
 
     int start_fat_block;
@@ -55,12 +55,12 @@ typedef struct _super_block_t {
 #define COUNT_MAX_BIT 30
 #define NUM_MAX_BIT 30
 
-typedef struct _fat_entry_t {
+typedef struct {
     unsigned int count;
     unsigned int num;
 } fat_entry_t;
 
-typedef struct _dir_hash_entry_t{
+typedef struct {
     uint32_t id;
     uint32_t size;
     int first_block_num;
@@ -68,12 +68,12 @@ typedef struct _dir_hash_entry_t{
 } dir_hash_entry_t;
 
 // 사용하지 않는다?
-typedef struct _dir_array_entgry_t {
+typedef struct {
     uint32_t size;
     fat_entry_t* first_fat_entry;
 } dir_array_entry_t;
 
-typedef struct _sfs_t {
+typedef struct {
     int fd;
     int seq;
     int type;
@@ -84,18 +84,18 @@ typedef struct _sfs_t {
     super_block_t* super_block;
 } sfs_t;
 
-typedef struct _sfs_entry_info_t {
+typedef struct {
     int file_size;
 } sfs_entry_info_t;
 
-typedef struct _sfs_info_t {
+typedef struct {
     int min_file_id;
     int max_file_id;
     int file_count;
     sfs_entry_info_t sfs_entry_info;
 } sfs_info_t;
 
-typedef struct _inode_t {
+typedef struct {
     dir_hash_entry_t dir_entry;
     fat_entry_t curr_fat_entry;
     int sfs_block_num;

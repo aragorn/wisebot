@@ -1,7 +1,6 @@
 /* $Id$ */
-
-#ifndef __DIRECTORY_H__
-#define __DIRECTORY_H__
+#ifndef DIRECTORY_H
+#define DIRECTORY_H
 
 #include "sfs_types.h"
 

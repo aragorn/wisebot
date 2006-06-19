@@ -1,7 +1,10 @@
 /* $Id$ */
-#include "mod_sfs.h"
-#include "fat.h"
+#include "common_core.h"
 #include "memory.h" /* see include/memory.h */
+#include "mod_sfs.h" /* SEGMENT_FULL,sfs_block_write,sfs_block_read */
+#include "fat.h"
+#include <errno.h>
+#include <string.h>
 
 static int __move_free_block(sfs_t* sfs, int n);
 static int __get_fat_entry_offset_in_sfs_block(int num, int block_size);

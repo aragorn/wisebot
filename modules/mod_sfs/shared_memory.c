@@ -1,11 +1,12 @@
 /* $Id$ */
-#ifdef WIN32
-#else
-#  include <sys/mman.h>
-#endif
+#include "common_core.h"
+#include <errno.h>
+#include <string.h>    /* strerror(3) */
+#include <sys/mman.h>  /* mmap(2),munmap(2) */
+#include <sys/types.h> /* lseek(2) */
+#include <unistd.h>    /* lseek(2) */
 
 #include "shared_memory.h"
-#include "mod_sfs.h"
 
 int unmmap_memory(void* base_address, int size)
 {

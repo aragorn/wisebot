@@ -1,8 +1,10 @@
 /* $Id$ */
-#include "sfs_types.h"
-#include "directory.h"
+#include "common_core.h"
 #include "super_block.h" /* refered for superblock_view() */
 #include "mod_sfs.h"
+#include "directory.h"
+#include <stdlib.h> /* qsort(3) */
+#include <string.h> /* memcpy(3) */
 
 /********************************************************
  * block : sfs의 최소 I/O단위
@@ -63,12 +65,14 @@ int dir_get_file_array(sfs_t* sfs, int* file_array, int b_sort)
 		int offset =  (super_block->start_dir_block + block_idx)*block_size;
 
 		if(sfs->type & O_MMAP) {
+#warning "(void**)로 typecasting하지 않고 작동할 수 있게 만들어야 할 것이다. --김정겸"
 			if(sfs_get_block_reference(sfs, offset, (void**)&entry_in_block) == FAIL) {
 				error("can't read entry_in_block, super_block->start_dir_block[%d] + block_idx[%d]",
 					  super_block->start_dir_block, block_idx);
 				return FAIL;
 			}
 		} else {
+#warning "(void*)로 typecasting하지 않고 작동할 수 있게 만들어야 할 것이다. --김정겸"
 			if(sfs_block_read(sfs, offset, block_size, (void*)entry_in_block_in_stack) == FAIL) {
 				error("can't read entry_in_block, super_block->start_dir_block[%d] + block_idx[%d]",
 					  super_block->start_dir_block, block_idx);
@@ -117,7 +121,7 @@ int dir_copy(sfs_t* src, sfs_t* dest)
 	for(block_idx = 0; block_idx < src->super_block->dir_block_count; block_idx++) {
 		int offset =  (src->super_block->start_dir_block + block_idx)*block_size;
 
-		if(sfs_block_read(src, offset, block_size, (void*)entry_in_block) == FAIL) {
+		if(sfs_block_read(src, offset, block_size, entry_in_block) == FAIL) {
 			error("can't read entry_in_block, super_block->start_dir_block[%d] + block_idx[%d]",
 				  src->super_block->start_dir_block, block_idx);
 			return FAIL;
@@ -133,7 +137,7 @@ int dir_copy(sfs_t* src, sfs_t* dest)
 
 		if ( i == 0 ) continue;
 
-		if(sfs_block_write(dest, offset, block_size, (void*)entry_in_block) == FAIL) {
+		if(sfs_block_write(dest, offset, block_size, entry_in_block) == FAIL) {
 			error("cant't write entry_in_block, super_block->start_dir_block[%d] + block_idx[%d]",
 					dest->super_block->start_dir_block, block_idx);
 			return FAIL;
@@ -193,6 +197,7 @@ int dir_find_entry(sfs_t* sfs, int file_id, dir_op_t op,
 		int offset =  (super_block->start_dir_block + block_idx)*block_size;
 
 		if(sfs->type & O_MMAP) {
+#warning "(void**)로 typecasting하지 않고 작동할 수 있게 만들어야 할 것이다. --김정겸"
 			if(sfs_get_block_reference(sfs, offset, (void**)&entry_in_block) != SUCCESS) {
 				error("can't read entry_in_block, super_block->start_dir_block[%d] + block_idx[%d]",
 					  super_block->start_dir_block, block_idx);
