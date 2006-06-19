@@ -26,8 +26,8 @@ static int __lock_init(ifs_local_t* local, char* path);
 
 static void __init_test_data(ifs_test_input_t *t)
 {
-//	__make_test_data(t->local.data, t->shared->data_type);
-//	__make_files(t->local.test_files);
+	__make_test_data(t->local.data, t->shared->data_type);
+	__make_files(t->local.test_files);
 }
 
 static void __show_test_input(ifs_test_input_t *t)
@@ -65,7 +65,8 @@ static void __allocate_test_input(ifs_test_input_t *t)
 		}
 	}
 
-    for(i = 0; i < MAX_FILE_ID; i++) { 
+    for(i = 0; i < MAX_FILE_ID; i++) {
+		/* test_order[i] has a file_id which should be more than 0. */
         t->local.test_order[i] = (rand() % MAX_FILE_ID) + 1;
     }
 
@@ -343,9 +344,8 @@ static int __append(ifs_test_input_t* t)
     //show_test_input(t);
 
     for (i = 0; i < t->local.max_append_count; i++) {
-//		error("i = %d, max_append_count = %d", i, t->local.max_append_count);
-		
 			id = t->local.test_order[i];
+			if (id < 1) { warn("file_id[%d] is less than 1. skip.", id); continue; }
             test_get_file_info(t, id, &f);
             ret = append_file(t, &f);
             if (ret == FAIL) {
