@@ -637,15 +637,15 @@ static int morphological_analyze(uint32_t docid, void *pCdmData, long cdmLength,
 			return FAIL;
 
 		svrID = find_a_server_to_connect();
-		info("docid[%d] will be analyzed from rmas[%s:%s]", docid, rmas_addr[svrID].address,
-				rmas_addr[svrID].port);
 		if ( svrID < 0 ) return FAIL;
+		info("docid[%d] will be analyzed from rmas(%d)[%s:%s]",
+				docid, svrID, rmas_addr[svrID].address, rmas_addr[svrID].port);
 
         ret = sb_run_tcp_connect(&sockfd , rmas_addr[svrID].address , rmas_addr[svrID].port);
 
         if (ret == FAIL) {
-            error("cannot connect to server[%s:%s], docid[%u], (%d)%s",
-                    rmas_addr[svrID].address , rmas_addr[svrID].port, docid,
+            error("cannot connect to server(%d)[%s:%s], docid[%u], (%d)%s",
+                    svrID, rmas_addr[svrID].address , rmas_addr[svrID].port, docid,
 					errno, strerror(errno));
 			mark_rmas_error( svrID );
 
