@@ -1,8 +1,8 @@
 /* $Id$ */
-#ifndef __TABLE_H__
-#define __TABLE_H__
+#ifndef TABLE_H
+#define TABLE_H
 
-#include "softbot.h"
+#include <stdint.h>
 
 /*************************************************************
  * logical table : EMPTY, NOT_USE, or physical segment number

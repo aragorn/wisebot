@@ -1,8 +1,14 @@
 /* $Id$ */
 #include "common_core.h"
-#include "mod_api/indexdb.h"
+#include "ipc.h"
+#include "memory.h"
+#include "mod_sfs/shared_memory.h" /* line 204 */
 #include "mod_ifs.h"
-#include "../mod_sfs/shared_memory.h"
+#include <fcntl.h> /* O_RDWR,O_CREAT,... */
+#include <unistd.h> /* close(2) */
+#include <stdlib.h> /* free(3),atoi(3) */
+#include <errno.h>
+#include <string.h>
 
 ifs_set_t* ifs_set = NULL;
 static int current_ifs_set = -1;

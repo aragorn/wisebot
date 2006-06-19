@@ -1,6 +1,13 @@
-#include "softbot.h"
-#include "mod_mp/mod_mp.h"
+/* $Id$ */
+#include "common_core.h"
+#include "memory.h"
+#include "setproctitle.h"
 #include "mod_ifs.h"
+#include <signal.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h> /* sleep(3) */
+#include <time.h> /* time(2) */
 
 #define MAX_PROCESSES (20)
 #define MONITORING_PERIOD (2)
@@ -217,15 +224,15 @@ static int read_module_main(slot_t *slot)
 		return 0;
 	}
 
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 
 	read_scoreboard->size = read_process;
 
-	sb_init_scoreboard(read_scoreboard);
-	sb_spawn_processes(read_scoreboard, "[IFS] reading test", read_main);
+	sb_run_init_scoreboard(read_scoreboard);
+	sb_run_spawn_processes(read_scoreboard, "[IFS] reading test", read_main);
 
 	read_scoreboard->period = MONITORING_PERIOD;
-	sb_monitor_processes(read_scoreboard);
+	sb_run_monitor_processes(read_scoreboard);
 
 	return 0;
 }
@@ -351,15 +358,15 @@ static int append_module_main(slot_t *slot)
 		return 0;
 	}
 
-	sb_set_default_sighandlers(_shutdown, _graceful_shutdown);
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 
 	append_scoreboard->size = append_process;
 
-	sb_init_scoreboard(append_scoreboard);
-	sb_spawn_processes(append_scoreboard, "[IFS] appending test", append_main);
+	sb_run_init_scoreboard(append_scoreboard);
+	sb_run_spawn_processes(append_scoreboard, "[IFS] appending test", append_main);
 
 	append_scoreboard->period = MONITORING_PERIOD;
-	sb_monitor_processes(append_scoreboard);
+	sb_run_monitor_processes(append_scoreboard);
 
 	return 0;
 }

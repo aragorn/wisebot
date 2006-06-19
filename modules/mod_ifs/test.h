@@ -1,6 +1,5 @@
-#ifndef __TEST_H__
-#define __TEST_H__
-
+#ifndef MY_TEST_H
+#define MY_TEST_H
 #include "mod_ifs.h"
 #include <time.h>
 #include <stdlib.h>

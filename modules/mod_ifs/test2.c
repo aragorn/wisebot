@@ -1,9 +1,11 @@
-#include "test.h"
-#include "../mod_sfs/mod_sfs.h"
-#include "../mod_sfs/shared_memory.h"
-#include "table.h"
+/* $Id$ */
+#include "common_core.h"
+#include "memory.h"
+#include "mod_sfs/mod_sfs.h"
+#include "mod_sfs/shared_memory.h"
 #include "mod_ifs_defrag.h"
-//#include "../mod_sfs/super_block.h"
+#include "test.h"
+#include <string.h>
 
 //static int segment_size = 128*1024*1024;
 //static int block_size = 128;
@@ -33,7 +35,6 @@ int main(int argc, char* argv[], char* envp[])
 	int start_offset;
 	ifs_set_t local_ifs_set[MAX_INDEXDB_SET];
 
-    init_set_proc_title(argc, argv, envp);
     log_setlevelstr("debug");
 
 	// make ifs_set

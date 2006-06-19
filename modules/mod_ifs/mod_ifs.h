@@ -1,11 +1,9 @@
 /* $Id$ */
-#ifndef __MOD_IFS_H__
-#define __MOD_IFS_H__
-
-#include "common_core.h"
+#ifndef MOD_IFS_H
+#define MOD_IFS_H
 #include "mod_api/indexdb.h"
+#include "mod_sfs/mod_sfs.h"
 #include "table.h"
-#include "../mod_sfs/mod_sfs.h"
 
 #define PATH_SEP '/'
 
@@ -22,7 +20,7 @@
 #define DO_FORMAT      (1)
 #define DO_NOT_FORMAT  (0)
 
-typedef struct _local_t {
+typedef struct {
 	int ifs_fd;
     int sfs_fd[MAX_FILE_COUNT];
     sfs_t* sfs[MAX_SECTOR_COUNT*MAX_SEGMENT_COUNT];
@@ -30,7 +28,7 @@ typedef struct _local_t {
 	int lock;
 } local_t;
 
-typedef struct _shared_t {
+typedef struct {
     char magic[4];
 
 	table_t mapping_table;		/* index logical/physical mmapping table */
@@ -42,12 +40,12 @@ typedef struct _shared_t {
 	char root_path[MAX_PATH_LEN];	/* index file system path, one more ifs can not exist in the path */
 } shared_t;
 
-typedef struct _ifs_t {
+typedef struct {
 	local_t local;
 	shared_t* shared;
 } ifs_t;
 
-typedef struct _ifs_set_t {
+typedef struct {
 	int set;
 
 	int set_ifs_path;

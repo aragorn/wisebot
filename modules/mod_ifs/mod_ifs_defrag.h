@@ -1,7 +1,7 @@
-#ifndef __DEFRAGMENT_H__
-#define __DEFRAGMENT_H__
+#ifndef MOD_IFS_DEFRAG_H
+#define MOD_IFS_DEFRAG_H
 
-#include "mod_ifs.h"
+#include "mod_ifs.h" /* ifs_t */
 
 typedef enum {
 	DEFRAG_MODE_BUBBLE,

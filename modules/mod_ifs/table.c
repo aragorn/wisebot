@@ -1,5 +1,7 @@
 /* $Id$ */
+#include "common_core.h"
 #include "table.h"
+#include <string.h>
 
 int temp_alive_time = 60*1; // 1분, <= 0 이면 바로 삭제된다
 

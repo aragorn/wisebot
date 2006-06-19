@@ -1,6 +1,16 @@
+/* $Id$ */
+#include "common_core.h"
+#include "common_util.h"
+#include "ipc.h"
+#include "memory.h"
+#include "setproctitle.h"
 #include "mod_ifs.h"
 #include "mod_ifs_defrag.h"
-#include "mp_api.h"
+#include <string.h>
+#include <errno.h>
+#include <signal.h>
+#include <unistd.h> /* sleep(3) */
+#include <stdlib.h> /* atoi(3) */
 
 // 2개의 segment를 defrag 했더니 이만큼까지 segment가 늘어날 수 있다.
 #define MAX_PSEG_LIST 256
