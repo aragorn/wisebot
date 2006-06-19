@@ -1,4 +1,5 @@
 /* $Id$ */
+#include "common_core.h"
 #include <signal.h>
 #include <stdlib.h> /* abort(3) */
 #include <unistd.h> /* lseek(2) */
@@ -7,7 +8,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h> /* S_IREAD,S_IWRITE */
-#include "common_core.h"
 #include "memory.h"
 #include "ipc.h"
 #include "setproctitle.h"

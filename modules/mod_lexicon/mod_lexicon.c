@@ -1,9 +1,9 @@
 /* $Id$ */
+#include "common_core.h"
 #include <stdlib.h> /* atoi(3) */
 #include <fcntl.h> /* O_CREAT,O_WRONLY */
 #include <string.h> /* strerror(3) */
 #include <errno.h>
-#include "common_core.h"
 #include "ipc.h"
 #include "memory.h"
 #include "lexicon_index.h"

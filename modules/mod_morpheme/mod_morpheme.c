@@ -1,8 +1,8 @@
 /* $Id$ */
+#include "common_core.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "softbot.h"
 #include "mod_api/morpheme.h"
 
 #include "lib/old_softbot.h"

@@ -1,11 +1,6 @@
 /* $Id$ */
-#ifndef _MOD_VBM_H_
-#define _MOD_VBM_H_
-
-#include <pthread.h>
-#include "softbot.h"
-#include "hook.h"
-#include "mod_api/vbm.h"
+#ifndef MOD_VBM_H
+#define MOD_VBM_H
 
 int VBM_init();
 int VBM_initBuf(VariableBuffer *pVarBuf);

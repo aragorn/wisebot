@@ -2,12 +2,12 @@
  * created by YoungHoon  
  */
 
+#include "common_core.h"
+#include "common_util.h"
 #include <strings.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "common_core.h"
-#include "common_util.h"
 #include "ipc.h"
 #include "memory.h"
 #include "mod_api/morpheme.h"

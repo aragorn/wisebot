@@ -1,6 +1,10 @@
 /* $Id$ */
-#include "mod_vbm.h"
+#include "common_core.h"
+#include "memory.h"
+#include <string.h> /* memcpy(3),strcat(3) */
+#include <stdlib.h> /* atoi(3) */
 #include "mod_api/vbm.h"
+#include "mod_vbm.h"
 
 static int m_bufBlockSize=2048;
 static int m_numBufBlock=20000;

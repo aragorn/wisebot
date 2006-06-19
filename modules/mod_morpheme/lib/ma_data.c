@@ -3,13 +3,13 @@
 **  MA_DATA.C
 **  2002. 01.  BY JaeBum, Kim.
 */
+#include    "common_core.h"
 #include	<stdio.h>
 #include	<stdlib.h>
 #include	"old_softbot.h"
 #include	"lb_std.h"
 #include	"ma_dic.h"
 #include	"ma_data.h"
-#include    "softbot.h"
 
 TDWORD p_nncg[2]  = { 0x00000001, 0x00000000 };
 TDWORD p_nncv[2]  = { 0x00000002, 0x00000000 };

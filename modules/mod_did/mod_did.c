@@ -1,8 +1,8 @@
 /* $Id$ */
+#include "common_core.h"
 #include <stdlib.h> /* atoi(3) */
 #include <string.h> /* memset(3) */
 #include <errno.h>
-#include "common_core.h"
 #include "ipc.h"
 #include "md5.h"
 #include "memory.h"

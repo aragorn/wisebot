@@ -1,8 +1,17 @@
 /* $Id$ */
-#include <time.h>
-#include <sys/wait.h>
-
 #include "common_core.h"
+#include "common_util.h"
+#include <time.h>
+#include <errno.h>
+#include <fcntl.h> /* open(2) */
+#include <sys/wait.h>
+#include <sys/stat.h> /* mkdir(2) */
+#include <sys/types.h> /* mkdir(2) */
+#include <unistd.h> /* getpid(2) */
+
+#include "ipc.h"
+#include "memory.h"
+#include "setproctitle.h"
 #include "mod_api/cdm2.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/did.h"

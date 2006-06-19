@@ -1,11 +1,11 @@
-/* $Id */
+/* $Id$ */
+#include "common_core.h"
+#include "common_util.h"
 #include <string.h> /* strncpy */
 #include <stdlib.h> /* atoi */
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "common_core.h"
-#include "common_util.h"
 #include "util.h"
 #include "memory.h"
 #include "ipc.h"

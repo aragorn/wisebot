@@ -3,9 +3,9 @@
 **  MA_KOR.C
 **  2002. 01.  BY JaeBum, Kim.
 */
+#include "common_core.h"
 #include	<stdio.h>
 #include	<stdlib.h>
-#include	"softbot.h"
 #include	"ma_code.h"
 #include	"ma_data.h"
 #include	"mabi.h"
