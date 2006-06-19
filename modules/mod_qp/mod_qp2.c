@@ -3737,6 +3737,10 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
                    MSG_RECORD(&req->msg, error, "can not operate operation_where");
 				   return FAIL;
 			   }
+
+			   if(doc_type == VIRTUAL_DOCUMENT) {
+                   res->search_result = res->vdl->cnt;
+			   }
 			   break;
 		   case LIMIT:
 			   rv = operation_limit(&op->rule.limit, doc_type);
