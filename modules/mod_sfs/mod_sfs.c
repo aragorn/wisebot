@@ -266,12 +266,15 @@ int sfs_append(sfs_t* sfs, int file_id, int size, void* buf)
 	inode_t inode;
 	int ret;
 
-	ret = sfs_exist_file(sfs, file_id);
-
-    if( ret == SUCCESS ) {
-		// do nothing
+	if (file_id < 1) {
+		error("file_id[%d] should be a (1..n) number.", file_id);
+		return FAIL;
 	}
-	else if ( ret != FILE_NOT_EXISTS ) {
+
+	ret = sfs_exist_file(sfs, file_id);
+    if( ret == SUCCESS ) {
+		; // do nothing
+	} else if ( ret != FILE_NOT_EXISTS ) {
 		error("failed. ret[%d], file[%d]", ret, file_id);
 		return FAIL;
     } else {
@@ -314,8 +317,12 @@ int sfs_read(sfs_t* sfs, int file_id, int offset, int size, void* buf)
 	int read_byte = 0, ret;
 	inode_t inode;
 
-    ret = sfs_exist_file(sfs, file_id);
+	if (file_id < 1) {
+		error("file_id[%d] should be a (1..n) number.", file_id);
+		return FAIL;
+	}
 
+    ret = sfs_exist_file(sfs, file_id);
 	if ( ret == FILE_NOT_EXISTS ) return FILE_NOT_EXISTS;
 	else if ( ret != SUCCESS ) {
 		error("failed. file[%d]", file_id);
