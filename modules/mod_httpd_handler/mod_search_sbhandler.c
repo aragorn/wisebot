@@ -126,7 +126,6 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 {
     int rv = 0;
     int i = 0, j = 0, cmt_idx = 0;
-	groupby_result_list_t* groupby_result = NULL;
 	msg_record_init(&s->msg);
 
 	set_con_config(r->server);
@@ -190,24 +189,25 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
             qp_response.search_result, 
             qp_response.vdl->cnt);
     /* group result */
-    ap_rprintf(r, "<groups type=\"vid\">\n");
+    ap_rprintf(r, "<groups>\n");
 	print_group(r, &qp_response.groupby_result_vid);
     ap_rprintf(r, "</groups>\n");
 
+	/*
     ap_rprintf(r, "<groups type=\"did\">\n");
 	print_group(r, &qp_response.groupby_result_did);
     ap_rprintf(r, "</groups>\n");
+	*/
 
 	/* each result */
     for(i = 0; i < qp_response.vdl->cnt; i++) {
         virtual_document_t* vd = (virtual_document_t*)&qp_response.vdl->data[i];
 
         ap_rprintf(r, "<row no=\"%d\">\n", i);
-        ap_rprintf(r, "<id>%u</id>\n", vd->id);
+        ap_rprintf(r, "<vid>%u</vid>\n", vd->id);
         ap_rprintf(r, "<node_id>%0X</node_id>\n", vd->node_id);
         ap_rprintf(r, "<relevance>%u</relevance>\n", vd->relevance);
-        ap_rprintf(r, "<total_count>%u</total_count>\n", vd->dochit_cnt);
-        ap_rprintf(r, "<result_count>%u</result_count>\n", vd->comment_cnt);
+        ap_rprintf(r, "<count>%u</count>\n", vd->comment_cnt);
 
         for(j = 0; j < vd->comment_cnt; j++) {
 			if(qp_request.output_style == STYLE_XML) {
