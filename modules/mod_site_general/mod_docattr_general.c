@@ -901,7 +901,7 @@ static int add_docattr_field(char* field_name, char* field_type)
 		else if ( size == 8 || size == 16 || size == 32 || size == 64 ) {
 			char integer_type[SHORT_STRING_SIZE];
 
-			snprintf( integer_type, sizeof(integer_type), "Integer(%ld)", (size%BIT_PER_BYTE) );
+			snprintf( integer_type, sizeof(integer_type), "Integer(%ld)", (size/BIT_PER_BYTE) );
 			warn("Bit(%ld) equals to %s - %s %s", size, integer_type, field_name, field_type);
 			return add_docattr_field( field_name, integer_type );
 		}
