@@ -13,8 +13,8 @@ TIMEOUT=
 
 case $1 in
 'start')
-#	`$0 daemon >/dev/null 2>&1 &`
-	$0 daemon &
+	$0 daemon >/dev/null 2>&1 &
+#	$0 daemon &
 	;;
 'stop')
 	pid=`cat ${PIDFILE}`
