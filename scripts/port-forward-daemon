@@ -7,7 +7,7 @@ PIDFILE="port-forward.pid"
 
 PORT1=7200
 PORT2=23
-TIMEOUT=5
+TIMEOUT=
 
 #pid=`${PS} -e | ${GREP} port-forward | ${SED} -e 's/^  *//' -e 's/ .*//'`
 
