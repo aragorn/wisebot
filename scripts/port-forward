@@ -1,0 +1,94 @@
+#!/usr/bin/perl
+
+use strict;
+
+my $port1=shift;
+my $port2=shift;
+my $timeout=shift;
+$timeout = 60 if ( !$timeout );
+my $pidfile="port-forward.pid";
+
+unless($port1 and $port2 and $timeout) {
+	print <<END;
+Usage: $0 <port1> <port2> <timeout>
+  - ssh port forwarding port1 -> remote:port2
+END
+	exit 0;
+}
+
+#my $silence = "";
+my $silence = "2>&1";
+close(STDERR);
+
+my $pid;
+$pid = open(FH, "yes 'telnet localhost $port1 $silence < /dev/null; echo connected; sleep $timeout' | ".
+		"ssh -p 2200 -R $port1:localhost:$port2 -2 -g guest\@203.231.161.11 $silence |") or die;
+$timeout += 3; # sleep보다 조금 더 길어야 하니까...
+
+sub catch_sig
+{
+	kill_all();
+	exit 2;
+}
+$SIG{INT} = \&catch_sig;
+$SIG{TERM} = \&catch_sig;
+$SIG{QUIT} = \&catch_sig;
+
+open(FH2, ">$pidfile") or die;
+print FH2 $$ or die; # current process id
+close(FH2);
+
+while ( 1 ) {
+	my $t = $timeout;
+	my $rset = ''; vec($rset, fileno(FH), 1) = 1;
+	my $rc = select($rset, undef, undef, $t);
+	if ( $rc == 0 ) { # timeout
+		print STDERR "stdin timeout($timeout)\n";
+		kill_all();
+		exit 1;
+	}
+
+	my ($buf, $len);
+	$len = read(FH, $buf, 1);
+	if ( $len == 0 ) { # end of file
+		kill_all();
+		exit 0;
+	}
+}
+
+kill_all();
+exit 0;
+
+my @pidlist;
+sub make_pidlist
+{
+	my $line;
+	@pidlist = ();
+
+	open(PS, "ps -e -o pid,ppid | grep $pid |") or die;
+	foreach $line (<PS>) {
+		push @pidlist, $line;
+	}
+	close(PS);
+}
+
+sub kill_all
+{
+	make_pidlist();
+	_kill_all($pid);
+	unlink $pidfile;
+}
+
+sub _kill_all
+{
+	my $pid = shift;
+
+	my $child;
+	foreach $child (@pidlist) {
+		$child =~ /^\s*(\d+)\s+$pid\s*$/ or next;
+		_kill_all($1);
+	}
+	print "kill $pid\n";
+	kill 15, $pid;
+}
+

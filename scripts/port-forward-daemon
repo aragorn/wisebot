@@ -1,0 +1,41 @@
+#!/bin/sh
+
+PS=ps
+GREP=grep
+SED=sed
+PIDFILE="port-forward.pid"
+
+PORT1=7200
+PORT2=23
+TIMEOUT=5
+
+#pid=`${PS} -e | ${GREP} port-forward | ${SED} -e 's/^  *//' -e 's/ .*//'`
+
+case $1 in
+'start')
+#	`$0 daemon >/dev/null 2>&1 &`
+	$0 daemon &
+	;;
+'stop')
+	pid=`cat ${PIDFILE}`
+	if [ "${pid}" != "" ]
+	then
+			kill ${pid}
+	fi
+	;;
+'daemon')
+	while [ "1" ]
+	do
+			./port-forward ${PORT1} ${PORT2} ${TIMEOUT}
+			if [ $? -eq 2 ] # by kill ...
+			then
+				exit
+			fi
+			sleep 10
+	done
+	;;
+*)
+	echo "usage: $0 {start|stop}"
+	;;
+esac
+
