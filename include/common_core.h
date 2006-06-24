@@ -8,8 +8,6 @@
 #include "auto_config.h"
 #include "constants.h"
 
-#define DEBUG_SOFTBOT  1
-
 #define SB_DECLARE(type)	type
 #define SB_DECLARE_DATA	
 

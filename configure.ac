@@ -81,6 +81,9 @@ AH_TOP([#ifndef AUTO_CONFIG_H
 #define DB_PATH         "dat"
 #define LOG_PATH        "logs"
 
+/* whether to compile with DEBUG option */
+#define DEBUG_SOFTBOT 1
+
 ])
 
 AH_BOTTOM([
@@ -105,7 +108,7 @@ AH_VERBATIM([1_NEAR_TOP__],[
 #define FORWARD_INDEX 0
 
 /* whether to use apr, apr-util or not. default is NOT using it. */
-/* #define USE_APR 0 */
+#define USE_APR 0
 
 /* hit size of hits of doc_hit_t. default size is 4 */
 #define HIT_SIZE 4
@@ -316,7 +319,7 @@ dnl AC_AIX
 
 
 CFLAGS="-Wall -g3 -O2"
-INCLUDES= "-I$(top_builddir)/modules"
+INCLUDES="-I$(top_builddir)/modules"
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN

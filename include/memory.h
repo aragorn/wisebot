@@ -2,8 +2,9 @@
 #ifndef MEMORY_H
 #define MEMORY_H 1
 
-//#include <sys/types.h>
-//#include <unistd.h>
+#ifndef COMMON_CORE_H
+# error You should include "common_core.h" first.
+#endif
 
 #ifdef DEBUG_SOFTBOT
 #	define sb_malloc(s)			_sb_malloc(s, __FILE__, __FUNCTION__, __LINE__)
@@ -22,7 +23,7 @@
 
 #	define sb_fork()			_sb_fork()
 #else 
-//#	define sb_malloc(s)			malloc(s)
+#   include <stdlib.h> /* malloc(3),free(3) */
 #	define sb_malloc(s)			calloc(s, 1)
 #	define sb_calloc(n,s)		calloc(n, s)
 #	define sb_realloc(p,s)		realloc(p, s)

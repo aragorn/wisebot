@@ -77,7 +77,7 @@ SB_DECLARE(int) add_semid_to_allocated_ipcs(int semid);
 
 typedef struct rwlock_t rwlock_t;
 
-SB_DECLARE(int) rwlock_init(rwlock_t *rwlp, int type);
+SB_DECLARE(int) rwlock_init(rwlock_t **rwlp);
 SB_DECLARE(int) rwlock_destroy(rwlock_t *rwlp);
 SB_DECLARE(int) rwlock_rdlock(rwlock_t *rwlp);
 SB_DECLARE(int) rwlock_wrlock(rwlock_t *rwlp);
