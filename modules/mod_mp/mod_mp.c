@@ -166,10 +166,8 @@ static int spawn_process(slot_t *slot, const char *name, int (*main)(slot_t *))
 static int spawn_processes(scoreboard_t *scoreboard, const char *name, int (*main)(slot_t *))
 {
 	int i=0;
-	if ( scoreboard->type != TYPE_PROCESS ) {
-		error("scoreboard type [%d] is not suitable.", scoreboard->type);
-		return FAIL;
-	}
+	if ( scoreboard->type != TYPE_PROCESS ) return DECLINE;
+
 	scoreboard->slot[0].pid = getpid();
 	scoreboard->slot[0].generation++;
 	scoreboard->slot[0].state = SLOT_START;
@@ -191,11 +189,9 @@ static int spawn_threads(scoreboard_t *scoreboard, const char *name, int (*main)
 {
 	int i=0;
 
+	if ( scoreboard->type != TYPE_THREAD ) return DECLINE;
+
 	debug("thread [%s]", name);
-	if ( scoreboard->type != TYPE_THREAD ) {
-		error("scoreboard type [%d] is not suitable.", scoreboard->type);
-		return FAIL;
-	}
 	scoreboard->slot[0].pid = getpid();
 	scoreboard->slot[0].generation++;
 	scoreboard->slot[0].state = SLOT_START;
@@ -219,10 +215,8 @@ static int spawn_processes_for_each_module(scoreboard_t *scoreboard, module *mod
 	module *m;
 	slot_t *slot;
 
-	if ( scoreboard->type != TYPE_PROCESS ) {
-		error("scoreboard type [%d] is not suitable.", scoreboard->type);
-		return FAIL;
-	}
+	if ( scoreboard->type != TYPE_PROCESS ) return DECLINE;
+
 	scoreboard->slot[0].pid = getpid();
 	scoreboard->slot[0].generation++;
 	scoreboard->slot[0].state = SLOT_START;
@@ -259,10 +253,7 @@ static int spawn_processes_for_each_module(scoreboard_t *scoreboard, module *mod
 
 static int spawn_process_for_module(scoreboard_t *scoreboard, module *mod)
 {
-	if ( scoreboard->type != TYPE_PROCESS ) {
-		error("scoreboard type [%d] is not suitable.", scoreboard->type);
-		return FAIL;
-	}
+	if ( scoreboard->type != TYPE_PROCESS ) return DECLINE;
 
 	scoreboard->slot[0].pid = getpid();
 	scoreboard->slot[0].generation++;
@@ -304,6 +295,8 @@ static int monitor_threads(scoreboard_t *scoreboard)
 	slot_t *slot;
 	struct timeval timeout;
 	int i=0, n=0, alive;
+
+	if ( scoreboard->type != TYPE_THREAD ) return DECLINE;
 
 	if ( scoreboard->period == 0 ) {
 		warn("%s monitor: scoreboard->period[0] is too short."
@@ -410,6 +403,7 @@ static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 	int slot_id;
 	int wait_when_no_child = 3;
 
+	if ( scoreboard->type != TYPE_PROCESS ) return DECLINE;
 
 	if ( scoreboard->period == 0 ) {
 		warn("%s monitor: scoreboard->period[0] is too short."
@@ -625,12 +619,10 @@ static void register_hooks(void)
 	sb_hook_init_scoreboard(init_scoreboard,NULL,NULL,HOOK_MIDDLE);
 
 	sb_hook_spawn_processes(spawn_processes,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_spawn_processes(spawn_threads,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_monitor_processes(monitor_processes,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_monitor_processes(monitor_threads,NULL,NULL,HOOK_MIDDLE);
 
-	sb_hook_spawn_threads(spawn_threads,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_monitor_threads(monitor_threads,NULL,NULL,HOOK_MIDDLE);
-
-	//sb_hook_spawn_process(spawn_process,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_spawn_processes_for_each_module(spawn_processes_for_each_module,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_spawn_process_for_module(spawn_process_for_module,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_monitor_processes_for_modules(monitor_processes_for_modules,NULL,NULL,HOOK_MIDDLE);

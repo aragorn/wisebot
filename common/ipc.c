@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <stdlib.h> /* calloc(3),free(3) */
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/shm.h>
