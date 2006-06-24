@@ -268,14 +268,30 @@ struct rwlock_t {
   pthread_rwlock_t *pthread_rwlock;
 };
 
-int rwlock_init(rwlock_t *rwlp, int type)
+int rwlock_init(rwlock_t **rwlp)
 {
-	return pthread_rwlock_init(rwlp->pthread_rwlock, NULL);
+	void *ptr = calloc(1, sizeof(rwlock_t) + sizeof(pthread_rwlock_t));
+	if (ptr == NULL) {
+		error("cannot calloc(3) for rwlock: %s", strerror(errno));
+		return ENOMEM;
+	}
+	*rwlp = ptr;
+	(*rwlp)->pthread_rwlock = ptr + sizeof(rwlock_t);
+	SB_DEBUG_ASSERT((void*) *rwlp + sizeof(rwlock_t) == (void*) (*rwlp)->pthread_rwlock);
+	/*
+	CRIT("ptr=%p,rwlp=%p,*rwlp=%p,sizeof(rwlock_t)=%d,pthread_rwlock=%p",
+		ptr, rwlp, *rwlp, sizeof(rwlock_t), (*rwlp)->pthread_rwlock);
+	*/
+
+	return pthread_rwlock_init((*rwlp)->pthread_rwlock, NULL);
 }
 
 int rwlock_destroy(rwlock_t *rwlp)
 {
-	return pthread_rwlock_destroy(rwlp->pthread_rwlock);
+	int r = pthread_rwlock_destroy(rwlp->pthread_rwlock);
+	if (r != 0) error("pthread_rwlock_destroy returned %d", r);
+	free(rwlp);
+	return r;
 }
 
 int rwlock_rdlock(rwlock_t *rwlp)

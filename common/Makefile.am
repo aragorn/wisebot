@@ -17,7 +17,7 @@ libcommon_core_la_SOURCES = common_core.c \
 							scoreboard.c \
 							util.c
 libcommon_core_la_LDFLAGS = -shared -avoid-version -no-undefined
-libcommon_core_la_LIBADD  = $(DYN_LIB)
+libcommon_core_la_LIBADD  = $(DYN_LIB) $(THREAD_LIB)
 
 
 libcommon_util_la_SOURCES = common_util.c \
