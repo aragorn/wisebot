@@ -109,10 +109,10 @@ static int module_main (slot_t *slot)
 	if (sb_run_init_scoreboard(scoreboard) != SUCCESS) return EXIT_FAILURE;
 
 	rwlock_wrlock(rwlock);
-	sb_run_spawn_threads(scoreboard, "rwlock process", child_main);
+	sb_run_spawn_processes(scoreboard, "rwlock process", child_main);
 	rwlock_unlock(rwlock);
 
-	sb_run_monitor_threads(scoreboard);
+	sb_run_monitor_processes(scoreboard);
 
 	CRIT("end of test: shared int = %d", *shared_int);
 	free_mmap(shared_int, sizeof(int));
