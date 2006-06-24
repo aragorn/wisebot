@@ -57,19 +57,6 @@ struct ipc_t {
 #define SYS5_IFS		'i'
 #define SYS5_CDM		'd'
 
-// refer to man page of semctl(2) for followings
-#if defined(__GNU_LIBRARY__) && !defined(_SEM_SEMUN_UNDEFINED)
-/* union semun is defined by including <sys/sem.h> */
-#else
-/* according to X/OPEN we have to define it ourselves */
-union semun {
-	int val;                  /* value for SETVAL */
-	struct semid_ds *buf;     /* buffer for IPC_STAT, IPC_SET */
-	unsigned short *array;    /* array for GETALL, SETALL */
-						   /* Linux specific part: */
-	struct seminfo *__buf;    /* buffer for IPC_INFO */
-};
-#endif
 
 #define acquire_lock(semid)	_acquire_lock(semid,0,__FILE__,__FUNCTION__)
 #define acquire_lock_nowait(semid)	_acquire_lock_nowait(semid,0,__FILE__,__FUNCTION__)
@@ -86,6 +73,17 @@ SB_DECLARE(int) _acquire_lock_nowait(int semid,int idx,const char *file,const ch
 SB_DECLARE(int) _release_lock(int semid,int idx,const char *filename,const char* caller);
 SB_DECLARE(int) _get_nsem(ipc_t *ipc,int num,const char* file,const char* caller);
 SB_DECLARE(int) add_semid_to_allocated_ipcs(int semid);
+
+
+typedef struct rwlock_t rwlock_t;
+
+SB_DECLARE(int) rwlock_init(rwlock_t *rwlp, int type);
+SB_DECLARE(int) rwlock_destroy(rwlock_t *rwlp);
+SB_DECLARE(int) rw_rdlock(rwlock_t *rwlp);
+SB_DECLARE(int) rw_wrlock(rwlock_t *rwlp);
+SB_DECLARE(int) rw_unlock(rwlock_t *rwlp);
+SB_DECLARE(int) rw_tryrdlock(rwlock_t *rwlp);
+SB_DECLARE(int) rw_trywrlock(rwlock_t *rwlp);
 
 #define alloc_shm(ipc) _alloc_shm(ipc,__FILE__,__FUNCTION__)
 
@@ -109,6 +107,21 @@ SB_DECLARE(int) free_ipcs(void);
 #  define OFF_T_FORMAT "0x%lX"
 #  define KEY_T_FORMAT "%d"
 # endif
+
+/* Refer to man page of semctl(2) for followings ******************************/
+#include <sys/sem.h>
+#if defined(__GNU_LIBRARY__) && !defined(_SEM_SEMUN_UNDEFINED)
+/* union semun is defined by including <sys/sem.h> */
+#else
+/* according to X/OPEN we have to define it ourselves */
+union semun {
+	int val;                  /* value for SETVAL */
+	struct semid_ds *buf;     /* buffer for IPC_STAT, IPC_SET */
+	unsigned short *array;    /* array for GETALL, SETALL */
+							  /* Linux specific part: */
+	struct seminfo *__buf;    /* buffer for IPC_INFO */
+};
+#endif /* __GNU_LIBRARY__, _SEM_SEMUN_UNDEFINED */
 #endif /* CORE_PRIVATE */
 
 #endif

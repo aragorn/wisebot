@@ -1,16 +1,16 @@
 /* $Id$ */
-#include <string.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <sys/sem.h>
-#include <unistd.h>
-#include <time.h>
 #define CORE_PRIVATE 1
 #include "common_core.h"
 #include "ipc.h"
 #include "modules.h"
 #include "ansi_color.h"
 #include "log_error.h"
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <sys/sem.h>
+#include <unistd.h>
+#include <time.h>
 
 int   gLogLevel = MAX_LOG_LEVEL;
 char *gLogLevelStr[] = {
@@ -317,7 +317,7 @@ static void init_loglock(void)
 	key = IPC_PRIVATE;
 	semid = semget(key,1,IPC_CREAT|IPC_EXCL|0600);
 	if (semid == -1 && errno == EEXIST) {
-		fprintf(stderr,"using existing sema for log [key=%d,semid=%d]\n", key, semid);
+		fprintf(stderr,"use existing semaphore for log [key=%d,semid=%d]\n", key, semid);
 		semid = semget(key,1,0);
 	}
 

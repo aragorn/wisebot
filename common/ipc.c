@@ -1,18 +1,19 @@
 /* $Id$ */
 #define CORE_PRIVATE 1
 #include "common_core.h"
+#include "log_error.h"
+#include "memory.h"
+#include "ipc.h"
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include "log_error.h"
-#include "memory.h"
-#include "ipc.h"
 
 #define MAX_SYS5_IPC (200)
 
@@ -199,12 +200,11 @@ int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
 	ipc->id = semget(ipc->key,num, IPC_CREAT|IPC_EXCL|0600);
 	if (ipc->id == -1) {
 		/* semaphore already exist */
-		notice("using existing sema [%s:%s()]",
-									file, caller);
+		notice("[%s:%s()] use existing semaphore.", file, caller);
 
 		ipc->id = semget(ipc->key,num,0);
         if(ipc->id == -1) {
-		    crit("error while semget. [%s:%s()]:%s",file, caller, strerror(errno));
+		    crit("[%s:%s()] error while semget(2): %s",file, caller, strerror(errno));
 		    return FAIL;
         }
 		created=0;
@@ -217,18 +217,16 @@ int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
 		for (i=0; i<num; i++) {
 			semarg.val = 1;
 			if (semctl(ipc->id,i,SETVAL,semarg) == -1) {
-				error("semctl SETVAL error.[%s:%s()]:%s",
-										file, caller, strerror(errno));
+				error("[%s:%s()] semctl(2) SETVAL error: %s", file, caller, strerror(errno));
 				return FAIL;
 			}
 		}
-		created = 1;
+		created=1;
 	}
 	/* semaphore will be removed automatically when shutdown */
 	if (created) {
 		allocated_ipcs[last_ipc].type = IPC_TYPE_SEM;
 		allocated_ipcs[last_ipc].id = ipc->id;
-// #ifdef DEBUG_SOFTBOT XXX: conditional compilation needed?
 		allocated_ipcs[last_ipc].key = ipc->key;
 		if (ipc->pathname != NULL) {
 			strncpy(allocated_ipcs[last_ipc].path,ipc->pathname,SHORT_STRING_SIZE);
@@ -237,7 +235,6 @@ int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
 		}
 		allocated_ipcs[last_ipc].path[SHORT_STRING_SIZE-1] = '\0';
 		allocated_ipcs[last_ipc].pid=ipc->pid;
-// #endif 			
 		last_ipc++;
 		if ( last_ipc == MAX_SYS5_IPC ) {
 			warn("cannot save ipc id for later disposal.");
@@ -264,6 +261,46 @@ int add_semid_to_allocated_ipcs(int semid)
 	}
 
 	return SUCCESS;
+}
+
+/*** Reader/Writer Lock *******************************************************/
+struct rwlock_t {
+  pthread_rwlock_t *pthread_rwlock;
+};
+
+int rwlock_init(rwlock_t *rwlp, int type)
+{
+	return pthread_rwlock_init(rwlp->pthread_rwlock, NULL);
+}
+
+int rwlock_destroy(rwlock_t *rwlp)
+{
+	return pthread_rwlock_destroy(rwlp->pthread_rwlock);
+}
+
+int rw_rdlock(rwlock_t *rwlp)
+{
+	return pthread_rwlock_rdlock(rwlp->pthread_rwlock);
+}
+
+int rw_wrlock(rwlock_t *rwlp)
+{
+	return pthread_rwlock_wrlock(rwlp->pthread_rwlock);
+}
+
+int rw_unlock(rwlock_t *rwlp)
+{
+	return pthread_rwlock_unlock(rwlp->pthread_rwlock);
+}
+
+int rw_tryrdlock(rwlock_t *rwlp)
+{
+	return pthread_rwlock_tryrdlock(rwlp->pthread_rwlock);
+}
+
+int rw_trywrlock(rwlock_t *rwlp)
+{
+	return pthread_rwlock_trywrlock(rwlp->pthread_rwlock);
 }
 
 /*** SYS5 Shared Memory *******************************************************/

@@ -1,5 +1,5 @@
 # $Id$
-include $(top_builddir)/Make.defs
+#include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
