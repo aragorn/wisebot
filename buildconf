@@ -33,7 +33,7 @@ libtoolize --automake --force --copy
 #rm -f configure.in
 
 autoheader
-automake --add-missing --copy --force
+automake --add-missing --copy --no-force --ignore-deps
 autoconf
 
 exit 0
