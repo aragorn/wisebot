@@ -278,27 +278,27 @@ int rwlock_destroy(rwlock_t *rwlp)
 	return pthread_rwlock_destroy(rwlp->pthread_rwlock);
 }
 
-int rw_rdlock(rwlock_t *rwlp)
+int rwlock_rdlock(rwlock_t *rwlp)
 {
 	return pthread_rwlock_rdlock(rwlp->pthread_rwlock);
 }
 
-int rw_wrlock(rwlock_t *rwlp)
+int rwlock_wrlock(rwlock_t *rwlp)
 {
 	return pthread_rwlock_wrlock(rwlp->pthread_rwlock);
 }
 
-int rw_unlock(rwlock_t *rwlp)
+int rwlock_unlock(rwlock_t *rwlp)
 {
 	return pthread_rwlock_unlock(rwlp->pthread_rwlock);
 }
 
-int rw_tryrdlock(rwlock_t *rwlp)
+int rwlock_tryrdlock(rwlock_t *rwlp)
 {
 	return pthread_rwlock_tryrdlock(rwlp->pthread_rwlock);
 }
 
-int rw_trywrlock(rwlock_t *rwlp)
+int rwlock_trywrlock(rwlock_t *rwlp)
 {
 	return pthread_rwlock_trywrlock(rwlp->pthread_rwlock);
 }

@@ -79,11 +79,11 @@ typedef struct rwlock_t rwlock_t;
 
 SB_DECLARE(int) rwlock_init(rwlock_t *rwlp, int type);
 SB_DECLARE(int) rwlock_destroy(rwlock_t *rwlp);
-SB_DECLARE(int) rw_rdlock(rwlock_t *rwlp);
-SB_DECLARE(int) rw_wrlock(rwlock_t *rwlp);
-SB_DECLARE(int) rw_unlock(rwlock_t *rwlp);
-SB_DECLARE(int) rw_tryrdlock(rwlock_t *rwlp);
-SB_DECLARE(int) rw_trywrlock(rwlock_t *rwlp);
+SB_DECLARE(int) rwlock_rdlock(rwlock_t *rwlp);
+SB_DECLARE(int) rwlock_wrlock(rwlock_t *rwlp);
+SB_DECLARE(int) rwlock_unlock(rwlock_t *rwlp);
+SB_DECLARE(int) rwlock_tryrdlock(rwlock_t *rwlp);
+SB_DECLARE(int) rwlock_trywrlock(rwlock_t *rwlp);
 
 #define alloc_shm(ipc) _alloc_shm(ipc,__FILE__,__FUNCTION__)
 

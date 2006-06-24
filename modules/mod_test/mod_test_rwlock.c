@@ -1,5 +1,7 @@
 /* $Id$ */
-#include "common.h"
+#include "common_core.h"
+#include "ipc.h"
+#include <stdlib.h> /* EXIT_SUCCESS */
 
 #define MAX_THREADS (100)
 
@@ -8,23 +10,25 @@ static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(MAX_THREADS) };
 int *shared_int = NULL;
 int needed_threads = 10;
 int test_count = 1000*1000;
-rwlock_t rwlock;
+rwlock_t* rwlock;
 
 static int child_main (slot_t *slot)
 {
 	int i;
-	int inc = (slot->id % 2 == 0) 1 : -1;
+	int inc;
+   
+	inc = (slot->id % 2 == 0) ? 1 : -1;
 
 	for (i = 0; i < test_count; i++) {
 		if (i % 10 == 0) {
-			rwlock_wrlock(&rwlock);
+			rwlock_wrlock(rwlock);
 			*shared_int += inc;
-			rwlock_unlock(&rwlock);
+			rwlock_unlock(rwlock);
 		} else {
-			rwlock_rdlock(&rwlock);
+			rwlock_rdlock(rwlock);
 			if (*shared_int > 100 || *shared_int < -100)
 				warn("[%d] shared int = %d", slot->id, *shared_int);
-			rwlock_unlock(&rwlock);
+			rwlock_unlock(rwlock);
 		}
 	}
 
@@ -33,7 +37,6 @@ static int child_main (slot_t *slot)
 
 static int module_main (slot_t *slot)
 {
-	int n;
 	char filename[L_tmpnam];
 	ipc_t ipc;
 
@@ -52,14 +55,14 @@ static int module_main (slot_t *slot)
 	*shared_int = 0;
 
 	CRIT("start of test: shared int = %d", *shared_int);
-	rwlock_init(&rwlock, 0);
+	rwlock_init(rwlock, 0);
 
 	scoreboard->size = (needed_threads < MAX_THREADS) ? needed_threads : MAX_THREADS;
 	sb_run_init_scoreboard(scoreboard);
 
-	rwlock_wrlock(&rwlock);
+	rwlock_wrlock(rwlock);
 	sb_run_spawn_processes(scoreboard, "rwlock process", child_main);
-	rwlock_unlock(&rwlock);
+	rwlock_unlock(rwlock);
 
 	sb_run_monitor_processes(scoreboard);
 
