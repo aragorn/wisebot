@@ -302,36 +302,58 @@ static int spawn_process_for_module(scoreboard_t *scoreboard, module *mod)
 static int monitor_threads(scoreboard_t *scoreboard)
 {
 	slot_t *slot;
+	struct timeval timeout;
 	int i=0, n=0, alive;
 
+	if ( scoreboard->period == 0 ) {
+		warn("%s monitor: scoreboard->period[0] is too short."
+			 " temporarily setting it [3]", scoreboard->name);
+		scoreboard->period = 3;
+	}
+
 	for ( ; ; ) {
-/*		debug("loop - shutdown[%d], graceful_shutdown[%d]",*/
-/*				scoreboard->shutdown, scoreboard->graceful_shutdown);*/
+		/* we need to reinitialize timeval.
+		 * see NOTES of select(2). Linux specific problem */
+		timeout.tv_sec = scoreboard->period;
+		timeout.tv_usec = 0;
+
+		set_proc_desc(NULL, "softbotd: monitoring %s",scoreboard->name);
 
 		// checking threads and if died, restart thread
 		for (i = 1, alive = 0; i <= scoreboard->size; i++) {
 			slot = &(scoreboard->slot[i]);
+			if (slot->pthread == 0 || slot->state == SLOT_OPEN) continue;
 
 			n = pthread_kill(slot->pthread, 0);
 			if ( n == 0 ) {
-				/* thread is alive */
+			/* 쓰레드가 살아있다. */
 				alive++;
-				//if ( scoreboard->shutdown ) pthread_cancel(slot->pthread);
 				if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
 				{
 					int shutdown_signal = SIGNAL_GRACEFUL_SHUTDOWN;
+					if ( scoreboard->shutdown ) shutdown_signal = SIGNAL_SHUTDOWN;
 
-					if ( scoreboard->shutdown )
-						shutdown_signal = SIGNAL_SHUTDOWN;
 					pthread_kill(slot->pthread, shutdown_signal);
 					debug("pthread_kill(slot[%d],signal[%d])",
 											slot->id, shutdown_signal);
-					scoreboard->slot[0].state = SLOT_CLOSING;
 				}
 
 			} else if ( n == ESRCH ) {
+			/* 쓰레드가 종료되었다.
+			 * 종료 상태인 경우, 무시한다.
+			 * SLOT_RESTART인 경우, 재생성한다.
+			 * 그 외의 경우, SLOT을 비우고, 무시한다.
+			 */
+				if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) continue;
+
+				if ( slot->state == SLOT_RESTART ) {
+					slow_start();
+					spawn_thread(slot, slot->name, slot->main);
+					alive++;
+					continue;
+				}
 				/* do not spawn threads when slot state is finish */
-				if ( slot->state == SLOT_FINISH ) {
+				else if ( slot->state == SLOT_FINISH ) {
 					info("thread of %s->slot[%d] has died with slot->state: SLOT_FINISH[%d]",
 							scoreboard->name, i, slot->state);
 					info("making slot state SLOT_OPEN");
@@ -342,22 +364,10 @@ static int monitor_threads(scoreboard_t *scoreboard)
 					continue;
 				}
 
-				slot->state = SLOT_START;
-				slot->pid = 0;
-				slot->pthread = -1;
-
 				if (slot->state != SLOT_RESTART) {
 					warn("thread of %s->slot[%d] has died with invalid state[%d]",
 							scoreboard->name, i, slot->state);
 				}
-
-				if (scoreboard->shutdown || 
-					scoreboard->graceful_shutdown) continue;
-
-				spawn_thread(slot, slot->name, slot->main);
-				alive++;
-			
-				debug("thread slot[%d] is empty", i);
 			} else {
 				crit("%s monitor: unknown pthread error:"
 					 " pthread_kill() returned %d", 
@@ -366,15 +376,16 @@ static int monitor_threads(scoreboard_t *scoreboard)
 		}
 
 		/* shutdown flag is on, so we have to break and return. */
-		if ( (scoreboard->shutdown ||
-			  scoreboard->graceful_shutdown) && alive == 0 ) break;
+		if ( alive == 0 ) break;
+		//if ( (scoreboard->shutdown ||
+		//	  scoreboard->graceful_shutdown) && alive == 0 ) break;
 
-/*		debug("waiting %d sec, scoreboard size[%d], alive[%d]",*/
-/*				scoreboard->period,scoreboard->size, alive);*/
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
-			usleep(10000);
-		else
-			sleep(scoreboard->period);
+		{
+			timeout.tv_sec  = 0;
+			timeout.tv_usec = 1000 * 100;
+		}
+		select(0, NULL, NULL, NULL, &timeout);
 	}
 	scoreboard->slot[0].state = SLOT_FINISH;
 	debug("%s monitor: returning SUCCESS", scoreboard->name);
