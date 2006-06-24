@@ -4,6 +4,7 @@
 #include <stdlib.h> /* EXIT_SUCCESS */
 #include <signal.h>
 #include <string.h>
+#include <unistd.h> /* usleep(3) */
 
 #define MAX_THREADS (20)
 
@@ -67,9 +68,10 @@ static int child_main (slot_t *slot)
 			rwlock_wrlock(rwlock);
 			*shared_int += inc;
 			rwlock_unlock(rwlock);
+			usleep(1);
 		} else {
 			rwlock_rdlock(rwlock);
-			if (*shared_int > 10 || *shared_int < -10)
+			if (*shared_int > 2 || *shared_int < -2)
 				warn("[%d] shared int = %d", slot->id, *shared_int);
 			rwlock_unlock(rwlock);
 		}
@@ -77,6 +79,7 @@ static int child_main (slot_t *slot)
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 	}
 	slot->state = SLOT_FINISH;
+	debug("slot[id:%d][pthread:%lu] exits.", slot->id, slot->pthread);
 
 	return EXIT_SUCCESS;
 }
@@ -100,7 +103,6 @@ static int module_main (slot_t *slot)
 	shared_int = ipc.addr;
 	*shared_int = 0;
 
-	CRIT("start of test: shared int = %d", *shared_int);
 	rwlock_init(&rwlock);
 
 	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
@@ -108,8 +110,12 @@ static int module_main (slot_t *slot)
 	scoreboard->size = (needed_threads < MAX_THREADS) ? needed_threads : MAX_THREADS;
 	if (sb_run_init_scoreboard(scoreboard) != SUCCESS) return EXIT_FAILURE;
 
+	scoreboard->period = 3;
 	rwlock_wrlock(rwlock);
 	sb_run_spawn_processes(scoreboard, "rwlock process", child_main);
+
+	sleep(1);
+	CRIT("start of test: shared int = %d", *shared_int);
 	rwlock_unlock(rwlock);
 
 	sb_run_monitor_processes(scoreboard);

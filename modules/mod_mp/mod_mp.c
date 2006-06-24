@@ -115,6 +115,7 @@ static int spawn_thread(slot_t *slot, const char *name, int (*main)(slot_t *))
 		return FAIL;
 	}
 	slot->pid = slot->pthread;
+	debug("slot->pthread[%lu],pid[%d]", slot->pthread,slot->pid);
 
 	n = pthread_detach(slot->pthread);
 	if ( n != 0 ) warn("pthread_detach returned %d: %s", n, strerror(errno));
@@ -315,8 +316,9 @@ static int monitor_threads(scoreboard_t *scoreboard)
 		// checking threads and if died, restart thread
 		for (i = 1, alive = 0; i <= scoreboard->size; i++) {
 			slot = &(scoreboard->slot[i]);
-			if (slot->pthread == 0 || slot->state == SLOT_OPEN) continue;
+			if (slot->pthread < 0 || slot->state == SLOT_OPEN) continue;
 
+			debug("pthread_kill(slot->pthread[%lu],0)", slot->pthread);
 			n = pthread_kill(slot->pthread, 0);
 			if ( n == 0 ) {
 			/* 쓰레드가 살아있다. */
