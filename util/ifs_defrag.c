@@ -1,7 +1,15 @@
+/* $Id$ */
 #include "common_core.h"
 #include "common_util.h"
-#include "../modules/mod_ifs/table.h"
-#include "../modules/mod_ifs/mod_ifs_defrag.h"
+#include "setproctitle.h"
+#include "ipc.h"
+#include "mod_ifs/table.h"
+#include "mod_ifs/mod_ifs_defrag.h"
+#include <stdlib.h> /* free(3) */
+#include <string.h> /* strcasecmp(3),strncpy(3),memset(3) */
+#ifdef HAVE_GETOPT_LONG
+# include <getopt.h>
+#endif
 
 #define DEFAULT_PATH ""
 static char path[MAX_PATH_LEN] = DEFAULT_PATH;
