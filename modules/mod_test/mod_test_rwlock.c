@@ -2,16 +2,59 @@
 #include "common_core.h"
 #include "ipc.h"
 #include <stdlib.h> /* EXIT_SUCCESS */
+#include <signal.h>
+#include <string.h>
 
-#define MAX_THREADS (100)
+#define MAX_THREADS (20)
 
 static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(MAX_THREADS) };
+//static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(MAX_THREADS) };
 
 int *shared_int = NULL;
 int needed_threads = 10;
 int test_count = 1000*1000;
 rwlock_t* rwlock;
 
+/****************************************************************************/
+static void _do_nothing(int sig)
+{
+	return;
+}
+
+static void _shutdown(int sig)
+{
+	struct sigaction act;
+
+	memset(&act, 0x00, sizeof(act));
+
+//	act.sa_flags = SA_RESTART;
+	sigfillset(&act.sa_mask);
+
+	act.sa_handler = _do_nothing;
+	sigaction(SIGHUP, &act, NULL);
+	sigaction(SIGINT, &act, NULL);
+	sigaction(SIGQUIT, &act, NULL);
+	sigaction(SIGTERM, &act, NULL);
+
+	scoreboard->shutdown++;
+}
+
+static void _graceful_shutdown(int sig)
+{
+	struct sigaction act;
+
+	memset(&act, 0x00, sizeof(act));
+
+//	act.sa_flags = SA_RESTART;
+	sigfillset(&act.sa_mask);
+
+	act.sa_handler = _do_nothing;
+	sigaction(SIGHUP, &act, NULL);
+	sigaction(SIGINT, &act, NULL);
+
+	scoreboard->graceful_shutdown++;
+}
+/****************************************************************************/
 static int child_main (slot_t *slot)
 {
 	int i;
@@ -26,11 +69,14 @@ static int child_main (slot_t *slot)
 			rwlock_unlock(rwlock);
 		} else {
 			rwlock_rdlock(rwlock);
-			if (*shared_int > 100 || *shared_int < -100)
+			if (*shared_int > 10 || *shared_int < -10)
 				warn("[%d] shared int = %d", slot->id, *shared_int);
 			rwlock_unlock(rwlock);
 		}
+
+		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 	}
+	slot->state = SLOT_FINISH;
 
 	return EXIT_SUCCESS;
 }
@@ -49,22 +95,24 @@ static int module_main (slot_t *slot)
 	ipc.size     = sizeof(int);
 	if (alloc_mmap(&ipc,0) != SUCCESS) {
 		error("alloc_mmap() returned FAIL.");
-		return 1;
+		return EXIT_FAILURE;
 	}
 	shared_int = ipc.addr;
 	*shared_int = 0;
 
 	CRIT("start of test: shared int = %d", *shared_int);
-	rwlock_init(rwlock, 0);
+	rwlock_init(&rwlock);
+
+	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 
 	scoreboard->size = (needed_threads < MAX_THREADS) ? needed_threads : MAX_THREADS;
-	sb_run_init_scoreboard(scoreboard);
+	if (sb_run_init_scoreboard(scoreboard) != SUCCESS) return EXIT_FAILURE;
 
 	rwlock_wrlock(rwlock);
-	sb_run_spawn_processes(scoreboard, "rwlock process", child_main);
+	sb_run_spawn_threads(scoreboard, "rwlock process", child_main);
 	rwlock_unlock(rwlock);
 
-	sb_run_monitor_processes(scoreboard);
+	sb_run_monitor_threads(scoreboard);
 
 	CRIT("end of test: shared int = %d", *shared_int);
 	free_mmap(shared_int, sizeof(int));
@@ -99,6 +147,6 @@ module test_rwlock_module = {
 	NULL,				/* registry */
 	NULL,				/* initialize */
 	module_main,		/* child_main */
-	NULL,				/* scoreboard */
+	scoreboard,			/* scoreboard */
 	NULL,				/* register hook api */
 };
