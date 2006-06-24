@@ -384,7 +384,8 @@ static int monitor_threads(scoreboard_t *scoreboard)
 }
 
 #define ERROR_TIME_SLOT_SIZE	(10)
-#define TOO_MANY_ERRORS		(10)
+#define TOO_MANY_ERRORS			(10)
+#define WAIT_WHEN_NO_CHILD		(3)
 static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 {
 	int status;
@@ -394,9 +395,9 @@ static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 	int timeslot = 0;
 	int errors = 0;
 	int now = 0;
-//	int save_registry = 0;
 	proc_node *proc_list = NULL, *proc_node;
 	int slot_id;
+	int wait_when_no_child = 3;
 
 
 	if ( scoreboard->period == 0 ) {
@@ -405,13 +406,7 @@ static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 		scoreboard->period = 3;
 	}
 
-//	if ( mod != NULL ) {
-//		/* mod is not NULL when called by server.c */
-//		save_registry = 1;
-//	}
-
-	//debug("scoreboard slot size:%d",scoreboard->size);
-
+	debug("scoreboard slot size:%d",scoreboard->size);
 	for ( ; ; ) {
 		// 살릴 시간이 된 녀석들은 살린다. 여러개일 수도 있지만 하나씩만 천천히 살리자.
 		proc_node = delete_from_first(&proc_list);
@@ -435,13 +430,14 @@ static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 
 		set_proc_desc(NULL, "softbotd: monitoring %s",scoreboard->name);
 
-		/* save registry file periodically */
-		//if (save_registry) save_registry_file(gRegistryFile);
-
 		/* monitor child processes */
 		pid = waitpid(-1, &status, WNOHANG);
-		if (pid != 0) debug("waitpid returned pid[%d]", (int) pid);
+		if ( pid != 0 ) debug("waitpid returned pid[%d]", (int) pid);
 		if ( pid == 0 ) {
+			/* 종료된 child process가 없다.
+			 * 종료 시그널을 받은 경우, 각 child process에서 종료시그널을 보내고,
+			 * 다음번 루프로 돌아간다. */
+			wait_when_no_child = WAIT_WHEN_NO_CHILD;
 			int i;
 			if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
 			{
@@ -468,6 +464,17 @@ static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 			select(0, NULL, NULL, NULL, &timeout);
 
 		} else if ( pid > 0 ) {
+			/* 종료된 child process가 있다.
+			 * 1) 정상종료이고, 재시작이 필요하면 프로세스를 다시 생성한다.
+			 * 2) 정상종료이고, 재시작이 필요없으면, SLOT을 비우고 내버려둔다.
+			 * 3) 비정상종료이고, 짧은 시간 반복적으로 종료한다면, 전체 시스템을
+			 *    종료한다.
+			 * 4) 시그널 받은 비정상종료이고, 종료 중인 경우, 무시한다.
+			 * 5) 시그널 받은 비정상종료이고, 종료 중이지 않은 경우, 재시작 큐에 추가한다.
+			 * 6) 시그널 없이 비정상종료한 경우, 종료 중인 경우, 무시한다.
+			 * 7) 시그널 없이 비정상종료한 경우, 종료 중이지 않은 경우, 재생성한다.
+			 * 8) 그 외 경우 - 예측 불가
+			 */
 			slot = get_slot_by_pid(scoreboard, pid);
 			if ( slot == NULL ) {
 				info("waited process[%d] is not my child", (int)pid);
@@ -515,10 +522,9 @@ static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 				if (scoreboard->shutdown ||
 					scoreboard->graceful_shutdown ) continue;
 
-//				if ( sig == 9 || sig == 11 ) {
-					// list에 집어넣고 나중에 재시작한다.
-					if ( add_to_last( &proc_list, slot->id ) == SUCCESS ) continue;
-//				}
+				/* 비정상 종료인 경우, proc_list queue에 넣어두고, 다음 루프에
+				 * 천천히 재시작시킨다. */
+				if ( add_to_last( &proc_list, slot->id ) == SUCCESS ) continue;
 
 				slow_start();
 				spawn_process(slot, slot->name, slot->main);
@@ -536,13 +542,19 @@ static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 						scoreboard->name, (int)pid, slot->name, status);
 			}
 		} else if ( pid == -1 && errno == ECHILD ) {
-			info("%s monitor: no child process [%d][%d]",
-					scoreboard->name, 
+			/* 자식 프로세스가 없다.
+			 * 1) 종료해야 하는 경우, 종료한다.
+			 * 2) 종료하지 않아야 하는 경우, 이상하다.
+			 */
+			--wait_when_no_child;
+			info("%s monitor: no child process. wait for %d times. [%d][%d]",
+					scoreboard->name, wait_when_no_child,
 					scoreboard->shutdown, scoreboard->graceful_shutdown);
 			set_proc_desc(NULL, "softbotd: %s monitor: no child process [%d][%d]",
 					scoreboard->name, scoreboard->shutdown, scoreboard->graceful_shutdown);
 
 			if (scoreboard->shutdown || scoreboard->graceful_shutdown) break;
+			if (wait_when_no_child <= 0) break;
 
 			select(0, NULL, NULL, NULL, &timeout);
 		} else {
@@ -571,7 +583,8 @@ static int init_scoreboard(scoreboard_t *scoreboard)
 	int i;
 
 	if (scoreboard->init == 0) {
-		warn("uninitialized scoreboard. check if the module has NULL scoreboard pointer.");
+		error("uninitialized scoreboard. "
+			"check if the module object has a proper scoreboard pointer.");
 		return FAIL;
 	}
 	scoreboard->shutdown = 0;
