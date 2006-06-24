@@ -13,11 +13,12 @@ mod_morpheme_la_SOURCES = mod_morpheme.c \
 				lib/lb_std.c lib/lb_lex.c \
 				mod_morpheme.h 
 mod_morpheme_la_LDFLAGS = -module -avoid-version -no-undefined
+mod_morpheme_la_LIBADD  = $(libdir)/libcommon_core.la
 
-EXTRA_DIST = lib
-
-dist-hook:
-	rm -rf `find $(distdir)/ -name CVS`
+#EXTRA_DIST = lib
+#
+#dist-hook:
+#	rm -rf `find $(distdir)/ -name CVS`
 
 #libmod_morpheme_ja_la_SOURCES = jalib/mmap.h csv.h jalib/dictionary_maker.h jalib/viterbi.cpp \
 #              jalib/node.h jalib/tokenizer.h jalib/common.h  jalib/darts.h jalib/codeconv.h \

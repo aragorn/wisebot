@@ -5,19 +5,16 @@
 **  2000.04 By KJB
 */
 /* *************************************************************** */
-#include "auto_config.h"
-#include "softbot.h"
-
-#include  <stdio.h>
-#include  <stdlib.h>
-#include  <string.h>
-#include  <ctype.h>
-#include  "old_softbot.h"
-#include  <sys/time.h>
+#include "common_core.h"
+#include "old_softbot.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <time.h>
 #if defined(LINUX) || defined(CYGWIN)
 #  include <sys/time.h>
 #endif
-
 #include  <stdarg.h>
 
 #include  "lb_std.h"
