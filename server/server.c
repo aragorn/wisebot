@@ -313,7 +313,7 @@ int server_main()
 	else
 		sb_run_spawn_processes_for_each_module(scoreboard, first_module);
 
-	crit("** master monitoring loop **");
+	CRIT("*** master monitoring loop ***");
 	setproctitle("softbotd: master - monitoring");
 	set_proc_desc(NULL, "softbotd: master - monitoring");
 	scoreboard->period = CHILD_MONITORING_PERIOD;
@@ -383,7 +383,7 @@ main(int argc, char *argv[], char *envp[])
 			strcpy( gSoftBotRoot, SoftBotRoot );
 		}
 	}
-	info("server has started at [%s].", gSoftBotRoot );
+	info("server has started in [%s].", gSoftBotRoot );
 
 
 #ifdef AIX5

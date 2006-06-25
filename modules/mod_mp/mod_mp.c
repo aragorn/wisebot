@@ -237,7 +237,7 @@ static int spawn_processes_for_each_module(scoreboard_t *scoreboard, module *mod
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 
 		slow_start();
-		crit("spawn process for module[%s]", m->name);
+		notice("spawn process for module[%s]", m->name);
 		strncpy(scoreboard->slot[i].name, m->name, SHORT_STRING_SIZE);
 		scoreboard->slot[i].name[SHORT_STRING_SIZE-1] = '\0';
 		scoreboard->slot[i].main = m->main;
@@ -245,7 +245,7 @@ static int spawn_processes_for_each_module(scoreboard_t *scoreboard, module *mod
 	}
 
 	if (i == 1) {
-		crit("no processes are forked");
+		warn("no processes are forked");
 	}
 
 	return SUCCESS;
