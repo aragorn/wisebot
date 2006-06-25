@@ -8,8 +8,8 @@
 
 #define MAX_THREADS (20)
 
-static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(MAX_THREADS) };
-//static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(MAX_THREADS) };
+//static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(MAX_THREADS) };
+static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(MAX_THREADS) };
 
 int *shared_int = NULL;
 int needed_threads = 10;
@@ -24,20 +24,7 @@ static void _do_nothing(int sig)
 
 static void _shutdown(int sig)
 {
-	struct sigaction act;
-
-	memset(&act, 0x00, sizeof(act));
-
-//	act.sa_flags = SA_RESTART;
-	sigfillset(&act.sa_mask);
-
-	act.sa_handler = _do_nothing;
-	sigaction(SIGHUP, &act, NULL);
-	sigaction(SIGINT, &act, NULL);
-	sigaction(SIGQUIT, &act, NULL);
-	sigaction(SIGTERM, &act, NULL);
-
-	scoreboard->shutdown++;
+	exit(EXIT_SUCCESS);
 }
 
 static void _graceful_shutdown(int sig)
@@ -67,12 +54,13 @@ static int child_main (slot_t *slot)
 		if (i % 10 == 0) {
 			rwlock_wrlock(rwlock);
 			*shared_int += inc;
+		usleep(1);
 			rwlock_unlock(rwlock);
-			usleep(1);
 		} else {
 			rwlock_rdlock(rwlock);
 			if (*shared_int > 2 || *shared_int < -2)
 				warn("[%d] shared int = %d", slot->id, *shared_int);
+		usleep(1);
 			rwlock_unlock(rwlock);
 		}
 
@@ -95,7 +83,7 @@ static int module_main (slot_t *slot)
 	}
 	ipc.type     = IPC_TYPE_MMAP;
 	ipc.pathname = filename;
-	ipc.size     = sizeof(int);
+	ipc.size     = sizeof(int)+sizeof(pthread_rwlock_t)+256;
 	if (alloc_mmap(&ipc,0) != SUCCESS) {
 		error("alloc_mmap() returned FAIL.");
 		return EXIT_FAILURE;
@@ -103,7 +91,10 @@ static int module_main (slot_t *slot)
 	shared_int = ipc.addr;
 	*shared_int = 0;
 
-	rwlock_init(&rwlock);
+	rwlock = ipc.addr + sizeof(int);
+	rwlock->pthread_rwlock = ipc.addr + sizeof(int) + sizeof(rwlock_t);
+
+	rwlock_init(rwlock);
 
 	sb_run_set_default_sighandlers(_shutdown, _graceful_shutdown);
 
