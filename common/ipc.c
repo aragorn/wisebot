@@ -265,19 +265,25 @@ int add_semid_to_allocated_ipcs(int semid)
 }
 
 /*** Reader/Writer Lock *******************************************************/
-/* moved to "include/ipc.h".
 struct rwlock_t {
   pthread_rwlock_t *pthread_rwlock;
 };
-*/
+
+int rwlock_sizeof(void)
+{
+	return sizeof(rwlock_t) + sizeof(pthread_rwlock_t);
+}
 
 int rwlock_init(rwlock_t *rwlp)
 {
 	int r;
 	pthread_rwlockattr_t rwlockattr;
 
-	CRIT("rwlp=%p,sizeof(rwlock_t)=%d,pthread_rwlock=%p",
-		rwlp, sizeof(rwlock_t), (rwlp)->pthread_rwlock);
+	rwlp->pthread_rwlock = ((void*)rwlp) + sizeof(rwlock_t);
+/*
+	CRIT("rwlp=%p,sizeof(rwlock_t)=%d,rwlock_sizeof()=%d,pthread_rwlock=%p",
+		rwlp, sizeof(rwlock_t), rwlock_sizeof(), (rwlp)->pthread_rwlock);
+*/
 
 	r = pthread_rwlockattr_init(&rwlockattr);
 	if ( r != 0 ) {

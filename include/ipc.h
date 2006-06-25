@@ -76,10 +76,8 @@ SB_DECLARE(int) _get_nsem(ipc_t *ipc,int num,const char* file,const char* caller
 SB_DECLARE(int) add_semid_to_allocated_ipcs(int semid);
 
 typedef struct rwlock_t rwlock_t;
-struct rwlock_t {
-  pthread_rwlock_t *pthread_rwlock;
-};
 
+SB_DECLARE(int) rwlock_sizeof();
 SB_DECLARE(int) rwlock_init(rwlock_t *rwlp);
 SB_DECLARE(int) rwlock_destroy(rwlock_t *rwlp);
 SB_DECLARE(int) rwlock_rdlock(rwlock_t *rwlp);

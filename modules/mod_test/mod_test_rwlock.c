@@ -82,7 +82,7 @@ static int module_main (slot_t *slot)
 	}
 	ipc.type     = IPC_TYPE_MMAP;
 	ipc.pathname = filename;
-	ipc.size     = sizeof(int)+sizeof(pthread_rwlock_t)+256;
+	ipc.size     = sizeof(int)+rwlock_sizeof();
 	if (alloc_mmap(&ipc,0) != SUCCESS) {
 		error("alloc_mmap() returned FAIL.");
 		return EXIT_FAILURE;
@@ -91,7 +91,6 @@ static int module_main (slot_t *slot)
 	*shared_int = 0;
 
 	rwlock = ipc.addr + sizeof(int);
-	rwlock->pthread_rwlock = ipc.addr + sizeof(int) + sizeof(rwlock_t);
 
 	rwlock_init(rwlock);
 
