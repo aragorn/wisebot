@@ -54,15 +54,14 @@ static int child_main (slot_t *slot)
 		if (i % 10 == 0) {
 			rwlock_wrlock(rwlock);
 			*shared_int += inc;
-		usleep(1);
 			rwlock_unlock(rwlock);
 		} else {
 			rwlock_rdlock(rwlock);
 			if (*shared_int > 2 || *shared_int < -2)
 				warn("[%d] shared int = %d", slot->id, *shared_int);
-		usleep(1);
 			rwlock_unlock(rwlock);
 		}
+		usleep(1);
 
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 	}
@@ -112,6 +111,8 @@ static int module_main (slot_t *slot)
 	sb_run_monitor_processes(scoreboard);
 
 	CRIT("end of test: shared int = %d", *shared_int);
+	SB_DEBUG_ASSERT(*shared_int == 0);
+
 	free_mmap(shared_int, sizeof(int));
 
 	return EXIT_SUCCESS;
