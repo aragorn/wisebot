@@ -6,6 +6,7 @@
 # error You should include "common_core.h" first.
 #endif
 
+#include <pthread.h> /* rwlock_t */
 #include <sys/types.h> /* key_t */
 
 #if !defined(SHM_R)
@@ -74,10 +75,12 @@ SB_DECLARE(int) _release_lock(int semid,int idx,const char *filename,const char*
 SB_DECLARE(int) _get_nsem(ipc_t *ipc,int num,const char* file,const char* caller);
 SB_DECLARE(int) add_semid_to_allocated_ipcs(int semid);
 
-
 typedef struct rwlock_t rwlock_t;
+struct rwlock_t {
+  pthread_rwlock_t *pthread_rwlock;
+};
 
-SB_DECLARE(int) rwlock_init(rwlock_t **rwlp);
+SB_DECLARE(int) rwlock_init(rwlock_t *rwlp);
 SB_DECLARE(int) rwlock_destroy(rwlock_t *rwlp);
 SB_DECLARE(int) rwlock_rdlock(rwlock_t *rwlp);
 SB_DECLARE(int) rwlock_wrlock(rwlock_t *rwlp);
