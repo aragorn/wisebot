@@ -1,34 +1,23 @@
 /* $Id$ */
-/* 
- * server.c 
- * Created by Aragorn, 2002-02-12
- */
-
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <signal.h>
 #include "common_core.h"
+#include "common_util.h"
+#include "memory.h"
+#include "setproctitle.h"
+#include "server.h"
+#include "ipc.h"
 
-#ifdef HAVE_GETOPT_LONG
+#ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
+#endif
+#ifdef HAVE_GETOPT_LONG
 #  include <getopt.h>
 #endif
 
-#include "scoreboard.h"
-#include "modules.h"
-#include "log_error.h"
-#include "memory.h"
-#include "hook.h"
-#include "config.h"
-#include "timelog.h"
-#include "registry.h"
-#include "setproctitle.h"
-#include "ipc.h"
-#include "scoreboard.h"
-#include "common_util.h"
-#include "server.h"
+#include <stdlib.h> /* exit(3) */
+#include <unistd.h> /* setsid(P) */
+#include <errno.h>
+#include <string.h>
+#include <signal.h>
 
 static char mConfigFile[MAX_PATH_LEN] = DEFAULT_CONFIG_FILE;
 static char mPidFile[MAX_PATH_LEN] = DEFAULT_PID_FILE;
@@ -394,7 +383,7 @@ main(int argc, char *argv[], char *envp[])
 			strcpy( gSoftBotRoot, SoftBotRoot );
 		}
 	}
-	info("gSoftBotRoot is %s", gSoftBotRoot );
+	info("server has started at [%s].", gSoftBotRoot );
 
 
 #ifdef AIX5
