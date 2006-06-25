@@ -8,8 +8,14 @@
 
 #define MAX_THREADS (20)
 
-//static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(MAX_THREADS) };
+#define USE_THREAD
+#undef  USE_THREAD
+
+#ifdef USE_THREAD
+static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(MAX_THREADS) };
+#else
 static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(MAX_THREADS) };
+#endif
 
 int *shared_int = NULL;
 int needed_threads = 10;
@@ -24,7 +30,11 @@ static void _do_nothing(int sig)
 
 static void _shutdown(int sig)
 {
+#ifdef USE_THREAD
+	pthread_exit(NULL);
+#else
 	exit(EXIT_SUCCESS);
+#endif
 }
 
 static void _graceful_shutdown(int sig)
