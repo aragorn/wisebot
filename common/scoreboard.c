@@ -1,8 +1,4 @@
 /* $Id$ */
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <time.h>
 #define CORE_PRIVATE 1
 #include "common_core.h"
 #include "ipc.h"
@@ -11,6 +7,10 @@
 #include "hook.h"
 #include "setproctitle.h"
 #include "scoreboard.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
 
 
 HOOK_STRUCT(

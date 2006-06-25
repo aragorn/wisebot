@@ -276,8 +276,6 @@ module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, 
 		modp->register_hooks = NULL;
 	}
 
-	INFO("calling add_module");
-
 	return add_module(modp, mod_symbol_name);
 }
 
@@ -321,7 +319,7 @@ int init_standard_modules(module *start_module)
 			}
 		}
 		else 
-			info("module %s has no init function",mod->name);
+			debug("module %s has no init function",mod->name);
 	}
 
 	return SUCCESS;
@@ -581,7 +579,7 @@ static module* add_module(module *this, const char *mod_symbol_name)
 		m->next = this;
 	}
 
-	debug("add module %s", this->name);
+	INFO("%s of %s", mod_symbol_name, this->name);
 	return this;
 }
 

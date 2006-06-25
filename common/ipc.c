@@ -265,34 +265,37 @@ int add_semid_to_allocated_ipcs(int semid)
 }
 
 /*** Reader/Writer Lock *******************************************************/
+/* moved to "include/ipc.h".
 struct rwlock_t {
   pthread_rwlock_t *pthread_rwlock;
 };
+*/
 
-int rwlock_init(rwlock_t **rwlp)
+int rwlock_init(rwlock_t *rwlp)
 {
-	void *ptr = calloc(1, sizeof(rwlock_t) + sizeof(pthread_rwlock_t));
-	if (ptr == NULL) {
-		error("cannot calloc(3) for rwlock: %s", strerror(errno));
-		return ENOMEM;
-	}
-	*rwlp = ptr;
-	(*rwlp)->pthread_rwlock = ptr + sizeof(rwlock_t);
-	SB_DEBUG_ASSERT((void*) *rwlp + sizeof(rwlock_t) == (void*) (*rwlp)->pthread_rwlock);
-	/*
-	CRIT("ptr=%p,rwlp=%p,*rwlp=%p,sizeof(rwlock_t)=%d,pthread_rwlock=%p",
-		ptr, rwlp, *rwlp, sizeof(rwlock_t), (*rwlp)->pthread_rwlock);
-	*/
+	int r;
+	pthread_rwlockattr_t rwlockattr;
 
-	return pthread_rwlock_init((*rwlp)->pthread_rwlock, NULL);
+	CRIT("rwlp=%p,sizeof(rwlock_t)=%d,pthread_rwlock=%p",
+		rwlp, sizeof(rwlock_t), (rwlp)->pthread_rwlock);
+
+	r = pthread_rwlockattr_init(&rwlockattr);
+	if ( r != 0 ) {
+		error("pthread_rwlockattr_init() returned %d", r);
+		return r;
+	}
+	r = pthread_rwlockattr_setpshared(&rwlockattr, PTHREAD_PROCESS_SHARED);
+	if ( r != 0 ) {
+		error("pthread_rwlockattr_setpshared() returned %d", r);
+		return r;
+	}
+
+	return pthread_rwlock_init((rwlp)->pthread_rwlock, NULL);
 }
 
 int rwlock_destroy(rwlock_t *rwlp)
 {
-	int r = pthread_rwlock_destroy(rwlp->pthread_rwlock);
-	if (r != 0) error("pthread_rwlock_destroy returned %d", r);
-	free(rwlp);
-	return r;
+	return pthread_rwlock_destroy(rwlp->pthread_rwlock);
 }
 
 int rwlock_rdlock(rwlock_t *rwlp)
@@ -336,9 +339,9 @@ int _alloc_shm(ipc_t *ipc,const char* file,const char* caller)
 	size += ipc->size;
 
     if(ipc->pathname != NULL) {
-	   info("counter:%d, size:%d, pathname:%s", counter, size, ipc->pathname);
+	   debug("counter:%d, size:%d, pathname:%s", counter, size, ipc->pathname);
     } else {
-	   info("counter:%d, size:%d, pathname:%s", counter, size, "");
+	   debug("counter:%d, size:%d, pathname:%s", counter, size, "");
     }
 
 	if ( ipc->pathname == NULL ) {
@@ -379,44 +382,19 @@ int _alloc_shm(ipc_t *ipc,const char* file,const char* caller)
 			}
 		}
 	}
-	info("key:"KEY_T_FORMAT,ipc->key);
+	debug("key:"KEY_T_FORMAT,ipc->key);
 
 RETRY:
 	ipc->id = shmget(ipc->key, ipc->size, SHM_R|SHM_W|IPC_CREAT|IPC_EXCL);
 
 	if (ipc->id == -1 && errno == EEXIST) {
-//		struct shmid_ds ds;
-
-		notice("using existing shared memory[%s:%s()]",file,caller);
+		info("use existing shared memory[%s:%s()]",file,caller);
 		ipc->id = shmget(ipc->key, 0, SHM_R|SHM_W);
 		if (ipc->id == -1) {
 			crit("error while trying to use existing shared memory[%s:%s()]: %s",
 									file, caller, strerror(errno));
 			return FAIL;
 		}
-
-#if 0
-		/* attach count가 0이면 created로 간주한다.
-		 * ipc->attr = SHM_CREATED 가 되면, caller가 해당 shared memory를 적절히
-		 * 초기화할 것이다.
-		 * 이렇게 되면 엔진 종료 후 비정상적으로 남은 shared memory를 재활용할 때
-		 * 오류를 방지할 수 있다.
-		 * added by chaeyk
-		 */
-		if ( shmctl( ipc->id, IPC_STAT, &ds ) < 0 ) {
-			crit("error with shmctl: %s:%s():%s", file, caller, strerror(errno));
-			return FAIL;
-		}
-
-		if ( ds.shm_nattch == 0 ) {
-			warn("shm_nattch == 0. so, we regard it as created shared memory.");
-			ipc->attr = SHM_CREATED;
-			created = 1;
-		} else {
-			ipc->attr = SHM_ATTACHED;
-			created = 0;
-		}
-#endif
 		ipc->attr = SHM_ATTACHED;
 		created = 0;
 	}
@@ -439,13 +417,13 @@ RETRY:
 	}
 
 	ipc->addr = shmat(ipc->id,NULL,SHM_R|SHM_W);
-	info("shmat(ipc->id:%d) returned ipc->addr:%p, errno:%d, [%s]", ipc->id, ipc->addr, errno, strerror(errno));
+	debug("shmat(ipc->id:%d) returned ipc->addr:%p, errno:%d, [%s]", ipc->id, ipc->addr, errno, strerror(errno));
 	if ((intptr_t)(ipc->addr) == -1) {
 		crit("error while attaching shared memory[%s:%s()]: %s", 
 			  file, caller, strerror(errno));
 		if (errno == EMFILE)
-			crit("HINT: check the maximum number of shm segments \
-attached to the calling process, SHMSEG value of the kernel.");
+			crit("HINT: check the maximum number of shm segments "
+				"attached to the calling process, SHMSEG value of the kernel.");
 		else
 			crit("EACCES[%d] EINVAL[%d] ENOMEM[%d] this errno:%d",
 			  EACCES, EINVAL, ENOMEM, errno);
@@ -482,7 +460,7 @@ attached to the calling process, SHMSEG value of the kernel.");
 		}
 	}
 
-	info("[%s:%s()] got shared memory[%d], size[%d], addr[%p]",
+	debug("[%s:%s()] got shared memory: id[%d], size[%d], addr[%p]",
 			file, caller, ipc->id, ipc->size, ipc->addr);
 	return SUCCESS;
 }
