@@ -635,7 +635,6 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		return DECLINE;
 	db = (cdm_db_custom_t*) cdm_db->db;
 
-time_init();
 time_start();
 	p = sb_run_xmlparser_parselen("CP949", xmldoc, size);
 	if ( p == NULL ) {

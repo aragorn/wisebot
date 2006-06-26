@@ -20,19 +20,16 @@ static uint64_t    time_old;
 
 static int         time_count = -1;
 
-static void _time_init()
+static void _time_start()
 {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+
 	if ( time_count == -1 ) {
 		memset(time_lengths, 0, sizeof(time_lengths));
 		memset(time_names, 0, sizeof(time_names));
 		time_count = 0;
 	}
-}
-
-static void _time_start()
-{
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
 
 	time_idx = 0;
 	time_count++;
@@ -70,12 +67,10 @@ static void _time_status()
 	}
 }
 
-#  define time_init() _time_init()
 #  define time_start() _time_start()
 #  define time_mark(name) _time_mark(name)
 #  define time_status() _time_status()
 #else
-#  define time_init()
 #  define time_start()
 #  define time_mark(name)
 #  define time_status()
