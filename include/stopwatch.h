@@ -58,7 +58,7 @@ static void _time_mark(const char* name)
 
 static void _time_status()
 {
-	if ( time_count > TIME_COUNT ) {
+	if ( time_count >= TIME_COUNT ) {
 		int i;
 		for ( i = 0; i < MAX_MARK && time_names[i] != NULL; i++ ) {
 			info("%-20s: %'10" PRIu64 " usec", time_names[i], time_lengths[i]);
