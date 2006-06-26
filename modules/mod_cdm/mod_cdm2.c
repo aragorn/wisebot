@@ -22,6 +22,9 @@
 #include "mod_cdm2_util.h"
 #include "cannedDocServer.h"
 
+//#define DEBUGTIME
+#include "stopwatch.h"
+
 /* cdm 문서 header */
 #define HEADER_SHORTFIELD_SIZE 11
 #define HEADER_LONGFIELD_HEADERS_SIZE 11
@@ -574,7 +577,7 @@ static int cdmdoc_update_field(cdm_doc_t* doc, char* fieldname, char* buf, size_
 	offset = HEADER_SIZE + // 요거는 cdm_get_doc()을 보고 잘 맞춰야 한다.
 		((intptr_t)doc_custom->shortfield_values[idx] - (intptr_t)doc_custom->data);
 
-	INDEX_WR_LOCK(db, return FAIL);
+	INDEX_WR_LOCK(db, sb_free(_buf); return FAIL);
 	// shortfield_size+1은 이미 \0이므로 굳이 기록하지 않아도 된다.
 	ret = write_cdm(db, doc_custom, offset, _buf, shortfield_size);
 	INDEX_UN_LOCK(db, );
@@ -632,11 +635,14 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		return DECLINE;
 	db = (cdm_db_custom_t*) cdm_db->db;
 
+time_init();
+time_start();
 	p = sb_run_xmlparser_parselen("CP949", xmldoc, size);
 	if ( p == NULL ) {
 		error("cannot parse document[%s]", oid);
 		return CDM2_PUT_NOT_WELL_FORMED_DOC;
 	}
+time_mark("xml parsing");
 
 	DOCMASK_SET_ZERO(&docmask);
 
@@ -664,6 +670,7 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		}
 	}
 	shortfields_length = memfile_getSize(shortfields);
+time_mark("build memfile short");
 
 	// longfield 처리
 	for ( ; i < field_count; i++ ) {
@@ -681,8 +688,10 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		}
 	}
 	longfield_headers_length = memfile_getSize(longfield_headers);
+time_mark("build memfile long");
 
 	INDEX_WR_LOCK(db, return FAIL);
+time_mark("INDEX_WR_LOCK");
 	{
 		int db_no, cdm_fd;
 		unsigned long offset;
@@ -722,11 +731,13 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 					*newdocid, db->shared->last_docid);
 		}
 		/////////////////////////////////////////
+time_mark("did create");
 
 		/* mask에 넣었던 docattr실제로 저장 (need newdocid) */
 		if ( sb_run_docattr_set_array(newdocid, 1, SC_MASK, &docmask) != SUCCESS ) {
 			warn("cannot save docattr db of document[%s]", oid);
 		}
+time_mark("docattr set");
 
 		/*******************
 		 * index file 기록 * 
@@ -741,6 +752,7 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 			error("cdm document[%s] insert failed", oid);
 			goto error_unlock;
 		}
+time_mark("write index");
 
 		/*******************
 		 * cdm 파일에 기록 *
@@ -765,6 +777,7 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		CHECK_ERROR( write_buffer_from_memfile(cdm_fd, longfield_bodies) );
 		CHECK_ERROR( write_buffer_flush(cdm_fd) );
 #undef CHECK_ERROR
+time_mark("write cdm");
 
 		/************************
 		 * shared memory update *
@@ -774,11 +787,14 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		db->shared->offset = offset + idxEle.length;
 	}
 	INDEX_UN_LOCK(db, );
+time_mark("INDEX_UN_LOCK");
 
 	memfile_free(longfield_bodies);
 	memfile_free(longfield_headers);
 	memfile_free(shortfields);
 	sb_run_xmlparser_free_parser(p);
+time_mark("finish");
+time_status();
 
 	if ( oid_duplicated ) return CDM2_PUT_OID_DUPLICATED;
 	else return SUCCESS;
