@@ -5,6 +5,9 @@
 #include "apr_tables.h"
 #include "mod_httpd/mod_httpd.h"
 #include "msg_record.h"
+#include "mod_api/cdm2.h"
+#include "mod_api/lexicon.h"
+#include "mod_api/did.h"
 
 typedef struct softbot_handler_rec softbot_handler_rec;
 
@@ -43,3 +46,9 @@ typedef struct {
 }
 
 #endif
+
+/* external value */
+
+extern did_db_t* did_db;
+extern cdm_db_t* cdm_db;
+extern word_db_t* word_db;

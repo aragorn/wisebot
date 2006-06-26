@@ -1,6 +1,7 @@
 /* $Id$ */
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include "mod_httpd/protocol.h"
 #include "mod_httpd/conf.h"
 #include "mod_standard_handler.h"
@@ -10,6 +11,42 @@
 
 //implemented in common_handler.c
 int sbhandler_common_get_table(char *name_space, void **tab);
+//implemented in document_handler.c
+int sbhandler_document_get_table(char *name_space, void **tab);
+
+static int did_set = -1;
+did_db_t* did_db = NULL;
+static int cdm_set = -1;
+cdm_db_t* cdm_db = NULL;
+static int word_db_set = -1;
+word_db_t* word_db = NULL;
+
+static int init_db()
+{
+    int rv = 0;
+	
+	// DID_DB open
+	rv = sb_run_open_did_db( &did_db, did_set ); 
+	if ( rv != SUCCESS && rv != DECLINE ) { 
+		error("did db open failed");
+		return FAIL;
+    }
+
+	// CDM_DB open
+	rv = sb_run_cdm_open( &cdm_db, cdm_set );
+    if ( rv != SUCCESS && rv != DECLINE ) {
+    	error( "cdm module open failed" );
+		return FAIL;
+    }
+
+    rv = sb_run_open_word_db( &word_db, word_db_set );
+    if ( rv != SUCCESS && rv != DECLINE ) {
+        error("word db open failed");
+        return FAIL;
+    }
+
+	return SUCCESS;
+}
 
 //--------------------------------------------------------------//
 //	*   custom function	
@@ -84,6 +121,8 @@ static int _sub_handler(request_rec *rec, softbot_handler_rec *s){
         error("sb_run_sbrh_get_request_table failed");
         return FAIL;
     }
+
+    init_db();
 
     while ( tab[id].name ) {
         if ( strcmp(tab[id].name, s->request_name) == 0 ) {
@@ -173,6 +212,7 @@ static int standard_handler(request_rec *r)
         char *pos;
 
         /* init softbot_handler_rec */
+		msg_record_init(&s.msg);
 
         //1. arranging ptrs
         s.name_space = NULL;
@@ -266,16 +306,39 @@ static void register_hooks(void)
 {
 	sb_hook_handler(standard_handler,NULL,NULL,HOOK_REALLY_FIRST);
 	sb_hook_sbhandler_get_table(sbhandler_common_get_table,NULL,NULL,HOOK_REALLY_LAST);
+	sb_hook_sbhandler_get_table(sbhandler_document_get_table,NULL,NULL,HOOK_REALLY_LAST);
     sb_hook_sbhandler_append_file(append_file, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sbhandler_make_memfile(make_memfile_from_postdata, NULL, NULL, HOOK_MIDDLE);
 	return;
 }
 
+static void get_cdm_set(configValue v)
+{
+    cdm_set = atoi( v.argument[0] );
+}
+
+static void get_did_set(configValue v)
+{
+    did_set = atoi( v.argument[0] );
+}
+
+static void get_word_db_set(configValue v)
+{
+    word_db_set = atoi( v.argument[0] );
+}
+
+static config_t config[] = {
+    CONFIG_GET("CdmSet", get_cdm_set, 1, "Cdm Set 0~..."),
+    CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
+    CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDb Set 0~..."),
+    {NULL}
+};
+
 module standard_handler_module = {
 	STANDARD_MODULE_STUFF,
-	NULL,					/* config */
+	config,					/* config */
 	NULL,					/* registry */
-	NULL,  /* initialize */
+	NULL,                   /* initialize */
 	NULL,				    /* child_main */
 	NULL,				    /* scoreboard */
 	register_hooks		    /* register hook api */
