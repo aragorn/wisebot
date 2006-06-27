@@ -26,4 +26,5 @@ test2_sfs_LDADD   = $(libdir)/libcommon_core.la \
                     mod_sfs.la
 test2_sfs_LDFLAGS = -export-dynamic -static -ldl
 
-include ../install-pkglib.mk
+#mod_sfs.la is needed by ifs_defrag
+#include ../install-pkglib.mk
