@@ -49,7 +49,6 @@ static void show_dochitlist(doc_hit_t dochits[], uint32_t start, uint32_t nelm,
 }
 #endif
 
-
 ///////////////////////////////////////////////////////////
 // qp init 유무
 static int qp_initialized = 0;
@@ -198,35 +197,16 @@ static int abstract_search (request_t *req, response_t *res);
 /////////////////////////////////////////////////////////
 /*    start util                                       */
 /////////////////////////////////////////////////////////
-// cdm2 에서는 한글이 다쳐서 리턴될 수 있다.
-static void check_han(char* text, int len)
-{
-    int i = 0;
-	int han_completed = 1;
-
-	if(len <= 0) return;
-
-	for(i = 0; i < len; i++) {
-        if((unsigned char)text[i] & 0x80) {
-			han_completed = !han_completed;
-		}
-	}
-
-	if(han_completed == 0) {
-		text[len-1] = '\0';
-	}
-}
 
 // 마지막 NULL 은 빼고 길이를 maxLen 으로 맞춘다. 그러니까 text는 최소한 maxLen+1
 // 한글을 고려해서 자른다.
+//
+// maxLen이 '\0'을 가리키고 있으면 한글이 깨지더라도 정상 리턴해버리므로
+// '\0'으로 끝난 string을 자르려면 length-1을 maxLen에 줘야 한다.
 static void cut_string(char* text, int maxLen)
 {
 	int korCnt = 0, engIdx;
 	int textLen = strlen( text );
-
-	check_han(text, textLen);
-
-	textLen = strlen( text );
 
 	if ( textLen <= maxLen ) return;
 	else textLen = maxLen;
@@ -2061,7 +2041,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 		return FAIL;
 	} 
 
-	memset(comment, 0x00, LONG_LONG_STRING_SIZE); 
+	//memset(comment, 0x00, LONG_LONG_STRING_SIZE); 
 
 	if(sl->field_name[0][0] == '*')
 		sl->cnt = field_count;
@@ -2120,7 +2100,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 			case RETURN:
 			{
 				// 길이가 너무 길면 좀 자른다. 한글 안다치게...
-				cut_string( field_value, max_comment_bytes );
+				cut_string( field_value, max_comment_bytes-1 );
 
 	            if(output_style == STYLE_XML) {
 					rv = memfile_appendF(buffer, "<![CDATA[%s]]>", field_value);
@@ -2220,12 +2200,14 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 		return FAIL;
 	}
 
-	rv = memfile_read(buffer, comment, memfile_getSize(buffer));
-	if(rv != memfile_getSize(buffer)) {
+	int len = memfile_getSize(buffer);
+	rv = memfile_read(buffer, comment, len);
+	if(rv != len) {
 		MSG_RECORD(&req->msg, error, "can not appendF memfile");
 		memfile_free(buffer);
 		return FAIL;
 	}
+	comment[len] = '\0';
 
 	if ( b_use_cdm ) sb_run_doc_free(docBody);
 	else sb_run_cdmdoc_destroy(cdmdoc);
@@ -3765,7 +3747,6 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 /////////////////////////////////////////////////////////
 /*    end search result filtering operation stuff      */
 /////////////////////////////////////////////////////////
-
 
 /////////////////////////////////////////////////////////
 /* start search interface                              */
