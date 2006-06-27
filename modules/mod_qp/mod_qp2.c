@@ -23,6 +23,10 @@
 #include "mod_qp2.h"
 #include "mod_morpheme/lib/lb_lex.h" /* 2228,2236: LEXM_IS_WHITE,LEXM_IS_EOS */
 
+#define TIME_COUNT 1
+#define DEBUGTIME
+#include "stopwatch.h"
+
 #ifdef DEBUG_SOFTBOTD
 #	define debug_show_dochitlist(dochits, start, nelm, stream) \
 			show_dochitlist(dochits, start, nelm, stream)
@@ -615,6 +619,7 @@ static int read_from_db(uint32_t wordid, char* word, doc_hit_t* doc_hits)
 	int ndochits, ret;
 
 	if ( mDbType == TYPE_INDEXDB ) {
+time_mark("read db start");
 		length = sb_run_indexdb_getsize( mIfs, wordid );
 		if ( length == INDEXDB_FILE_NOT_EXISTS ) {
 			warn("length is 0 of word[%d]: %s. something is wrong", wordid, word);
@@ -653,6 +658,7 @@ static int read_from_db(uint32_t wordid, char* word, doc_hit_t* doc_hits)
 			warn( "ret[%d] is less than length[%d]. reassign ndochits[%d]", ret, length, ndochits );
 		}
 
+time_mark("read db end");
 		return ndochits;
 	}
 	else if ( mDbType == TYPE_VRFI ) {
@@ -3755,12 +3761,14 @@ static int full_search (request_t *req, response_t *res)
 {
 	int ret=FAIL;
 
+time_start();
 	ret = light_search(req, res);
 	if (ret < 0) {
         MSG_RECORD(&req->msg, error, "light search error");
 		return FAIL;
 	}
 	INFO("light_search done");
+time_mark("light_search");
 
 	ret = abstract_search(req, res);
 	if (ret < 0) {
@@ -3768,6 +3776,8 @@ static int full_search (request_t *req, response_t *res)
 		return FAIL;
 	}
 	INFO("abstract_search done");
+time_mark("abstract_search");
+time_status();
 
 #ifdef DEBUG_SOFTBOTD
 	show_num_of_free_nodes();
