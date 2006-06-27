@@ -761,7 +761,6 @@ int save_to_indexdb(index_db_t* indexdb, word_db_t* word_db,
 	static doc_hit_t *dochits = NULL;
 	static int dochits_size = 0;
 	int dochits_count; // fill_dochit()의 결과
-#define MAX_DOCHITS_SIZE (1024*1024)
 
 	ret = sb_run_index_each_doc(word_db, docid, wordhits, wordhit_len, &hit_count, data, size);
 	if (ret != SUCCESS) return ret;
@@ -776,8 +775,7 @@ int save_to_indexdb(index_db_t* indexdb, word_db_t* word_db,
 		count += same_count;
 
 		// dochits memory 재조정
-		if ( dochits_size == 0 || dochits_size > MAX_DOCHITS_SIZE
-				|| dochits_size <= same_count ) {
+		if ( dochits_size == 0 || dochits_size <= same_count ) {
 			if ( dochits != NULL ) sb_free( dochits );
 
 			dochits = (doc_hit_t*) sb_malloc( sizeof(doc_hit_t) * same_count );
