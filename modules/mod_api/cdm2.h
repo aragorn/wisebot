@@ -13,6 +13,8 @@
 #define CDM2_GET_INVALID_DOCID       (-15)
 #define CDM2_FIELD_NOT_EXISTS        (-16)
 
+#define MAX_FIELD_NAME_LEN          STRING_SIZE
+
 typedef struct _cdm_db_t
 {
 	int set;
