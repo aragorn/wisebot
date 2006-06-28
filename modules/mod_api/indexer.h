@@ -12,25 +12,16 @@ typedef union hit_t hit_t;
 typedef struct doc_hit_t doc_hit_t;
 typedef struct word_hit_t word_hit_t;
 
-#define SKT_BMT
 /*** hit_t *******************************************************************/
 
 #define MAX_STD_POSITION 262143 /* 2*18-1 should go with standard_hit_t->position */
 
-#ifdef SKT_BMT
-typedef struct {
-	uint32_t position	:12; /* max 2^12-1=4095 */
-	uint8_t type		:1; /* 0 */
-	uint8_t field		:3; /* max 2^3-1=7 */
-}__attribute__((packed)) standard_hit_t;
-#else
 typedef struct {
 	uint32_t position	:18; /* max 2^18-1=262143 */
-	uint8_t type		:1; /* 0 */
+	uint8_t type		:1; /* 0 - 필요없는 필드같다 */
 	uint8_t field		:5; /* max 2^5-1=31 */
-//	uint8_t dummy;
+	uint8_t dummy;
 }__attribute__((packed)) standard_hit_t;
-#endif
 
 typedef struct {
 	uint16_t dummy;
@@ -39,30 +30,19 @@ typedef struct {
 union hit_t {
 	dummy_hit_t ext_hit;
 	standard_hit_t std_hit;
-}; /* 2 bytes */
+}; /* 4 bytes */
 
 /*** doc_hit_t ***************************************************************/
 #define STD_HITS_LEN		(HIT_SIZE)
 
 #define MAX_NHITS 255
-#ifdef SKT_BMT
-struct doc_hit_t {
-	uint32_t	id;
-	uint8_t     field;  /* bitmask for occurence of each field */
-	uint8_t     hitratio; /* 관련성 khyang*/
-	hit_t		hits[STD_HITS_LEN];
-	uint8_t	nhits;
-}__attribute__((packed));
-#else
 struct doc_hit_t {
 	uint32_t	id;
 	uint32_t	field;  /* bitmask for occurence of each field */
-	uint8_t 	hitratio; /* 관련성 khyang*/
 	hit_t		hits[STD_HITS_LEN];
-	uint8_t	nhits;
-//	uint8_t dummy[3]; // for address align
+	uint16_t 	hitratio; /* 관련성 khyang*/
+	uint16_t	nhits;
 }__attribute__((packed));
-#endif
 
 #define MAX_DOCHITS_PER_DOCUMENT 512
 
