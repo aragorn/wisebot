@@ -2052,6 +2052,17 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	if(sl->field_name[0][0] == '*')
 		sl->cnt = field_count;
 
+	if(output_style == STYLE_XML) {
+		rv = memfile_appendF(buffer, "<fields count=\"%d\">", sl->cnt);
+		if(rv < 0) {
+			MSG_RECORD(&req->msg, error, "can not appendF memfile");
+			memfile_free(buffer);
+			return FAIL;
+		}
+	} else {
+		; //do nothing
+	}
+
 	for (i = 0; i < sl->cnt; i++) {
 		if(sl->field_name[0][0] == '*') {
 			if(k < field_count) {
@@ -2086,7 +2097,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 
 		// ±¸¼º : FIELD_NAME:
 	    if(output_style == STYLE_XML) {
-			rv = memfile_appendF(buffer, "<%s>", field_info[k].name);
+			rv = memfile_appendF(buffer, "<field name=\"%s\">", field_info[k].name);
 			if(rv < 0) {
 				MSG_RECORD(&req->msg, error, "can not appendF memfile");
 				memfile_free(buffer);
@@ -2183,7 +2194,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 		}
 
 	    if(output_style == STYLE_XML) {
-			rv = memfile_appendF(buffer, "</%s>\n", field_info[k].name);
+			rv = memfile_appendF(buffer, "</field>\n");
 			if(rv < 0) {
 				MSG_RECORD(&req->msg, error, "can not appendF memfile");
 				memfile_free(buffer);
@@ -2197,6 +2208,17 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 				return FAIL;
 			}
 		}
+	}
+
+	if(output_style == STYLE_XML) {
+		rv = memfile_appendF(buffer, "</fields>\n");
+		if(rv < 0) {
+			MSG_RECORD(&req->msg, error, "can not appendF memfile");
+			memfile_free(buffer);
+			return FAIL;
+		}
+	} else {
+        ; //do nothing
 	}
 
 	memfile_setOffset(buffer, 0);
@@ -3892,6 +3914,7 @@ static int virtual_document_fill_comment(request_t* req, response_t* res)
 			for(j = 0; j < g_vdl->data[i].dochit_cnt && cmt_idx < COMMENT_LIST_SIZE; j++) {
 				debug("cmt_idx[%d]", cmt_idx);
 
+				res->comments[cmt_idx++].did = g_vdl->data[i].dochits[j].id;
 				get_comment(req, &g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx++].s);
 		        if(cmt_idx >= COMMENT_LIST_SIZE) {
 			        g_vdl->data[i].comment_cnt = j+1;

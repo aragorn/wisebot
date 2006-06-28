@@ -175,19 +175,17 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 
 	/* word_list char * req->word_list */
 	ap_rprintf(r, 
-			"<xml>"
-			"<retcode>1</retcode>" 
-			"<search>\n"
-			"<summary>\n"
+			"<xml>\n"
+			"<status>1</status>\n" 
 			"<query><![CDATA[%s]]></query>\n"
-			"<words><![CDATA[%s]]></words>\n"
-			"<total_count>%d</total_count>\n" 
-			"<result_count>%d</result_count>\n" 
-			"</summary>\n",
+			"<result_count>%d</result_count>\n", 
 			qp_request.query, 
-            qp_response.word_list, 
-            qp_response.search_result, 
-            qp_response.vdl->cnt);
+            qp_response.search_result);
+
+	ap_rprintf(r, "<words count=\"%d\">", 1);
+	ap_rprintf(r, "<word><![CDATA[%s]]></word>", qp_response.word_list);
+	ap_rprintf(r, "</words>");
+
     /* group result */
     ap_rprintf(r, "<groups>\n");
 	print_group(r, &qp_response.groupby_result_vid);
@@ -200,27 +198,30 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 	*/
 
 	/* each result */
+    ap_rprintf(r, "<vdocs count=\"%d\">\n", qp_response.vdl->cnt);
     for(i = 0; i < qp_response.vdl->cnt; i++) {
         virtual_document_t* vd = (virtual_document_t*)&qp_response.vdl->data[i];
 
-        ap_rprintf(r, "<row no=\"%d\">\n", i);
-        ap_rprintf(r, "<vid>%u</vid>\n", vd->id);
-        ap_rprintf(r, "<node_id>%0X</node_id>\n", vd->node_id);
-        ap_rprintf(r, "<relevance>%u</relevance>\n", vd->relevance);
-        ap_rprintf(r, "<count>%u</count>\n", vd->comment_cnt);
+        ap_rprintf(r, "<vdoc vid=\"%d\" node_id=\"%d\" relevance=\"%d\">\n", 
+				      vd->id, vd->node_id, vd->relevance);
+        ap_rprintf(r, "<docs count=\"%d\">\n", vd->comment_cnt);
 
         for(j = 0; j < vd->comment_cnt; j++) {
+            ap_rprintf(r, "<doc doc_id=\"%d\">\n", qp_response.comments[cmt_idx++].did);
+
 			if(qp_request.output_style == STYLE_XML) {
-                ap_rprintf(r, "<comment>%s</comment>\n", qp_response.comments[cmt_idx++].s);
+                ap_rprintf(r, "%s\n", qp_response.comments[cmt_idx++].s);
 			} else {
-                ap_rprintf(r, "<comment><![CDATA[%s]]></comment>\n", qp_response.comments[cmt_idx++].s);
+                ap_rprintf(r, "<![CDATA[%s]]>\n", qp_response.comments[cmt_idx++].s);
 			}
+            ap_rprintf(r, "</doc>\n");
 		}
 
-        ap_rprintf(r, "</row>\n");
+        ap_rprintf(r, "</docs>\n");
+        ap_rprintf(r, "</vdoc>\n");
     }
-
-	ap_rprintf(r, "</search>\n</xml>\n");
+    ap_rprintf(r, "</vdocs>\n");
+	ap_rprintf(r, "</xml>\n");
 
 	timelog("send_result_finish");
 
