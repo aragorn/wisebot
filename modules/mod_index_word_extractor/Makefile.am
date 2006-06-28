@@ -5,7 +5,7 @@ include $(top_builddir)/Make.defs
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
 pkglib_LTLIBRARIES   = mod_bigram.la \
-                       mod_rmas.la mod_rmac2.la \
+                       mod_rmas.la mod_rmac2.la mod_http_rmac.la \
                        mod_koma.la \
                        mod_dummy_ma.la \
                        mod_kor2chn_translator.la \
@@ -45,18 +45,23 @@ mod_kor2chn_translator_la_LIBADD  = liboldcodetrans.la
 mod_rmac2_la_SOURCES = mod_rmac2.c
 mod_rmac2_la_LDFLAGS = -module -avoid-version
 
+mod_http_rmac_la_SOURCES = mod_http_rmac.c
+mod_http_rmac_la_LIBADD  = $(APR_LIBS) $(APU_LIBS)
+mod_http_rmac_la_CFLAGS  = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+mod_http_rmac_la_LDFLAGS = -module -avoid-version
+
 mod_koma_la_SOURCES = mod_koma.c mod_koma.h \
                       mod_koma_complex_noun_support.c \
                       mod_koma_complex_noun_support.h
 mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 
-if USE_DAUM_KOMA
+#if USE_DAUM_KOMA
 mod_daum_koma_la_SOURCES = mod_daum_koma.c
 mod_daum_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
-else
-mod_daum_koma_la_SOURCES = 
-mod_daum_koma_la_LDFLAGS = -module -avoid-version 
-endif
+#else
+#mod_daum_koma_la_SOURCES = 
+#mod_daum_koma_la_LDFLAGS = -module -avoid-version 
+#endif
 
 include ../install-pkglib.mk
 
