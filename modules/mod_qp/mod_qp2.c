@@ -1335,7 +1335,7 @@ static uint32_t operate_within_each_document(index_document_t *doc1,
 
 			if (is_within_dist(hit1, hit2, dist) == TRUE) {
 				(result->dochits[dochit_idx]->id) = docid;
-				(result->dochits[dochit_idx]->field) |= sb_run_get_field(hit2);
+				(result->dochits[dochit_idx]->field) |= 1<<sb_run_get_field(hit2);
 				(result->dochits[dochit_idx]->nhits)++;
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit2;
 
@@ -1386,7 +1386,7 @@ static uint32_t operate_phrase_each_document(index_document_t *doc1,
 
 			if (is_within_ordered_dist(hit1, hit2, dist) == TRUE) {
 				(result->dochits[dochit_idx]->id) = docid;
-				(result->dochits[dochit_idx]->field) |= sb_run_get_field(hit2);
+				(result->dochits[dochit_idx]->field) |= 1<<sb_run_get_field(hit2);
 				(result->dochits[dochit_idx]->nhits)++;
 				/* phrase operation 시에는 앞 단어의 position을 들고가야 한다 */
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit1;  
