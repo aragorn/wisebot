@@ -273,6 +273,9 @@ AP_DECLARE(char *) ap_os_escape_path(apr_pool_t *p, const char *path, int partia
 /** @see ap_os_escape_path */
 #define ap_escape_uri(ppool,path) ap_os_escape_path(ppool,path,1)
 
+// apr_pool_t를 쓰지 않는 함수
+AP_DECLARE(char *) escape_path(const char *path, char* copy);
+
 /**
  * Escape an html string
  * @param p The pool to allocate from

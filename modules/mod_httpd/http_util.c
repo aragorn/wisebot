@@ -1591,6 +1591,26 @@ AP_DECLARE(char *) ap_os_escape_path(apr_pool_t *p, const char *path, int partia
     return copy;
 }
 
+// apr_pool_t를 쓰지 않는 함수
+AP_DECLARE(char *) escape_path(const char *path, char* copy)
+{
+    const unsigned char *s = (const unsigned char *)path;
+    unsigned char *d = (unsigned char *)copy;
+    unsigned c;
+
+    while ((c = *s)) {
+	if (TEST_CHAR(c, T_ESCAPE_PATH_SEGMENT)) {
+	    d = c2x(c, d);
+	}
+	else {
+	    *d++ = c;
+	}
+	++s;
+    }
+    *d = '\0';
+    return copy;
+}
+
 /* ap_escape_uri is now a macro for os_escape_path */
 
 AP_DECLARE(char *) ap_escape_html(apr_pool_t *p, const char *s)
