@@ -1,6 +1,7 @@
 #include "handler_util.h"
 #include "common_core.h"
 #include "common_util.h"
+#include "mod_httpd/http_util.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -119,4 +120,19 @@ void decodencpy(unsigned char *dst, unsigned char *src, int n)
     }
     if (y < n)
         dst[y] = 0;
+}
+
+int equals_content_type(request_rec *r, const char* ct)
+{
+    const char *req_type = apr_table_get(r->headers_in, "Content-Type");
+
+    if ( ct == NULL ) {
+        return FAIL;
+    }
+
+    if ( strncmp(req_type, ct, strlen(ct)) != 0 ){
+        return FAIL;
+    }
+
+    return SUCCESS;
 }
