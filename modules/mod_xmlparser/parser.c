@@ -1,5 +1,8 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include <string.h> // strlen
+#include <errno.h>
+#include "memory.h"
 #include "parser.h"
 
 /* XXX iconv libary in /usr/lib has fatal error on AIX.
@@ -173,7 +176,7 @@ char unicode_name[SHORT_STRING_SIZE];
  *
  * charset: character set of xml document to parse
  * xmltext: string of xml document to parse */
-parser_t *parselen(const char *charset, const char *xmltext, const int len)
+void* parselen(const char *charset, const char *xmltext, const int len)
 {
 	parser_t *p;
 
@@ -280,16 +283,20 @@ parser_t *parser_create(const char *charset)
 
 /* free xml parser object
  * return nothing */
-void free_parser(parser_t *p)
+void free_parser(void* p)
 {
+	parser_t* parser;
+
 	if (p == NULL) return;
-	dh_destroy(p->dh);
-	p->dh = NULL;
-	if (p->perm & PERM_WR) {
-		sb_free(p->db);
-		p->db = NULL;
+	else parser = (parser_t*) p;
+
+	dh_destroy(parser->dh);
+	parser->dh = NULL;
+	if (parser->perm & PERM_WR) {
+		sb_free(parser->db);
+		parser->db = NULL;
 	}
-	sb_free(p);
+	sb_free(parser);
 }
 
 /* create xml parser object and load dom object to
@@ -606,18 +613,24 @@ int get_domsize(parser_t *p)
  *
  * p: parser object
  * query: xpath query string */
-field_t *retrieve_field(parser_t *p, char *query)
+int retrieve_field(void *p, const char *query, char** field_value, int* field_length)
 {
+	parser_t *parser;
 	node_t *node;
 	field_t *field; 
 
-	if (dh_search(p->dh, query, (void **)&node) == -1) {
-		return NULL;
+	parser = (parser_t*) p;
+
+	if (dh_search(parser->dh, query, (void **)&node) == -1) {
+		return FAIL;
 	}
 
-	CONVERT_NODE_TO_FIELD(p, node, field);
+	CONVERT_NODE_TO_FIELD(parser, node, field);
 
-	return field;
+	*field_value = field->value;
+	*field_length = field->size;
+
+	return SUCCESS;
 }
 
 /* return attribute object retrieved by a query.

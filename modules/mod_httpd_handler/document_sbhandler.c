@@ -275,8 +275,8 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
     char* metadata = NULL;
     char* document = NULL;
     char* p = NULL;
-    parser_t *parser = NULL;
-    field_t *field;
+    void *parser = NULL;
+	char* field_value; int field_length;
     sb4_merge_buffer_t merge_buffer;
     memfile* request_body = NULL;
 	char field_name[MAX_FIELD_NAME_LEN];
@@ -376,39 +376,39 @@ info("xml doc[%s]", document);
 
         sprintf(path, "/Document/%s", field_name);
         path[STRING_SIZE-1] = '\0';
-        field = sb_run_xmlparser_retrieve_field(parser , path);
+        rv = sb_run_xmlparser_retrieve_field(parser , path, &field_value, &field_length);
 
         if (field_id_is_given) {
-            if (field == NULL) {
+            if (rv != SUCCESS) {
                 warn("cannot retrieve field[%s]", path);
                 continue;
             }
 
-            if (field->size == 0) {
+            if (field_length == 0) {
                 continue;
             }
         } else {
-            if (field == NULL) {
+            if (rv != SUCCESS) {
                 warn("cannot retrieve field[%s]", path);
                 field_id++;
                 continue;
             }
 
-            if (field->size == 0) {
+            if (field_length == 0) {
                 field_id++;
                 continue;
             }
         }
 
-        if ( field->size+1 > buffer_size ) {
-            buffer = apr_palloc(r->pool, sizeof(char) * (field->size+1));
-            buffer_size = field->size + 1;
+        if ( field_length+1 > buffer_size ) {
+            buffer = apr_palloc(r->pool, sizeof(char) * (field_length+1));
+            buffer_size = field_length + 1;
         }
 
-        memcpy(buffer, field->value, field->size);
-        buffer[field->size] = '\0';
+        memcpy(buffer, field_value, field_length);
+        buffer[field_length] = '\0';
 
-        info("starting ma [%s:%d] field->value:[%s]", field_name, field_id, buffer);
+        info("starting ma [%s:%d] field_value:[%s]", field_name, field_id, buffer);
 
         tmp_data = NULL;
         rv = sb_run_rmas_morphological_analyzer(field_id, buffer, &tmp_data,

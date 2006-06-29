@@ -328,8 +328,8 @@ int sb4s_remote_morphological_analyze_doc(int sockfd)
 	int data_size =0, nret;
 	int recv_data_size = 0, ma_id = 0 , len = 0, field_id;
 	void *recv_data = NULL,  *tmp_data = NULL;
-	parser_t *parser = NULL;
-	field_t *field;
+	void *parser = NULL;
+	char* field_value; int field_length;
 	sb4_merge_buffer_t merge_buffer;
 	char *buffer = NULL;
 	uint32_t buffer_size=0;
@@ -443,38 +443,38 @@ int sb4s_remote_morphological_analyze_doc(int sockfd)
 
 		sprintf(path, "/Document/%s", field_name);
 		path[STRING_SIZE-1] = '\0';
-		field = sb_run_xmlparser_retrieve_field(parser , path);
+		nret = sb_run_xmlparser_retrieve_field(parser , path, &field_value, &field_length);
 
 		if (field_id_is_given)
 		{
-			if (field == NULL) {
+			if (nret != SUCCESS) {
 				warn("cannot retrieve field[%s]", path);
 				continue;
 			}
 
-			if (field->size == 0) {
+			if (field_length == 0) {
 				continue;
 			}
 		}
 		else
 		{
-			if (field == NULL) {
+			if (nret != SUCCESS) {
 				warn("cannot retrieve field[%s]", path);
 				field_id++;
 				continue;
 			}
 
-			if (field->size == 0) {
+			if (field_length == 0) {
 				field_id++;
 				continue;
 			}
 		}
 
-		if ( field->size+1 > buffer_size ) {
+		if ( field_length+1 > buffer_size ) {
 
 			sb_free(buffer);
 
-			buffer = sb_malloc(sizeof(char) * (field->size+1));
+			buffer = sb_malloc(sizeof(char) * (field_length+1));
 			if(buffer==NULL) {
 				error("cannot allocate buffer");
 				sb_run_xmlparser_free_parser(parser);
@@ -482,13 +482,13 @@ int sb4s_remote_morphological_analyze_doc(int sockfd)
 				sb_free(merge_buffer.data);
 				return FAIL;
 			}
-			buffer_size = field->size + 1;
+			buffer_size = field_length + 1;
 		}
 
-		memcpy(buffer, field->value, field->size);
-		buffer[field->size] = '\0';
+		memcpy(buffer, field_value, field_length);
+		buffer[field_length] = '\0';
 
-	//	INFO("starting ma [%s:%d] field->value:[%s]", field_name, field_id, buffer);
+	//	INFO("starting ma [%s:%d] field_value:[%s]", field_name, field_id, buffer);
 
 		tmp_data = NULL;
 		nret = sb_run_rmas_morphological_analyzer(field_id, buffer, &tmp_data, 

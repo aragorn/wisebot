@@ -1,11 +1,18 @@
 /* $Id$ */
 
-#include "softbot.h"
-#include "mp_api.h"
+#include "common_core.h"
+#include "scoreboard.h"
+#include "setproctitle.h"
+#include "ipc.h"
+
 #include "mod_softbot4.h"
 #include "mod_api/docattr.h"
 #include "mod_api/did.h"
 
+#include <signal.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
 
 #define MAX_THREADS		(100)
 #define WAIT_TIMEOUT	(3)

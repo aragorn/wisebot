@@ -31,7 +31,7 @@ struct _field_t {
 	attribute_t *attrs;
 	unsigned char attrnum;
 	unsigned char flag;
-        char padding[2];
+    char padding[2];
 	char name[MAX_FIELD_NAME_LENGTH];
 #define CDATA_SECTION			1
 };
@@ -47,14 +47,14 @@ struct _attribute_t {
 extern "C" {
 #endif
 
-parser_t *parselen(const char *charset, const char *xmltext, const int len);
+void* parselen(const char *charset, const char *xmltext, const int len);
 parser_t *parse(const char *charset, const char *xmltext);
 
 int parselen2(parser_t *p, const char *xmltext, const int len);
 int parse2(parser_t *p, const char *xmltext);
 
 parser_t *parser_create(const char *charset);
-void free_parser(parser_t *p);
+void free_parser(void *p);
 
 parser_t *loaddom(void *data, int *len);
 parser_t *loaddom2(void *data, int *len);
@@ -69,7 +69,7 @@ int savedom2(parser_t *p,
 			void **buf5, int *len5);
 int get_domsize(parser_t *p);
 
-field_t *retrieve_field(parser_t *p, char *query);
+int retrieve_field(void* p, const char* query, char** field_value, int* field_length);
 attribute_t *retrieve_attr(parser_t *p, const char *query);
 
 extern char unicode_name[SHORT_STRING_SIZE];

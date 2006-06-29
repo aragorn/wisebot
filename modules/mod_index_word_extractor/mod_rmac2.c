@@ -1,13 +1,22 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "scoreboard.h"
+#include "memory.h"
+#include "ipc.h"
+#include "setproctitle.h"
 
-#include "mp_api.h"
 #include "mod_api/cdm.h"
 #include "mod_api/cdm2.h"
 #include "mod_api/indexer.h"
 #include "mod_api/tcp.h"
 #include "mod_api/protocol4.h"
-#include "mod_indexer/hit.h" // MAX_STD_FIELD
+
+#include <signal.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <unistd.h> // sleep
+#include <time.h>
 
 #define MAX_SERVERS			16
 #define MAX_PROCESSES		64

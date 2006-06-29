@@ -1,11 +1,13 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "common_util.h"
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/docattr.h"
 #include "mod_docattr_supreme_regulation.h"
 #include "mod_qp/mod_qp.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define MAX_ENUM_NUM		1024
 #define MAX_ENUM_LEN		SHORT_STRING_SIZE

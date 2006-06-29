@@ -285,7 +285,7 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
 	int deleted, ret;
     int length = 0;
 	int read_bytes = 0;
-	parser_t* p = NULL;
+	void* p = NULL;
 
     static char *xml_doc = NULL;
     if (xml_doc == NULL) {
@@ -357,33 +357,33 @@ static int cdm_get_doc(cdm_db_t* cdm_db, uint32_t docid, cdm_doc_t** doc)
 
 static int cdmdoc_get_field_by_bytepos(cdm_doc_t* doc, const char* fieldname, int bytepos, char* buf, size_t size)
 {
-    parser_t* p = NULL;
-    field_t* f = NULL;
+    void* p = NULL;
+	char* field_value; int field_length;
     char path[STRING_SIZE];
     char* val = NULL;
-    int len = 0;
+    int ret, len = 0;
 
-    p = (parser_t*)doc->data;
+    p = (void*)doc->data;
 
 	strcpy(path, "/");
 	strcat(path, field_root_name);
 	strcat(path, "/");
 	strcat(path, fieldname);
 
-	f = sb_run_xmlparser_retrieve_field(p, path);
-	if (f == NULL) {
+	ret = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+	if (ret == FAIL) {
 		warn("cannot get field[/%s/%s] (path:%s)", 
 				field_root_name, 
 				fieldname, path);
 		return FAIL;
 	}
-	else if ( f == (field_t*)1 ) {
+	else if ( ret == DECLINE ) {
 		warn("sb_run_xmlparser_retrieve_field() returned DECLINE(1)");
 		return FAIL;
 	}
 
-	len = f->size;
-	val = _trim(f->value, &len);
+	len = field_length;
+	val = _trim(field_value, &len);
 	len = (len>size-1)?size-1:len;
 	strncpy(buf, val+bytepos, len);
 	buf[len] = '\0';
@@ -402,7 +402,7 @@ static int cdmdoc_destroy(cdm_doc_t* doc)
 	if ( cdm_set == NULL || !cdm_set[doc->cdm_db->set].set )
 		return MINUS_DECLINE;
 
-    sb_run_xmlparser_free_parser((parser_t*)doc->data);
+    sb_run_xmlparser_free_parser((void*)doc->data);
 	sb_free(doc);
 
 	return SUCCESS;
@@ -412,8 +412,8 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		const char* xmldoc, size_t size, uint32_t* newdocid, uint32_t* olddocid)
 {
 	cdm_db_custom_t* db;
-	parser_t* p = NULL;
-	field_t *f;
+	void* p = NULL;
+	char* field_value; int field_length;
 	int i = 0;
 	docattr_mask_t docmask;
 	int ret, oid_duplicated = 0;
@@ -440,20 +440,20 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
         strcat(path, "/");
         strcat(path, docattr_fields[i]);
 
-        f = sb_run_xmlparser_retrieve_field(p, path);
-        if (f == NULL) {
+        ret = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+        if (ret == FAIL) {
             warn("cannot get field[/%s/%s] of ducument[%s] (path:%s)", 
                     field_root_name, 
                     docattr_fields[i], oid, path);
             continue;
         }
-        else if ( f == (field_t*)1 ) {
+        else if ( ret == DECLINE ) {
             warn("sb_run_xmlparser_retrieve_field() returned DECLINE(1)");
             continue;
         }
 
-        len = f->size;
-        val = _trim(f->value, &len);
+        len = field_length;
+        val = _trim(field_value, &len);
         len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
         strncpy(value, val, len);
         value[len] = '\0';

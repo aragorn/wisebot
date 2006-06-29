@@ -1,6 +1,8 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include <string.h> // strcpy
 #include "mod_api/xmlparser.h"
+#include "parser.h"
 
 static int init_unicode_name = 0;
 
@@ -29,16 +31,17 @@ static config_t config[] = {
 
 static void register_hooks(void)
 {
-//	sb_hook_xmlparser_parse(parse,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_xmlparser_parselen(parselen,NULL,NULL,HOOK_MIDDLE);
-//	sb_hook_xmlparser_parser_create(parser_create,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_xmlparser_retrieve_field(retrieve_field,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_xmlparser_free_parser(free_parser,NULL,NULL,HOOK_MIDDLE);
+
+//	sb_hook_xmlparser_parse(parse,NULL,NULL,HOOK_MIDDLE);
+//	sb_hook_xmlparser_parser_create(parser_create,NULL,NULL,HOOK_MIDDLE);
 //	sb_hook_xmlparser_loaddom(loaddom,NULL,NULL,HOOK_MIDDLE);
 //	sb_hook_xmlparser_loaddom2(loaddom2,NULL,NULL,HOOK_MIDDLE);
 //	sb_hook_xmlparser_savedom(savedom,NULL,NULL,HOOK_MIDDLE);
 //	sb_hook_xmlparser_savedom2(savedom2,NULL,NULL,HOOK_MIDDLE);
 //	sb_hook_xmlparser_get_domsize(get_domsize,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_xmlparser_retrieve_field(retrieve_field,NULL,NULL,HOOK_MIDDLE);
 //	sb_hook_xmlparser_retrieve_attr(retrieve_attr,NULL,NULL,HOOK_MIDDLE);
 }
 

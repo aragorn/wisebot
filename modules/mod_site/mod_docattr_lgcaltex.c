@@ -1,5 +1,7 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "common_util.h"
+#include "memory.h"
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/docattr.h"
 #include "mod_api/cdm.h"
@@ -13,6 +15,10 @@
 #include <stdio.h>
 #include <sys/types.h> /* waitpid(2) of ac_remake_main() */
 #include <sys/wait.h>  /* waitpid(2) of ac_remake_main() */
+#include <errno.h>
+#include <string.h> // strerror
+#include <stdlib.h> // atoi
+#include <unistd.h> // fork
 
 #define MAX_ENUM_NUM		1024
 #define MAX_ENUM_LEN		SHORT_STRING_SIZE
@@ -21,7 +27,7 @@ static char *constants[MAX_ENUM_NUM] = { NULL };
 static long long constants_value[MAX_ENUM_NUM];
 
 static long long return_constants_value(char *value, int valuelen);
-static int get_item(char *src, char **info, char delimiter);
+//static int get_item(char *src, char **info, char delimiter);
 
 static char fieldRootName[MAX_FIELD_NAME_LEN] = "Document"; //XXX HACK!
 
@@ -117,8 +123,8 @@ static char* _trim(char *str, int *len)
 /* vrm add */
 static int put_doc_ac(void* did_db, char *oid, uint32_t *registeredDocId, uint32_t *deletedDocId, VariableBuffer *pCannedDoc)
 {
-    parser_t *p;
-    field_t *f;
+    void *p;
+	char* field_value; int field_length;
     docattr_t docattr;
     char path[STRING_SIZE];
     int i, ret, iSize=0, iResult=0;
@@ -180,25 +186,25 @@ static int put_doc_ac(void* did_db, char *oid, uint32_t *registeredDocId, uint32
         strcat(path, "/");
         strcat(path, ac_field_name[i]);
 
-        f = sb_run_xmlparser_retrieve_field(p, path);
-        if (f == NULL) {
+        ret = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+        if (ret != SUCCESS) {
             warn("cannot get field[/%s/%s] of ducument[%s] (path:%s)", 
                     fieldRootName, 
                     ac_field_name[i], oid, path);
             continue;
         }
 
-        len = f->size;
-        val = _trim(f->value, &len);
+        len = field_length;
+        val = _trim(field_value, &len);
         len = (len > STRING_SIZE-1) ? STRING_SIZE-1 : len;
         strncpy(value, val, len);
         value[len] = '\0';
 
-        if (f->size == 0) {
+        if (field_length == 0) {
             continue;
         }
        
-        debug("f->value : [%s], docattrField[%s]", value, ac_field_name[i]);
+        debug("field_value : [%s], docattrField[%s]", value, ac_field_name[i]);
         get_policy_item(value, i, &lgcaltex_vrm, ":"); 
     }
     sb_run_xmlparser_free_parser(p);
@@ -976,13 +982,13 @@ static int set_docmask_function(void *dest, char *key, char *value)
     info : 123 
     delimiter: split(,) */
 /**
- * get_list
+ * get_list 일단 안쓰니까 주석처리
  * @param src delimiter로 entry가 구분된 source string. 함수를 호출하면 NULL문자가 삽입되어
  *            문자열이 변경됨.
  * @param list source string의 각  입력되어 구분됨.
  * @
  */
-static int get_item(char *src, char **info, char delimiter)
+/*static int get_item(char *src, char **info, char delimiter)
 {
 	char *start, *end,  *c;
 	int cnt=0, i=0;
@@ -1015,6 +1021,7 @@ static int get_item(char *src, char **info, char delimiter)
 
 	return cnt;
 }
+*/
 
 /* if fail, return 0 */
 static long long return_constants_value(char *value, int valuelen)
@@ -1142,7 +1149,7 @@ module docattr_lgcaltex_module = {
 
 static int remake_ac(int start_docid, int count) {
 	int i, k, ret;
-	parser_t *p = NULL;
+	void *p = NULL;
 
 #define SMALL_DOCUMENT_SIZE (1024*10)
 #ifdef TEST__AIX5
@@ -1174,7 +1181,7 @@ static int remake_ac(int start_docid, int count) {
 
 		VariableBuffer var;
 		int size, len, j;
-		field_t *f;
+		char* field_value; int field_length;
         char *val, value[STRING_SIZE], path[STRING_SIZE];
 
         lgcaltex_vrm.count = 0;
@@ -1216,16 +1223,16 @@ static int remake_ac(int start_docid, int count) {
             strcat(path, ac_field_name[j]);
 			debug("ac_field_name[%d]:%s", j, ac_field_name[j]);
 
-            f = sb_run_xmlparser_retrieve_field(p, path);
-            if (f == NULL) {
+            ret = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+            if (ret != SUCCESS) {
                 warn("cannot get field[/%s/%s] of ducument[%d] (path:%s)",
                         "Document",
                         ac_field_name[j], i, path);
                 continue;
             }
 
-            len = f->size;
-            val = _trim(f->value, &len);
+            len = field_length;
+            val = _trim(field_value, &len);
             len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
             strncpy(value, val, len);
             value[len] = '\0';

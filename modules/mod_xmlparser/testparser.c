@@ -1,4 +1,5 @@
 /* $Id$ */
+#include "common_core.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -11,7 +12,6 @@
 #define BUF_SIZE			(1024 * 1024)
 //#define REPEAT_TEST			10000
 
-#include "softbot.h"
 char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
 //char gErrorLogFile[MAX_PATH_LEN] = DEFAULT_ERROR_LOG_FILE;
 module *static_modules;

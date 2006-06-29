@@ -1,4 +1,5 @@
 #include "vrm.h"
+#include <inttypes.h>
 
 #ifndef _MOD_VRM_H_
 #define _MOD_VRM_H_

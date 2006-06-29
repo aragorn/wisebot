@@ -23,7 +23,7 @@
 #include "mod_qp2.h"
 #include "mod_morpheme/lib/lb_lex.h" /* 2228,2236: LEXM_IS_WHITE,LEXM_IS_EOS */
 
-//#define TIME_COUNT 1
+#define TIME_COUNT 1
 #define DEBUGTIME
 #include "stopwatch.h"
 

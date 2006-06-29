@@ -1,7 +1,12 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "common_util.h"
+#include "memory.h"
+
 #include "mod_api/index_word_extractor.h"
 #include "daum_koma/dha.h"
+
+#include <string.h>
 
 #define MY_EXTRACTOR_ID             (16)
 #define DIC_PATH                    "dat/daum_koma"
@@ -169,7 +174,7 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t *ind
 
 static int destroy_daum_dha_handler(index_word_extractor_t *extractor)
 {
-	dha_handle_t *handle=NULL;
+//	dha_handle_t *handle=NULL;
 
 	if (extractor->id != MY_EXTRACTOR_ID) return DECLINE;
 /* static 하게 사용한다.

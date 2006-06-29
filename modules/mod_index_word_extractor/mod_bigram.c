@@ -1,5 +1,7 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "memory.h"
+
 #include "mod_api/tokenizer.h"
 #include "mod_bigram.h"
 #include "mod_api/index_word_extractor.h"

@@ -1,10 +1,12 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
 #include "stack.h"
+#include "memory.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 typedef struct {
 	int offset;

@@ -25,6 +25,10 @@
 #  define DEFAULT_LOCKFILE "/tmp/softbot_httpd_lock"
 #endif
 
+#ifndef THREAD_VER
+#  include "ipc.h"
+#endif
+
 static char mApacheStyleConf[SHORT_STRING_SIZE] = APACHE_STYLE_CONF;
 static char mListenAddr[SHORT_STRING_SIZE] = "8000";
 static int mBackLog = 8;
@@ -34,6 +38,7 @@ static int mExtendedStatus = 1;
 static pthread_mutex_t accept_lock;
 static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(MAX_THREADS) };
 #else
+static int accept_lock;
 static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(MAX_THREADS) };
 #endif
 static int num_listensocks = 0;
@@ -192,11 +197,18 @@ static int thread_main (slot_t *slot)
 			continue;
 		}
 		debug("accept lock held successfully");
+#else
+		if ( acquire_lock(accept_lock) != SUCCESS ) {
+			error("slot[%d]: acquire_lock failed: %s", slot->id, strerror(errno));
+			continue;
+		}
 #endif
 
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) {
 #ifdef THREAD_VER
 			pthread_mutex_unlock(&accept_lock);
+#else
+			release_lock(accept_lock);
 #endif
 			break;
 		}
@@ -248,6 +260,8 @@ static int thread_main (slot_t *slot)
 			info("slot[%d]: shutting down %s",slot->id,__FILE__);
 #ifdef THREAD_VER
 			pthread_mutex_unlock(&accept_lock);
+#else
+			release_lock(accept_lock);
 #endif
 			break;
 		}
@@ -257,6 +271,8 @@ static int thread_main (slot_t *slot)
 		debug("slot[%d]: accept func", slot->id);
 #ifdef THREAD_VER
 		pthread_mutex_unlock(&accept_lock);
+#else
+		release_lock(accept_lock);
 #endif
 		if (rv == APR_EGENERAL) {
 			/* E[NM]FILE, ENOMEN, etc */
@@ -332,6 +348,14 @@ static int module_init ()
 	/* FIXME we have to clean up this messy code of apr pool.
 	 * which is gonna use apr_global_hook_pool?? */
 	apr_global_hook_pool = pool;
+
+	ipc_t lock;
+	lock.type = IPC_TYPE_SEM;
+	lock.pid = SYS5_ACCEPT;
+	lock.pathname = NULL;
+
+	if ( get_sem(&lock) != SUCCESS ) return FAIL;
+	accept_lock = lock.id;
 
 	return SUCCESS;
 }

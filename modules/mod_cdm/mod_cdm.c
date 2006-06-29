@@ -257,8 +257,9 @@ int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc) {
 	long iSize, dwCurrentDBOffset;
 	IndexFileElement indexElement;
 	char path[STRING_SIZE];
-	parser_t *p;
-	field_t *f;
+	void *p;
+	char* field_value;
+	int field_length;
     int i;
 
 #ifdef PROCESS_HANDLE
@@ -335,16 +336,16 @@ int CDM_put(uint32_t docId, VariableBuffer *pCannedDoc) {
 			strcat(path, "/");
 			strcat(path, docattrFields[i]);
 
-			f = sb_run_xmlparser_retrieve_field(p, path);
-			if (f == NULL) {
+			iResult = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+			if (iResult != SUCCESS ) {
 				warn("cannot get field[/%s/%s] of ducument[%u] (path:%s)", 
 						fieldRootName, 
 						docattrFields[i], docId, path);
 				continue;
 			}
 
-			len = f->size;
-			val = _trim(f->value, &len);
+			len = field_length;
+			val = _trim(field_value, &len);
 			len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
 			strncpy(value, val, len);
 			value[len] = '\0';
@@ -450,8 +451,9 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId,
 	long iSize, dwCurrentDBOffset;
 	IndexFileElement indexElement;
 	char path[STRING_SIZE];
-	parser_t *p;
-	field_t *f;
+	void* p;
+	char* field_value;
+	int field_length;
 	int i, suc_ret = SUCCESS, err_ret = FAIL;
 
 	int len;
@@ -579,7 +581,7 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId,
 		err_ret = CDM_NOT_WELL_FORMED_DOC;
 	    goto return_fail;
 	}
-	else if (p == (parser_t*)1) {
+	else if (p == DECLINE) {
 		warn("sb_run_xmlparser_parselen() returned DECLINE(1)");
 		goto return_fail;
 	}
@@ -592,20 +594,20 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId,
 		strcat(path, "/");
 		strcat(path, docattrFields[i]);
 
-		f = sb_run_xmlparser_retrieve_field(p, path);
-		if (f == NULL) {
+		iResult = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+		if (iResult == FAIL) {
 			warn("cannot get field[/%s/%s] of ducument[%s] (path:%s)", 
 					fieldRootName, 
 					docattrFields[i], oid, path);
 			continue;
 		}
-		else if ( f == (field_t*)1 ) {
+		else if ( iResult == DECLINE ) {
 			warn("sb_run_xmlparser_retrieve_field() returned DECLINE(1)");
 			continue;
 		}
 
-		len = f->size;
-		val = _trim(f->value, &len);
+		len = field_length;
+		val = _trim(field_value, &len);
 		len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
 		strncpy(value, val, len);
 		value[len] = '\0';
@@ -1014,8 +1016,8 @@ CDM_getAbstract(int            numRetrievedDoc,
 	struct comments *comments;
 /*	struct comments comments[MAX_EXT_FIELD];*/
 	VariableBuffer buf;
-	parser_t *p;
-	field_t *f;
+	void* p;
+	char* field_value; int field_length;
 	char *paragraph, path[STRING_SIZE];
 	IndexFileElement ele;
 	//Morpheme morp;
@@ -1063,20 +1065,21 @@ CDM_getAbstract(int            numRetrievedDoc,
 			/* retrieve field */
 			sprintf(path, "/%s/%s", fieldRootName, 
 					aRetrievedDoc[iDoc].cdAbstractInfo[j].field);
-			f = sb_run_xmlparser_retrieve_field(p, path);
-			if (f == NULL) {
+			iResult = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+			if (iResult == FAIL) {
 				warn("cannot retrieve field[%s]", path);
 				continue;
 			}
 
-			paragraph = f->value;
+			paragraph = field_value;
 
 #define TEST(a)     ((a)?1:0)
 			append_comment(comments,
 					aRetrievedDoc[iDoc].cdAbstractInfo[j].field,
-					f->value,
-					f->size,
-					TEST(f->flag & CDATA_SECTION));
+					field_value,
+					field_length,
+					//TEST(f->flag & CDATA_SECTION));
+					1);
 		}
 		sb_run_xmlparser_free_parser(p);
 

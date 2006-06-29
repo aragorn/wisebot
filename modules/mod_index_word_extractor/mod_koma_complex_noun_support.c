@@ -1,7 +1,11 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "memory.h"
+
 #include "mod_koma_complex_noun_support.h"
 #include "mod_api/index_word_extractor.h"
+
+#include <string.h>
 
 #define MY_EXTRACTOR_ID1		11
 #define MY_EXTRACTOR_ID2		12

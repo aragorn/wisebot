@@ -1,5 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "common_util.h"
 #include "mod_api/docattr.h"
 #include "mod_api/morpheme.h"
 #include "mod_docattr_supreme_precedent.h"

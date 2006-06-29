@@ -1,8 +1,16 @@
 /* $Id$ */
 
+#include "common_core.h"
+#include "memory.h"
+#include "ipc.h"
+
 #include "mod_vrm.h"
+#include <stdlib.h> // rand
 #include <unistd.h>
 #include <sys/mman.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 
 #ifndef MREMAP_MAYMOVE
 	#define MREMAP_MAYMOVE 1 

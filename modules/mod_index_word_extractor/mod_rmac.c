@@ -1,5 +1,5 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
 
 #include "mp_api.h"
 #include "mod_api/mod_api.h"

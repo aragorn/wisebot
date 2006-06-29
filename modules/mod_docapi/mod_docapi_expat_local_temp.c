@@ -3,7 +3,8 @@
  * created by YoungHoon  
  */
 
-#include "softbot.h"
+#include "common_core.h"
+#include "memory.h"
 
 #include "mod_api/docapi.h"
 #include "mod_api/cdm.h"
@@ -11,12 +12,13 @@
 #include "mod_api/xmlparser.h"
 
 #include <errno.h>
+#include <string.h>
 #include "expat.h"
 
 #define MAX_ATTR_NUM			32
 
 struct DocObject {
-	parser_t *p;
+	void *p;
 };
 
 struct FieldObject {
@@ -194,8 +196,9 @@ DAPI_getField (DocObject          *doc,
 		       FieldObject        *field,
 			   char               *fieldname,
 			   char              **buffer) {
-	char path[MAX_PATHKEY_LEN];
-	field_t *f;
+	char path[SHORT_STRING_SIZE]; // ¿ø·¡´Â MAX_PATHKEY_LEN (parser.h)
+	char* field_value; int field_length;
+	int ret;
 
 	if (doc->p == NULL) {
 		warn("no parsing result");
@@ -203,22 +206,22 @@ DAPI_getField (DocObject          *doc,
 	}
 
 	/* get field */
-	strncpy(path, "/Document/", MAX_PATHKEY_LEN);
-	strncat(path, fieldname, MAX_PATHKEY_LEN-11);
-	f = sb_run_xmlparser_retrieve_field(doc->p, path);
-	if (f == NULL) {
+	strncpy(path, "/Document/", SHORT_STRING_SIZE);
+	strncat(path, fieldname, SHORT_STRING_SIZE-11);
+	ret = sb_run_xmlparser_retrieve_field(doc->p, path, &field_value, &field_length);
+	if (ret != SUCCESS) {
 		warn("cannot retrieve field[%s]", fieldname);
 		return FAIL;
 	}
 
 	/* duplicate */
-	*buffer = (char *)sb_malloc(f->size + 1);
+	*buffer = (char *)sb_malloc(field_length + 1);
 	if (*buffer == NULL) {
 		error("cannot malloc: %s", strerror(errno));
 		return FALSE;
 	}
-	strncpy(*buffer, f->value, f->size);
-	(*buffer)[f->size] = '\0';
+	strncpy(*buffer, field_value, field_length);
+	(*buffer)[field_length] = '\0';
 
 	return TRUE;
 }

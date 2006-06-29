@@ -52,7 +52,8 @@ char field_root_name[SHORT_STRING_SIZE] = "Document";
 /////////////////////////////////////////////////////////////
 
 static uint32_t cdm_last_docid(cdm_db_t* cdm_db);
-static field_t* get_xml_field(parser_t* p, const char* field_name, const char* oid);
+static int get_xml_field(void* p, const char* field_name,
+		char** field_value, int* field_length, const char* oid);
 
 static struct cdmfield_t* find_cdmfield(const char* name);
 static int find_field_from_doc(cdm_doc_custom_t* doc_custom, const char* name);
@@ -623,8 +624,8 @@ static int cdm_put_xmldoc(cdm_db_t* cdm_db, did_db_t* did_db, char* oid,
 		const char* xmldoc, size_t size, uint32_t* newdocid, uint32_t* olddocid)
 {
 	cdm_db_custom_t* db;
-	parser_t* p = NULL;
-	field_t *f;
+	void* p = NULL;
+	char* field_value; int field_length;
 	char header[HEADER_SIZE+1];
 	memfile *shortfields = NULL, *longfield_headers = NULL, *longfield_bodies = NULL;
 	int i, shortfields_length = 0, longfield_headers_length = 0;
@@ -655,17 +656,17 @@ time_mark("xml parsing");
 
 	// shortfield 처리
 	for ( i = 0; fields[i].type == SHORT && i < field_count; i++ ) {
-		f = get_xml_field(p, fields[i].name, oid);
-		if ( f == NULL ) continue;
+		ret = get_xml_field(p, fields[i].name, &field_value, &field_length, oid);
+		if ( ret != SUCCESS ) continue;
 
 		if ( write_shortfield_to_buf(
-					shortfields, &fields[i], f->value, f->size, oid) != SUCCESS ) {
+					shortfields, &fields[i], field_value, field_length, oid) != SUCCESS ) {
 			goto error;
 		}
 
 		// set docattr
 		if ( fields[i].is_docattr ) {
-			set_docattr_mask( &docmask, fields[i].name, f->value, f->size, oid );
+			set_docattr_mask( &docmask, fields[i].name, field_value, field_length, oid );
 		}
 	}
 	shortfields_length = memfile_getSize(shortfields);
@@ -673,17 +674,17 @@ time_mark("build memfile short");
 
 	// longfield 처리
 	for ( ; i < field_count; i++ ) {
-		f = get_xml_field(p, fields[i].name, oid);
-		if ( f == NULL ) continue;
+		ret = get_xml_field(p, fields[i].name, &field_value, &field_length, oid);
+		if ( ret != SUCCESS ) continue;
 
 		if ( write_longfield_to_buf(longfield_headers, longfield_bodies,
-					&fields[i], f->value, f->size, oid) != SUCCESS ) {
+					&fields[i], field_value, field_length, oid) != SUCCESS ) {
 			goto error;
 		}
 
 		// set docattr
 		if ( fields[i].is_docattr ) {
-			set_docattr_mask( &docmask, fields[i].name, f->value, f->size, oid );
+			set_docattr_mask( &docmask, fields[i].name, field_value, field_length, oid );
 		}
 	}
 	longfield_headers_length = memfile_getSize(longfield_headers);
@@ -904,18 +905,19 @@ static uint32_t cdm_last_docid(cdm_db_t* cdm_db)
 /******************* not api from here *****************/
 
 /* oid는 그냥 메시지 출력용 */
-static field_t* get_xml_field(parser_t* p, const char* field_name, const char* oid)
+static int get_xml_field(void* p, const char* field_name,
+		char** field_value, int* field_length, const char* oid)
 {
-	field_t* f;
+	int ret;
 	char path[STRING_SIZE];
 	snprintf(path, STRING_SIZE, "/%s/%s", field_root_name, field_name);
 
-	f = sb_run_xmlparser_retrieve_field(p, path);
-	if ( f == NULL ) {
+	ret = sb_run_xmlparser_retrieve_field(p, path, field_value, field_length);
+	if ( ret != SUCCESS ) {
 		warn("cannot get field[%s] of document [%s]", path, oid);
 	}
 
-	return f;
+	return ret;
 }
 
 // 없으면 NULL

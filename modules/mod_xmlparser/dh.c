@@ -1,9 +1,10 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
+#include "memory.h"
 
 typedef struct _dh_t dh_t;
 typedef struct _saving_part_dh_t saving_part_dh_t;

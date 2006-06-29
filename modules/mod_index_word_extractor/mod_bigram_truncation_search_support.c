@@ -1,7 +1,11 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "memory.h"
+
 #include "mod_bigram_truncation_search_support.h"
 #include "mod_api/index_word_extractor.h"
+
+#include <string.h>
 
 #define MY_EXTRACTOR_ID		21
 

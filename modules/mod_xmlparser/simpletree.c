@@ -1,5 +1,5 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
 #include "simpletree.h"
 
 struct _stree_t {

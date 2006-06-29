@@ -1,7 +1,12 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+#include "memory.h"
+
 #include "mod_api/index_word_extractor.h"
 #include "mod_koma.h"
+
+#include <string.h>
+#include <errno.h>
 
 // XXX: 인터넷에서는 기본적으로 단음절 변형을 사용하지 않는다.  -- dyaus
 #define MODE_TREAT_JUPDUSA 0 // 접두사 처리
