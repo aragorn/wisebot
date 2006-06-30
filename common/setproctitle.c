@@ -86,10 +86,16 @@ void init_setproctitle(int argc, char *argv[], char *envp[])
 }
 
 static char prefix[SHORT_STRING_SIZE] = "";
+static char subprefix[SHORT_STRING_SIZE] = "";
 
 void setproctitle_prefix(char *s)
 {
 	strncpy(prefix, s, SHORT_STRING_SIZE);
+}
+
+void setproctitle_subprefix(char *s)
+{
+	strncpy(subprefix, s, SHORT_STRING_SIZE);
 }
 
 #ifndef HAVE_SETPROCTITLE
@@ -113,8 +119,17 @@ void setproctitle(char *fmt, ...)
 	vsnprintf(statbuf2, sizeof(statbuf2), fmt, msg);
 	va_end(msg);
 
-	if ( strlen(prefix) > 0 )
-		snprintf(statbuf, sizeof(statbuf), "%s - %s", prefix, statbuf2);
+	if ( prefix[0] != '\0' ) {
+		if ( subprefix[0] == '\0' ) {
+			snprintf(statbuf, sizeof(statbuf), "%s - %s", prefix, statbuf2);
+		}
+		else {
+			snprintf(statbuf, sizeof(statbuf), "%s(%s) - %s", prefix, subprefix, statbuf2);
+		}
+	}
+	else if ( subprefix[0] != '\0' ) {
+		snprintf(statbuf, sizeof(statbuf), "%s - %s", subprefix, statbuf2);
+	}
 	else strncpy(statbuf, statbuf2, sizeof(statbuf));
 
 	i = strlen(statbuf);

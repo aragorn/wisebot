@@ -18,5 +18,6 @@ SB_DECLARE(void) setproctitle(char *fmt, ...);
 
 SB_DECLARE(void) init_setproctitle(int argc, char *argv[], char *envp[]);
 SB_DECLARE(void) setproctitle_prefix(char *prefix);
+SB_DECLARE(void) setproctitle_subprefix(char *subprefix);
 
 #endif /* SETPROCTITLE_H */

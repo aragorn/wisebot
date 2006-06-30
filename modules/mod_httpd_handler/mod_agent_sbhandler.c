@@ -1,9 +1,10 @@
-#include <stdlib.h> 
 #include "common_core.h"
 #include "common_util.h"
+
 #include "timelog.h"
 #include "memory.h"
 #include "util.h"
+#include "setproctitle.h"
 #include "mod_api/sbhandler.h"
 #include "mod_httpd_handler/mod_standard_handler.h"
 #include "mod_httpd/protocol.h"
@@ -13,6 +14,8 @@
 #include "mod_api/qp2.h"
 #include "mod_api/http_client.h"
 #include "handler_util.h"
+
+#include <stdlib.h> 
 
 #define MAX_ENUM_NUM        (1024)
 #define MAX_ENUM_LEN        SHORT_STRING_SIZE
@@ -1023,10 +1026,15 @@ static void get_enum(configValue v)
 
 static void set_node_id(configValue v)
 {
+	char subprefix[SHORT_STRING_SIZE];
+
     this_node_id = atoi(v.argument[0]);
 	if(this_node_id > 16) {
         error("node_id should be smaller than 16");
 	}
+
+	snprintf(subprefix, sizeof(subprefix), "agent%d", this_node_id);
+	setproctitle_subprefix(subprefix);
 
 	info("node_id[%0X]", this_node_id);
 }
