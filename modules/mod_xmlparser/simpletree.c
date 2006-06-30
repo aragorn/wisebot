@@ -1,6 +1,8 @@
 /* $Id$ */
 #include "common_core.h"
+#include "memory.h"
 #include "simpletree.h"
+#include <string.h>
 
 struct _stree_t {
 	/* saving data */

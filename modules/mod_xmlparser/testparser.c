@@ -19,23 +19,23 @@ module *static_modules;
 int keynum = 4;
 char *keys[] = {"/Document/Author", "/Document/Title", "/Document/Body", "/Document/URL"};
 
-int test_retrieve(parser_t *p) {
-	field_t *f;
+int test_retrieve(void *p) {
+	char* field_value; int field_length;
 	char tmp[BUF_SIZE];
-	int i;
+	int i, ret;
 
 	/* test retrieve */
 	for (i=0; i<keynum; i++) {
-		f = retrieve_field(p, keys[i]);
-		if (f == NULL) {
+		ret = retrieve_field(p, keys[i], &field_value, &field_length);
+		if (ret != SUCCESS) {
 			fprintf(stderr, "cannot get field[%s]\n", keys[i]);
 			continue;
 /*			return -1;*/
 		}
-		memcpy(tmp, f->value, f->size);
-		tmp[f->size] = '\0';
+		memcpy(tmp, field_value, field_length);
+		tmp[field_length] = '\0';
 #ifndef REPEAT_TEST
-		printf("fieldname[%s], value[%s]\n", f->name, tmp);
+		printf("fieldname[%s], value[%s]\n", keys[i], tmp);
 #endif
 	}
 
@@ -47,7 +47,7 @@ int main (int argc, char *argv[]) {
 	int size;
 	FILE *fp;
 
-	parser_t *p=NULL;
+	void *p=NULL;
 
 	if (argc != 2 && argc != 3) {
 		fprintf(stderr, "usage: testparser [xml file name] [charset name]; "

@@ -19,7 +19,7 @@ else
 LIBEXPAT_LA = -lexpat
 endif
 
-pkglib_LTLIBRARIES = mod_xmlparser.la
+pkglib_LTLIBRARIES = mod_xmlparser.la mod_simple_xmlparser.la
 mod_xmlparser_la_SOURCES = mod_xmlparser.c parser.c \
 						   dh.c stack.c checksum.c \
 						   checksum.h dh.h parser.h stack.h
@@ -29,7 +29,10 @@ mod_xmlparser_la_LIBADD  = $(libdir)/libcommon_core.la \
 mod_xmlparser_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_xmlparser_la_CFLAGS  = -fno-strict-aliasing
 
-check_PROGRAMS = teststree testparser
+mod_simple_xmlparser_la_SOURCES = mod_simple_xmlparser.c
+mod_simple_xmlparser_la_LDFLAGS = -module -avoid-version -no-undefined
+
+check_PROGRAMS = teststree testparser testsimpleparser
 
 testparser_SOURCES = testparser.c parser.c dh.c stack.c checksum.c
 if SOLARIS
@@ -49,5 +52,8 @@ testparser_LDFLAGS = -export-dynamic $(DYN_LIB)
 teststree_SOURCES = teststree.c simpletree.c
 teststree_LDADD   = $(libdir)/libsoftbot.la
 teststree_LDFLAGS = -export-dynamic $(DYN_LIB)
+
+testsimpleparser_SOURCES = mod_simple_xmlparser.c
+testsimpleparser_CFLAGS = -DTEST_PROGRAM
 
 include ../install-pkglib.mk
