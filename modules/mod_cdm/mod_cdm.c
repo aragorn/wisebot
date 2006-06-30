@@ -581,7 +581,7 @@ int CDM_putWithOid(void* did_db, char *oid, uint32_t *registeredDocId,
 		err_ret = CDM_NOT_WELL_FORMED_DOC;
 	    goto return_fail;
 	}
-	else if (p == DECLINE) {
+	else if (p == MINUS_DECLINE) {
 		warn("sb_run_xmlparser_parselen() returned DECLINE(1)");
 		goto return_fail;
 	}

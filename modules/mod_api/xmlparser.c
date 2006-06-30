@@ -19,7 +19,7 @@ HOOK_STRUCT(
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(void*, xmlparser_parselen, \
 	(const char *charset, const char *xmltext, const int len), \
-	(charset, xmltext, len), DECLINE)
+	(charset, xmltext, len), MINUS_DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, xmlparser_retrieve_field, \
 	(void *p, const char *query, char** field_value, int* field_length),
 	(p, query, field_value, field_length), DECLINE)
