@@ -1896,7 +1896,7 @@ int com_selectdoc(char *arg)
 	char fieldtext[DOCUMENT_SIZE];
 	char fieldname[STRING_SIZE], path[STRING_SIZE];
 	uint32_t docid;
-	parser_t *parser;
+	void *parser;
 	field_t *field;
 	pdom_t *xmldom;
 	int len=0;
@@ -1968,7 +1968,7 @@ int com_rebuild_docattr(char *arg)
     int i, start, finish, iSize, result;
     VariableBuffer var;
     static char *aCannedDoc = NULL;
-    parser_t *p;
+    void *p;
 
 	if (aCannedDoc == NULL) {
 		aCannedDoc = (char *)malloc(DOCUMENT_SIZE);
@@ -2015,7 +2015,7 @@ int com_rebuild_docattr(char *arg)
         docattr_mask_t docmask;
         int len, j;
         char *val, value[STRING_SIZE], path[STRING_SIZE];
-        field_t *f;
+		char* field_value; int field_length;
         uint32_t docid;
 
         docid = i;
@@ -2025,16 +2025,16 @@ int com_rebuild_docattr(char *arg)
             strcpy(path, "/Document/");
             strcat(path, docattrFields[j]);
 
-            f = sb_run_xmlparser_retrieve_field(p, path);
-            if (f == NULL) {
+            result = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+            if (result != SUCCESS) {
                 warn("cannot get field[/%s/%s] of ducument[%d] (path:%s)",
                         "/Document",
                         docattrFields[j], i, path);
                 continue;
             }
 
-            len = f->size;
-            val = __trim(f->value, &len);
+            len = field_length;
+            val = __trim(field_value, &len);
             len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
             strncpy(value, val, len);
             value[len] = '\0';
@@ -2068,7 +2068,7 @@ int com_rebuild_rid(char *arg)
     int i, start, finish, iSize, result;
     VariableBuffer var;
     char aCannedDoc[DOCUMENT_SIZE];
-    parser_t *p;
+    void *p;
 
     if (sscanf(arg, "%d %d", &start, &finish) != 2) {
         error("usage: rebuild_docattr start finish");
@@ -2106,20 +2106,20 @@ int com_rebuild_rid(char *arg)
     { /* insert some field into docattr db */
         int len;
         char *val, value[STRING_SIZE], path[STRING_SIZE], rid[STRING_SIZE];  
-        field_t *f;
+		char* field_value; int field_length;
 		uint32_t docid;
 
         /* TYPE2 Check */
         strcpy(path, "/Document/TYPE2");
 
-        f = sb_run_xmlparser_retrieve_field(p, path);
-        if (f == NULL) {
+        result = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+        if (result != SUCCESS) {
             warn("cannot get field[%s] of ducument[%d]", path, i);
             goto done;
         }
 
-        len = f->size;
-        val = __trim(f->value, &len);
+        len = field_length;
+        val = __trim(field_value, &len);
         len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
         strncpy(value, val, len);
         value[len] = '\0';
@@ -2152,14 +2152,14 @@ int com_rebuild_rid(char *arg)
         /* make rid */
         strcpy(path, "/Document/ctrlno");
 
-        f = sb_run_xmlparser_retrieve_field(p, path);
-        if (f == NULL) {
+        result = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+        if (result != SUCCESS) {
             warn("cannot get field[%s] of ducument[%d]",path,i);
             goto done;
         }
 
-        len = f->size;
-        val = __trim(f->value, &len);
+        len = field_length;
+        val = __trim(field_value, &len);
         len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
         strncpy(value, val, len);
         value[len] = '\0';
@@ -2174,14 +2174,14 @@ int com_rebuild_rid(char *arg)
 
         strcpy(path, "/Document/ctrltype");
 
-        f = sb_run_xmlparser_retrieve_field(p, path);
-        if (f == NULL) {
+        result = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+        if (result != SUCCESS) {
             warn("cannot get field[%s] of ducument[%d]",path,i);
             goto done;
         }
 
-        len = f->size;
-        val = __trim(f->value, &len);
+        len = field_length;
+        val = __trim(field_value, &len);
         len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
         strncpy(value, val, len);
         value[len] = '\0';
