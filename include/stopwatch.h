@@ -72,11 +72,14 @@ static void _time_mark(const char* name, int line)
 
 static void _time_status()
 {
+	uint64_t sum = 0;
 	if ( time_count >= TIME_COUNT ) {
 		int i;
 		for ( i = 0; i < time_idx; i++ ) {
 			info("%-20s: %'10" PRIu64 " usec", time_names[i], time_lengths[i]);
+			sum += time_lengths[i];
 		}
+		info("%-20s: %'10" PRIu64 " usec", "summary", sum);
 		time_count = -1;
 	}
 }
