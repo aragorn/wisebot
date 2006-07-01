@@ -364,7 +364,7 @@ static int retrieve_field(void* p, const char* query, char** field_value, int* f
 	fieldname++;
 
 	for ( i = parser->fieldcount-1; i >= 0; i-- ) {
-		if ( strcmp( parser->fieldnames[i], fieldname ) == 0 ) {
+		if ( strcasecmp( parser->fieldnames[i], fieldname ) == 0 ) {
 			*field_value = parser->fieldvalues[i];
 			*field_length = parser->fieldlengths[i];
 			return SUCCESS;
