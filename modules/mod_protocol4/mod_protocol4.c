@@ -408,11 +408,10 @@ int sb4s_remote_morphological_analyze_doc(int sockfd)
 	parser = sb_run_xmlparser_parselen("CP949" , (char *)recv_data, recv_data_size);
 	if (parser == NULL) { 
 		error("cannot parse document");
+		sb_free(recv_data);
 		return FAIL;
 	}
 //	INFO("parsing document successfully");
-
-	sb_free(recv_data);
 
 	pbuf = meta_data;
 	merge_buffer.data = NULL;
@@ -480,6 +479,7 @@ int sb4s_remote_morphological_analyze_doc(int sockfd)
 				sb_run_xmlparser_free_parser(parser);
 				sb_free(buffer);
 				sb_free(merge_buffer.data);
+				sb_free(recv_data);
 				return FAIL;
 			}
 			buffer_size = field_length + 1;
@@ -499,6 +499,7 @@ int sb4s_remote_morphological_analyze_doc(int sockfd)
 			sb_free(buffer);
 			sb_free(merge_buffer.data);
 			sb_run_xmlparser_free_parser(parser);
+			sb_free(recv_data);
 			return FAIL;
 		}
 
@@ -521,6 +522,7 @@ int sb4s_remote_morphological_analyze_doc(int sockfd)
 			sb_free(buffer);
 			sb_free(merge_buffer.data);
 			sb_run_xmlparser_free_parser(parser);
+			sb_free(recv_data);
 			return FAIL;
 		}
 		sb_free(tmp_data);
@@ -531,6 +533,8 @@ int sb4s_remote_morphological_analyze_doc(int sockfd)
 
 	sb_run_xmlparser_free_parser(parser);
 	parser = NULL;
+	sb_free(recv_data);
+	recv_data = NULL;
 	sb_free(buffer);
 	buffer = NULL;
 
