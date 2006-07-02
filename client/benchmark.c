@@ -1,58 +1,124 @@
 /* $Id$ */
-/* search performance test tool */
-/* by jso 2004/02/04 */
-
+#include "common_core.h"
+//#include "scoreboard.h"
+//#include "modules.h"
+#include "ipc.h"
+#include "commands.h"  /* search() */
+#include "benchmark.h"
 #include <string.h>
 #include <pthread.h>
 #include <sys/time.h>  /* gettimeofday(2) */
 #include <unistd.h>    /* getopt(3) */
 #include <stdlib.h>    /* atoi(3) */
-#include "common_core.h"
-#include "commands.h"  /* search() */
-#include "benchmark.h"
+#include <signal.h>
 
-#define SLOT_SIZE 20
-#define SLOT_TIME_INTERVAL 100
-#define SLOT_TIME_BASE 20
+#define MAX_THREADS (100)
+static scoreboard_t scoreboard[] = { THREAD_SCOREBOARD(MAX_THREADS) };
+
+extern module benchmark_module;
+/****************************************************************************/
+static void _do_nothing(int sig)
+{
+    return;
+}
+
+static void _shutdown(int sig)
+{
+    pthread_exit(NULL);
+}
+
+static void _graceful_shutdown(int sig)
+{
+    struct sigaction act;
+
+    memset(&act, 0x00, sizeof(act));
+
+    sigfillset(&act.sa_mask);
+
+    act.sa_handler = _do_nothing;
+    sigaction(SIGHUP, &act, NULL);
+    sigaction(SIGINT, &act, NULL);
+
+    scoreboard->graceful_shutdown++;
+}
+/****************************************************************************/
+
+/*
+ prepare_test
+   init_scoreboard
+   get_step_lock
+   make threads/processes to do_test
+   release_step_lock
+
+   wait for threads/processes to return
+
+   print statistics
+
+ do_test
+   wait_for_start_sign
+
+   while ( 1 )
+   {
+     get input data;
+     break if no more input data;
+     break if count >= max_count or no more input data;
+
+     time the test
+
+     break if count >= max_count or no more input data;
+
+	 update_test_result
+   } 
+
+*/
 
 typedef struct {
-	pthread_mutex_t	*fp_lock;
-	FILE *fp;		                        /* fp of query list file */
-	pthread_mutex_t	*count_lock;
-	int volatile	success;				/* number of requests successed */
-	int volatile	fail;					/* number of requests failed */
+	char *str;
+} bm_input_t;
+
+#define SLOT_SIZE          (20)
+#define SLOT_TIME_BASE     (20)
+#define SLOT_TIME_INTERVAL (100)
+typedef struct {
+	int base;
+	int interval;
+	int volatile slots[SLOT_SIZE];
+} bm_distribution_t;
+
+
+struct bm_scoreboard_t {
+	rwlock_t *lock;
+
+	struct timeval	start_time;				/* start time */
+	struct timeval	end_time;				/* end time */
+
+	int volatile	success;				/* number of requests succeeded */
+	int volatile	failure;				/* number of requests failed */
+
 	int volatile	read;					/* number of bytes read */
-	int volatile	time;					/* total sum of time in ms for connections */
-	int volatile	min_time;				/* minimum time in ms for connection */
-	int volatile	max_time;				/* maximum time in ms for connection */
+
+	int volatile	total_time;				/* total sum of time in ms */
+	int volatile	min_time;				/* minimum time in ms */
+	int volatile	max_time;				/* maximum time in ms */
+	int volatile	avg_time;				/* avg time in ms */
+	bm_distribution_t *distrib;
+
 	int volatile	ended;					/* check if test has ended */
-	int volatile	time_dist[SLOT_SIZE];	/* table of time distribution */
-	int volatile	min_count;
-	int volatile	max_count;
+};
+/****************************************************************************/
+static bm_scenario_t *static_scn;
 
-	long long volatile	total_count;
-	struct timeval start;					/* start time */
-	struct timeval end;						/* end time */
-
-	int requests;							/* total number of requests */
-	int concurrency;
-} status_t;
-
-int  verbose = 0;
-status_t status;
-
-static int timedif(struct timeval a, struct timeval b);
-void softbot_bench(int *i);
-
-static int timedif(struct timeval a, struct timeval b)
+static int rdlock(void)
 {
-	register int us, s;
-	us = a.tv_usec - b.tv_usec;
-	us /= 1000;
-	s = a.tv_sec - b.tv_sec;
-	s *= 1000;
-
-	return s + us;
+	return rwlock_rdlock(static_scn->scoreboard->lock);
+}
+static int wrlock(void)
+{
+	return rwlock_wrlock(static_scn->scoreboard->lock);
+}
+static int unlock(void)
+{
+	return rwlock_unlock(static_scn->scoreboard->lock);
 }
 
 static int timeslot(int timetaken)
@@ -67,6 +133,99 @@ static int timeslot(int timetaken)
 	}
 	return i;
 }
+
+int benchmark_init(bm_scenario_t *scn)
+{
+	memset(scn, 0x00, sizeof(bm_scenario_t));
+
+	scn->scoreboard = calloc(1, sizeof(bm_scoreboard_t));
+	scn->scoreboard->distrib = calloc(1, sizeof(bm_distribution_t));
+
+	scn->scoreboard->lock = calloc(1, rwlock_sizeof());
+	rwlock_init(scn->scoreboard->lock);
+
+	static_scn = scn;
+
+	init_one_scoreboard(&benchmark_module);
+
+	return SUCCESS;
+}
+
+int child_main(slot_t *slot)
+{
+	bm_scenario_t *scn = static_scn;
+	struct timeval start, end;
+
+	while ( 1 ) {
+		char *in;
+
+		wrlock();
+		if (scn->scoreboard->ended)
+		{
+			unlock();
+			break;
+		}
+
+		in = scn->read_input();
+
+		unlock();
+
+		if (in == NULL) break;
+
+		scn->do_test(in);
+	}
+
+	return SUCCESS;
+}
+
+/* display usage information */
+static void usage(char *progname)
+{
+	info("Usage: %s [options] query_list_file", progname);
+	info("Options are:");
+	info("    -n requests    Number of requests to perform");
+	info("    -c concurrency Number of multiple requests to make");
+	info("    -v             Verbose output");
+}
+
+
+int benchmark_run(bm_scenario_t *scn)
+{
+	int needed_threads = 10;
+
+	if (static_scn == NULL) {
+		error("you should call benchmark_init() first.");
+		return FAIL;
+	}
+	sb_run_set_default_sighandlers(_shutdown,_graceful_shutdown);
+
+	scoreboard->size = (needed_threads < MAX_THREADS) ? needed_threads : MAX_THREADS;
+	if (sb_run_init_scoreboard(scoreboard) != SUCCESS) return FAIL;
+
+    scoreboard->period = 3;
+	wrlock();
+    sb_run_spawn_processes(scoreboard, "benchmark", child_main);
+
+    sleep(1);
+    rwlock_unlock(scn->scoreboard->lock);
+
+    sb_run_monitor_processes(scoreboard);
+
+	return SUCCESS;
+}
+
+module benchmark_module = {
+    STANDARD_MODULE_STUFF,
+    NULL,               /* config */
+    NULL,               /* registry */
+    NULL,               /* initialize */
+    NULL,               /* child_main */
+    scoreboard,         /* scoreboard */
+    NULL,               /* register hook api */
+};
+
+
+#if 0
 
 void softbot_bench(int *num)
 {
@@ -174,6 +333,7 @@ benchmark(int argc, char *argv[])
 	status.total_count = 0;
 	
 	for(i = 0; i < SLOT_SIZE; i++) status.time_dist[i] = 0;
+
 	optind = 1;
 
 	while ((c = getopt(argc,argv, "vn:c:")) > 0 ) {
@@ -285,3 +445,6 @@ benchmark(int argc, char *argv[])
 	fclose(fp);
 	return 0;
 }
+
+#endif
+

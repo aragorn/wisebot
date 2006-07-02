@@ -5,14 +5,8 @@
 #include "common_core.h"
 
 extern module client_module;
-//extern module api_module;
-//extern module spool_module;
-//extern module lexicon_module;
 
 module *client_static_modules[] = {
 	&client_module,
-//	&api_module,
-//	&spool_module,
-//	&lexicon_module,
 	NULL
 };

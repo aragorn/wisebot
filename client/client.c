@@ -1,19 +1,21 @@
 /* $Id$ */
 #define CLIENT /* includes client only APIs */
-#include <signal.h>
-#include <unistd.h> /* close(2) */
-#include <stdlib.h> /* free(3) */
-#include <errno.h>
 #include "common_core.h"
-#ifdef HAVE_GETOPT_LONG
-#  define _GNU_SOURCE
-#  include <getopt.h>
-#endif
 #include "ipc.h"
 #include "util.h"
 #include "setproctitle.h"
 #include "commands.h"
 #include "client.h"
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE /* <getopt.h> */
+#endif
+#ifdef HAVE_GETOPT_LONG
+# include <getopt.h>
+#endif
+#include <signal.h>
+#include <unistd.h> /* close(2) */
+#include <stdlib.h> /* free(3) */
+#include <errno.h>
 
 char mServerAddr[SHORT_STRING_SIZE] = "localhost";
 char mServerPort[SHORT_STRING_SIZE] = "8605";

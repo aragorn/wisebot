@@ -2212,33 +2212,13 @@ done:
 
 int com_benchmark(char *arg)
 {
-    int argc, status;
-    char **argv;
-	pid_t pid;
+	bm_scenario_t scn;
+	benchmark_init(&scn);
 
-	info("arg : [%s]", arg);
+    benchmark_run(&scn);
+    //benchmark_destroy(&scn);
 
-	if(arg == NULL) {
-		warn("arg is NULL");
-	}
-
-    if(make_arg(&argv, &argc, arg, "benchmark") != SUCCESS)
-        return FAIL;
-
-    status_arg((const char**)argv, argc);
-
-	//XXX getopt not use twice in one prcess.
-    pid = fork();
-    if(pid == 0) { //child
-        benchmark(argc, argv);
-		exit(0);
-	} else {
-		waitpid(pid, &status, 0);
-	}
-
-    destroy_arg(argv, argc);
-
-    return (status == 0) ? SUCCESS: FAIL;
+	return SUCCESS;
 }
 
 int com_quit (char *arg)

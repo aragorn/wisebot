@@ -1,6 +1,6 @@
 /* $Id$ */
-#ifndef _COMMANDS_H_
-#define _COMMANDS_H_ 1
+#ifndef COMMANDS_H
+#define COMMANDS_H 1
 
 /* the names of functions that actually execute the command */
 
