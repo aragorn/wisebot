@@ -119,7 +119,7 @@ struct scoreboard_t {
 	slotcontrol_t *control;
 };
 
-SB_DECLARE(scoreboard_t*) init_one_scoreboard();
+SB_DECLARE(scoreboard_t*) init_one_scoreboard(module *mod);
 SB_DECLARE(void) init_all_scoreboards();
 SB_DECLARE(slot_t*) get_slot_by_pid(scoreboard_t *scoreboard, pid_t pid);
 SB_DECLARE(slot_t*) get_slot_by_name(scoreboard_t *scoreboard, const char *name);
