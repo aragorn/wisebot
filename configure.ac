@@ -227,7 +227,7 @@ case "$host" in
     OS_TYPE="unix"
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
-    EXTRA_CFLAGS="-m32"
+    EXTRA_CFLAGS="-m32 -march=i686"
     ;;
   *pc-cygwin* )
     SHORT_HOST="cygwin"
