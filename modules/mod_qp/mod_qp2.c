@@ -3862,7 +3862,7 @@ time_mark("do_search");
 	}
 
     if (g_result_list->ndochits == 0) {
-		g_result_list = NULL;
+		//g_result_list = NULL;
         return SUCCESS;
     }
 
