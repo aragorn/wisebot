@@ -1,0 +1,48 @@
+#!/usr/bin/perl
+
+use Benchmark;
+
+my $filename = shift;
+if ( not $filename ) {
+	print <<END;
+usage: seek <filename> [<from> <to> <length> <repeat>]
+     filename - filename that you are testing
+     from     - position from which accessing area begins
+     to       - position to which accessing area ends
+     length   - bytes to read per an access
+     repeat   - number of times to test random access
+END
+	exit 0;
+}
+
+my $from = shift;
+my $to = shift;
+my $length = shift;
+$length = 1024 unless $length;
+my $repeat = shift;
+$repeat = 1000 unless $repeat;
+my $mod = int($repeat/80)+1;
+
+local $| = 1;
+my $t0 = new Benchmark;
+open(FILE, $filename) or die "cannot open file, $filename: $!";
+foreach my $i ( 0..$repeat ) {
+	my $var = int(rand($to-$from));
+	my $str;
+	seek(FILE, $from + $var, 0);
+	read(FILE, $str, $length);
+	print "." if $i % $mod == 0;
+	#printf ("[%d][%d][%d][%d] \"%s\"\n",$i,$from,$to,$var,substr($str,0,16)) if $i % $mod == 0;
+}
+close(FILE);
+
+my $t1 = new Benchmark;
+print "\nthis test took: ", timestr(timediff($t1,$t0)), "\n";
+print "from, $from, to, $to, length, $length, repeat, $repeat\n";
+
+sub escape {
+	my $str = shift;
+	$str =~ s/\W//g;
+	return $str;
+}
+
