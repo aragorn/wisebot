@@ -648,7 +648,7 @@ static int print_group(request_rec *r, groupby_result_list_t* groupby_result)
 		for(j = 0; j < MAX_CARDINALITY; j++) {
 			sum += groupby_result->result[i][j];
         }
-	    ap_rprintf(r, "<group name=\"%s\" result_count=\"%d\" />\n", 
+	    ap_rprintf(r, "<group name=\"%s\" result_count=\"%d\">\n", 
                       sort_rule->rule.name, sum);
 
 		// group °á°ú
