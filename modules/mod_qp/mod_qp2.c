@@ -24,7 +24,7 @@
 #include "mod_morpheme/lib/lb_lex.h" /* 2228,2236: LEXM_IS_WHITE,LEXM_IS_EOS */
 
 #define TIME_COUNT 1
-#define DEBUGTIME
+//#define DEBUGTIME
 #include "stopwatch.h"
 
 #ifdef DEBUG_SOFTBOTD
@@ -44,8 +44,8 @@ static void show_dochitlist(doc_hit_t dochits[], uint32_t start, uint32_t nelm,
 		fprintf(stream, "[%u] id:%u, nhits:%d\n",
 				i, dochits[i].id, dochits[i].nhits);
 		for (j=0; j<dochits[i].nhits; j++) {
-			int32_t pos=sb_run_get_position(&(dochits[i].hits[j]));
-			int32_t field=sb_run_get_field(&(dochits[i].hits[j]));
+			int32_t pos=dochits[i].hits[j].std_hit.position;
+			int32_t field=dochits[i].hits[j].std_hit.field;
 			fprintf(stream, "  dochit[%d].hits[%d] field:%u, pos:%u\n",
 							i, j, field, pos);
 		}
@@ -619,7 +619,7 @@ static int read_from_db(uint32_t wordid, char* word, doc_hit_t* doc_hits)
 	int ndochits, ret;
 
 	if ( mDbType == TYPE_INDEXDB ) {
-time_mark("read db start");
+//time_mark("read db start");
 		length = sb_run_indexdb_getsize( mIfs, wordid );
 		if ( length == INDEXDB_FILE_NOT_EXISTS ) {
 			warn("length is 0 of word[%d]: %s. something is wrong", wordid, word);
@@ -658,7 +658,7 @@ time_mark("read db start");
 			warn( "ret[%d] is less than length[%d]. reassign ndochits[%d]", ret, length, ndochits );
 		}
 
-time_mark("read db end");
+//time_mark("read db end");
 		return ndochits;
 	}
 	else if ( mDbType == TYPE_VRFI ) {
@@ -1150,19 +1150,19 @@ static int32_t get_shortest_dist_with_a_dochit(uint32_t field,
 	int32_t pos1=0, pos2=0;
 
 	for (i=0; i<dochit1->nhits; i++) {
-		field1 = sb_run_get_field(&(dochit1->hits[i]));
+		field1 = dochit1->hits[i].std_hit.field;
 		if ( !(field & ((uint32_t)1<<field1)) ) continue;
 
-		pos1 = sb_run_get_position(&(dochit1->hits[i]));
+		pos1 = dochit1->hits[i].std_hit.position;
 		if (pos1 == MAX_STD_POSITION) continue;
 
 		for (j=0; j<dochit2->nhits; j++) {
-			field2 = sb_run_get_field(&(dochit2->hits[j]));
+			field2 = dochit2->hits[j].std_hit.field;
 			if ( !(field & ((uint32_t)1<<field2)) ) continue;
 
 			if (field1 != field2) continue;
 
-			pos2 = sb_run_get_position(&(dochit2->hits[j]));
+			pos2 = dochit2->hits[j].std_hit.position;
 			if (pos2==MAX_STD_POSITION) continue;
 
 			tmp = pos2-pos1;
@@ -1186,16 +1186,16 @@ static int32_t get_ordered_shortest_dist_with_a_dochit(uint32_t field,
 	int32_t pos1=0, pos2=0;
 
 	for (i=0; i<dochit1->nhits; i++) {
-		field1 = sb_run_get_field(&(dochit1->hits[i]));
+		field1 = dochit1->hits[i].std_hit.field;
 		if ( !(field & ((uint32_t)1<<field1)) ) {
 			continue;
 		}
 
-		pos1 = sb_run_get_position(&(dochit1->hits[i]));
+		pos1 = dochit1->hits[i].std_hit.position;
 		if (pos1 == MAX_STD_POSITION) continue;
 
 		for (j=0; j<dochit2->nhits; j++) {
-			field2 = sb_run_get_field(&(dochit2->hits[j]));
+			field2 = dochit2->hits[j].std_hit.field;
 			if ( !(field & ((uint32_t)1<<field2)) ) {
 				continue;
 			}
@@ -1204,7 +1204,7 @@ static int32_t get_ordered_shortest_dist_with_a_dochit(uint32_t field,
 				continue;
 			}
 
-			pos2 = sb_run_get_position(&(dochit2->hits[j]));
+			pos2 = dochit2->hits[j].std_hit.position;
 			if (pos2==MAX_STD_POSITION) continue;
 
 			tmp = pos2-pos1;
@@ -1269,12 +1269,12 @@ static int is_within_dist(hit_t *hit1, hit_t *hit2, uint16_t given_dist)
 	int32_t dist=0;
 	uint32_t pos1=0, pos2=0, abs_dist=0;
 
-	if ( sb_run_get_field(hit1) != sb_run_get_field(hit2) ) {
+	if ( hit1->std_hit.field != hit2->std_hit.field ) {
 		return FAIL;
 	}
 	
-	pos1 = sb_run_get_position(hit1);
-	pos2 = sb_run_get_position(hit2);
+	pos1 = hit1->std_hit.position;
+	pos2 = hit2->std_hit.position;
 	dist = pos2 - pos1;
 	abs_dist = dist > 0 ? dist:-dist;
 
@@ -1291,12 +1291,12 @@ static int is_within_ordered_dist(hit_t *hit1, hit_t *hit2, uint16_t given_dist)
 	int32_t dist=0;
 	uint32_t pos1=0, pos2=0;
 
-	if ( sb_run_get_field(hit1) != sb_run_get_field(hit2) ) {
+	if ( hit1->std_hit.field != hit2->std_hit.field ) {
 		return FAIL;
 	}
 	
-	pos1 = sb_run_get_position(hit1);
-	pos2 = sb_run_get_position(hit2);
+	pos1 = hit1->std_hit.position;
+	pos2 = hit2->std_hit.position;
 	dist = pos2 - pos1;
 
 	if (dist < 0) 
@@ -1335,7 +1335,7 @@ static uint32_t operate_within_each_document(index_document_t *doc1,
 
 			if (is_within_dist(hit1, hit2, dist) == TRUE) {
 				(result->dochits[dochit_idx]->id) = docid;
-				(result->dochits[dochit_idx]->field) |= 1<<sb_run_get_field(hit2);
+				(result->dochits[dochit_idx]->field) |= 1<<hit2->std_hit.field;
 				(result->dochits[dochit_idx]->nhits)++;
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit2;
 
@@ -1386,7 +1386,7 @@ static uint32_t operate_phrase_each_document(index_document_t *doc1,
 
 			if (is_within_ordered_dist(hit1, hit2, dist) == TRUE) {
 				(result->dochits[dochit_idx]->id) = docid;
-				(result->dochits[dochit_idx]->field) |= 1<<sb_run_get_field(hit2);
+				(result->dochits[dochit_idx]->field) |= 1<<hit2->std_hit.field;
 				(result->dochits[dochit_idx]->nhits)++;
 				/* phrase operation 시에는 앞 단어의 position을 들고가야 한다 */
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit1;  
@@ -3822,6 +3822,7 @@ static int light_search (request_t *req, response_t *res)
 	num_of_node = 
 		sb_run_preprocess(word_db, req->search, MAX_QUERY_STRING_SIZE,
 									qnodes, MAX_QUERY_NODES);
+time_mark("preprocess");
 
 #ifdef DEBUG_SOFTBOTD
 	INFO("postfix query");
@@ -3851,6 +3852,7 @@ static int light_search (request_t *req, response_t *res)
         MSG_RECORD(&req->msg, error, "operation failed");
 		return FAIL;
 	}
+time_mark("do_search");
 
 	/* in case no AND/OR/WITHIN.., operations are done */
 	g_result_list = read_index_list(g_result_list);
@@ -3865,6 +3867,7 @@ static int light_search (request_t *req, response_t *res)
     }
 
 	reduce_dochits_to_one_per_doc(g_result_list);
+time_mark("reduce");
 
     rv = sb_run_docattr_get_base_ptr((docattr_t**)&g_docattr_base_ptr, &g_docattr_record_size);
     if(rv != SUCCESS) {
@@ -3878,6 +3881,7 @@ static int light_search (request_t *req, response_t *res)
 		release_list( g_result_list );
         return FAIL;
     }
+time_mark("filter");
 
     rv = make_virtual_document(g_result_list, req);
     if(rv == FAIL) {
@@ -3885,6 +3889,7 @@ static int light_search (request_t *req, response_t *res)
 		release_list( g_result_list );
         return FAIL;
     }
+time_mark("virtual doc");
 
     // filtering 전의 건수
     res->search_result = res->vdl->cnt;
@@ -3895,6 +3900,7 @@ static int light_search (request_t *req, response_t *res)
 		release_list( g_result_list );
         return FAIL;
     }
+time_mark("filter2");
 
 	return SUCCESS;
 }

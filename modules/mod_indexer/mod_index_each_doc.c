@@ -12,7 +12,7 @@
 static int mNumOfField = 0;
 static char mFieldName[MAX_EXT_FIELD][MAX_FIELD_STRING];
 
-#define PARAHIT(hit)	EXTHIT(paragraph_hit_t,hit)
+//#define PARAHIT(hit)	EXTHIT(paragraph_hit_t,hit)
 
 int get_fieldid_by_fieldname(char *field)
 {
@@ -58,13 +58,7 @@ int fill_dochit
 		dochits[dochit_idx].field = 0;
 
 		for (i=0; i < dochits[dochit_idx].nhits; i++) {
-			if (wordhits[wordhit_idx].hit.std_hit.type == 0) {
-				nshift = wordhits[wordhit_idx].hit.std_hit.field;
-			}
-			else {
-				crit("hit type:1 not implemented yet");
-				abort();
-			}
+			nshift = wordhits[wordhit_idx].hit.std_hit.field;
 			dochits[dochit_idx].field |= ( ((uint32_t)1) << nshift );
 			dochits[dochit_idx].hits[i] = wordhits[wordhit_idx].hit;
 			wordhit_idx++;
@@ -127,6 +121,7 @@ void fill_dochit
 	}
 }*/
 
+#if 0
 int cmp_field(hit_t *u,hit_t *v)
 {
 	if (u->std_hit.type != v->std_hit.type)
@@ -176,6 +171,7 @@ uint32_t get_position(hit_t *hit)
 
 	return -1; /* never reaches here */
 }
+#endif
 
 int index_each_doc(void* word_db, uint32_t docid, word_hit_t *wordhit,
 							uint32_t wordhit_size, uint32_t *idx, void *data, int size)
@@ -199,7 +195,6 @@ int index_each_doc(void* word_db, uint32_t docid, word_hit_t *wordhit,
 
 		// XXX: assuming every hit is standard_hit_t (not ext_hit)
 		stdhit=&(wordhit[*idx].hit.std_hit);
-		stdhit->type = 0;
 		stdhit->field = indexwords[i].field;
 		stdhit->position = (indexwords[i].pos < MAX_STD_POSITION) ?
 								indexwords[i].pos : MAX_STD_POSITION;
@@ -231,14 +226,9 @@ int _cmp_wordhits(const void *a,const void *b)
 	word_hit_t v1 = *(word_hit_t*)a;
 	word_hit_t v2 = *(word_hit_t*)b;
 
-	if ( v1.hit.std_hit.type > v2.hit.std_hit.type )
+	if ( v1.hit.std_hit.field > v2.hit.std_hit.field )
 		return 1;
-	else if ( v1.hit.std_hit.type < v2.hit.std_hit.type )
-		return -1;
-
-	if ( get_field(&(v1.hit)) > get_field(&(v2.hit)) )
-		return 1;
-	else if ( get_field(&(v1.hit)) < get_field(&(v2.hit)) )
+	else if ( v1.hit.std_hit.field < v2.hit.std_hit.field )
 		return -1;
 
 	/* XXX: paragraph search is not used now.. 
@@ -248,9 +238,9 @@ int _cmp_wordhits(const void *a,const void *b)
 		return -1;
 	*/
 
-	if ( get_position(&(v1.hit)) > get_position(&(v2.hit)) )
+	if ( v1.hit.std_hit.position > v2.hit.std_hit.position )
 		return 1;
-	else if ( get_position(&(v1.hit)) < get_position(&(v2.hit)) )
+	else if ( v1.hit.std_hit.position < v2.hit.std_hit.position )
 		return -1;
 	
 	return 0;
@@ -369,10 +359,10 @@ static void register_hooks(void)
 	sb_hook_print_forwardidx(print_forwardidx, NULL, NULL, HOOK_MIDDLE);
 #endif
 
-	sb_hook_get_para_position(get_para_position, NULL, NULL, HOOK_MIDDLE);
-	sb_hook_get_position(get_position, NULL, NULL, HOOK_MIDDLE);
-	sb_hook_cmp_field(cmp_field, NULL, NULL, HOOK_MIDDLE);
-	sb_hook_get_field(get_field, NULL, NULL, HOOK_MIDDLE);
+//	sb_hook_get_para_position(get_para_position, NULL, NULL, HOOK_MIDDLE);
+//	sb_hook_get_position(get_position, NULL, NULL, HOOK_MIDDLE);
+//	sb_hook_cmp_field(cmp_field, NULL, NULL, HOOK_MIDDLE);
+//	sb_hook_get_field(get_field, NULL, NULL, HOOK_MIDDLE);
 }
 
 static void set_fieldname(configValue v)

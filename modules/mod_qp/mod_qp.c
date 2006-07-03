@@ -21,6 +21,10 @@
 #include "mod_qp.h"
 #include "mod_morpheme/lib/lb_lex.h" /* 2228,2236: LEXM_IS_WHITE,LEXM_IS_EOS */
 
+#define TIME_COUNT 1
+//#define DEBUGTIME
+#include "stopwatch.h"
+
 #ifdef DEBUG_SOFTBOTD
 #	define debug_show_dochitlist(dochits, start, nelm, stream) \
 			show_dochitlist(dochits, start, nelm, stream)
@@ -38,8 +42,8 @@ static void show_dochitlist(doc_hit_t dochits[], uint32_t start, uint32_t nelm,
 		fprintf(stream, "[%u] id:%u, nhits:%d\n",
 				i, dochits[i].id, dochits[i].nhits);
 		for (j=0; j<dochits[i].nhits; j++) {
-			int32_t pos=sb_run_get_position(&(dochits[i].hits[j]));
-			int32_t field=sb_run_get_field(&(dochits[i].hits[j]));
+			int32_t pos=dochits[i].hits[j].std_hit.position;
+			int32_t field=dochits[i].hits[j].std_hit.field;
 			fprintf(stream, "  dochit[%d].hits[%d] field:%u, pos:%u\n",
 							i, j, field, pos);
 		}
@@ -726,19 +730,19 @@ void get_hits_for_phrase(int dist,
 	nhits2 = nhits2 > STD_HITS_LEN ? STD_HITS_LEN : nhits2;
 
 	for (i=0; i<nhits1; i++) {
-		field1 = sb_run_get_field(&(l1->doc_hits[idx1].hits[i]));
+		field1 = l1->doc_hits[idx1].hits[i].std_hit.field;
 		if ( !( l1->field & ((uint32_t)1<<field1) ) ) continue;
 
-		pos1 = sb_run_get_position(&(l1->doc_hits[idx1].hits[i]));
+		pos1 = l1->doc_hits[idx1].hits[i].std_hit.position;
 		if (pos1==MAX_STD_POSITION) continue;
 
 		for (j=0; j<nhits2; j++) {
-			field2 = sb_run_get_field(&(l2->doc_hits[idx2].hits[j]));
+			field2 = l2->doc_hits[idx2].hits[j].std_hit.field;
 			if ( !( l2->field & ((uint32_t)1<<field2) ) ) continue;	
 
 			if (field1 != field2) continue;
 
-			pos2 = sb_run_get_position(&(l2->doc_hits[idx2].hits[j]));
+			pos2 = l2->doc_hits[idx2].hits[j].std_hit.position;
 			tmp = pos2-pos1;
 
 			if (pos2==MAX_STD_POSITION) continue;
@@ -774,19 +778,19 @@ int get_hits_for_within(int dist,
 	result->nhits = 0;
 
 	for (i=0; i<nhits1; i++) {
-		field1 = sb_run_get_field(&(l1->doc_hits[idx1].hits[i]));
+		field1 = l1->doc_hits[idx1].hits[i].std_hit.field;
 		if ( !( l1->field & ((uint32_t)1<<field1) ) ) continue;
 
-		pos1 = sb_run_get_position(&(l1->doc_hits[idx1].hits[i]));
+		pos1 = l1->doc_hits[idx1].hits[i].std_hit.position;
 		if (pos1==MAX_STD_POSITION) continue;
 
 		for (j=0; j<nhits2; j++) {
-			field2 = sb_run_get_field(&(l2->doc_hits[idx2].hits[j]));
+			field2 = l2->doc_hits[idx2].hits[j].std_hit.field;
 			if ( !( l2->field & ((uint32_t)1<<field2) ) ) continue;	
 
 			if (field1 != field2) continue;
 
-			pos2 = sb_run_get_position(&(l2->doc_hits[idx2].hits[j]));
+			pos2 = l2->doc_hits[idx2].hits[j].std_hit.position;
 			tmp = pos2-pos1;
 			abs_tmp = tmp > 0 ? tmp:-tmp;
 
@@ -815,7 +819,7 @@ int get_hits_for_normal_and(doc_hit_t *result,
 	nhits2 = nhits2 > STD_HITS_LEN ? STD_HITS_LEN : nhits2;
 
 	for (j=0; j<nhits2; j++) {
-		field2 = sb_run_get_field(&(l2->doc_hits[idx2].hits[j]));
+		field2 = l2->doc_hits[idx2].hits[j].std_hit.field;
 		if ( !( l2->field & ((uint32_t)1<<field2) ) ) continue;	
 
 		result->hits[result->nhits++] = l2->doc_hits[idx2].hits[j];
@@ -839,9 +843,9 @@ int get_posweight(index_list_t *l1, int idx1, index_list_t *l2, int idx2)
 	
 	weight = 0;
 	for(i = 0; i < nhits1; i++) {
-		pos1 = sb_run_get_position(&(l1->doc_hits[idx1].hits[i]));
+		pos1 = l1->doc_hits[idx1].hits[i].std_hit.position;
 		for(j = i; j < nhits2; j++) {
-			pos2 = sb_run_get_position(&(l2->doc_hits[idx2].hits[j]));
+			pos2 = l2->doc_hits[idx2].hits[j].std_hit.position;
 			distance = pos2-pos1;
 
 			if ( distance == 0 )
@@ -1219,19 +1223,19 @@ static int32_t get_shortest_dist_with_a_dochit(uint32_t field,
 	int32_t pos1=0, pos2=0;
 
 	for (i=0; i<dochit1->nhits; i++) {
-		field1 = sb_run_get_field(&(dochit1->hits[i]));
+		field1 = dochit1->hits[i].std_hit.field;
 		if ( !(field & ((uint32_t)1<<field1)) ) continue;
 
-		pos1 = sb_run_get_position(&(dochit1->hits[i]));
+		pos1 = dochit1->hits[i].std_hit.position;
 		if (pos1 == MAX_STD_POSITION) continue;
 
 		for (j=0; j<dochit2->nhits; j++) {
-			field2 = sb_run_get_field(&(dochit2->hits[j]));
+			field2 = dochit2->hits[j].std_hit.field;
 			if ( !(field & ((uint32_t)1<<field2)) ) continue;
 
 			if (field1 != field2) continue;
 
-			pos2 = sb_run_get_position(&(dochit2->hits[j]));
+			pos2 = dochit2->hits[j].std_hit.position;
 			if (pos2==MAX_STD_POSITION) continue;
 
 			tmp = pos2-pos1;
@@ -1255,16 +1259,16 @@ static int32_t get_ordered_shortest_dist_with_a_dochit(uint32_t field,
 	int32_t pos1=0, pos2=0;
 
 	for (i=0; i<dochit1->nhits; i++) {
-		field1 = sb_run_get_field(&(dochit1->hits[i]));
+		field1 = dochit1->hits[i].std_hit.field;
 		if ( !(field & ((uint32_t)1<<field1)) ) {
 			continue;
 		}
 
-		pos1 = sb_run_get_position(&(dochit1->hits[i]));
+		pos1 = dochit1->hits[i].std_hit.position;
 		if (pos1 == MAX_STD_POSITION) continue;
 
 		for (j=0; j<dochit2->nhits; j++) {
-			field2 = sb_run_get_field(&(dochit2->hits[j]));
+			field2 = dochit2->hits[j].std_hit.field;
 			if ( !(field & ((uint32_t)1<<field2)) ) {
 				continue;
 			}
@@ -1273,7 +1277,7 @@ static int32_t get_ordered_shortest_dist_with_a_dochit(uint32_t field,
 				continue;
 			}
 
-			pos2 = sb_run_get_position(&(dochit2->hits[j]));
+			pos2 = dochit2->hits[j].std_hit.position;
 			if (pos2==MAX_STD_POSITION) continue;
 
 			tmp = pos2-pos1;
@@ -1359,12 +1363,12 @@ static int is_within_dist(hit_t *hit1, hit_t *hit2, uint16_t given_dist)
 	int32_t dist=0;
 	uint32_t pos1=0, pos2=0, abs_dist=0;
 
-	if ( sb_run_get_field(hit1) != sb_run_get_field(hit2) ) {
+	if ( hit1->std_hit.field != hit2->std_hit.field ) {
 		return FAIL;
 	}
 	
-	pos1 = sb_run_get_position(hit1);
-	pos2 = sb_run_get_position(hit2);
+	pos1 = hit1->std_hit.position;
+	pos2 = hit2->std_hit.position;
 	dist = pos2 - pos1;
 	abs_dist = dist > 0 ? dist:-dist;
 
@@ -1381,12 +1385,12 @@ static int is_within_ordered_dist(hit_t *hit1, hit_t *hit2, uint16_t given_dist)
 	int32_t dist=0;
 	uint32_t pos1=0, pos2=0;
 
-	if ( sb_run_get_field(hit1) != sb_run_get_field(hit2) ) {
+	if ( hit1->std_hit.field != hit2->std_hit.field ) {
 		return FAIL;
 	}
 	
-	pos1 = sb_run_get_position(hit1);
-	pos2 = sb_run_get_position(hit2);
+	pos1 = hit1->std_hit.position;
+	pos2 = hit2->std_hit.position;
 	dist = pos2 - pos1;
 
 	if (dist < 0) 
@@ -1425,7 +1429,7 @@ static uint32_t operate_within_each_document(index_document_t *doc1,
 
 			if (is_within_dist(hit1, hit2, dist) == TRUE) {
 				(result->dochits[dochit_idx]->id) = docid;
-				(result->dochits[dochit_idx]->field) |= 1<<sb_run_get_field(hit2);
+				(result->dochits[dochit_idx]->field) |= 1<<hit2->std_hit.field;
 				(result->dochits[dochit_idx]->nhits)++;
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit2;
 
@@ -1476,7 +1480,7 @@ static uint32_t operate_phrase_each_document(index_document_t *doc1,
 
 			if (is_within_ordered_dist(hit1, hit2, dist) == TRUE) {
 				(result->dochits[dochit_idx]->id) = docid;
-				(result->dochits[dochit_idx]->field) |= 1<<sb_run_get_field(hit2);
+				(result->dochits[dochit_idx]->field) |= 1<<hit2->std_hit.field;
 				(result->dochits[dochit_idx]->nhits)++;
 				/* phrase operation 시에는 앞 단어의 position을 들고가야 한다 */
 				(result->dochits[dochit_idx]->hits[hit_idx]) = *hit1;  
@@ -2349,6 +2353,7 @@ int full_search (void* word_db, request_t *req)
 	INFO("req.list_size:%d",req->list_size);
 	INFO("req.first_result:%d",req->first_result);
 
+time_start();
 	INFO("light searching");
 	req->sb4error = 0;
 	req->result_list = NULL;
@@ -2362,9 +2367,12 @@ int full_search (void* word_db, request_t *req)
 		return FAIL;
 	}
 	INFO("light_search done");
+time_mark("light search");
 
 	INFO("filling title and comment");
 	fill_title_and_comment_server(req);
+time_mark("fill comment");
+time_status();
 	INFO("filling title and comment done");
 
 #ifdef DEBUG_SOFTBOTD

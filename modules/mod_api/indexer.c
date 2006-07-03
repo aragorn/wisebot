@@ -27,9 +27,9 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int,index_one_doc,\
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(uint32_t,last_indexed_did, (void),(),MINUS_DECLINE)
 
-SB_IMPLEMENT_HOOK_RUN_FIRST(int,get_para_position,(hit_t *hit), (hit), DECLINE)
-SB_IMPLEMENT_HOOK_RUN_FIRST(uint32_t,get_position,(hit_t *hit), (hit), DECLINE)
-SB_IMPLEMENT_HOOK_RUN_FIRST(int,cmp_field,(hit_t *u, hit_t *v), (u,v), DECLINE)
-SB_IMPLEMENT_HOOK_RUN_FIRST(int,get_field,(hit_t *hit), (hit), MINUS_DECLINE)
+//SB_IMPLEMENT_HOOK_RUN_FIRST(int,get_para_position,(hit_t *hit), (hit), DECLINE)
+//SB_IMPLEMENT_HOOK_RUN_FIRST(uint32_t,get_position,(hit_t *hit), (hit), DECLINE)
+//SB_IMPLEMENT_HOOK_RUN_FIRST(int,cmp_field,(hit_t *u, hit_t *v), (u,v), DECLINE)
+//SB_IMPLEMENT_HOOK_RUN_FIRST(int,get_field,(hit_t *hit), (hit), MINUS_DECLINE)
 //SB_IMPLEMENT_HOOK_RUN_FIRST(char *,get_indexer_port, (void),(),DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(const char*,get_indexer_socket_file,(void),(),DECLINE)

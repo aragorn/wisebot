@@ -14,13 +14,11 @@ typedef struct word_hit_t word_hit_t;
 
 /*** hit_t *******************************************************************/
 
-#define MAX_STD_POSITION 262143 /* 2*18-1 should go with standard_hit_t->position */
+#define MAX_STD_POSITION 16777215 /* 2*24-1 should go with standard_hit_t->position */
 
 typedef struct {
-	uint32_t position	:18; /* max 2^18-1=262143 */
-	uint8_t type		:1; /* 0 - 필요없는 필드같다 */
-	uint8_t field		:5; /* max 2^5-1=31 */
-	uint8_t dummy;
+	uint8_t field;          // need 0~31, minimum 5bit
+	uint32_t position:24;   // max 2^24-1=16777215
 }__attribute__((packed)) standard_hit_t;
 
 typedef struct {
@@ -61,9 +59,9 @@ typedef struct doc_hit_t forward_hit_t;
 
 /*** word_hit_t **************************************************************/
 struct word_hit_t {
-	uint32_t wordid; 	// 4bytes 
-	hit_t hit;		// 2bytes
-}; // 6bytes
+	uint32_t wordid;   // 4bytes 
+	hit_t hit;         // 4bytes
+}; // 8bytes
 
 
 #define EXTHIT(type,hit)	((type*)& ((hit).ext_hit))
@@ -80,10 +78,10 @@ SB_DECLARE_HOOK(int,index_one_doc, \
 	(uint32_t did,word_hit_t *wordhit,uint32_t hitsize,uint32_t *hitidx) )
 SB_DECLARE_HOOK(uint32_t,last_indexed_did,(void))
 
-SB_DECLARE_HOOK(int,get_para_position,(hit_t *hit))
-SB_DECLARE_HOOK(uint32_t,get_position,(hit_t *hit))
-SB_DECLARE_HOOK(int,cmp_field,(hit_t *u, hit_t *v))
-SB_DECLARE_HOOK(int,get_field,(hit_t *hit))
+//SB_DECLARE_HOOK(int,get_para_position,(hit_t *hit))
+//SB_DECLARE_HOOK(uint32_t,get_position,(hit_t *hit))
+//SB_DECLARE_HOOK(int,cmp_field,(hit_t *u, hit_t *v))
+//SB_DECLARE_HOOK(int,get_field,(hit_t *hit))
 SB_DECLARE_HOOK(const char*,get_indexer_socket_file,(void))
 
 #endif
