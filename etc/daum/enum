@@ -1,5 +1,5 @@
 #DOCTYPE
 Enum META          1
-Enum BODY          2
+Enum CONTENT       2
 Enum UCC           3
 

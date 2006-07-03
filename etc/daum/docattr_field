@@ -1,4 +1,4 @@
-DocAttrField doctype             Integer
+DocAttrField doctype             Enum
 DocAttrField date                Integer
 DocAttrField time                Integer
 DocAttrField cate1               Integer
