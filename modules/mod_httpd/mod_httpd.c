@@ -213,8 +213,8 @@ static int thread_main (slot_t *slot)
 			break;
 		}
 #ifndef THREAD_VER
-		/*set_proc_desc(slot, "softbotd: %s(select_accept,listenfd:%d)",
-						__FILE__,listenfd); XXX: listenfd? */
+		set_proc_desc(slot, "softbotd: %s(select_accept,listen addr:%s)",
+						__FILE__,mListenAddr);
 #endif
 		while (1) {
 			apr_status_t ret;
