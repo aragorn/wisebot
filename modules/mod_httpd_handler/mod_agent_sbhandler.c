@@ -643,23 +643,30 @@ static int print_group(request_rec *r, groupby_result_list_t* groupby_result)
     for(i = 0; i < groupby_result->rules.cnt; i++) {
         orderby_rule_t* sort_rule = &(groupby_result->rules.list[i].sort);
 		int is_enum = groupby_result->rules.list[i].is_enum;
+        int sum = 0;
+
+		for(j = 0; j < MAX_CARDINALITY; j++) {
+			sum += groupby_result->result[i][j];
+        }
+	    ap_rprintf(r, "<group name=\"%s\" result_count=\"%d\" />\n", 
+                      sort_rule->rule.name, sum);
 
 		// group °á°ú
 		for(j = 0; j < MAX_CARDINALITY; j++) {
 			if(groupby_result->result[i][j] != 0) {
 				if(is_enum) {
-					ap_rprintf(r, "<group name=\"%s\" field=\"%s\" count=\"%d\" />\n", 
+					ap_rprintf(r, "<field value=\"%s\" result_count=\"%d\" />\n", 
 								  return_constants_str(j), 
-								  sort_rule->rule.name,
 								  groupby_result->result[i][j]);
 				} else {
-					ap_rprintf(r, "<group name=\"%d\" field=\"%s\" count=\"%d\" />\n", 
+					ap_rprintf(r, "<field value=\"%d\" result_count=\"%d\" />\n", 
 								  j, 
-								  sort_rule->rule.name,
 								  groupby_result->result[i][j]);
 				}
             }
 		}
+
+	    ap_rprintf(r, "</group>\n"); 
     }
 
 	return SUCCESS;
