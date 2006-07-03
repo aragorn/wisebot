@@ -1,0 +1,10 @@
+DocAttrField doctype             Integer
+DocAttrField date                Integer
+DocAttrField time                Integer
+DocAttrField cate1               Integer
+DocAttrField cate2               Integer
+DocAttrField cate3               Integer
+DocAttrField cate4               Integer
+DocAttrField subcateid           Integer
+DocAttrField lastsellingcnt      Integer 
+DocAttrField page                Integer 
