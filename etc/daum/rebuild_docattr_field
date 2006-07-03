@@ -5,6 +5,5 @@
     RebuildDocAttrField     cate2
     RebuildDocAttrField     cate3
     RebuildDocAttrField     cate4
-    RebuildDocAttrField     subcateid
     RebuildDocAttrField     lastsellingcnt
     RebuildDocAttrField     page
