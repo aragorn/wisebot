@@ -2,6 +2,7 @@
 #include "common_core.h"
 #include "common_util.h"
 #include "memory.h"
+#include "util.h"
 
 #include "mod_api/index_word_extractor.h"
 #include "daum_koma/dha.h"
@@ -68,8 +69,8 @@ static int daum_dha_set_text(index_word_extractor_t* extractor, char* text)
 
 	handle = extractor->handle;
 
-	handle->text = text;
-	handle->next_text = text;
+	handle->text = sb_trim(text);
+	handle->next_text = sb_trim(text);
 	handle->position = 1;
 	handle->remain_token[0] = '\0';
 	
