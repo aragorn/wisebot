@@ -95,19 +95,21 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t *ind
 	/* 처리를 다 못한 token 처리 */
 	for (word=handle->remain_token, rptr=handle->remain_token; index_word_idx<max; index_word_idx++) {
 		while (*rptr!=' ' && *rptr!='\0') rptr++;
-		if (*rptr == '\0') break;
+		if (*rptr == '\0' && strlen(word) == 0) break;
 		*rptr = '\0';
 
-		warn("word[%s]", word);
+		//warn("add word[%s]", word);
 		strncpy(index_word[index_word_idx].word, strtoupper(word), MAX_WORD_LEN);
 		index_word[index_word_idx].word[MAX_WORD_LEN-1] = '\0';
 		index_word[index_word_idx].pos = *pos;
 		index_word[index_word_idx].len = strlen(index_word[index_word_idx].word);
 		
+    	if (*rptr == '\0' && strlen(word) == 0) break;
+
 		rptr++;
 		word = rptr;
 
-			warn("add word[%s]", word);
+		//warn("add word[%s]", word);
 		if(index_word_idx +1 >= max && strlen(rptr) > 0) {
 			strncpy(handle->remain_token, rptr, MAX_WORD_LEN);
 			return index_word_idx+1;
@@ -141,12 +143,13 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t *ind
 		//warn("curr_token[%s]", curr_token);
 		dha_analyze(extractor->handle, NULL, curr_token, MAX_OUTPUT, result);
 
+		//warn("result[%s], index_word_idx[%d], max[%d], [%s]", result, index_word_idx, max, rptr);
 		/*
 		 * DHA의 출력은 공백으로 구분된 색인어 문자열입니다.
 		 */
 		for (word=result, rptr=result; index_word_idx<max; index_word_idx++) {
 			while (*rptr!=' ' && *rptr!='\0') rptr++;
-			if (*rptr == '\0') break;
+			if (*rptr == '\0' && strlen(word) == 0) break;
 			*rptr = '\0';
 
 			//warn("word[%s]", word);
@@ -155,14 +158,18 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t *ind
 			index_word[index_word_idx].pos = *pos;
 			index_word[index_word_idx].len = strlen(index_word[index_word_idx].word);
 			
+			if (*rptr == '\0' && strlen(word) == 0) break;
+
 			rptr++;
 			word = rptr;
 
-		    if(index_word_idx + 1 >= max && strlen(rptr) > 0) {
-				warn("save word[%s], index_word_idx[%d]", rptr, index_word_idx);
-				strncpy(handle->remain_token, rptr, MAX_WORD_LEN);
+		    if(index_word_idx + 1 >= max) {
+                if(strlen(rptr) > 0) {
+					warn("save word[%s], index_word_idx[%d]", rptr, index_word_idx);
+					strncpy(handle->remain_token, rptr, MAX_WORD_LEN);
+                }
 			    return index_word_idx+1;
-			}
+            }
 		}
 		
 		(*pos)++;
