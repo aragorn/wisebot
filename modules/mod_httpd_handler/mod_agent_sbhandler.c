@@ -45,6 +45,7 @@ typedef struct {
     char port[SHORT_STRING_SIZE];
     http_client_t* client;
 	uint32_t node_id;
+    int is_abstract_request;
 } node_t;
 static uint32_t this_node_id; // 하위 4bit만 쓴다.
 
@@ -450,6 +451,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
     // client가 초기화 되지 않았다면 초기화 한다.
 	for (i=0; i<search_node_num; i++ ){
 	    http_client_t *client = search_nodes[i].client;
+        search_nodes[i].is_abstract_request = 0;
 
 		msg_body_list[i] = NULL;
 		if( client == NULL ) {
@@ -518,13 +520,16 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 			memfile_append(buf, (void *)&(vd->dochits[j]), sizeof(doc_hit_t));
 			memfile_append(buf, (void *)&node_id, sizeof(uint32_t));
         }
+
+        if(memfile_getSize(buf) != 0);
+            search_nodes[i].is_abstract_request = 1;
 	} 
 
     // send...
 	for ( i=0; i<search_node_num; i++ ) {
 		memfile **buf = &(msg_body_list[i]);
 		http_client_t* client = search_nodes[i].client;
-		if ( *buf == NULL ) {
+		if ( *buf == NULL || search_nodes[i].is_abstract_request == 0) {
 			MSG_RECORD(&s->msg, error, 
 					"send buffer is null ip[%s], port[%s]",
 				    search_nodes[i].ip,
@@ -532,7 +537,13 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 			continue;
 		}
 
-		http_setMessageBody(client->http, *buf, "x-softbotd/binary", memfile_getSize(*buf));
+		if(http_setMessageBody(client->http, *buf, "x-softbotd/binary", memfile_getSize(*buf)) != SUCCESS) {
+			MSG_RECORD(&s->msg, error, 
+					"fail http set message body, ip[%s], port[%s]",
+				    search_nodes[i].ip,
+				    search_nodes[i].port);
+        }
+
 		if ( sb_run_http_client_makeRequest(client, NULL)	!= SUCCESS ) {
 			client->http->req_message_body = NULL;
 			MSG_RECORD(&s->msg, error, 
@@ -563,7 +574,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 		int recv_cnt = 0;
 
 		memfile *buf = clients[i]->http->content_buf;
-		if (!buf ) {
+		if (!buf || search_nodes[i].is_abstract_request == 0) {
 			MSG_RECORD(&s->msg, error, 
 					"no targetnode result, ip[%s], port[%s]",
 				    search_nodes[i].ip,
@@ -984,7 +995,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 
     ap_rwrite(&vd->dochit_cnt, sizeof(uint32_t), r);
 
-    for (i = 0; i < vd->dochit_cnt; i++ ) {
+    for (i = 0; i < vd->comment_cnt; i++ ) {
         ap_rwrite(&qp_response.comments[i].did, sizeof(uint32_t), r);
         qp_response.comments[i].node_id = 
               push_node_id(qp_response.comments[i].node_id, this_node_id);

@@ -217,12 +217,13 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
         ap_rprintf(r, "<docs count=\"%d\">\n", vd->comment_cnt);
 
         for(j = 0; j < vd->comment_cnt; j++) {
-            ap_rprintf(r, "<doc doc_id=\"%d\">\n", qp_response.comments[cmt_idx++].did);
+            comment_t* cmt = &qp_response.comments[cmt_idx++];
+            ap_rprintf(r, "<doc doc_id=\"%d\">\n", cmt->did);
 
 			if(qp_request.output_style == STYLE_XML) {
-                ap_rprintf(r, "%s\n", qp_response.comments[cmt_idx++].s);
+                ap_rprintf(r, "%s\n", cmt->s);
 			} else {
-                ap_rprintf(r, "<![CDATA[%s]]>\n", qp_response.comments[cmt_idx++].s);
+                ap_rprintf(r, "<![CDATA[%s]]>\n", cmt->s);
 			}
             ap_rprintf(r, "</doc>\n");
 		}
@@ -455,10 +456,10 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
     ap_set_content_type(r, "x-softbotd/binary");
 
     // 1. 전송건수.
-    ap_rwrite(&vd->dochit_cnt, sizeof(uint32_t), r);
+    ap_rwrite(&vd->comment_cnt, sizeof(uint32_t), r);
 	
 	// 2. doc_hits 전송.
-    for (i = 0; i < vd->dochit_cnt; i++ ) {
+    for (i = 0; i < vd->comment_cnt; i++ ) {
         // 2.1 doc_id 전송.
         ap_rwrite(&vd->dochits[i].id, sizeof(uint32_t), r);
         // 2.2 node_id 전송.
