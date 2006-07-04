@@ -3920,13 +3920,14 @@ static int virtual_document_fill_comment(request_t* req, response_t* res)
 			for(j = 0; j < g_vdl->data[i].dochit_cnt && cmt_idx < COMMENT_LIST_SIZE; j++) {
 				debug("cmt_idx[%d]", cmt_idx);
 
-				res->comments[cmt_idx++].did = g_vdl->data[i].dochits[j].id;
-				get_comment(req, &g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx++].s);
+				res->comments[cmt_idx].did = g_vdl->data[i].dochits[j].id;
+				get_comment(req, &g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx].s);
 		        if(cmt_idx >= COMMENT_LIST_SIZE) {
-			        g_vdl->data[i].comment_cnt = j+1;
                     MSG_RECORD(&req->msg, error, "over comment max count[%d]", COMMENT_LIST_SIZE);
 					break;
 				}
+                cmt_idx++;
+			    g_vdl->data[i].comment_cnt = j+1;
 			}
 		}
     }
