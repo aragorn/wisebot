@@ -841,10 +841,23 @@ http_reserveMessageBody(http_t *http, char *type, long len){
 //----------------------------------------------------------
 inline int
 http_setMessageBody(http_t *http, memfile *msgBody, char *type, long len){
-	if(!http || !msgBody || !type || len <=0 ){
-		error("invalid input to set message body");
+	if(!http) {
+		error("invalid input to set message body, http null");
 		return FAIL;
 	}
+	if(!msgBody) {
+		error("invalid input to set message body, msgBody null");
+		return FAIL;
+	}
+	if(!type) {
+		error("invalid input to set message body, type null");
+		return FAIL;
+	}
+	if(len <= 0) {
+		error("invalid input to set message body, len[%ld] <= 0", len);
+		return FAIL;
+	}
+
 	http->req_message_body = msgBody;
 	http->req_content_type = type;
 
