@@ -145,6 +145,8 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t *ind
 			}
 		}
 
+		if(strlen(curr_token) == 0) continue;
+
 		//warn("curr_token[%s]", curr_token);
 		dha_analyze(extractor->handle, NULL, curr_token, MAX_OUTPUT, result);
 
