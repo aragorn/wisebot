@@ -59,8 +59,8 @@ mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 mod_daum_koma_la_SOURCES = mod_daum_koma.c
 mod_daum_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
 #else
-#mod_daum_koma_la_SOURCES = 
-#mod_daum_koma_la_LDFLAGS = -module -avoid-version 
+mod_daum_koma_la_SOURCES = 
+mod_daum_koma_la_LDFLAGS = -module -avoid-version 
 #endif
 
 include ../install-pkglib.mk
