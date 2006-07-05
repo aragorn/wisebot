@@ -1224,7 +1224,7 @@ const char* qpp_op_to_string(int op, int param)
 		case QPP_OP_OR: return m_opOR[0];
 		case QPP_OP_NOT: return m_opNOT[0];
 		case QPP_OP_WITHIN:
-			snprintf(buf, sizeof(buf), "/%d", param);
+			snprintf(buf, sizeof(buf), "%s%d%s", m_opWITHIN[0], param, m_opWITHIN[0]);
 			return buf;
 
 		default: return "[unknown op]";
