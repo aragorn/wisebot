@@ -1,7 +1,12 @@
 #ifndef SFS_TYPES_H
 #define SFS_TYPES_H
 
-#include <stdint.h>
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 #define SFS_MAGIC "SFS0"
  

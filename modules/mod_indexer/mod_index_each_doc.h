@@ -2,7 +2,14 @@
 #ifndef MOD_INDEX_EACH_DOC_H
 #define MOD_INDEX_EACH_DOC_H 1
 
-#include <stdint.h> /* uint16_t */
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 /* XXX: obsolete but used by print forward index, and some functions.. */
 typedef struct{

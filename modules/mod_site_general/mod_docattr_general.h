@@ -1,8 +1,13 @@
 #ifndef MOD_DOCATTR_GENERAL_H
 #define MOD_DOCATTR_GENERAL_H 1
 
-#include <stdint.h> /* uint64_t */
-#include <inttypes.h> /* PRIx64,PRIu64 */
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+
 #include "mod_api/docattr.h" /* docattr_t */
 
 #if defined(AIX5)

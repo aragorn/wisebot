@@ -2,7 +2,15 @@
 #ifndef MORPHEME_H
 #define MORPHEME_H 1
 
-#include <stdint.h>
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+
 #include "tokenizer.h"
 #include "mod_morpheme/lib/lb_lex.h"	/* to use CLex type */
 #include "mod_tokenizer/mod_tokenizer.h"

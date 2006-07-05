@@ -2,7 +2,14 @@
 #ifndef _HASH_H_API_
 #define _HASH_H_API_
 
-#include <stdint.h> /* uint32_t */
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 /* _HASH_H_ 는 platform/unix/hash.h 에서 이미 쓰고 있다.
  * hash_t 도 마찬가지다.

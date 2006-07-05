@@ -2,7 +2,14 @@
 #ifndef INDEXER_H
 #define INDEXER_H 1
 
-#include <stdint.h> /* uint32_t */
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 #define MAX_STD_FIELD	32
 #define MAX_EXT_FIELD	64 /* XXX: obsolete? no, it's used in mod_qpp/tokenizer.c FIXME*/

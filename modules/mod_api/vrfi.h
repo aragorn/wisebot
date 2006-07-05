@@ -4,7 +4,14 @@
 
 #warning *** Using vrfi.h is deprecated as of 2006/05/30. Please use ifs instead. ***
 
-#include <stdint.h> /* uint32_t */
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 typedef struct VariableRecordFile VariableRecordFile;
 

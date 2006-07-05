@@ -2,7 +2,14 @@
 #ifndef CDM2_H
 #define CDM2_H 1
 
-#include <stdint.h>
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 #include "did.h"
 
 /* canned document manager status code */

@@ -2,7 +2,14 @@
 #ifndef TABLE_H
 #define TABLE_H
 
-#include <stdint.h>
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 /*************************************************************
  * logical table : EMPTY, NOT_USE, or physical segment number

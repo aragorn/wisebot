@@ -2,7 +2,14 @@
 #ifndef DATA_HANDLE_H
 #define DATA_HANDLE_H 1
 
-#include <stdint.h> /* uint32_t */
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 typedef struct data_handle_t data_handle_t;
 

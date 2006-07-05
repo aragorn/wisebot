@@ -2,7 +2,14 @@
 #ifndef LEXICON_H
 #define LEXICON_H 1
 
-#include <stdint.h> /* uint32_t */
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 // lexicon ÀÇ return value
 #define WORD_OLD_REGISTERED         (11)

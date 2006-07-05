@@ -1,7 +1,15 @@
 #ifndef LEXICON_INDEX_H
 #define LEXICON_INDEX_H
 
-#include <stdint.h> /* uint32_t */
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+
 #include "mod_lexicon.h" /* lexicon_t */
 
 int lexicon_index_open  ( lexicon_t *lexicon );

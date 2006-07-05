@@ -2,7 +2,14 @@
 #ifndef RELATE_TERM_H
 #define RELATE_TERM_H 1
 
-#include <stdint.h>
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 typedef struct{
 	int8_t relType;

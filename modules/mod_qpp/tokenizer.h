@@ -2,7 +2,15 @@
 #ifndef QPP_TOKENIZER_H
 #define QPP_TOKENIZER_H
 
-#include <stdint.h> /* int32_t */
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+
 #include "mod_api/qpp.h" /* QueryNode */
 
 #define TOKEN_DUPLICATED	(-11)

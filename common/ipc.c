@@ -7,7 +7,6 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <stdint.h>
 #include <stdlib.h> /* calloc(3),free(3) */
 #include <fcntl.h>
 #include <pthread.h>
@@ -15,6 +14,15 @@
 #include <sys/sem.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
 
 #define MAX_SYS5_IPC (200)
 

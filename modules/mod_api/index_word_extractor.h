@@ -2,7 +2,15 @@
 #ifndef INDEX_WORD_EXTRACTOR_H
 #define INDEX_WORD_EXTRACTOR_H 1
 
-#include <stdint.h> /* uint32_t, uint16_t */
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+
 // XXX: attribute definition goes here
 typedef struct {
 	char word[MAX_WORD_LEN];

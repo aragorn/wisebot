@@ -1,6 +1,15 @@
 #ifndef __HANDLER_UTIL_H__
 #define __HANDLER_UTIL_H__
-#include <stdint.h>
+
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+
 #include "mod_httpd/mod_httpd.h"
 #include "apr_pools.h"
 

@@ -1,5 +1,14 @@
 /* $Id$ */
-#include <stdint.h>
+
+#include "auto_config.h"
+
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+
 #include <string.h>
 #include "common_core.h"
 #include "memory.h"
