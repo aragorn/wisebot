@@ -97,11 +97,11 @@ struct daum_tree_node* parse_daum_query(index_word_t* indexwords, int count)
 			node->node.word = indexwords[i].word;
 			node->is_op = 0;
 
-			operand_stack[++operand_stack_pos] = node;
-			if ( operand_stack_pos >= OPERAND_STACK_SIZE ) {
+			if ( operand_stack_pos >= OPERAND_STACK_SIZE-1 ) {
 				error("not enough operand stack size");
 				goto return_error;
 			}
+			operand_stack[++operand_stack_pos] = node;
 		}
 		// pop till lparen
 		else if ( op == DAUM_OP_RPAREN ) {
@@ -138,11 +138,11 @@ struct daum_tree_node* parse_daum_query(index_word_t* indexwords, int count)
 			node->node.op = op;
 			node->is_op = 1;
 
-			operator_stack[++operator_stack_pos] = node;
-			if ( operator_stack_pos >= OPERATOR_STACK_SIZE ) {
+			if ( operator_stack_pos >= OPERATOR_STACK_SIZE-1 ) {
 				error("not enough operator stack size");
 				goto return_error;
 			}
+			operator_stack[++operator_stack_pos] = node;
 		}
 	}
 

@@ -178,7 +178,7 @@ struct response_t {
     groupby_result_list_t groupby_result_vid;
     groupby_result_list_t groupby_result_did;
 	virtual_document_list_t* vdl;
-	char word_list[STRING_SIZE];
+	char parsed_query[LONG_STRING_SIZE];
     comment_t comments[COMMENT_LIST_SIZE];
     uint32_t node_id;
     limit_t limit;

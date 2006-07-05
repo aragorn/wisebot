@@ -53,4 +53,6 @@ void set_op_star(configValue v);
 void set_op_phrase(configValue v);
 void set_begin_op_phrase(configValue v);
 void set_end_op_phrase(configValue v);
+
+const char* qpp_op_to_string(int op, int param);
 #endif

@@ -1214,3 +1214,20 @@ void set_end_op_phrase(configValue v)
 {
 	m_opEND_PHRASE = v.argument[0][0];
 }
+
+const char* qpp_op_to_string(int op, int param)
+{
+	static char buf[8];
+
+	switch (op) {
+		case QPP_OP_AND: return m_opAND[0];
+		case QPP_OP_OR: return m_opOR[0];
+		case QPP_OP_NOT: return m_opNOT[0];
+		case QPP_OP_WITHIN:
+			snprintf(buf, sizeof(buf), "/%d", param);
+			return buf;
+
+		default: return "[unknown op]";
+	}
+}
+

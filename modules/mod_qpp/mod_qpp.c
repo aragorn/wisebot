@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "common_core.h"
+#include "memory.h"
 #include "util.h"
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/lexicon.h"
@@ -137,11 +138,140 @@ int QPP_postfixBuffer(char *result, QueryNode postfix[],int numNode) {
 	}
 	return SUCCESS;
 }
+
+/*
+ * for infix print
+ */
+struct qpp_tree_node {
+	QueryNode* expr;
+
+	struct qpp_tree_node** child;
+	int child_count;
+};
+
+static struct qpp_tree_node* qpp_make_tree_node()
+{
+	struct qpp_tree_node* node =
+		(struct qpp_tree_node*) sb_calloc(1, sizeof(struct qpp_tree_node));
+	return node;
+}
+
+static void qpp_print_tree(struct qpp_tree_node* node, char* buf)
+{
+	if ( node->child_count == 1 ) { // unary operator
+		strcat(buf, qpp_op_to_string(node->expr->operator, node->expr->opParam));
+		qpp_print_tree(node->child[0], buf);
+	}
+	else if ( node->child_count > 1 ) { // operator
+		strcat(buf, "(");
+
+		int i;
+		for ( i = 0; i < node->child_count; i++ ) {
+			qpp_print_tree(node->child[i], buf);
+
+			if ( i != node->child_count-1 ) {
+				strcat(buf, " ");
+				strcat(buf, qpp_op_to_string(node->expr->operator, node->expr->opParam));
+				strcat(buf, " ");
+			}
+		}
+
+		strcat(buf, ")");
+	}
+	else { // operand
+		strcat(buf, node->expr->word_st.string);
+	}
+}
+
+static void qpp_destroy_tree(struct qpp_tree_node* node)
+{
+	int i;
+
+	for ( i = 0; i < node->child_count; i++ ) {
+		qpp_destroy_tree(node->child[i]);
+	}
+
+	if ( node->child_count ) sb_free(node->child);
+	sb_free(node);
+}
+
+#define ENOUGH_QUERY_STACK_SIZE 128
+int QPP_infixBuffer(char* result, QueryNode postfix[], int numNode)
+{
+	struct qpp_tree_node* operand_stack[ENOUGH_QUERY_STACK_SIZE];
+	int operand_stack_pos = -1;
+	int i, j, k;
+
+	result[0] = '\0';
+
+	for ( i = 0; i < numNode; i++ ) {
+		struct qpp_tree_node* node = qpp_make_tree_node();
+		node->expr = &postfix[i];
+
+		if ( postfix[i].type == OPERAND ) {
+			if ( operand_stack_pos >= ENOUGH_QUERY_STACK_SIZE-1 ) {
+				error("not enough operand stack size");
+				goto return_error;
+			}
+
+			operand_stack[++operand_stack_pos] = node;
+			continue;
+		}
+		else { // operator
+			if ( operand_stack_pos < postfix[i].num_of_operands-1 ) {
+				error("invalid postfix expression");
+				goto return_error;
+			}
+
+			node->child = (struct qpp_tree_node**)
+				sb_malloc( sizeof(struct qpp_tree_node*) * postfix[i].num_of_operands );
+			node->child_count = postfix[i].num_of_operands;
+
+			for ( j = operand_stack_pos - postfix[i].num_of_operands + 1, k=0;
+					j <= operand_stack_pos; j++ ) {
+
+				node->child[k++] = operand_stack[j];
+			}
+
+			operand_stack_pos -= (postfix[i].num_of_operands-1);
+			operand_stack[operand_stack_pos] = node;
+		}
+	}
+
+	if ( operand_stack_pos != 0 ) {
+		error("invalid postfix expression");
+		goto return_error;
+	}
+
+	qpp_print_tree( operand_stack[0], result );
+	qpp_destroy_tree( operand_stack[0] );
+
+	return SUCCESS;
+
+return_error:
+	QPP_postfixPrint(postfix, numNode);
+	for ( i = 0; i <= operand_stack_pos; i++ ) {
+		qpp_destroy_tree( operand_stack[i] );
+	}
+	return FAIL;
+}
+
 static int init() {
 
 	initPrecedence();
 	setFakeOperand();
 
+	return SUCCESS;
+}
+
+int QPP_infixPrint(QueryNode postfix[], int numNode)
+{
+	char buf[LONG_STRING_SIZE];
+
+	if ( QPP_infixBuffer(buf, postfix, numNode) != SUCCESS ) return FAIL;
+
+	info("QPP(infix expression) : [%s]", buf);
+	QPP_postfixPrint(postfix, numNode); // 둘 다 보여주는게 좋을 것 같다.
 	return SUCCESS;
 }
 
@@ -1272,8 +1402,10 @@ int dummy_prefix_word(char *word, int pass, int nelm, word_t words[])
 static void register_hooks(void)
 {
 	sb_hook_preprocess(QPP_parse,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_print_querynode(QPP_postfixPrint,NULL,NULL,HOOK_MIDDLE);
-	sb_hook_buffer_querynode(QPP_postfixBuffer,NULL,NULL,HOOK_MIDDLE);
+	//sb_hook_print_querynode(QPP_postfixPrint,NULL,NULL,HOOK_MIDDLE);
+	//sb_hook_buffer_querynode(QPP_postfixBuffer,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_print_querynode(QPP_infixPrint,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_buffer_querynode(QPP_infixBuffer,NULL,NULL,HOOK_MIDDLE);
 	
 
 /*    sb_hook_get_suffix_word(dummy_suffix_word, NULL, NULL, HOOK_REALLY_LAST);*/

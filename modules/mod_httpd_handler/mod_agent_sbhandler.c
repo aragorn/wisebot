@@ -314,15 +314,15 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 			continue; // 해당 node를 통채로 무시
 		}
 
-        // 3. 검색 단어 리스트, 모든 node가 같은 word_list를 전송해올것이다. 중복작업임.
+        // 3. qpp parsing결과. 모든 node가 같은 parsed_query를 전송해올것이다. 중복작업임.
         recv_data_size = STRING_SIZE;
-		if ( memfile_read(buf, res->word_list, STRING_SIZE) != recv_data_size ) {
+		if ( memfile_read(buf, res->parsed_query, sizeof(res->parsed_query)) != recv_data_size ) {
 			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: search_words ", i);
 			continue; // 해당 node를 통채로 무시
 		}
 
-		debug("node_id[%0X], total_cnt[%d], recv_cnt[%d], word_list[%s]", 
-				search_nodes[node_idx].node_id, total_cnt, recv_cnt, res->word_list);
+		debug("node_id[%0X], total_cnt[%d], recv_cnt[%d], parsed_query[%s]", 
+				search_nodes[node_idx].node_id, total_cnt, recv_cnt, res->parsed_query);
 
 		// virtual_document, doc_hit, docattr buffer의 한계로 인해 실제로 받은 데이타의 수는 다를 수 있다.
 		real_recv_cnt = recv_cnt;
@@ -752,18 +752,15 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 	ap_rprintf(r,
 			"<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n");
 
-	/* word_list char * req->word_list */
 	ap_rprintf(r, 
 			"<xml>\n"
 			"<status>1</status>\n" 
 			"<query><![CDATA[%s]]></query>\n"
+			"<parsed_query><![CDATA[%s]]></parsed_query>\n"
 			"<result_count>%d</result_count>\n", 
 			qp_request.query, 
+			qp_response.parsed_query,
             qp_response.search_result);
-
-	ap_rprintf(r, "<words count=\"%d\">", 1);
-	ap_rprintf(r, "<word><![CDATA[%s]]></word>", qp_response.word_list);
-	ap_rprintf(r, "</words>");
 
     /* group result */
     ap_rprintf(r, "<groups>\n");
@@ -866,8 +863,8 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s){
 	ap_rwrite(&qp_response.search_result, sizeof(uint32_t), r);
     // 2. 전송 검색건수
 	ap_rwrite(&qp_response.vdl->cnt, sizeof(uint32_t), r);
-    // 3. 검색 단어 리스트
-	ap_rwrite(qp_response.word_list, sizeof(char)*STRING_SIZE, r);
+    // 3. qpp parsing 결과
+	ap_rwrite(qp_response.parsed_query, sizeof(qp_response.parsed_query), r);
 
     for(i = 0; i < qp_response.vdl->cnt; i++) {
         virtual_document_t* vd = &(qp_response.vdl->data[i]);

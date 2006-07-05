@@ -1909,7 +1909,7 @@ static int is_fake_qnode(QueryNode *qnode) {
 }
 
 static int do_search_operation(/*in*/QueryNode qnodes[], /*in*/uint16_t num_of_node,
-					  /*out*/ char searchwords[], /*out*/ index_list_t **result)
+					 /*out*/ index_list_t **result)
 {
 	int i=0;
 	index_list_t *new_node=NULL;
@@ -1944,9 +1944,6 @@ static int do_search_operation(/*in*/QueryNode qnodes[], /*in*/uint16_t num_of_n
 				   qnodes[i].word_st.id);
 	
 			stack_push(&stack, new_node);
-		
-			strcat(searchwords, qnodes[i].word_st.string);
-			strcat(searchwords, "^"); /* FIXME buffer overflow check */
 		}
 		else if ( qnodes[i].type == OPERATOR ) {
 			if (operate(&stack, &(qnodes[i])) == FAIL) {
@@ -3822,6 +3819,9 @@ static int light_search (request_t *req, response_t *res)
 	num_of_node = 
 		sb_run_preprocess(word_db, req->search, MAX_QUERY_STRING_SIZE,
 									qnodes, MAX_QUERY_NODES);
+	if ( num_of_node > 0 ) {
+		sb_run_buffer_querynode(res->parsed_query, qnodes, num_of_node);
+	}
 time_mark("preprocess");
 
 #ifdef DEBUG_SOFTBOTD
@@ -3835,8 +3835,7 @@ time_mark("preprocess");
 	}
 	else if (num_of_node == 0) {
         MSG_RECORD(&req->msg, warn, "no operand is available");
-		// word_list는 가라로 만든다.
-		strncpy( res->word_list, " ", sizeof(res->word_list) );
+		res->parsed_query[0] = '\0';
 		g_result_list = NULL;
 		return SUCCESS;
 	}
@@ -3847,7 +3846,7 @@ time_mark("preprocess");
 		// node가 실종되는 위험을 안고 있다.
 	}
 
-	rv = do_search_operation(qnodes, num_of_node, res->word_list, &g_result_list);
+	rv = do_search_operation(qnodes, num_of_node, &g_result_list);
 	if (rv == FAIL) {
         MSG_RECORD(&req->msg, error, "operation failed");
 		return FAIL;

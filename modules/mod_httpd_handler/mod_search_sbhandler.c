@@ -183,18 +183,15 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 	ap_rprintf(r,
 			"<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
 
-	/* word_list char * req->word_list */
 	ap_rprintf(r, 
 			"<xml>\n"
 			"<status>1</status>\n" 
 			"<query><![CDATA[%s]]></query>\n"
+			"<parsed_query><![CDATA[%s]]></parsed_query>\n"
 			"<result_count>%d</result_count>\n", 
 			qp_request.query, 
+			qp_response.parsed_query,
             qp_response.search_result);
-
-	ap_rprintf(r, "<words count=\"%d\">", 1);
-	ap_rprintf(r, "<word><![CDATA[%s]]></word>", qp_response.word_list);
-	ap_rprintf(r, "</words>");
 
     /* group result */
     ap_rprintf(r, "<groups>\n");
@@ -305,12 +302,12 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
 	ap_rwrite(&(qp_response.vdl->cnt), sizeof(uint32_t), r);
 
 	// 3. 검색 단어 리스트
-	ap_rwrite(qp_response.word_list, sizeof(char)*STRING_SIZE, r);
+	ap_rwrite(qp_response.parsed_query, sizeof(qp_response.parsed_query), r);
 
-	debug("search_result[%u], send_cnt[%u], word_list[%s]", 
+	debug("search_result[%u], send_cnt[%u], parsed_query[%s]", 
 			qp_response.search_result,
 			qp_response.vdl->cnt,
-			qp_response.word_list);
+			qp_response.parsed_query);
 
     // 4. 검색결과 전송
     for(i = 0; i < qp_response.vdl->cnt; i++) {
