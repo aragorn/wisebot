@@ -5,6 +5,7 @@
 #include "ipc.h"
 
 #include "mod_vrm.h"
+#include <sys/stat.h>
 #include <stdlib.h> // rand
 #include <unistd.h>
 #include <sys/mman.h>
