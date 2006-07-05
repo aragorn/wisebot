@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "mod_sfs/shared_memory.h" /* line 204 */
 #include "mod_ifs.h"
+#include <sys/stat.h>
 #include <fcntl.h> /* O_RDWR,O_CREAT,... */
 #include <unistd.h> /* close(2) */
 #include <stdlib.h> /* free(3),atoi(3) */
