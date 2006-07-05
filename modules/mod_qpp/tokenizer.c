@@ -6,8 +6,9 @@
 #include "common_core.h"
 #include "common_util.h"
 #include "mod_api/indexer.h"
-#include "mod_qpp.h"
+#include "stack.h"
 #include "tokenizer.h"
+#include "mod_qpp.h"
 
 #define MAX_QPP_OP_NUM			(128)
 #define MAX_QPP_OP_STR			(32)

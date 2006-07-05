@@ -7,10 +7,11 @@
 #include "mod_api/lexicon.h"
 #include "mod_api/qp.h"
 
-#include "mod_qpp.h"
 
 #include "stack.h"
 #include "tokenizer.h"
+#include "mod_qpp.h"
+#include "daum_qpp.h"
 
 #define BIGRAM_TRUNCATION_SEARCH
 //#undef BIGRAM_TRUNCATION_SEARCH
@@ -23,20 +24,6 @@
 #define STARRED_WORD_NUM		(10)	/* *로 확장하는 단어 갯수 */
 
 #define MAX_QPP_INDEXED_WORDS MAX_WORD_LEN
-
-typedef struct {
-	Stack postfixStack;
-	Stack operatorStack;
-
-	int32_t searchField;
-	int8_t nextTurn;
-	int8_t posWithinPhrase;
-	int8_t numPhraseOperand;
-	char truncated;
-	uint32_t virtualfield;
-	int virtualfield_morpid;
-	int8_t natural_search;
-} StateObj;
 
 static uint32_t mDefaultSearchField=0xffffffff;
 static uint32_t mDefaultPhraseField=0xffffffff;
@@ -86,7 +73,6 @@ static int pushOperator(StateObj *pStObj,QueryNode *pQuNode);
 static int pushNumeric(StateObj *pStObj,QueryNode *pQuNode);
 static int pushPhrase(StateObj *pStObj);
 static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode);
-static int pushOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode);
 static int pushGenericOperator(StateObj *pStObj,QueryNode *pQuNode);
 static int pushStarredWord(void* word_db, StateObj *pStObj,QueryNode *pQuNode);
 
@@ -569,7 +555,36 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 	sb_run_delete_index_word_extractor(extractor);
 
 	
-	if (nMorpheme > 0) {
+	// daum_koma를 사용하는 경우 특수처리
+	// 이놈은 boolean query를 리턴한다
+	if ( morp_id == 16 ) {
+		char buf[STRING_SIZE];
+		struct daum_tree_node* tree = parse_daum_query(indexwords, nMorpheme);
+		if ( tree == NULL ) {
+			error("failed parsing daum koma query: %s", pQuNode->original_word);
+			return FAIL;
+		}
+
+		info("original query: [%s]", pQuNode->original_word);
+		info("parsed daum query: [%s]", print_daum_tree(tree, buf, sizeof(buf)));
+
+		if ( push_daum_tree(word_db, pStObj, tree) != SUCCESS ) {
+			error("push_daum_tree failed");
+			destroy_daum_tree(tree);
+			return FAIL;
+		}
+
+		// 단어가 등장하면 최소한 { 가 } 와 같이 3개가 나온다
+		if ( nMorpheme >= 3 && pStObj->posWithinPhrase == TRUE ) {
+			pStObj->numPhraseOperand++;
+		}
+
+		destroy_daum_tree(tree);
+		pStObj->nextTurn = TURN_BINARY_OPERATOR;
+
+		return SUCCESS;
+	}
+	else if (nMorpheme > 0) {
 		for (i=0; i<nMorpheme; i++) {
 			strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN);
 			qnode.word_st.string[MAX_WORD_LEN-1] = '\0';
@@ -676,7 +691,7 @@ static void makeUpperLetter(QueryNode *pQuNode) {
 	}
 }
 
-static int pushOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode) {
+int pushOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode) {
 	int ret=0;
 /*	LWord retWord={"",0,-1,0};*/
 /*	word_t word={"",{0,0,0}};*/
