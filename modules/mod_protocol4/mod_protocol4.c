@@ -2,6 +2,7 @@
 #include "common_core.h"
 #include "common_util.h"
 #include <time.h>
+#include <signal.h>
 #include <errno.h>
 #include <fcntl.h> /* open(2) */
 #include <sys/wait.h>
