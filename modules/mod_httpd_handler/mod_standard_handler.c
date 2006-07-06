@@ -3,7 +3,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "mod_httpd/protocol.h"
+#include "mod_httpd/util_filter.h"
 #include "mod_httpd/conf.h"
+#include "mod_httpd/http_util.h"
 #include "mod_standard_handler.h"
 #include "apr_strings.h"
 #include "mod_api/sbhandler.h"

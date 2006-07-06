@@ -76,8 +76,8 @@ static char *constants[MAX_ENUM_NUM] = { NULL };
 static int constants_value[MAX_ENUM_NUM];
 
 // connection 
-static apr_int64_t timeout = 3000000;
-static apr_int64_t keep_alive_timeout = 60000000;
+static apr_int64_t timeout = 3;
+static apr_int64_t keep_alive_timeout = 6;
 static int keep_alive_max = 100;
 static int keep_alive = 1;
 
