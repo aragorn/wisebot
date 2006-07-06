@@ -46,7 +46,9 @@ SB_DECLARE(int) iconv_close(iconv_t cd);
 # include <unistd.h>
 #endif
 #include <inttypes.h>
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 #include <pthread.h>
 
 /* modules.h depends on registry.h and config.h and the order matters */
