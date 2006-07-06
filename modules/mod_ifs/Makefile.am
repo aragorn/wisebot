@@ -40,4 +40,4 @@ test2_ifs_LDADD = mod_ifs_defrag.la \
 test2_ifs_LDFLAGS = -export-dynamic -ldl $(THREAD_LIB)
 
 #mod_ifs.la, mod_ifs_defrag.ls is needed by ifs_defrag
-#include ../install-pkglib.mk
+include ../install-pkglib.mk

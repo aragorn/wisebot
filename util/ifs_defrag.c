@@ -1,12 +1,14 @@
 /* $Id$ */
+#include <stdlib.h> /* free(3) */
+#include <string.h> /* strcasecmp(3),strncpy(3),memset(3) */
+#include <dlfcn.h>
+#include <errno.h>
 #include "common_core.h"
 #include "common_util.h"
 #include "setproctitle.h"
 #include "ipc.h"
 #include "mod_ifs/table.h"
 #include "mod_ifs/mod_ifs_defrag.h"
-#include <stdlib.h> /* free(3) */
-#include <string.h> /* strcasecmp(3),strncpy(3),memset(3) */
 #ifdef HAVE_GETOPT_LONG
 # include <getopt.h>
 #endif
@@ -75,8 +77,39 @@ char gErrorLogFile[MAX_PATH_LEN] = DEFAULT_ERROR_LOG_FILE;
 char gQueryLogFile[MAX_PATH_LEN] = DEFAULT_QUERY_LOG_FILE;
 module *static_modules;
 
+int (*ifs_init_fp)();
+int (*ifs_open_fp)(index_db_t** indexdb, int opt);
+int (*ifs_close_fp)(index_db_t* indexdb);
+int (*ifs_append_fp)(index_db_t* indexdb, int file_id, int size, void* buf);
+int (*ifs_read_fp)(index_db_t* indexdb, int file_id, int offset, int size, void* buf);
+int (*ifs_getsize_fp)(index_db_t* indexdb, int file_id);
+int (*_ifs_fix_physical_segment_state_fp)(ifs_t* ifs);
+void (*table_print_fp)(table_t* table);
+int (*ifs_defrag_fp)(ifs_t* ifs, scoreboard_t* scoreboard);
+
+ifs_set_t **ifs_set_p;
+int* defrag_group_size_p;
+defrag_mode_t* defrag_mode_p;
+int* temp_alive_time_p;
+
+#define DLOPEN(handle, name) \
+	snprintf(libname, sizeof(libname), "%s/lib/softbot/" name, gSoftBotRoot); \
+	handle = dlopen(libname, RTLD_NOW|RTLD_GLOBAL); /* flag는 국가보훈처때처럼.. */\
+	if ( handle == NULL ) { \
+		error("cannot load %s/lib/softbot/" name ": %s", gSoftBotRoot, strerror(errno)); \
+		goto end; \
+	}
+
+#define DLSYM(handle, ptr, name) \
+	ptr = dlsym(handle, name); \
+	if ( ptr == NULL ) { \
+		error("cannot load symbol" name ": %s", strerror(errno)); \
+		goto end; \
+	}
+
 int main(int argc, char* argv[], char* envp[])
 {
+	void *mod_sfs=NULL, *mod_ifs=NULL, *mod_ifs_defrag=NULL;
 	index_db_t* indexdb = NULL;
 	ifs_t* ifs;
 	int arg;
@@ -87,6 +120,36 @@ int main(int argc, char* argv[], char* envp[])
 
 	init_setproctitle(argc, argv, envp);
 	log_setlevelstr("debug");
+
+	// load dynamic library
+	char libname[MAX_PATH_LEN];
+	DLOPEN(mod_sfs, "mod_sfs.so");
+	DLOPEN(mod_ifs, "mod_ifs.so");
+	DLOPEN(mod_ifs_defrag, "mod_ifs_defrag.so");
+
+	DLSYM(mod_ifs, ifs_init_fp, "ifs_init");
+	DLSYM(mod_ifs, ifs_open_fp, "ifs_open");
+	DLSYM(mod_ifs, ifs_close_fp, "ifs_close");
+	DLSYM(mod_ifs, ifs_append_fp, "ifs_append");
+	DLSYM(mod_ifs, ifs_read_fp, "ifs_read");
+	DLSYM(mod_ifs, ifs_append_fp, "ifs_append");
+	DLSYM(mod_ifs, ifs_getsize_fp, "ifs_getsize");
+	DLSYM(mod_ifs, _ifs_fix_physical_segment_state_fp, "_ifs_fix_physical_segment_state");
+	DLSYM(mod_ifs, table_print_fp, "table_print");
+	DLSYM(mod_ifs_defrag, ifs_defrag_fp, "ifs_defrag");
+	DLSYM(mod_ifs, ifs_set_p, "ifs_set");
+	DLSYM(mod_ifs_defrag, defrag_group_size_p, "defrag_group_size");
+	DLSYM(mod_ifs_defrag, defrag_mode_p, "defrag_mode");
+	DLSYM(mod_ifs, temp_alive_time_p, "temp_alive_time");
+
+	// make ifs_set
+	memset(local_ifs_set, 0x00, sizeof(local_ifs_set));
+	local_ifs_set[0].set = 1;
+	local_ifs_set[0].set_segment_size = 1;
+	local_ifs_set[0].segment_size = 0;
+	local_ifs_set[0].set_block_size = 1;
+	local_ifs_set[0].block_size = 0;
+	*ifs_set_p = local_ifs_set;
 
 	opterr = 0;
 	while ( ( arg =
@@ -114,8 +177,8 @@ int main(int argc, char* argv[], char* envp[])
 				break;
 
 			case 'g':
-				defrag_group_size = atoi(optarg);
-				if ( defrag_group_size <= 1 ) {
+				*defrag_group_size_p = atoi(optarg);
+				if ( *defrag_group_size_p <= 1 ) {
 					error("invalid group size: %s", optarg);
 					exit_value = -1;
 				}
@@ -123,9 +186,9 @@ int main(int argc, char* argv[], char* envp[])
 
 			case 'm':
 				if ( strcasecmp( optarg, "copy" ) == 0 )
-					defrag_mode = DEFRAG_MODE_COPY;
+					*defrag_mode_p = DEFRAG_MODE_COPY;
 				else if ( strcasecmp( optarg, "bubble" ) == 0 )
-					defrag_mode = DEFRAG_MODE_BUBBLE;
+					*defrag_mode_p = DEFRAG_MODE_BUBBLE;
 				else {
 					warn("unknown defrag mode: %s", optarg);
 					exit_value = -1;
@@ -133,8 +196,8 @@ int main(int argc, char* argv[], char* envp[])
 				break;
 
 			case 't':
-				temp_alive_time = atoi(optarg);
-				if ( temp_alive_time < 0 ) {
+				*temp_alive_time_p = atoi(optarg);
+				if ( *temp_alive_time_p < 0 ) {
 					error("invalid temp_alive_time: %s", optarg);
 					exit_value = -1;
 				}
@@ -172,13 +235,16 @@ int main(int argc, char* argv[], char* envp[])
 		return exit_value;
 	}
 
+	local_ifs_set[0].set_ifs_path = 1;
+	strncpy( local_ifs_set[0].ifs_path, path, MAX_PATH_LEN-1 );
+
 	printf("Defrag Enviroment\n");
 	printf("===========================================\n");
 	printf("gSoftBotRoot    : %s\n", gSoftBotRoot);
 	printf("Path            : %s\n", path);
-	printf("TempAliveTime   : %d\n", temp_alive_time);
-	printf("DefragGroupSize : %d\n", defrag_group_size);
-	printf("DefragMode      : %s\n", defrag_mode_str[(int)defrag_mode]);
+	printf("TempAliveTime   : %d\n", *temp_alive_time_p);
+	printf("DefragGroupSize : %d\n", *defrag_group_size_p);
+	printf("DefragMode      : %s\n", defrag_mode_str[(int)(*defrag_mode_p)]);
 	printf("===========================================\n");
 
 	if ( pause ) {
@@ -186,48 +252,41 @@ int main(int argc, char* argv[], char* envp[])
 		getchar();
 	}
 
-	// make ifs_set
-	memset(local_ifs_set, 0x00, sizeof(local_ifs_set));
-	ifs_set = local_ifs_set;
-	ifs_set[0].set = 1;
-	ifs_set[0].set_ifs_path = 1;
-	strncpy( ifs_set[0].ifs_path, path, MAX_PATH_LEN-1 );
-	ifs_set[0].set_segment_size = 1;
-	ifs_set[0].segment_size = 0;
-	ifs_set[0].set_block_size = 1;
-	ifs_set[0].block_size = 0;
-
-	ifs_init();
-	if ( ifs_open(&indexdb, 0) != SUCCESS ) {
+	ifs_init_fp();
+	if ( ifs_open_fp(&indexdb, 0) != SUCCESS ) {
 		error("ifs_open failed");
 		exit_value = -1;
 		goto end;
 	}
 	ifs = (ifs_t*) indexdb->db;
 
-	table_print( &ifs->shared->mapping_table );
+	table_print_fp( &ifs->shared->mapping_table );
 
 	if ( fix ) {
-		if ( _ifs_fix_physical_segment_state( ifs ) > 0 ) {
+		if ( _ifs_fix_physical_segment_state_fp( ifs ) > 0 ) {
 			crit("table fixed");
-			table_print( &ifs->shared->mapping_table );
+			table_print_fp( &ifs->shared->mapping_table );
 		}
 		goto end;
 	}
 
 	if ( show_state ) {
 		char buf[1];
-		ifs_read(indexdb, 1, 100000000, 1, buf);
+		ifs_read_fp(indexdb, 1, 100000000, 1, buf);
 		// 이렇게 하면 모든 sfs가 loading된다
 	}
-	else if ( ifs_defrag(ifs, NULL) != SUCCESS ) {
+	else if ( ifs_defrag_fp(ifs, NULL) != SUCCESS ) {
 	    error("defragment fail");
 		exit_value = -1;
 	}
 
 end:
-	if ( indexdb != NULL ) ifs_close(indexdb);
+	if ( indexdb != NULL ) ifs_close_fp(indexdb);
 	free_ipcs();
+
+	if ( mod_ifs_defrag ) dlclose(mod_ifs_defrag);
+	if ( mod_ifs ) dlclose(mod_ifs);
+	if ( mod_sfs ) dlclose(mod_sfs);
 
 	return exit_value; 
 }
