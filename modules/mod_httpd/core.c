@@ -310,7 +310,7 @@ AP_DECLARE(const char *) ap_check_cmd_context(cmd_parms *cmd,
 
 
 
-
+#if 0
 static const char *set_timeout(cmd_parms *cmd, void *dummy, const char *arg)
 {
     const char *err = ap_check_cmd_context(cmd, NOT_IN_DIR_LOC_FILE|NOT_IN_LIMIT);
@@ -330,6 +330,20 @@ static const char *set_timeout(cmd_parms *cmd, void *dummy, const char *arg)
 
     /* the precedence is wrong in apr_time_from_sec() to handle fractional seconds... */
     cmd->server->timeout = apr_time_make(floor(t), fmod(t, 1.0) * 1000000);
+    return NULL;
+}
+#endif
+
+static const char *set_timeout(cmd_parms *cmd, void *dummy, const char *arg)
+{
+    const char *err = ap_check_cmd_context(cmd, NOT_IN_DIR_LOC_FILE|NOT_IN_LIMIT);
+
+    if (err != NULL) {
+        return err;
+    }
+
+    cmd->server->timeout = apr_time_from_sec(atoi(arg));
+
     return NULL;
 }
 

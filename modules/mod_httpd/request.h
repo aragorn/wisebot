@@ -5,6 +5,7 @@
 #include "hook.h"
 #include "mod_httpd.h"
 #include "util_filter.h"
+#include "core.h"
 
 /**
  * @file http_request.h

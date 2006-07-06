@@ -415,7 +415,7 @@ AP_DECLARE(apr_off_t) ap_get_limit_req_body(const request_rec *r);
  */
 AP_DECLARE(size_t) ap_get_limit_xml_body(const request_rec *r);
 
-
+AP_DECLARE(void **) ap_get_request_note(request_rec *r, apr_size_t note_num);
 
 
 /*****************************************************************************/
