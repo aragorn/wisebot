@@ -117,9 +117,6 @@ AH_VERBATIM([1_NEAR_TOP__],[
    see include/timelog.h, platform/unix/sb_tstat.[ch]. */
 #define USE_TIMELOG 0
 
-/* whether to use Daum Communication's Korean MA or not. */
-#define USE_DAUM_KOMA 0
-
 /* If you don't have setproctitle, SB_ARGV_TYPE needs to be set to either
 * SB_ARGV_NEW (replace argv[] arguments), SB_ARGV_WRITEABLE (overwrite
 * argv[]), SB_ARGV_PSTAT (use the pstat function), or SB_ARGV_PSSTRINGS
@@ -179,12 +176,12 @@ else
 fi
 ])
 
-AM_CONDITIONAL(USE_DAUM_KOMA,0)
+AM_CONDITIONAL(USE_DAUM_KOMA,test 0 -eq 1)
 AC_ARG_WITH(daum-koma,
 [  --with-daum-koma        build with Daum's koma.          [default=no]], [
-if test "$withval" != yes
+if test "$withval" = yes
 then
-    AM_CONDITIONAL(USE_DAUM_KOMA,1)
+    AM_CONDITIONAL(USE_DAUM_KOMA,test 1 -eq 1)
 fi
 ])
 
@@ -318,8 +315,8 @@ dnl Various OS checks that apparently set required flags
 dnl AC_AIX
 
 
-CFLAGS="-Wall -g3 -O2"
-INCLUDES="-I$(top_builddir)/modules"
+CFLAGS='-Wall -g3 -O2'
+INCLUDES='-I$(top_builddir)/modules'
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
