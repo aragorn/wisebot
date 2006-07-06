@@ -578,6 +578,8 @@ static module* add_module(module *this, const char *mod_symbol_name)
 
 		m->next = this;
 	}
+   
+    if(mod_symbol_name == NULL) mod_symbol_name = "";
 
 	INFO("%s of %s", mod_symbol_name, this->name);
 	return this;
