@@ -7,3 +7,4 @@
     RebuildDocAttrField     cate4
     RebuildDocAttrField     lastsellingcnt
     RebuildDocAttrField     page
+    RebuildDocAttrField     docid
