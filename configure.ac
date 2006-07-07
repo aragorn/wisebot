@@ -117,6 +117,9 @@ AH_VERBATIM([1_NEAR_TOP__],[
    see include/timelog.h, platform/unix/sb_tstat.[ch]. */
 #define USE_TIMELOG 0
 
+/* whether to use daum_koma or not */
+#define USE_DAUM_KOMA 0
+
 /* If you don't have setproctitle, SB_ARGV_TYPE needs to be set to either
 * SB_ARGV_NEW (replace argv[] arguments), SB_ARGV_WRITEABLE (overwrite
 * argv[]), SB_ARGV_PSTAT (use the pstat function), or SB_ARGV_PSSTRINGS
@@ -182,6 +185,9 @@ AC_ARG_WITH(daum-koma,
 if test "$withval" = yes
 then
     AM_CONDITIONAL(USE_DAUM_KOMA,test 1 -eq 1)
+	AC_DEFINE(USE_DAUM_KOMA,1)
+else
+	AC_DEFINE(USE_DAUM_KOMA,0)
 fi
 ])
 
