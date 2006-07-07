@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Start/stop the softbotd daemon.
 
 # XXX change SOFTBOT_ROOT path
@@ -152,7 +152,7 @@ start_daemon()
 
 	[ ! -e "$ROOT/dat/koma" ] && printf "\ndat/koma is not exists\n" && exit 1
 
-	$SOFTBOT_ROOT/scripts/logrotate.pl -n 2 -s 2000M $SOFTBOT_ROOT/$SOFTBOTD_LOG_FILE
+	$SOFTBOT_ROOT/scripts/logrotate.pl -n 2 -s 2000M $SOFTBOT_ROOT/$SOFTBOTD_LOG_FILE > /dev/null 2>&1
 
 	local CMD="$ROOT/$EXEC"
 	[ -n "$CONF" ] && CMD="$CMD -c $CONF" 
