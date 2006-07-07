@@ -516,7 +516,7 @@ http_client_retrieve(int num_of_clients, http_client_t **client_list){
 	for (i = 0; i < num_of_clients; i++) {
 		//FIXME
 		//do not retrieve clients that have no request
-		if ( !client_list[i]->current_request_buffer )	continue;
+		if ( client_list[i]->http->req_content_len <= 0 || !client_list[i]->current_request_buffer )	continue;
 		if ( http_client_connect(client_list[i]) == FAIL ) {
 			error("http_client_connect to %s:%s failed",
 					client_list[i]->host, client_list[i]->port);
@@ -530,7 +530,7 @@ http_client_retrieve(int num_of_clients, http_client_t **client_list){
 		maxFd = -1;
 
 		for (i = 0; i < num_of_clients; i++) {
-			if ( !client_list[i]->current_request_buffer )	continue;
+			if ( client_list[i]->http->req_content_len <= 0 || !client_list[i]->current_request_buffer )	continue;
 			/* if parsing complete, skip */
 			if (client_list[i]->parsing_status.state == 
 					PARSING_COMPLETE) {
@@ -573,7 +573,7 @@ http_client_retrieve(int num_of_clients, http_client_t **client_list){
 		}
 
 		for (i = 0;i < num_of_clients; i++) {
-			if ( !client_list[i]->current_request_buffer )	continue;
+			if ( client_list[i]->http->req_content_len <= 0 || !client_list[i]->current_request_buffer )	continue;
 			/* set connected */
 			if ( (client_list[i]->statusFlag & CON_FLAG_CONNECTING) &&
 				   	(FD_ISSET(client_list[i]->sockFd, &wset)) ) {
