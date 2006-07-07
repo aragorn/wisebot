@@ -24,6 +24,7 @@ typedef struct {
 	char statusFlag;   
 	int numRequestInOneConnect;
 
+    int skip;          // 1 : retrieve시에 처리하지 않는다.
 	memfile *current_request_buffer;
 	memfile *current_recv_buffer; 
 
