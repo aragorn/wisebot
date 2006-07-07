@@ -45,7 +45,6 @@ typedef struct {
     char port[SHORT_STRING_SIZE];
     http_client_t* client;
 	uint32_t node_id;
-    int is_abstract_request;
 } node_t;
 static uint32_t this_node_id; // 하위 4bit만 쓴다.
 
@@ -124,7 +123,10 @@ static int get_client_by_node_id(uint32_t node_id)
 static void free_mfile_list(memfile **mfile_list){
 	int i;
 	for (i=0; i<search_node_num; i++ ) {
-		if ( mfile_list[i] ) memfile_free(mfile_list[i]);
+		if ( mfile_list[i] ) {
+            memfile_free(mfile_list[i]);
+            mfile_list[i] = NULL;
+        }
 	}
 }
 
@@ -271,7 +273,7 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		uint32_t real_recv_cnt = 0;
 		memfile *buf = clients[node_idx]->http->content_buf;
 		if (!buf ) {
-			MSG_RECORD(&s->msg, error, 
+			MSG_RECORD(&s->msg, info, 
 					"no targetnode result, ip[%s], port[%s]",
 				    search_nodes[node_idx].ip,
 				    search_nodes[node_idx].port);
@@ -451,7 +453,6 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
     // client가 초기화 되지 않았다면 초기화 한다.
 	for (i=0; i<search_node_num; i++ ){
 	    http_client_t *client = search_nodes[i].client;
-        search_nodes[i].is_abstract_request = 0;
 
 		msg_body_list[i] = NULL;
 		if( client == NULL ) {
@@ -520,18 +521,34 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 			memfile_append(buf, (void *)&(vd->dochits[j]), sizeof(doc_hit_t));
 			memfile_append(buf, (void *)&node_id, sizeof(uint32_t));
         }
-
-        if(memfile_getSize(buf) != 0);
-            search_nodes[i].is_abstract_request = 1;
 	} 
+
+	for (i=0; i<search_node_num; i++ ){
+	    http_client_t *client = search_nodes[i].client;
+	    memfile *buf = msg_body_list[i];
+
+        if(memfile_getSize(buf) == 0) {
+            client->skip = 1;
+            info("client[%d]->skip[%d]", i, search_nodes[i].client->skip);
+       } else {
+            client->skip = 0;
+       }
+    }
 
     // send...
 	for ( i=0; i<search_node_num; i++ ) {
 		memfile **buf = &(msg_body_list[i]);
 		http_client_t* client = search_nodes[i].client;
-		if ( *buf == NULL || search_nodes[i].is_abstract_request == 0) {
+
+        clients[i] = client;
+
+		if ( client->skip == 1) {
+			continue;
+		}
+
+		if ( *buf == NULL) {
 			MSG_RECORD(&s->msg, error, 
-					"send buffer is null ip[%s], port[%s]",
+					"no targetnode result, ip[%s], port[%s]",
 				    search_nodes[i].ip,
 				    search_nodes[i].port);
 			continue;
@@ -542,6 +559,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 					"fail http set message body, ip[%s], port[%s]",
 				    search_nodes[i].ip,
 				    search_nodes[i].port);
+            continue;
         }
 
 		if ( sb_run_http_client_makeRequest(client, NULL)	!= SUCCESS ) {
@@ -554,12 +572,6 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 			return FAIL;
 		}
 		client->http->req_message_body = NULL;
-
-		memfile_free(*buf);
-		*buf= NULL;
-
-        clients[i] = client;
-		debug("request ip[%s], port[%s]", search_nodes[i].ip, search_nodes[i].port); 
 	}
 	free_mfile_list(msg_body_list);
 
@@ -573,8 +585,14 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 		int recv_data_size = 0;
 		int recv_cnt = 0;
 
+        http_client_t* client = search_nodes[i].client;
 		memfile *buf = clients[i]->http->content_buf;
-		if (!buf || search_nodes[i].is_abstract_request == 0) {
+
+		if ( client->skip == 1) {
+			continue;
+		}
+
+		if (!buf) {
 			MSG_RECORD(&s->msg, error, 
 					"no targetnode result, ip[%s], port[%s]",
 				    search_nodes[i].ip,
