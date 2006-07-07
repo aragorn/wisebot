@@ -7,3 +7,4 @@ DocAttrField cate3               Integer
 DocAttrField cate4               Integer
 DocAttrField lastsellingcnt      Integer 
 DocAttrField page                Integer 
+DocAttrField docid               Integer 
