@@ -1985,79 +1985,94 @@ int com_rebuild_docattr(char *arg)
 
     /* parse cdm */
     for (i=start; i<=finish; i++) {
-    if (i % 1000 == 0) crit("%d... rewrite docattr", i);
+		if (i % 1000 == 0) crit("%d... rewrite docattr", i);
 
-    sb_run_buffer_initbuf(&var);
-    result = sb_run_server_canneddoc_get(i,&var);
-    if (result < 0) {
-        error("canneddoc_get error.\n");
-        sb_run_buffer_freebuf(&var);
-        continue;
-    }
-//  sb_run_buffer_freebuf(&var);
-    iSize = sb_run_buffer_getsize(&var);
-    if (iSize > DOCUMENT_SIZE) {
-        sb_run_buffer_freebuf(&var);
-        continue;
-    }
-//  bzero(aCannedDoc, DOCUMENT_SIZE);
-    sb_run_buffer_get(&var, 0, iSize, aCannedDoc);
-    sb_run_buffer_freebuf(&var);
-    aCannedDoc[iSize] = '\0';
+		if ( find_module("mod_cdm.c") != NULL ) {
+			sb_run_buffer_initbuf(&var);
+			result = sb_run_server_canneddoc_get(i,&var);
+			if (result < 0) {
+				error("canneddoc_get error.\n");
+				sb_run_buffer_freebuf(&var);
+				continue;
+			}
+			iSize = sb_run_buffer_getsize(&var);
+			if (iSize > DOCUMENT_SIZE) {
+				sb_run_buffer_freebuf(&var);
+				continue;
+			}
+	//		bzero(aCannedDoc, DOCUMENT_SIZE);
+			sb_run_buffer_get(&var, 0, iSize, aCannedDoc);
+			sb_run_buffer_freebuf(&var);
+		}
+		else {
+			result = sb_run_cdm_get_xmldoc(mCdmDb, i, aCannedDoc, DOCUMENT_SIZE);
+			if ( result == CDM2_GET_INVALID_DOCID ) {
+				error("invalid docid");
+				return FAIL;
+			}
+			else if ( result < 0 ) {
+				error("cannot get document: %d", result);
+				return FAIL;
+			}
 
-    p = sb_run_xmlparser_parselen("EUC-KR", aCannedDoc, iSize);
-    if (p == NULL) {
-        error("cannot parse document[%d]", i);
-        continue;
-    }
+			iSize = strlen(aCannedDoc);
+		}
 
-    { /* insert some field into docattr db */
-        docattr_mask_t docmask;
-        int len, j;
-        char *val, value[STRING_SIZE], path[STRING_SIZE];
-		char* field_value; int field_length;
-        uint32_t docid;
+		aCannedDoc[iSize] = '\0';
 
-        docid = i;
-        /* setting docmask data */
-        DOCMASK_SET_ZERO(&docmask);
-        for (j=0; j<MAX_FIELD_NUM && docattrFields[j]; j++) {
-            strcpy(path, "/Document/");
-            strcat(path, docattrFields[j]);
+		p = sb_run_xmlparser_parselen("EUC-KR", aCannedDoc, iSize);
+		if (p == NULL) {
+			error("cannot parse document[%d]", i);
+			continue;
+		}
 
-            result = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
-            if (result != SUCCESS) {
-                warn("cannot get field[/%s/%s] of ducument[%d] (path:%s)",
-                        "/Document",
-                        docattrFields[j], i, path);
-                continue;
-            }
+		{ /* insert some field into docattr db */
+			docattr_mask_t docmask;
+			int len, j;
+			char *val, value[STRING_SIZE], path[STRING_SIZE];
+			char* field_value; int field_length;
+			uint32_t docid;
 
-            len = field_length;
-            val = __trim(field_value, &len);
-            len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
-            strncpy(value, val, len);
-            value[len] = '\0';
+			docid = i;
+			/* setting docmask data */
+			DOCMASK_SET_ZERO(&docmask);
+			for (j=0; j<MAX_FIELD_NUM && docattrFields[j]; j++) {
+				strcpy(path, "/Document/");
+				strcat(path, docattrFields[j]);
 
-            if (len == 0) {
-                continue;
-            }
+				result = sb_run_xmlparser_retrieve_field(p, path, &field_value, &field_length);
+				if (result != SUCCESS) {
+					warn("cannot get field[/%s/%s] of ducument[%d] (path:%s)",
+							"/Document",
+							docattrFields[j], i, path);
+					continue;
+				}
 
-            if (sb_run_docattr_set_docmask_function(&docmask, docattrFields[j],
-                        value) == -1) {
-                warn("wrong type of value of field[/%s/%s] of ducument[%d]", 
-                        "/Document",
-                        docattrFields[j], i);
-            }
-        }
+				len = field_length;
+				val = __trim(field_value, &len);
+				len = (len>STRING_SIZE-1)?STRING_SIZE-1:len;
+				strncpy(value, val, len);
+				value[len] = '\0';
 
-        if (sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask) == -1) {  
-            warn("cannot insert field[/%s/%s] into docattr db of doc[%d]",   
-                    "/Document",
-                    docattrFields[j], i);
-        }
-    }
-    sb_run_xmlparser_free_parser(p);
+				if (len == 0) {
+					continue;
+				}
+
+				if (sb_run_docattr_set_docmask_function(&docmask, docattrFields[j],
+							value) == -1) {
+					warn("wrong type of value of field[/%s/%s] of ducument[%d]", 
+							"/Document",
+							docattrFields[j], i);
+				}
+			}
+
+			if (sb_run_docattr_set_array(&docid, 1, SC_MASK, &docmask) == -1) {  
+				warn("cannot insert field[/%s/%s] into docattr db of doc[%d]",   
+						"/Document",
+						docattrFields[j], i);
+			}
+		}
+		sb_run_xmlparser_free_parser(p);
 
     }
     return 1;
