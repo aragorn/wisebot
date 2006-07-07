@@ -111,6 +111,7 @@ static void set_signal_handlers()
     act.sa_handler = _do_nothing;
     sigaction(SIGCHLD, &act, NULL);
     sigaction(SIGPIPE, &act, NULL);
+    sigaction(SIGXFSZ, &act, NULL); // log파일이 2G 되면 이 signal이 발생한다.
     
     act.sa_handler = _shutdown;
     sigaction(SIGQUIT, &act, NULL);
