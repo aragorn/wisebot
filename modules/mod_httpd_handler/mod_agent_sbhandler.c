@@ -315,7 +315,7 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		}
 
         // 3. qpp parsing결과. 모든 node가 같은 parsed_query를 전송해올것이다. 중복작업임.
-        recv_data_size = STRING_SIZE;
+        recv_data_size = sizeof(res->parsed_query);
 		if ( memfile_read(buf, res->parsed_query, sizeof(res->parsed_query)) != recv_data_size ) {
 			MSG_RECORD(&s->msg, error, "incomplete result at [%d]th node: search_words ", i);
 			continue; // 해당 node를 통채로 무시
