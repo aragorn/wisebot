@@ -2287,7 +2287,7 @@ int	getAutoComment(char *pszStr, int lPosition)
 	
 	int iStr = 0, lPos=0, nCheck=0;
 	
-	if (pszStr == NULL) return 0;
+	if (pszStr == NULL || lPosition == 0) return 0;
 
 START:	
 	for ( ; ; )

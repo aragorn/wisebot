@@ -2251,7 +2251,7 @@ static int	get_start_comment_dha(char *txt, int start_word_pos)
     int c = 0;
 
 	if (p == NULL) return 0;
-    if (start_word_pos < 0) return 0;
+    if (start_word_pos <= 0) return 0;
 
     while(1) {
         if(p == NULL) break;
@@ -2292,7 +2292,7 @@ static int	get_start_comment(char *pszStr, int lPosition)
 	
 	int iStr = 0, lPos=0, nCheck=0;
 	
-	if (pszStr == NULL) return 0;
+	if (pszStr == NULL || lPosition == 0) return 0;
 
 START:	
 	for ( ; ; )
