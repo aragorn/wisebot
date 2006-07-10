@@ -128,6 +128,7 @@ static char* clause_type_str[] = {
     "WHERE",
     "GROUP_BY",
     "ORDER_BY",
+    "COUNT_BY",
     "LIMIT",
 	"(",
 	")",
@@ -2529,6 +2530,7 @@ static int add_operation(operation_list_t* op_list, char* clause, int clause_typ
             strncpy(op_list->list[op_list->cnt].rule.where, clause, LONG_STRING_SIZE-1);
             break;
         case GROUP_BY:
+        case COUNT_BY:
             make_groupby_rule_list(clause, &(op_list->list[op_list->cnt].rule.groupby));
             break;
         case ORDER_BY:
@@ -2669,6 +2671,7 @@ static int init_request(request_t* req, char* query)
 					break;
 				case WHERE:
 				case GROUP_BY:
+				case COUNT_BY:
 				case ORDER_BY:
 				case LIMIT:
 					{
@@ -3608,6 +3611,55 @@ static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
     return SUCCESS;
 }
 
+static int operation_countby(groupby_rule_list_t* groupby_rules,
+                                     orderby_rule_list_t* orderby_rules,
+                                     groupby_result_list_t* result,
+									 request_t* req,
+									 enum doc_type doc_type)
+{
+    int i = 0;
+    int rv = 0;
+
+    orderby_rule_list_t join_orderby_rules;
+
+    join_orderby_rules.cnt = 0;
+
+	// DID 기준으로 정렬할때는 가상문서 키로 정렬이 되어 있어야 한다.
+	for(i = 0; i < req->virtual_rule_cnt; i++) {
+		key_rule_t* virtual_key = &req->virtual_rule[i];
+
+		if(doc_type == DOCUMENT && virtual_key->type != DID) {
+			join_orderby_rules.list[join_orderby_rules.cnt].rule = *virtual_key;
+			join_orderby_rules.list[join_orderby_rules.cnt].type = ASC;
+			join_orderby_rules.cnt++;
+		}
+	}
+
+	/* groupby, orerby의 조건을 하나로 합친다. 순서중요 */
+	for(i = 0; groupby_rules != NULL && i < groupby_rules->cnt; i++) {
+        join_orderby_rules.list[join_orderby_rules.cnt++] = groupby_rules->list[i].sort;
+	}
+
+	for(i = 0; orderby_rules != NULL && i < orderby_rules->cnt; i++) {
+        join_orderby_rules.list[join_orderby_rules.cnt++] = orderby_rules->list[i];
+	}
+
+	if(groupby_rules != NULL) {
+		if(doc_type == DOCUMENT) {
+			rv = document_grouping(req, result);
+		} else {
+			rv = virtual_document_grouping(result);
+		}
+	}
+
+	if(rv != SUCCESS) {
+		error("can not grouping");
+		return FAIL;
+	}
+
+    return SUCCESS;
+}
+
 static int operation_limit(limit_t* rule, enum doc_type doc_type)
 {
     int i = 0;
@@ -3695,6 +3747,7 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 				                             doc_type_str[doc_type], *result_cnt);
 	    switch(op->type) {
 		   case GROUP_BY:
+		   case COUNT_BY:
 			   while(next_op->type == GROUP_BY) {
                    // groupby 조건을 join 한다.
                    memcpy(&op->rule.groupby.list[op->rule.groupby.cnt], 
@@ -3710,8 +3763,14 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 			   groupby_result->rules = op->rule.groupby;
 
 			   if(next_op->type == ORDER_BY) {
-				   rv = operation_groupby_orderby(&op->rule.groupby, 
-                                          &next_op->rule.orderby, groupby_result, req, doc_type);
+                   if(op->type == COUNT_BY) {
+					   rv = operation_groupby_orderby(&op->rule.groupby, 
+											  &next_op->rule.orderby, groupby_result, req, doc_type);
+                   } else {
+					   rv = operation_countby(&op->rule.groupby, 
+											  &next_op->rule.orderby, groupby_result, req, doc_type);
+                   }
+
 				   if(rv != SUCCESS) {
                        MSG_RECORD(&req->msg, error,
                              "can not operate operation_groupby_orderby");
@@ -3719,8 +3778,13 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 				   }
 				   j++;
 			   } else {
-				   rv = operation_groupby_orderby(&op->rule.groupby, NULL, 
-                                 groupby_result, req, doc_type);
+                   if(op->type == COUNT_BY) {
+					   rv = operation_groupby_orderby(&op->rule.groupby, NULL, 
+									 groupby_result, req, doc_type);
+                   } else {
+					   rv = operation_countby(&op->rule.groupby, NULL, 
+									 groupby_result, req, doc_type);
+                   }
 				   if(rv != SUCCESS) {
                        MSG_RECORD(&req->msg, error, 
                              "can not operate operation_groupby_orderby");
