@@ -186,6 +186,7 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 	int i = 0;
     int rv = 0;
 	int node_idx = 0;
+    int total_search_cnt = 0;
 	char path[MAX_QUERY_STRING_SIZE];
 	char query[MAX_QUERY_STRING_SIZE];
     http_client_t* clients[MAX_SEARCH_NODE];
@@ -412,7 +413,8 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		}
 
         res->vdl->cnt += real_recv_cnt;
-        res->search_result += total_cnt;
+        total_search_cnt += total_cnt;
+        //res->search_result += total_cnt;  // agent에서는 search_result가 qp연산시 바뀐다. qp연산후에 복구.
 	}
 
     // LIMIT operation 복귀
@@ -424,6 +426,8 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		s->msg = req->msg;
         return FAIL;
     }
+
+    res->search_result = total_search_cnt;
 	
 	return SUCCESS;
 
