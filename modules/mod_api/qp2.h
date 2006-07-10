@@ -64,7 +64,7 @@ enum key_type { DOCATTR, DID, RELEVANCY, };
 enum sortarraytype { INDEX_LIST, AGENT_INFO, };
 enum order_type { DESC=-1, ASC=1, };
 enum clause_type { UNKNOWN = -1, SELECT, SEARCH, VIRTUAL_ID,
-    WHERE, GROUP_BY, ORDER_BY, LIMIT, 
+    WHERE, GROUP_BY, ORDER_BY, COUNT_BY, LIMIT, 
 	START_DID_RULE, END_DID_RULE, COMMENT, OUTPUT_STYLE, MAX_CLAUSE_TYPE};
 
 struct virtual_document_t {
