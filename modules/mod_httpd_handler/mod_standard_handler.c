@@ -16,6 +16,7 @@ int sbhandler_common_get_table(char *name_space, void **tab);
 //implemented in document_handler.c
 int sbhandler_document_get_table(char *name_space, void **tab);
 
+static int initialized = 0;
 static int did_set = -1;
 did_db_t* did_db = NULL;
 static int cdm_set = -1;
@@ -26,6 +27,9 @@ word_db_t* word_db = NULL;
 static int init_db()
 {
     int rv = 0;
+
+	if ( initialized ) return SUCCESS;
+	else initialized = 1;
 	
 	// DID_DB open
 	rv = sb_run_open_did_db( &did_db, did_set ); 
