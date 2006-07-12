@@ -3747,8 +3747,7 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 				                             doc_type_str[doc_type], *result_cnt);
 	    switch(op->type) {
 		   case GROUP_BY:
-		   case COUNT_BY:
-			   while(next_op->type == GROUP_BY) {
+			   while(next_op->type == GROUP_BY || next_op->type == COUNT_BY) {
                    // groupby 조건을 join 한다.
                    memcpy(&op->rule.groupby.list[op->rule.groupby.cnt], 
                        &next_op->rule.groupby.list, 
@@ -3763,14 +3762,8 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 			   groupby_result->rules = op->rule.groupby;
 
 			   if(next_op->type == ORDER_BY) {
-                   if(op->type == COUNT_BY) {
-					   rv = operation_groupby_orderby(&op->rule.groupby, 
-											  &next_op->rule.orderby, groupby_result, req, doc_type);
-                   } else {
-					   rv = operation_countby(&op->rule.groupby, 
-											  &next_op->rule.orderby, groupby_result, req, doc_type);
-                   }
-
+				   rv = operation_groupby_orderby(&op->rule.groupby, 
+									  &next_op->rule.orderby, groupby_result, req, doc_type);
 				   if(rv != SUCCESS) {
                        MSG_RECORD(&req->msg, error,
                              "can not operate operation_groupby_orderby");
@@ -3778,18 +3771,38 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 				   }
 				   j++;
 			   } else {
-                   if(op->type == COUNT_BY) {
-					   rv = operation_groupby_orderby(&op->rule.groupby, NULL, 
-									 groupby_result, req, doc_type);
-                   } else {
-					   rv = operation_countby(&op->rule.groupby, NULL, 
-									 groupby_result, req, doc_type);
-                   }
+				   rv = operation_groupby_orderby(&op->rule.groupby, NULL, 
+								 groupby_result, req, doc_type);
 				   if(rv != SUCCESS) {
                        MSG_RECORD(&req->msg, error, 
                              "can not operate operation_groupby_orderby");
 					   return FAIL;
 				   }
+			   }
+			   i = j-1;
+
+			   break;
+		   case COUNT_BY:
+			   while(next_op->type == COUNT_BY) {
+                   // groupby 조건을 join 한다.
+                   memcpy(&op->rule.groupby.list[op->rule.groupby.cnt], 
+                       &next_op->rule.groupby.list, 
+                       next_op->rule.groupby.cnt*sizeof(groupby_rule_t));
+                   op->rule.groupby.cnt += next_op->rule.groupby.cnt;
+
+				   j++;
+		           next_op = &op_list->list[j];
+			   }
+
+               // response에 결과 출력을 위한 group 정보 저장.
+			   groupby_result->rules = op->rule.groupby;
+
+			   rv = operation_countby(&op->rule.groupby, NULL, 
+							 groupby_result, req, doc_type);
+			   if(rv != SUCCESS) {
+				   MSG_RECORD(&req->msg, error, 
+						 "can not operate operation_groupby_orderby");
+				   return FAIL;
 			   }
 			   i = j-1;
 
