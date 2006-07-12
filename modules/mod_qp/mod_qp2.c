@@ -2020,7 +2020,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	memfile *buffer = memfile_new();
 
 	char *field_value = 0x00; 
-	char _field_value[LONG_LONG_STRING_SIZE];
+	char _field_value[1024*1024];
 	int rv = 0;
 	uint32_t docid = doc_hits->id;
 	enum output_style output_style = req->output_style;
@@ -2086,7 +2086,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 		}
 		else { // cdm2 api
 			field_value = _field_value;
-			rv = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, max_comment_bytes);
+			rv = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, sizeof(_field_value));
 			if ( rv < 0 && rv != CDM2_NOT_ENOUGH_BUFFER ) {
 				error("cannot get field[%s] from doc[%"PRIu32"]", field_info[k].name, docid);
 				continue;
