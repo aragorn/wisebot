@@ -243,6 +243,7 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 			client = search_nodes[i].client;
 		}
 
+        client->skip = 0;
 		client->http->request_http_ver = 1001;
 		client->http->method = "GET";
 		client->http->host = search_nodes[i].ip;
