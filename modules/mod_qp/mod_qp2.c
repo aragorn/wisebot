@@ -3227,7 +3227,7 @@ static int document_where()
 			warn("callback function return [%d]", rv);
 			return TRUE;
 	    } else if ( rv ) {
-			memcpy(&(g_result_list->doc_hits[save_pos]), &(g_result_list->doc_hits[i]), sizeof(doc_hit_t));
+			g_result_list->doc_hits[save_pos] = g_result_list->doc_hits[i];
 			save_pos++;
 		}
 	}
@@ -3250,9 +3250,7 @@ static int virtual_document_where()
 			warn("callback function return [%d]", rv);
 			return TRUE;
 	    } else if ( rv ) {
-			memcpy(&(g_vdl->data[save_pos]), 
-					&g_vdl->data[i], 
-				    sizeof(virtual_document_t));
+			g_vdl->data[save_pos] = g_vdl->data[i];
 			save_pos++;
 		}
 	}
@@ -3405,8 +3403,7 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
 
 		// 조건을 만족하면 저장한다.
 		if(is_remove == 0) {
-			memcpy(&(g_result_list->doc_hits[save_pos]), 
-				   &(g_result_list->doc_hits[i]), sizeof(doc_hit_t));
+			g_result_list->doc_hits[save_pos] = g_result_list->doc_hits[i];
 			save_pos++;
 		}
 
@@ -3489,8 +3486,7 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
 
 			// 조건을 만족하면 저장한다.
             if(is_remove == 0) {
-				memcpy(&(g_result_list->doc_hits[save_pos]), 
-					   &(g_result_list->doc_hits[i]), sizeof(doc_hit_t));
+				g_result_list->doc_hits[save_pos] = g_result_list->doc_hits[i];
 				save_pos++;
             }
 
@@ -3668,14 +3664,14 @@ static int operation_limit(limit_t* rule, enum doc_type doc_type)
 
 	if(doc_type == DOCUMENT) {
 		for (i = rule->start; i < g_result_list->ndochits && j < rule->cnt ; i++, j++) {
-			memcpy(&(g_result_list->doc_hits[save_pos]), &(g_result_list->doc_hits[i]), sizeof(doc_hit_t));
+			g_result_list->doc_hits[save_pos] = g_result_list->doc_hits[i];
 			save_pos++;
 		}
 
 		g_result_list->ndochits = save_pos;
 	} else {
 		for (i = rule->start; i < g_vdl->cnt && j < rule->cnt ; i++, j++) {
-			memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
+			g_vdl->data[save_pos] = g_vdl->data[i];
 			save_pos++;
 		}
 
