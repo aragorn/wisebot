@@ -3323,7 +3323,7 @@ static int virtual_document_grouping(groupby_result_list_t* result)
 		}
 
 		if(is_remove == 0) {
-			memcpy(&(g_vdl->data[save_pos]), &(g_vdl->data[i]), sizeof(virtual_document_t));
+			g_vdl->data[save_pos] = g_vdl->data[i];
 			save_pos++;
 		}
 	}
