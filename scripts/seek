@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Benchmark;
+use Benchmark qw(:hireswallclock);
 
 my $filename = shift;
 if ( not $filename ) {
@@ -26,7 +26,7 @@ my $mod = int($repeat/80)+1;
 local $| = 1;
 my $t0 = new Benchmark;
 open(FILE, $filename) or die "cannot open file, $filename: $!";
-foreach my $i ( 0..$repeat ) {
+foreach my $i ( 1..$repeat ) {
 	my $var = int(rand($to-$from));
 	my $str;
 	seek(FILE, $from + $var, 0);
