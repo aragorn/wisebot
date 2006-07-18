@@ -21,7 +21,6 @@ libcommon_core_la_LIBADD  = $(DYN_LIB) $(THREAD_LIB)
 
 
 libcommon_util_la_SOURCES = common_util.c \
-							qsort.c \
 							qsort2.c \
 							msort.c \
 							md5c.c \
