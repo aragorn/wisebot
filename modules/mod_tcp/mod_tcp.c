@@ -265,8 +265,8 @@ static int tcp_close(int sockfd)
 {
 	if ( close(sockfd) == 0 ) 
 		return SUCCESS;
-	else
-		info("close(sockfd[%d]) returned error: %s", sockfd, strerror(errno));
+	else if ( errno != EBADF )
+		error("close(sockfd[%d]) returned error: %s", sockfd, strerror(errno));
 
 	return FAIL;
 }
