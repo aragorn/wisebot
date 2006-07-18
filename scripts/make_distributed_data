@@ -6,42 +6,50 @@ use strict;
 my $orig_path   = shift || "";
 my $first_path  = shift || "";
 my $second_path = shift || "";
+my $third_path  = shift || "";
 
 unless ( $orig_path and $first_path and $second_path ) {
   print <<END;
-Usage: $0 <original data path> <first data path> <second data path>
+Usage: $0 <original data path> <first data path> <second data path> [<third data path>]
   It will automatically identify the type of original data, cdm or indexer
   by name of the directory.
 END
   exit 1;
 }
 
-foreach my $dir ( $orig_path, $first_path, $second_path ) {
+foreach my $dir ( $orig_path, $first_path, $second_path, $third_path ) {
+  next if !$dir;
   die "$dir is not a directory." unless -d $dir;
 }
+
+my $path_count = 2;
+$path_count = 3 if $third_path;
 
 my $filename_format;
 if ( $orig_path =~ m/cdm(\/?)$/
      or
      -f "$orig_path/keys.idx" ) {
-  distribute_file("cdm%06d.db", $orig_path, $first_path, $second_path);
+  distribute_file("cdm%06d.db", $orig_path, $first_path, $second_path, $third_path);
 } 
 elsif ( $orig_path =~ m/indexer(\/?)$/
      or
      -f "$orig_path/index" ) {
-  distribute_file("index.data.%02d", $orig_path, $first_path, $second_path);
-  distribute_file("sfs_%d", $orig_path, $first_path, $second_path);
+  #distribute_file("index.data.%02d", $orig_path, $first_path, $second_path, $third_path);
+  distribute_file("sfs_%d", $orig_path, $first_path, $second_path, $third_path);
 } else {
   die "unknown type of data directory. cdm or indexer type is available.";
 }
 
 
 sub distribute_file {
-  my ($filename_format, $orig_path, $first_path, $second_path) = @_;
+  my ($filename_format, $orig_path, $first_path, $second_path, $third_path) = @_;
 
   foreach my $n ( 0..40 ) {
     my $filename  = sprintf($filename_format, $n);
-    my $dest_path = $first_path; $dest_path = $second_path if $n % 2 == 1;
+    my $dest_path = $first_path;
+    $dest_path = $second_path if $n % $path_count == 1;
+    $dest_path = $third_path  if $n % $path_count == 2;
+
     my $relative_path = relative_path($orig_path, $dest_path);
 
     if ( -e "$dest_path/$filename" ) {
