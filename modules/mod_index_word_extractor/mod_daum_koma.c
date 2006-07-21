@@ -11,7 +11,7 @@
 
 #define MY_EXTRACTOR_ID             (16)
 #define DIC_PATH                    "dat/daum_koma"
-#define CONF_PATH                    DIC_PATH"/CONFIG.HANL"
+//#define CONF_PATH                    DIC_PATH"/CONFIG.HANL"
 #define MAX_OUTPUT  4096
 
 typedef	struct {
@@ -22,7 +22,7 @@ typedef	struct {
 	void* dha;
 } dha_handle_t;
 
-static char dha_config_path[STRING_SIZE] = CONF_PATH;
+//static char dha_config_path[STRING_SIZE] = CONF_PATH;
 static index_word_extractor_t *extractor = NULL;
 
 static index_word_extractor_t* create_daum_dha_handler(int id)
@@ -46,7 +46,8 @@ static index_word_extractor_t* create_daum_dha_handler(int id)
 			return NULL;
 		}
 
-		handle->dha = dha_initialize(DIC_PATH, CONF_PATH);
+		//handle->dha = dha_initialize(DIC_PATH, CONF_PATH);
+		handle->dha = dha_initialize(DIC_PATH, NULL);
 		if (handle == NULL) {
 			crit("cannot allocate koma_handle_t object");
 			sb_free(extractor);
@@ -212,15 +213,16 @@ static void register_hooks(void)
     sb_hook_get_index_words(daum_dha_analyze, NULL, NULL, HOOK_MIDDLE); 
     sb_hook_delete_index_word_extractor(destroy_daum_dha_handler, NULL, NULL, HOOK_MIDDLE);
 }
-
+/*
 static void get_dha_config_file (configValue v)
 {
     strncpy(dha_config_path, v.argument[0], 512);
     dha_config_path[511] = '\0';
 }
+*/
 
 static config_t config[] = {
-    CONFIG_GET("DhaConfigFile",get_dha_config_file,1, ""),
+    //CONFIG_GET("DhaConfigFile",get_dha_config_file,1, ""),
     {NULL}
 };
 
