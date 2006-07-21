@@ -121,15 +121,8 @@ index_list_t* g_result_list;
 void* g_docattr_base_ptr = NULL;
 int g_docattr_record_size = 0;
 
-/* 
- *  * 모든 function의 parameter에 줄수 없어서 전역변수로 선언 
- *   * init_request에서 assign 된다.
- *   */
-request_t* g_request = 0x00;
-
 static char* clause_type_str[] = {
 	"SELECT",
-	"WEIGHT",
 	"SEARCH",
     "VIRTUAL_ID", 
     "WHERE",
@@ -163,7 +156,6 @@ static int make_limit_rule(char* clause, limit_t* rule);
 static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules);
 static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE]);
 
-static void set_weight(weight_list_t* wl, char* clause);
 static void set_output_style(request_t* req, char* clause);
 static void set_virtual_id(request_t* req, char* clause);
 
@@ -197,7 +189,6 @@ static int virtual_document_fill_comment(request_t* req, response_t* res);
 static int do_filter_operation(request_t* req, response_t* res, enum doc_type doc_type);
 static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, char* comment);
 
-static void print_weight(weight_list_t* wl);
 static void print_orderby(orderby_rule_t* rule);
 static void print_limit(limit_t* rule);
 static void print_groupby(groupby_rule_t* rule);
@@ -714,11 +705,9 @@ static index_list_t *read_index_list(index_list_t *list)
 
 	int ndochits=0;
 	char word[MAX_WORD_LEN];
-	int i=0, idx=0, cnt=0, nWordHit=0, tot_index_doccnt=0, j=0, w=0;
+	int i=0, idx=0, cnt=0, nWordHit=0, tot_index_doccnt=0, j=0;
 	enum index_list_type list_type = NORMAL;
-	uint32_t weight=0;
-
-    weight_list_t* wl = &g_request->weight_list;
+	uint32_t Title_hit=0;
 
 	if (list->is_complete_list == TRUE ||
 			list->list_type == FAKE_OP ||
@@ -759,7 +748,7 @@ static index_list_t *read_index_list(index_list_t *list)
 				cnt = list->doc_hits[i].nhits;
 				
 				nWordHit = 0;		
-				weight = 0;
+				Title_hit = 0;
 				
 				for(j=0; j < cnt; j++)
 				{
@@ -767,19 +756,22 @@ static index_list_t *read_index_list(index_list_t *list)
 					{
 						nWordHit ++;
 						
-                        for(w = 0; w < wl->cnt; w++) {
-							if ( wl->list[w].field_id ==  list->doc_hits[i].hits[j].std_hit.field  ) {
-								weight += wl->list[w].weight;
-                                debug("weight:%d(%s)\n", weight, wl->list[w].name);
-                            }
-                        }
-                        debug("weight:%d\n", weight);
+#ifdef _TITLE_HIT_						
+printf("doc(%ld):%s  %ld\n", list->doc_hits[i].id, sb_strbin(list->doc_hits[i].hits[j].std_hit.field,sizeof(uint32_t)), list->doc_hits[i].hits[j].std_hit.field );
+						
+						if ( Title_Field_No ==  list->doc_hits[i].hits[j].std_hit.field  ) //제목에서 나온경우
+							Title_hit = Title_hit + 100;
+printf("Title_hit:%d(%d)\n", Title_hit, field);		
+#endif					
 					}
+					
+					
+						
 				}	
 				
 				tot_index_doccnt = sb_run_last_indexed_did();
 
-				list->relevance[idx-1] = (((int)log10( (tot_index_doccnt*3) / (ndochits))+1 ) * nWordHit)+weight;
+				list->relevance[idx-1] = (((int)log10( (tot_index_doccnt*3) / (ndochits))+1 ) * nWordHit)+Title_hit;
 
 										
 			}
@@ -2463,59 +2455,6 @@ static void set_select_clause(select_list_t* sl, char* clause)
     }
 } 
 
-static void print_weight(weight_list_t* wl)
-{
-    int i = 0;
-
-    for(i = 0; i < wl->cnt; i++) {
-        debug("weight field[%s], value[%d], field_id[%d]", 
-               wl->list[i].name, wl->list[i].weight, wl->list[i].field_id);
-    } 
-}
-
-static void set_weight(weight_list_t* wl, char* clause)
-{
-    char* s = NULL;
-    char* e = NULL;
-    char* p = NULL;
-
-    s = sb_trim(clause);
-
-    while(1) {
-		e = strchr(s, ',');
-        if(e == NULL && strlen(s) == 0) break;
-
-		if(e == NULL) {
-			// 마지막 clause도 처리하기 위해.
-		} else {
-            *e = '\0';
-		}
-
-		p = strchr(s, ':');
-        if(p == NULL) {
-            continue;
-        } else {
-            int idx = 0;
-            *p = '\0';
-            strncpy(wl->list[wl->cnt].name, sb_trim(s), SHORT_STRING_SIZE); 
-            wl->list[wl->cnt].weight = atoi(p+1);
-
-            if( is_exist_return_field(wl->list[wl->cnt].name, &idx) != FALSE) {
-                wl->list[wl->cnt].field_id = field_info[idx].id;
-                wl->cnt++;
-            }
-        }
-
-		if(e == NULL) break;
-		if(wl->cnt >= MAX_WEIGHT) {
-			warn("over max weight field[%d]", MAX_WEIGHT);
-			break;
-		}
-
-        s = e+1;
-    }
-} 
-
 static void set_output_style(request_t* req, char* clause)
 {
     char* s = NULL;
@@ -2624,6 +2563,7 @@ static void print_operations(operation_list_t* op_list)
 				debug("where[%s]", op->clause);
 				break;
 			case GROUP_BY:
+			case COUNT_BY:
 			   {
 				   debug("group rule count[%d]", op->rule.groupby.cnt);
 				   for(i = 0; i < op->rule.groupby.cnt; i++) {
@@ -2658,7 +2598,6 @@ static void print_request(request_t* req)
     debug("req->search[%s]", req->search);
 
 	print_select(&req->select_list);
-	print_weight(&req->weight_list);
 	debug("======= did operation count[%d]========", req->op_list_did.cnt);
 	print_operations(&req->op_list_did);
 	debug("======= vid operation count[%d]========", req->op_list_vid.cnt);
@@ -2685,7 +2624,6 @@ static int init_request(request_t* req, char* query)
         return FAIL;
 	}
 
-    g_request = req;
 	g_vdl->cnt = 0;
 
     s = sb_trim(query);
@@ -2732,9 +2670,6 @@ static int init_request(request_t* req, char* query)
 				case VIRTUAL_ID:
 					set_virtual_id(req, s+len);
 					break;
-                case WEIGHT:
-                    set_weight(&req->weight_list, s+len);
-                    break;
 				case WHERE:
 				case GROUP_BY:
 				case COUNT_BY:
@@ -3075,18 +3010,6 @@ static int make_groupby_rule(char* clause, groupby_rule_t* rule)
         if(!field) {
             field = 1;
             strncpy(rule->sort.rule.name, token, SHORT_STRING_SIZE);
-
-			if(strncasecmp(token, 
-						   key_type_str[RELEVANCY], 
-						   strlen(key_type_str[RELEVANCY])) == 0) {
-				rule->sort.rule.type = RELEVANCY;
-			} else if(strncasecmp(token, 
-						   key_type_str[DID], 
-						   strlen(key_type_str[DID])) == 0) {
-				rule->sort.rule.type = DID;
-			} else {
-				rule->sort.rule.type = DOCATTR;
-			}
         } else {
 			if(strncasecmp(token, "INT", 3) == 0) {
                 rule->is_enum = 0;
