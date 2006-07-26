@@ -36,14 +36,14 @@ check_PROGRAMS = teststree testparser testsimpleparser
 
 testparser_SOURCES = testparser.c parser.c dh.c stack.c checksum.c
 if SOLARIS
-testparser_LDADD = $(libdir)/libexpat.la \
-                   $(libdir)/libiconv.la \
+testparser_LDADD = $(LIBEXPAT_LA) \
+                   $(LIBICONV_LA) \
                    $(libdir)/libsoftbot.la
 else
 if CYGWIN
 testparser_LDADD = $(libdir)/libsoftbot.la
 else
-testparser_LDADD = $(libdir)/libexpat.la \
+testparser_LDADD = $(LIBEXPAT_LA) \
                    $(libdir)/libsoftbot.la
 endif
 endif
