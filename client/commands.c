@@ -1008,6 +1008,8 @@ int com_index_word_extractor (char *arg)
 	warn("id:%d, text:%s \n", id, text);
 
 	extractor = sb_run_new_index_word_extractor(id);
+	if ( extractor == (void*) MINUS_DECLINE ) return FAIL;
+
 	sb_run_index_word_extractor_set_text(extractor, text);
 	while ( (n=sb_run_get_index_words(extractor, indexwords, 100)) > 0) {
 		debug("n:%d", n);
