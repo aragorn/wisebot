@@ -69,6 +69,8 @@ static int g_docattr_cnt;
 /////////////////////////////////////////////////////////////////////
 // agent에서 처리할 수 있는 doc_hit 수
 static int max_doc_hit_count = 2000000;
+// elapsed_time을 output으로 출력할건지...
+static int print_elapsed_time = 1;
 
 // enum
 static char *constants[MAX_ENUM_NUM] = { NULL };
@@ -711,6 +713,13 @@ static int print_group(request_rec *r, groupby_result_list_t* groupby_result)
 static int search_handler(request_rec *r, softbot_handler_rec *s){
     int rv = 0;
     int i = 0, j = 0;
+	struct timeval tv;
+	uint32_t start_time = 0, end_time = 0;
+
+	if ( print_elapsed_time ) {
+		gettimeofday(&tv, NULL);
+		start_time = tv.tv_sec*1000 + tv.tv_usec/1000;
+	}
 
 	set_con_config(r->server);
     init_agent();
@@ -771,6 +780,11 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 	    timelog("agent_abstractsearch_finish");
 	}
 
+	if ( print_elapsed_time ) {
+		gettimeofday(&tv, NULL);
+		end_time = tv.tv_sec*1000 + tv.tv_usec/1000;
+	}
+
 	ap_set_content_type(r, "text/xml; charset=euc-kr");
 	ap_rprintf(r,
 			"<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n");
@@ -784,6 +798,11 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 			qp_request.query, 
 			qp_response.parsed_query,
             qp_response.search_result);
+
+	/* elapsed time */
+	if ( print_elapsed_time ) {
+		ap_rprintf(r, "<elapsed_time>%u</elapsed_time>\n", end_time - start_time);
+	}
 
     /* group result */
     ap_rprintf(r, "<groups>\n");
@@ -1126,6 +1145,11 @@ static void set_max_doc_hit_count(configValue v)
     max_doc_hit_count = atoi(v.argument[0]);
 }
 
+static void set_elapsed_time(configValue v)
+{
+	print_elapsed_time = strcasecmp(v.argument[0], "true") == 0;
+}
+
 static config_t config[] = {
     CONFIG_GET("AddSearchNode", set_search_node, 1,
             "add search machine : AddSearchNode [ip:port]"),
@@ -1136,6 +1160,7 @@ static config_t config[] = {
 	CONFIG_GET("KeepAliveMax", set_keep_alive_max, 1, "constant"),
 	CONFIG_GET("KeepAlive", set_keep_alive, 1, "constant"),
 	CONFIG_GET("MaxDochitCount", set_max_doc_hit_count, 1, "max dochit count"),
+	CONFIG_GET("PrintElapsedTime", set_elapsed_time, 1, "default is True"),
     {NULL}
 };
 

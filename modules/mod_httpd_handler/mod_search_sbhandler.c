@@ -53,6 +53,9 @@ static apr_int64_t keep_alive_timeout = 6;
 static int keep_alive_max = 100;
 static int keep_alive = 1;
 
+// elapsed_time을 output으로 출력할건지...
+static int print_elapsed_time = 1;
+
 //--------------------------------------------------------------//
 //  *   custom function 
 //--------------------------------------------------------------//
@@ -136,8 +139,15 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 {
     int rv = 0;
     int i = 0, j = 0, cmt_idx = 0;
-	msg_record_init(&s->msg);
+	struct timeval tv;
+	uint32_t start_time = 0, end_time = 0;
 
+	if ( print_elapsed_time ) {
+		gettimeofday(&tv, NULL);
+		start_time = tv.tv_sec*1000 + tv.tv_usec/1000;
+	}
+
+	msg_record_init(&s->msg);
 	set_con_config(r->server);
 
 	rv = sb_run_qp_init();
@@ -178,6 +188,11 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 		return FAIL;
 	}
 
+	if ( print_elapsed_time ) {
+		gettimeofday(&tv, NULL);
+		end_time = tv.tv_sec*1000 + tv.tv_usec/1000;
+	}
+
 	timelog("send_result_start");
 	ap_set_content_type(r, "text/xml; charset=euc-kr");
 	ap_rprintf(r,
@@ -192,6 +207,11 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 			qp_request.query, 
 			qp_response.parsed_query,
             qp_response.search_result);
+
+	/* elapsed time */
+	if ( print_elapsed_time ) {
+		ap_rprintf(r, "<elapsed_time>%u</elapsed_time>\n", end_time - start_time);
+	}
 
     /* group result */
     ap_rprintf(r, "<groups>\n");
@@ -535,6 +555,11 @@ static int get_table(char *name_space, void **tab)
 	return SUCCESS;
 }
 
+static void set_elapsed_time(configValue v)
+{
+	print_elapsed_time = strcasecmp(v.argument[0], "true") == 0;
+}
+
 static config_t config[] = {
     CONFIG_GET("NodeId", set_node_id, 1, "set node id : NodeId [no]"),
     CONFIG_GET("Enum", set_enum, 2, "constant"),
@@ -542,6 +567,7 @@ static config_t config[] = {
 	CONFIG_GET("KeepAliveTimeOut", set_keep_alive_timeout, 1, "constant"),
 	CONFIG_GET("KeepAliveMax", set_keep_alive_max, 1, "constant"),
 	CONFIG_GET("KeepAlive", set_keep_alive, 1, "constant"),
+	CONFIG_GET("PrintElapsedTime", set_elapsed_time, 1, "default is True"),
     {NULL}
 };
 
