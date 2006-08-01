@@ -1,10 +1,9 @@
-    RebuildDocAttrField     doctype
     RebuildDocAttrField     date
     RebuildDocAttrField     time
-    RebuildDocAttrField     cate1
-    RebuildDocAttrField     cate2
-    RebuildDocAttrField     cate3
-    RebuildDocAttrField     cate4
-    RebuildDocAttrField     lastsellingcnt
+    RebuildDocAttrField     cate_id
+    RebuildDocAttrField     cate_type
+    RebuildDocAttrField     sale_qty
     RebuildDocAttrField     page
-    RebuildDocAttrField     docid
+    RebuildDocAttrField     bookid_int
+    RebuildDocAttrField     review_type
+    RebuildDocAttrField     preview_yn

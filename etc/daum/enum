@@ -1,5 +1,15 @@
+#Y/N
+Enum Y 1
+Enum N 2
+
 #DOCTYPE
-Enum META          1
-Enum CONTENT       2
-Enum UCC           3
+Enum DGT           3
+Enum ENG           4
+Enum JAP           5
+Enum KOR           6
+
+#review type
+Enum REVIEW        10
+Enum INTRO         11
+
 

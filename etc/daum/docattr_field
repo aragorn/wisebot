@@ -1,10 +1,9 @@
-DocAttrField doctype             Enum
 DocAttrField date                Integer
 DocAttrField time                Integer
-DocAttrField cate1               Integer
-DocAttrField cate2               Integer
-DocAttrField cate3               Integer
-DocAttrField cate4               Integer
-DocAttrField lastsellingcnt      Integer 
+DocAttrField cate_id             Integer
+DocAttrField cate_type           Enum
+DocAttrField sale_qty            Integer 
 DocAttrField page                Integer 
-DocAttrField docid               Integer 
+DocAttrField bookid_int          Integer 
+DocAttrField review_type         Enum 
+DocAttrField preview_yn          Enum
