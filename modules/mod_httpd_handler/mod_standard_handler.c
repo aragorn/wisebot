@@ -17,11 +17,11 @@ int sbhandler_common_get_table(char *name_space, void **tab);
 int sbhandler_document_get_table(char *name_space, void **tab);
 
 static int initialized = 0;
-static int did_set = -1;
+static int did_set = 1;
 did_db_t* did_db = NULL;
-static int cdm_set = -1;
+static int cdm_set = 1;
 cdm_db_t* cdm_db = NULL;
-static int word_db_set = -1;
+static int word_db_set = 1;
 word_db_t* word_db = NULL;
 
 static int init_db()
@@ -34,20 +34,20 @@ static int init_db()
 	// DID_DB open
 	rv = sb_run_open_did_db( &did_db, did_set ); 
 	if ( rv != SUCCESS && rv != DECLINE ) { 
-		error("did db open failed");
+		error("did db open failed: did_set[%d]", did_set);
 		return FAIL;
     }
 
 	// CDM_DB open
 	rv = sb_run_cdm_open( &cdm_db, cdm_set );
     if ( rv != SUCCESS && rv != DECLINE ) {
-    	error( "cdm module open failed" );
+    	error( "cdm module open failed: cdm_set[%d]", cdm_set);
 		return FAIL;
     }
 
     rv = sb_run_open_word_db( &word_db, word_db_set );
     if ( rv != SUCCESS && rv != DECLINE ) {
-        error("word db open failed");
+        error("word db open failed: word_db_set[%d]", word_db_set);
         return FAIL;
     }
 
@@ -118,17 +118,17 @@ static int make_memfile_from_postdata(request_rec *r, memfile **output){
 }
 
 static int _sub_handler(request_rec *rec, softbot_handler_rec *s){
-    int nRet, id = 0;
+    int rv, id = 0;
     softbot_handler_key_t *tab = NULL;
-    
-    nRet =  sb_run_sbhandler_get_table(s->name_space, (void **) &tab);
+   
+	rv = init_db();
+	if ( rv != SUCCESS ) { return FAIL; }
 
-    if ( nRet != SUCCESS || !tab ){
-        error("sb_run_sbrh_get_request_table failed");
+    rv =  sb_run_sbhandler_get_table(s->name_space, (void **) &tab);
+    if ( rv != SUCCESS || !tab ) {
+        error("sb_run_sbhandler_get_table() failed");
         return FAIL;
     }
-
-    init_db();
 
     while ( tab[id].name ) {
         if ( strcmp(tab[id].name, s->request_name) == 0 ) {
