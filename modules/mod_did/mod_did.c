@@ -846,6 +846,7 @@ static int get_doc_id(did_db_t* did_db, char *pKey, uint32_t *docid)
 	int ret;
 	did_db_custom_t* db;
 
+	if ( did_db == NULL ) return FAIL;
 	if ( did_set == NULL || !did_set[did_db->set].set )
 		return DECLINE;
 	db = (did_db_custom_t*) did_db->db;
