@@ -1,0 +1,6 @@
+DocAttrField pub_ymd             Integer
+DocAttrField cate_id             Integer
+DocAttrField cate_type           Enum
+DocAttrField sale_qty            Integer 
+DocAttrField bookid_int          Integer 
+DocAttrField content_search_yn   Enum

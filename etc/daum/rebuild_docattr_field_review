@@ -1,0 +1,3 @@
+    RebuildDocAttrField     date
+    RebuildDocAttrField     time
+    RebuildDocAttrField     review_type

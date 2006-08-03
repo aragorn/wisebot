@@ -1,0 +1,9 @@
+#Y/N
+Enum Y 1
+Enum N 2
+
+#review type
+Enum REVIEW        10
+Enum INTRO         11
+
+

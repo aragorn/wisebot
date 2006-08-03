@@ -1,0 +1,5 @@
+DocAttrField pub_ymd             Integer
+DocAttrField cate_id             Integer
+DocAttrField cate_type           Enum
+DocAttrField page                Integer 
+DocAttrField bookid_int          Integer 

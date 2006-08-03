@@ -1,0 +1,20 @@
+DefaultSearchField 1 2 3 4 5
+DefaultPhraseField 1 2 3 4 5
+VirtualField ALL 1 2 # 현재 VirtualField의 형태소 분석기 id는 무조건 20번을 쓰도록 hardcoding되어 있음 
+ 
+#  fieldid  name             index  morp-id(indexer) morp-id(qpp) paragraph-search comment(comment갯수,글자수)
+Field  1    body               yes       16              16                no            SUM_OR_FIRST
+Field  2    book_nm            yes       16              16                no            RETURN
+Field  3    alt_title          yes       16              16                no            RETURN
+Field  4    author             yes       16              16                no            RETURN
+Field  5    pub_nm             yes       16              16                no            RETURN
+Field  6    barcode            yes        0               0                no            RETURN
+Field  7    pattern            yes        0               0                no            RETURN
+
+Field  8    pub_ymd            no         0               0                no            RETURN
+Field  9    cate_id            no         0               0                no            RETURN
+Field  10   cate_type          no         0               0                no            RETURN
+Field  11   page               no         0               0                no            RETURN
+Field  12   bookid_int         no         0               0                no            RETURN
+
+Field  13   oid                no         0               0                no            RETURN

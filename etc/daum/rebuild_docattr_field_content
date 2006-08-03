@@ -1,0 +1,5 @@
+    RebuildDocAttrField     pub_ymd
+    RebuildDocAttrField     cate_id
+    RebuildDocAttrField     cate_type
+    RebuildDocAttrField     page
+    RebuildDocAttrField     bookid_int

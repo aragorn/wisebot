@@ -1,0 +1,3 @@
+DocAttrField date                Integer
+DocAttrField time                Integer
+DocAttrField review_type         Enum 
