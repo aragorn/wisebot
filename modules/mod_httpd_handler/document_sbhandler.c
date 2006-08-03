@@ -99,13 +99,14 @@ static int document_insert(request_rec *r, softbot_handler_rec *s)
     }
     
     // 이미 존재하는 문서는 삭제.
-    document_delete(r, s);
+	rv = sb_run_get_docid(did_db, OID, &docid);
+	if ( rv == SUCCESS ) document_delete(r, s);
 
     decodencpy(OID, OID, strlen(OID));
 
     rv = sb_run_sbhandler_make_memfile(r, &request_body);
     if(rv != SUCCESS) {
-        MSG_RECORD(&s->msg, error, "can not post data");
+        MSG_RECORD(&s->msg, error, "cannot get POST data");
 		if(request_body != NULL) memfile_free(request_body);
         return FAIL;
     }
@@ -120,7 +121,7 @@ static int document_insert(request_rec *r, softbot_handler_rec *s)
     }
 
     if(memfile_getSize(request_body) >= DOCUMENT_SIZE) {
-        MSG_RECORD(&s->msg, error, "can not insert document, max size[%d], current size[%ld]",
+        MSG_RECORD(&s->msg, error, "cannot insert document, max size[%d], current size[%ld]",
                                   DOCUMENT_SIZE, memfile_getSize(request_body));
 		if(request_body != NULL) memfile_free(request_body);
         return FAIL;
@@ -128,23 +129,24 @@ static int document_insert(request_rec *r, softbot_handler_rec *s)
 
     rv = memfile_read(request_body, canned_doc, memfile_getSize(request_body));
     if(rv != memfile_getSize(request_body)) {
-        MSG_RECORD(&s->msg, error, "can not read memfile");
+        MSG_RECORD(&s->msg, error, "cannot read memfile");
 		if(request_body != NULL) memfile_free(request_body);
         return FAIL;
     }
     canned_doc[memfile_getSize(request_body)] = '\0';
+	debug("memfile_getSize(request_body) = [%ld]", memfile_getSize(request_body));
 
     decodencpy(canned_doc, canned_doc, strlen(canned_doc));
 
     document = strchr(canned_doc, '=');
     if(document == NULL || document - canned_doc > 20) {
-        MSG_RECORD(&s->msg, error, "can not find body");
+        MSG_RECORD(&s->msg, error, "cannot find body");
 		if(request_body != NULL) memfile_free(request_body);
         return FAIL;
     }
 
     document++;
-info("xml doc[%s]", document);
+	debug("xml doc[%s]", document);
 
 	rv = sb_run_cdm_put_xmldoc(cdm_db, did_db, OID,
 			document, strlen(document), &docid, &olddocid);
