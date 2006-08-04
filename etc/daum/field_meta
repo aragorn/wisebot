@@ -33,5 +33,7 @@ Field  25   review_avg         no         0               0                no   
 Field  26   review_cnt         no         0               0                no            RETURN
 Field  27   mreview_cnt        no         0               0                no            RETURN
 Field  28   abstract_des       no         0               0                no            RETURN
+Field  29   status             no         0               0                no            RETURN
+Field  30   status_des         no         0               0                no            RETURN
 
-Field  29   oid                no         0               0                no            RETURN
+Field  31   oid                no         0               0                no            RETURN
