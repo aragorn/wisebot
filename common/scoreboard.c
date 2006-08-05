@@ -87,7 +87,7 @@ static void alloc_shm_for_scoreboard(int size)
 
 	/* memset(NULL) for newly created shm will be done by alloc_shm().
 	 * you should not memset(NULL) if the shm is attached by another process. */
-/*	memset(g_scoreboard_shm.addr, 0x00, size);*/
+	//memset(g_scoreboard_shm.addr, 0x00, size);
 }
 
 scoreboard_t* init_one_scoreboard(module *mod)
@@ -135,9 +135,9 @@ void init_all_scoreboards()
 	}
 
 	if (mem_size == 0) {
-		alert("shared memory for scoreboard is 0");
-		alert("you really don't need scoreboard?");
-		return ;
+		alert("shared memory size of scoreboard is 0. "
+			   "please check if you really don't need a scoreboard.");
+		return;
 	}
 
 	alloc_shm_for_scoreboard(mem_size);
