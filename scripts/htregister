@@ -1,0 +1,178 @@
+#!/usr/bin/perl -w
+#$Id$ 
+
+use strict;
+use Benchmark;
+use LWP::UserAgent;
+
+local $| = 1;
+my $host = shift;
+my $port = shift;
+my $file = shift;
+my $confirm = shift || 0;
+my $stop = 0;
+my $max_size = 10_000_000;
+
+unless ($host and $port and $file) {
+	print <<END;
+Usage: $0 <host> <port> <file> [<confirm>]
+    host  - hostname of search server
+    port  - port number that softbot use
+    file  - text data file or cdm data file to register
+    confirm - set 1 if you want to confirm every document by key input
+END
+	exit;
+}
+
+$SIG{INT} = sub { $stop++; };
+
+my $UA = LWP::UserAgent->new;
+$UA->agent("WiseBot Register/0.1");
+
+process_data_file($host, $port, $file, $confirm);
+exit;
+
+sub process_data_file {
+	my $host = shift;
+	my $port = shift;
+	my $file = shift;
+	my $confirm = shift;
+
+	open(FILE, $file) or die "cannot open file: $!";
+
+	my $state = 0;
+	my ($dit, $body, $count) = ("", "", 0);
+	while (<FILE>) {
+		last if $stop;
+
+		if ($state == 0) {
+			/TextForTest/ and do {
+				print "Regular Data File\n";
+				next;
+			};
+			/^-{78,82}$/ and do {
+				$state = 1;
+				next;
+			};
+			/OID=/ and do {
+				$dit = $_;
+				chomp $dit;
+				$body = "";
+				$state = 2;
+				print "Irregular Data File! Anyway I will handle this.\n";
+				next;
+			};
+		}
+		if ($state == 1) {
+			# 구분선이 연속으로 오는 경우도 그냥 처리
+			/^-{78,82}$/ and do {
+				$state = 1;
+				next;
+			};
+
+			$dit = $_;
+			chomp $dit;
+			$body = "";
+			$state = 2;
+		}
+
+		if ($state == 2) {
+			$state = 3; # empty line
+			next;
+		}
+
+		if ($state == 3) {
+			/^-{78,82}$/ and $body =~ /<\/Document>/ and do {
+				$state = 1;
+				print "." if (($count % 50) == 0);
+				if ($confirm > 1 and $count < $confirm) {
+					$count++;
+					next;
+				}
+				register($dit, $body, $host, $port, $count);
+				$count++;
+				next;
+			};
+			$body .= $_;
+		}
+	}
+	close(FILE);
+	print "\nregistered $count docs.\n";
+}
+
+sub register {
+	my $dit = shift;
+	my $body = shift;
+	my $host = shift;
+	my $port = shift;
+	my $count = shift;
+
+	my %dit;
+	foreach my $pair ( split(/\^/, $dit) ) {
+		my ($key, $data) = split(/=/, $pair);
+		next unless defined $key and $key;
+		$key = uc($key);
+
+		$data =~ s/^\s+|\s+$//g;
+		$dit{$key} = $data;
+	}
+
+	printf ("![%dth,size%d]", $count, length($body)) if (length($body) > $max_size);
+
+	my $body_start = substr($body, 0, 60);
+	my $body_end = substr($body, -100, 100);
+	$body_end =~ s/.*(\]\]><\/B_body>)/$1/;
+
+	if ( $confirm eq 1) {
+		print <<END;
+--------------------------------------------------------------------------------
+host, port = $host, $port
+dit = [$dit]
+body = [$body_start]
+       ~
+       [$body_end]
+Press Enter To Register This Document.
+END
+		my $tmp = <STDIN>;
+	}
+
+	foreach my $try (1..5) {
+		last if $stop;
+
+		my $res;
+		if ($dit{PT} eq "DELETE")
+		{
+			my $url = "http://".$host.":"."$port"."/document/delete?oid=".$dit{OID};
+			my $req = HTTP::Request->new(GET => $url);
+			$res = $UA->request($req);
+
+		} else {
+			my $url = "http://".$host.":"."$port"."/document/insert?oid=".$dit{OID};
+			my $req = HTTP::Request->new(POST => $url);
+			#$req->content_type('application/x-www-form-urlencoded');
+			$req->content_type('application/x-www-form-urlencoded');
+			$req->content("body=$body");
+			$res = $UA->request($req);
+		}
+
+		last if $stop;
+
+		if ($res->is_success) {
+			return 1;
+		} else {
+			printf "regist_doc error of $try-th try! [%s]\n", $res->status_line;
+			print <<END;
+--------------------------------------------------------------------------------
+host, port = $host, $port
+body = [$body_start]
+       ~
+       [$body_end]
+END
+			sleep 1;
+		}
+	}
+	printf "register_doc failed!\n";
+	return 0;
+
+}
+
