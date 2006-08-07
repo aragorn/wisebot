@@ -22,6 +22,8 @@ typedef struct operation_list_t operation_list_t;
 typedef struct select_list_t select_list_t;
 typedef struct user_data_t user_data_t;
 typedef struct comment_t comment_t;
+typedef struct weight_t weight_t;
+typedef struct weight_list_t weight_list_t;
 
 #include "docattr2.h"
 #include "indexer.h"
@@ -63,9 +65,21 @@ enum doc_type { DOCUMENT, VIRTUAL_DOCUMENT, };
 enum key_type { DOCATTR, DID, RELEVANCY, };
 enum sortarraytype { INDEX_LIST, AGENT_INFO, };
 enum order_type { DESC=-1, ASC=1, };
-enum clause_type { UNKNOWN = -1, SELECT, SEARCH, VIRTUAL_ID,
+enum clause_type { UNKNOWN = -1, SELECT, WEIGHT, SEARCH, VIRTUAL_ID,
     WHERE, GROUP_BY, ORDER_BY, COUNT_BY, LIMIT, 
 	START_DID_RULE, END_DID_RULE, COMMENT, OUTPUT_STYLE, MAX_CLAUSE_TYPE};
+
+struct weight_t {
+	int weight;
+	int field_id;
+	char name[SHORT_STRING_SIZE];
+};
+
+#define MAX_WEIGHT (16)
+struct weight_list_t {
+	int cnt;
+	weight_t list[MAX_WEIGHT];
+};
 
 struct virtual_document_t {
     uint32_t id;
@@ -166,6 +180,7 @@ struct request_t {
 	char query[MAX_QUERY_STRING_SIZE];
     char search[MAX_QUERY_STRING_SIZE];
     select_list_t select_list;
+    weight_list_t weight_list;
 	operation_list_t op_list_vid;
 	operation_list_t op_list_did;
 	key_rule_t virtual_rule[MAX_VID_RULE];
