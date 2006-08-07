@@ -2,6 +2,12 @@
 Enum Y 1
 Enum N 2
 
+#DOCTYPE
+Enum DGT           3
+Enum ENG           4
+Enum JAP           5
+Enum KOR           6
+
 #review type
 Enum REVIEW        10
 Enum INTRO         11
