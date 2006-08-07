@@ -1,0 +1,6 @@
+#ifndef _AC_DEFINE_H
+#define _AC_DEFINE_H 1
+
+#define ROOTDIR     "@TOP_BUILDDIR@"
+
+#endif
