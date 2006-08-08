@@ -2800,56 +2800,63 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 
 	memset(query, 0x00, MAX_QUERY_STRING_SIZE);
 
-	// SELECT
-	rv = memfile_appendF(buffer, "%s ", clause_type_str[SELECT]);
-	if(rv < 0) {
-        MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		memfile_free(buffer);
-		return FAIL;
-	}
+	if(sl->cnt > 0) {
+		// SELECT
+		rv = memfile_appendF(buffer, "%s ", clause_type_str[SELECT]);
+		if(rv < 0) {
+			MSG_RECORD(&req->msg, error, "can not appendF memfile");
+			memfile_free(buffer);
+			return FAIL;
+		}
 
 
-	for(i = 0; i < sl->cnt; i++) {
-		if(i == (sl->cnt-1)) { // 마지막
-	        rv = memfile_appendF(buffer, "%s\n", sl->field_name[i]);
-			if(rv < 0) {
-                MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		        memfile_free(buffer);
-				return FAIL;
-			}
-		} else {
-	        rv = memfile_appendF(buffer, "%s,", sl->field_name[i]);
-			if(rv < 0) {
-                MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		        memfile_free(buffer);
-				return FAIL;
+		for(i = 0; i < sl->cnt; i++) {
+			if(i == (sl->cnt-1)) { // 마지막
+				rv = memfile_appendF(buffer, "%s\n", sl->field_name[i]);
+				if(rv < 0) {
+					MSG_RECORD(&req->msg, error, "can not appendF memfile");
+					memfile_free(buffer);
+					return FAIL;
+				}
+			} else {
+				rv = memfile_appendF(buffer, "%s,", sl->field_name[i]);
+				if(rv < 0) {
+					MSG_RECORD(&req->msg, error, "can not appendF memfile");
+					memfile_free(buffer);
+					return FAIL;
+				}
 			}
 		}
+    } else {
+		MSG_RECORD(&req->msg, error, "can not find select clause");
+		memfile_free(buffer);
+        return FAIL;
     }
 
-	// WEIGHT
-	rv = memfile_appendF(buffer, "%s ", clause_type_str[WEIGHT]);
-	if(rv < 0) {
-        MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		memfile_free(buffer);
-		return FAIL;
-	}
+	if(wl->cnt > 0) {
+		// WEIGHT
+		rv = memfile_appendF(buffer, "%s ", clause_type_str[WEIGHT]);
+		if(rv < 0) {
+			MSG_RECORD(&req->msg, error, "can not appendF memfile");
+			memfile_free(buffer);
+			return FAIL;
+		}
 
-
-	for(i = 0; i < wl->cnt; i++) {
-		if(i == (wl->cnt-1)) { // 마지막
-	        rv = memfile_appendF(buffer, "%s:%d\n", wl->list[i].name, wl->list[i].weight);
-			if(rv < 0) {
-                MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		        memfile_free(buffer);
-				return FAIL;
-			}
-		} else {
-	        rv = memfile_appendF(buffer, "%s:%d,", wl->list[i].name, wl->list[i].weight);
-			if(rv < 0) {
-                MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		        memfile_free(buffer);
-				return FAIL;
+		for(i = 0; i < wl->cnt; i++) {
+			if(i == (wl->cnt-1)) { // 마지막
+				rv = memfile_appendF(buffer, "%s:%d\n", wl->list[i].name, wl->list[i].weight);
+				if(rv < 0) {
+					MSG_RECORD(&req->msg, error, "can not appendF memfile");
+					memfile_free(buffer);
+					return FAIL;
+				}
+			} else {
+				rv = memfile_appendF(buffer, "%s:%d,", wl->list[i].name, wl->list[i].weight);
+				if(rv < 0) {
+					MSG_RECORD(&req->msg, error, "can not appendF memfile");
+					memfile_free(buffer);
+					return FAIL;
+				}
 			}
 		}
     }
