@@ -16,5 +16,6 @@ Field  9    cate_id            no         0               0                no   
 Field  10   cate_type          no         0               0                no            RETURN
 Field  11   page               no         0               0                no            RETURN
 Field  12   bookid_int         no         0               0                no            RETURN
+Field  13   cate_nm            no         0               0                no            RETURN
 
-Field  13   oid                no         0               0                no            RETURN
+Field  14   oid                no         0               0                no            RETURN
