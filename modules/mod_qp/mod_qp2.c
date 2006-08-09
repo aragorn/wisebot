@@ -763,7 +763,7 @@ static index_list_t *read_index_list(index_list_t *list)
 				
 				for(j=0; j < cnt; j++)
 				{
-					debug("%u %u", list->doc_hits[i].hits[j].std_hit.field, field);
+					//debug("%u %u", list->doc_hits[i].hits[j].std_hit.field, field);
 					if ( ( ((uint32_t)1) << list->doc_hits[i].hits[j].std_hit.field ) & field)
 					{
 						nWordHit ++;
@@ -771,7 +771,7 @@ static index_list_t *read_index_list(index_list_t *list)
                         for(w = 0; w < wl->cnt; w++) {
 							if ( wl->list[w].field_id ==  list->doc_hits[i].hits[j].std_hit.field  ) {
 								weight += wl->list[w].weight;
-                                debug("did[%u], weight:%d(%s)\n", list->doc_hits[i].id, weight, wl->list[w].name);
+                                //debug("did[%u], weight:%d(%s)\n", list->doc_hits[i].id, weight, wl->list[w].name);
                             }
                         }
 					}
@@ -2862,6 +2862,12 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
     }
 
 	// SEARCH
+    if(strlen(req->search) == 0) {
+		MSG_RECORD(&req->msg, error, "can not find search word");
+		memfile_free(buffer);
+        return FAIL;
+    }
+
 	rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[SEARCH], req->search);
 	if(rv < 0) {
         MSG_RECORD(&req->msg, error, "can not appendF memfile");
