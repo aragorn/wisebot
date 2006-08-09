@@ -196,13 +196,17 @@ static int append_xml_msg_record(request_rec *r, msg_record_t *msg){
 }  
 
 static void _make_fail_response(request_rec *r, softbot_handler_rec *s, int ret_code){
-    ap_set_content_type(r, "text/xml");
-    ap_rprintf(r,
-            "<?xml version=\"1.0\" encoding=\"euc-kr\" ?>"
-            "<xml>\n<retcode>%d</retcode>\n"
-            "<result>Response Failed</result>\n", ret_code);
-	append_xml_msg_record(r, &s->msg);
-    ap_rprintf(r, "</xml>");
+    if( equals_content_type(r, "x-softbotd/binary") == TRUE) {
+        return;
+    } else {
+		ap_set_content_type(r, "text/xml");
+		ap_rprintf(r,
+				"<?xml version=\"1.0\" encoding=\"euc-kr\" ?>"
+				"<xml>\n<retcode>%d</retcode>\n"
+				"<result>Response Failed</result>\n", ret_code);
+		append_xml_msg_record(r, &s->msg);
+		ap_rprintf(r, "</xml>");
+    }
 
     return;
 }
