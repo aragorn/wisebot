@@ -126,7 +126,7 @@ int equals_content_type(request_rec *r, const char* ct)
 {
     const char *req_type = apr_table_get(r->headers_in, "Content-Type");
 
-    if ( ct == NULL ) {
+    if ( ct == NULL || req_type == NULL) {
         return FAIL;
     }
 

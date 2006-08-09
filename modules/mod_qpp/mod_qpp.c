@@ -187,6 +187,8 @@ static void qpp_destroy_tree(struct qpp_tree_node* node)
 {
 	int i;
 
+    if(node == NULL) return;
+
 	for ( i = 0; i < node->child_count; i++ ) {
 		qpp_destroy_tree(node->child[i]);
 	}
