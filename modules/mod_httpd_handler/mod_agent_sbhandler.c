@@ -195,6 +195,12 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
     limit_t* limit = NULL;
     limit_t limit_buffer;
 
+    if(req->op_list_vid.cnt == 0) {
+		error("can not found limit operation, agent light search would be overflow data");
+		strcpy(query, req->query);
+		return FAIL;
+    }
+
     if(req->op_list_vid.cnt > 0) {
 		operation_t* op = &(req->op_list_vid.list[req->op_list_vid.cnt-1]);
 		if(op->type == LIMIT) {
@@ -211,8 +217,9 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 				return FAIL;
 			}
 		} else {
-			warn("can not found limit operation, agent light search would be overflow data");
+			error("can not found limit operation, agent light search would be overflow data");
 			strcpy(query, req->query);
+            return FAIL;
 		}
 	} else {
 		strcpy(query, req->query);
@@ -234,7 +241,8 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
                                          search_nodes[i].port);
 			if ( search_nodes[i].client == NULL ) {
 				MSG_RECORD(&s->msg, error, 
-						"sb_run_http_client_new failed, ip[%s], port[%s]", 
+						"sb_run_http_client_new failed, i[%d], ip[%s], port[%s]", 
+                        i,
 						search_nodes[i].ip,
 					    search_nodes[i].port);
 				continue;
@@ -297,6 +305,14 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 														 memfile_getSize(buf));
 
 		memfile_setOffset(buf, 0);
+
+        if(memfile_getSize(buf) == 0) {
+			MSG_RECORD(&s->msg, error, 
+					"node search error data size zero, ip[%s], port[%s]",
+			        search_nodes[node_idx].ip,
+			        search_nodes[node_idx].port);
+            continue;
+        }
 
         // 0. node id  - 0 ~ 16 값임.
         recv_data_size = sizeof(uint32_t);
@@ -468,7 +484,8 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
                                         search_nodes[i].port);
 			if ( search_nodes[i].client == NULL ) {
 				MSG_RECORD(&s->msg, error, 
-						"sb_run_http_client_new failed, ip[%s], port[%s]", 
+						"sb_run_http_client_new failed, i[%d], ip[%s], port[%s]", 
+                        i,
 						search_nodes[i].ip,
 					    search_nodes[i].port);
 				continue;
@@ -631,7 +648,8 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
             comment_t* cmt = &res->comments[cmt_idx];
 
             if(cmt_idx > COMMENT_LIST_SIZE) {
-				MSG_RECORD(&s->msg, error, "over max comment count[%d]", COMMENT_LIST_SIZE);
+				MSG_RECORD(&s->msg, error, "over max comment count[%d], query[%s]", 
+                                            COMMENT_LIST_SIZE, req->query);
 			    goto RECV_FAIL; // 이후 데이타 무시
             }
 
