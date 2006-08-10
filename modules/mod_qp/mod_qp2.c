@@ -2019,6 +2019,7 @@ static int is_exist_return_field(char* field_name, int* idx)
     return FALSE;        
 }
 
+#define MAX_FIELD_SIZE (1024*1024*1024)
 static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, char* comment) 
 {
 	int i = 0, k = -1;
@@ -2028,7 +2029,12 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	memfile *buffer = memfile_new();
 
 	char *field_value = 0x00; 
-	char _field_value[1024*1024];
+	static char* _field_value = NULL;
+
+    if(_field_value == NULL) {
+        _field_value = sb_malloc(MAX_FIELD_SIZE);
+    }
+
 	int rv = 0;
 	uint32_t docid = doc_hits->id;
 	enum output_style output_style = req->output_style;
@@ -2094,7 +2100,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 		}
 		else { // cdm2 api
 			field_value = _field_value;
-			rv = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, sizeof(_field_value));
+			rv = sb_run_cdmdoc_get_field(cdmdoc, field_info[k].name, field_value, MAX_FIELD_SIZE);
 			if ( rv < 0 && rv != CDM2_NOT_ENOUGH_BUFFER ) {
 				error("cannot get field[%s] from doc[%"PRIu32"]", field_info[k].name, docid);
 				continue;
@@ -2280,7 +2286,7 @@ static int	get_start_comment_dha(char *txt, int start_word_pos)
 		byte_pos++;
 
         p++;
-//info("word_pos[%d], byte_pos[%d]", word_pos, byte_pos);
+info("word_pos[%d], byte_pos[%d]", word_pos, byte_pos);
         if(word_pos == start_word_pos) break;
 		if(*p == '\0') return 0;
     } 
