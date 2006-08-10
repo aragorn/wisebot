@@ -838,7 +838,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
     for(i = 0; i < qp_response.vdl->cnt; i++) {
         virtual_document_t* vd = (virtual_document_t*)&qp_response.vdl->data[i];
 
-        ap_rprintf(r, "<vdoc vid=\"%d\" node_id=\"%d\" relevance=\"%d\">\n", 
+        ap_rprintf(r, "<vdoc vid=\"%d\" node_id=\"%0X\" relevance=\"%d\">\n", 
 				      vd->id, vd->node_id, vd->relevance);
         ap_rprintf(r, "<docs count=\"%d\">\n", vd->comment_cnt);
 

@@ -2286,7 +2286,7 @@ static int	get_start_comment_dha(char *txt, int start_word_pos)
 		byte_pos++;
 
         p++;
-info("word_pos[%d], byte_pos[%d]", word_pos, byte_pos);
+//info("word_pos[%d], byte_pos[%d]", word_pos, byte_pos);
         if(word_pos == start_word_pos) break;
 		if(*p == '\0') return 0;
     } 
