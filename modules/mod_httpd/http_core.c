@@ -173,6 +173,10 @@ static int process_http_connection(conn_rec * c)
 		//if (mExtendedStatus);
 		//increment_counts(c->slot, r); //FIXME
 
+        /* FIXME : always! connection close -blueend */
+		c->keepalive = 0;
+        debug("c->keepalive[%d]", c->keepalive);
+
 		if (!c->keepalive || c->aborted)
 			break;
 
