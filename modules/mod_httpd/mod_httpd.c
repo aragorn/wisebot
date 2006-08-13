@@ -300,7 +300,13 @@ static int thread_main (slot_t *slot)
 	sb_run_handler_finalize();
 #endif
 
-	slot->state = SLOT_FINISH;
+	if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) {
+		slot->state = SLOT_FINISH;
+	}
+	else {
+		slot->state = SLOT_RESTART;
+	}
+
 	debug("slot[%d] exits", slot->id);
 	return 0;
 }
