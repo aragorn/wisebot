@@ -100,17 +100,21 @@ void ap_flush_conn(conn_rec *c)
 #define SECONDS_TO_LINGER  2
 static int lingering_close_connection(conn_rec *c)
 {
+/* 아래 로직에 시간이 꽤 걸린다 --blueend */
+#if 0
     char dummybuf[512];
     apr_size_t nbytes = sizeof(dummybuf);
     apr_status_t rc;
     apr_int32_t timeout;
     apr_int32_t total_linger_time = 0;
+#endif
     apr_socket_t *csd = ap_get_module_config(c->conn_config, CORE_HTTPD_MODULE);
 
     if (!csd) {
         return SUCCESS;
     }
 
+#if 0
 	update_slot_state(c->slot, SLOT_CLOSING, NULL);
 
 #ifdef NO_LINGCLOSE
@@ -160,7 +164,7 @@ static int lingering_close_connection(conn_rec *c)
             break;
         }
     }
-
+#endif
     apr_socket_close(csd);
     return SUCCESS;
 }
