@@ -157,7 +157,7 @@ static int thread_main (slot_t *slot)
 	apr_pollfd_t *pollset;
 	apr_socket_t *csd = NULL;
 	apr_status_t rv;
-	int max_requests=0;
+	int max_requests=0, i = 0;
 	//FIXME : configuration must set this value 
 	apr_uint32_t ap_max_mem_free = 1024;
 
@@ -186,7 +186,7 @@ static int thread_main (slot_t *slot)
 	max_requests = (int)mMaxRequests * slot->id / scoreboard->size;
 	debug("slot[%d]: max_requests:%d", slot->id, max_requests);
 
-	while (1) {
+	for (i = 0; i < max_requests; i++) {
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 
 		slot->state = SLOT_WAIT;
@@ -198,6 +198,7 @@ static int thread_main (slot_t *slot)
 		}
 		debug("accept lock held successfully");
 #else
+		set_proc_desc(slot, "softbotd: %s(accept lock...)", __FILE__);
 		if ( acquire_lock(accept_lock) != SUCCESS ) {
 			error("slot[%d]: acquire_lock failed: %s", slot->id, strerror(errno));
 			continue;
@@ -282,6 +283,10 @@ static int thread_main (slot_t *slot)
 
 	    if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 		timelog("http_start");
+#ifndef THREAD_VER
+		set_proc_desc(slot, "softbotd: %s(processing) - [%d]",
+						__FILE__, i);
+#endif
 		process_socket(csd, slot, bucket_alloc, ptrans);
 		apr_pool_clear(ptrans);
 	}
@@ -291,6 +296,7 @@ static int thread_main (slot_t *slot)
 	apr_pool_destroy(tpool);
 
 #ifndef THREAD_VER
+	set_proc_desc(slot, "softbotd: %s(shutdown)", __FILE__);
 	sb_run_handler_finalize();
 #endif
 
