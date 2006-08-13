@@ -306,10 +306,10 @@ static int standard_handler(request_rec *r)
                         s.name_space, s.request_name, 
                         (s.remain_uri) ? s.remain_uri : "null" );
 
-        //XXX 
-        //Every request will be answered by 200.
-
-        return SUCCESS;
+        if(nRet != SUCCESS)
+            return HTTP_INTERNAL_SERVER_ERROR;
+        else
+            return SUCCESS;
 }
 
 static void register_hooks(void)
