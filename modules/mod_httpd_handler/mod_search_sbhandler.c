@@ -87,6 +87,7 @@ static char* return_constants_str(int value)
 
 static void set_con_config(server_rec* rec)
 {
+/*
     rec->timeout = timeout;
     rec->keep_alive_timeout = keep_alive_timeout;
     rec->keep_alive_max = keep_alive_max;
@@ -96,6 +97,7 @@ static void set_con_config(server_rec* rec)
 	info("server keep_alive_timeout[%lld]", keep_alive_timeout);
 	info("server keep_alive_max[%d]", keep_alive_max);
 	info("server keep_alive[%d]", keep_alive);
+*/
 }
 
 static int print_group(request_rec *r, groupby_result_list_t* groupby_result)
