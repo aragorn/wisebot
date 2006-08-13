@@ -169,6 +169,7 @@ debug("[%d] : cmt_did[%u], cmt_node_id[%0X]", i, com_list[i].did, com_list[i].no
 
 static void set_con_config(server_rec* rec)
 {
+/*
     rec->timeout = timeout;
     rec->keep_alive_timeout = keep_alive_timeout;
     rec->keep_alive_max = keep_alive_max;
@@ -178,6 +179,7 @@ static void set_con_config(server_rec* rec)
 	info("server keep_alive_timeout[%lld]", keep_alive_timeout);
 	info("server keep_alive_max[%d]", keep_alive_max);
 	info("server keep_alive[%d]", keep_alive);
+*/
 }
 
 //--------------------------------------------------------------//
@@ -259,6 +261,7 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		client->http->host = search_nodes[i].ip;
 		client->http->path = path;
 		client->http->req_content_type = "x-softbotd/binary";
+		client->timeout = timeout;
 		http_print(client->http);
 
 		if ( sb_run_http_client_makeRequest(client, NULL)	!= SUCCESS ) {
@@ -501,7 +504,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 		client->http->host = "softbot";
 		client->http->path = path;
 		client->http->req_content_type = "x-softbotd/binary";
-		client->timeout = r->server->keep_alive_timeout;
+		client->timeout = timeout;
 		http_print(client->http);
 	}
 
@@ -694,6 +697,8 @@ static int print_group(request_rec *r, groupby_result_list_t* groupby_result)
 	int i = 0;
 	int j = 0;
 
+    if(r == NULL || groupby_result == NULL) return FAIL;
+
     for(i = 0; i < groupby_result->rules.cnt; i++) {
         orderby_rule_t* sort_rule = &(groupby_result->rules.list[i].sort);
 		int is_enum = groupby_result->rules.list[i].is_enum;
@@ -844,14 +849,23 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 
         for(j = 0; j < vd->comment_cnt; j++) {
             comment_t* cmt = find_comment(qp_response.comments, vd->dochits[j].id, pop_node_id(vd->node_id));
-            ap_rprintf(r, "<doc doc_id=\"%d\">\n", cmt->did);
+            if(cmt == NULL) {
+                error("can not find comment, node_id[%0X], docid[%u]", vd->node_id, vd->dochits[j].id);
+				ap_rprintf(r, "<doc doc_id=\"0\">\n");
+				ap_rprintf(r, "<fields count=\"0\">\n");
+				ap_rprintf(r, "</fields>\n");
+				ap_rprintf(r, "</doc>\n");
+                continue;
+            } else {
+				ap_rprintf(r, "<doc doc_id=\"%d\">\n", cmt->did);
 
-			if(qp_request.output_style == STYLE_XML) {
-                ap_rprintf(r, "%s\n", cmt->s);
-			} else {
-                ap_rprintf(r, "<![CDATA[%s]]>\n", cmt->s);
-			}
-            ap_rprintf(r, "</doc>\n");
+				if(qp_request.output_style == STYLE_XML) {
+					ap_rprintf(r, "%s\n", cmt->s);
+				} else {
+					ap_rprintf(r, "<![CDATA[%s]]>\n", cmt->s);
+				}
+				ap_rprintf(r, "</doc>\n");
+            }
         }
 
         ap_rprintf(r, "</docs>\n");
