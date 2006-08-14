@@ -2164,11 +2164,12 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 							int summary_pos = 0;
 							memset(summary, 0x00, 210);
 
-#ifdef USE_DAUM_KOMA
-							summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
-#else
-							summary_pos = get_start_comment(field_value, doc_hits->hits[m].std_hit.position-4);
-#endif
+                            if(field_info[k].morpid == 16) {
+							    summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
+                            } else {
+							    summary_pos = get_start_comment(field_value, doc_hits->hits[m].std_hit.position-4);
+                            }
+
 //warn("field_value[%s], summary_pos[%d], position[%u]", field_value, summary_pos, doc_hits->hits[m].std_hit.position);
 							strncpy(summary, field_value + summary_pos, 201);
 							cut_string( summary, 200 );
@@ -4274,6 +4275,7 @@ static void get_commentfield(configValue v)
     // 필드정보 저장. 
     field_info[field_count].id = atoi(v.argument[0]);
     strncpy(field_info[field_count].name, v.argument[1], SHORT_STRING_SIZE);
+    field_info[field_count].morpid = atoi(v.argument[3]);
 
 	if (strncasecmp("RETURN",v.argument[6],SHORT_STRING_SIZE) == 0) {
         field_info[field_count].type = RETURN;

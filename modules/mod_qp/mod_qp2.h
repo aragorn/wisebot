@@ -14,6 +14,7 @@ enum field_type {
 // 필드명, 필드 속성
 typedef struct {
     char name[SHORT_STRING_SIZE];
+    int morpid;       // morp id
     int type;       // enum field_type
     int id;         // field id
 } field_info_t;
