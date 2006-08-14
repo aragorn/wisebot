@@ -410,7 +410,7 @@ info("xml doc[%s]", document);
         memcpy(buffer, field_value, field_length);
         buffer[field_length] = '\0';
 
-        info("starting ma [%s:%d] field_value:[%s]", field_name, field_id, buffer);
+        info("field_name[%s], field_id[%d], morph_id[%d], field_value:[%s]", field_name, field_id, ma_id, buffer);
 
         tmp_data = NULL;
         rv = sb_run_rmas_morphological_analyzer(field_id, buffer, &tmp_data,
