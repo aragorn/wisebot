@@ -1,6 +1,6 @@
-DefaultSearchField 1
-DefaultPhraseField 1
-VirtualField ALL 1 # 현재 VirtualField의 형태소 분석기 id는 무조건 20번을 쓰도록 hardcoding되어 있음 
+DefaultSearchField 1 3
+DefaultPhraseField 1 3
+VirtualField ALL 1 3 # 현재 VirtualField의 형태소 분석기 id는 무조건 20번을 쓰도록 hardcoding되어 있음 
  
 #  fieldid  name             index  morp-id(indexer) morp-id(qpp) paragraph-search comment(comment갯수,글자수)
 Field  1    body               yes       16              16                no            SUM_OR_FIRST
