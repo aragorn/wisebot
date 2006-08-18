@@ -17,6 +17,7 @@ typedef struct groupby_rule_t groupby_rule_t;
 typedef struct groupby_result_list_t groupby_result_list_t;
 typedef struct orderby_rule_list_t orderby_rule_list_t;
 typedef struct groupby_rule_list_t groupby_rule_list_t;
+typedef struct virtual_rule_list_t virtual_rule_list_t;
 typedef struct operation_t operation_t;
 typedef struct operation_list_t operation_list_t;
 typedef struct select_list_t select_list_t;
@@ -79,6 +80,7 @@ struct weight_t {
 struct weight_list_t {
 	int cnt;
 	weight_t list[MAX_WEIGHT];
+    char clause[LONG_STRING_SIZE];
 };
 
 struct virtual_document_t {
@@ -105,6 +107,7 @@ struct virtual_document_list_t {
 };
 
 struct limit_t {
+    char clause[LONG_STRING_SIZE];
     int start;
     int cnt;
 };
@@ -125,6 +128,7 @@ struct groupby_rule_t {
 struct orderby_rule_list_t {
     int cnt;
 	orderby_rule_t list[MAX_SORT_RULE];
+    char clause[LONG_STRING_SIZE];
 };
 
 struct user_data_t {
@@ -138,6 +142,7 @@ struct user_data_t {
 struct groupby_rule_list_t {
     int cnt;
     groupby_rule_t list[MAX_GROUP_RULE];
+    char clause[LONG_STRING_SIZE];
 }; 
 
 #define MAX_CARDINALITY (256)
@@ -167,6 +172,7 @@ struct operation_list_t {
 struct select_list_t {
 	int cnt;
 	char field_name[MAX_EXT_FIELD][SHORT_STRING_SIZE];
+    char clause[LONG_STRING_SIZE];
 };
 
 struct comment_t {
@@ -176,6 +182,12 @@ struct comment_t {
 };
 
 #define MAX_VID_RULE 5
+struct virtual_rule_list_t {
+    int cnt;
+	key_rule_t list[MAX_VID_RULE];
+    char clause[LONG_STRING_SIZE];
+};
+
 struct request_t {
 	char query[MAX_QUERY_STRING_SIZE];
     char search[MAX_QUERY_STRING_SIZE];
@@ -183,8 +195,7 @@ struct request_t {
     weight_list_t weight_list;
 	operation_list_t op_list_vid;
 	operation_list_t op_list_did;
-	key_rule_t virtual_rule[MAX_VID_RULE];
-	int virtual_rule_cnt;
+	virtual_rule_list_t virtual_rule_list;
 	msg_record_t msg;
     enum output_style output_style;
 };
