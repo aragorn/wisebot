@@ -64,7 +64,7 @@ static void _shutdown(int sig)
 	sigfillset(&act.sa_mask);
 
 	act.sa_handler = _do_nothing;
-	sigaction(SIGHUP, &act, NULL);
+	sigaction(SIGHUP, &act, NULL); // mod_standard_handler에서 재정의 한다.
 	sigaction(SIGINT, &act, NULL);
 	sigaction(SIGQUIT, &act, NULL);
 	sigaction(SIGTERM, &act, NULL);
