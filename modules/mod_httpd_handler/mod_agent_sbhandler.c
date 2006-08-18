@@ -132,8 +132,11 @@ static void free_mfile_list(memfile **mfile_list){
 	}
 }
 
-static void init_agent()
+static void init_agent(request_rec *r, softbot_handler_rec *s)
 {
+    s->req = &qp_request;
+    s->res = &qp_response;
+
     g_dochit_cnt = 0;
     if(g_dochits_buffer == NULL) {
         g_dochits_buffer = (doc_hit_t*)sb_calloc(max_doc_hit_count, sizeof(doc_hit_t));
@@ -745,7 +748,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 	}
 
 	set_con_config(r->server);
-    init_agent();
+    init_agent(r, s);
 	msg_record_init(&s->msg);
 
     rv = sb_run_qp_init();
@@ -890,7 +893,7 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s){
     int i = 0;
 
 	set_con_config(r->server);
-    init_agent();
+    init_agent(r, s);
 	msg_record_init(&s->msg);
 
     rv = sb_run_qp_init();
@@ -978,7 +981,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
     virtual_document_t* vd = NULL;
     
 	set_con_config(r->server);
-    init_agent();
+    init_agent(r, s);
 	msg_record_init(&s->msg);
 
     rv = sb_run_qp_init(); 

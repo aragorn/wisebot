@@ -8,6 +8,7 @@
 #include "mod_api/cdm2.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/did.h"
+#include "mod_api/qp2.h"
 
 typedef struct softbot_handler_rec softbot_handler_rec;
 
@@ -17,6 +18,11 @@ struct softbot_handler_rec {
 	char *remain_uri;
 	apr_table_t	*parameters_in;
 	msg_record_t msg;
+
+    request_t* req;
+    response_t* res;
+    uint32_t start_time;
+    uint32_t end_time;
 };
 
 typedef struct {

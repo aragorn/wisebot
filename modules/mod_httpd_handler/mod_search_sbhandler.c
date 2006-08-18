@@ -100,6 +100,12 @@ static void set_con_config(server_rec* rec)
 */
 }
 
+static void init_server(request_rec *r, softbot_handler_rec *s)
+{
+    s->req = &qp_request;
+    s->res = &qp_response;
+}
+
 static int print_group(request_rec *r, groupby_result_list_t* groupby_result)
 {
 	int i = 0;
@@ -143,6 +149,8 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
     int i = 0, j = 0, cmt_idx = 0;
 	struct timeval tv;
 	uint32_t start_time = 0, end_time = 0;
+
+    init_server(r, s);
 
 	if ( print_elapsed_time ) {
 		gettimeofday(&tv, NULL);
@@ -269,6 +277,8 @@ static int light_search_handler(request_rec *r, softbot_handler_rec *s)
     int rv = 0;
     int i = 0;
 
+    init_server(r, s);
+
 	set_con_config(r->server);
 	msg_record_init(&s->msg);
 
@@ -367,6 +377,8 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 	int recv_pos = 0;
     memfile *buf = NULL;
 	virtual_document_t* vd = NULL;
+
+    init_server(r, s);
 
 	set_con_config(r->server);
 	msg_record_init(&s->msg);

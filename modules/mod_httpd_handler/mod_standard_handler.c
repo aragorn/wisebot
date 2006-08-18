@@ -2,6 +2,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include "common_core.h"
+#include "ipc.h"
 #include "mod_httpd/protocol.h"
 #include "mod_httpd/util_filter.h"
 #include "mod_httpd/conf.h"
@@ -10,6 +12,7 @@
 #include "apr_strings.h"
 #include "mod_api/sbhandler.h"
 #include "handler_util.h"
+#include "util.h"
 
 //implemented in common_handler.c
 int sbhandler_common_get_table(char *name_space, void **tab);
@@ -24,9 +27,20 @@ cdm_db_t* cdm_db = NULL;
 static int word_db_set = 1;
 word_db_t* word_db = NULL;
 
+static int query_log = 1;
+static char query_field_seq = '#';
+// query log
+static int qlog_lock = -1;
+static FILE* qlog_fp = NULL;
+static char qlog_path[MAX_PATH_LEN] = "logs/query_log";
+static void (*sighup_handler)(int sig) = NULL;
+static void reopen_qlog(int sig);
+
 static int init_db()
 {
     int rv = 0;
+	ipc_t lock;
+	struct sigaction act, oldact;
 
 	if ( initialized ) return SUCCESS;
 	else initialized = 1;
@@ -51,7 +65,75 @@ static int init_db()
         return FAIL;
     }
 
+	/* register HUP signal handler */
+	memset(&act, 0x0, sizeof(act));
+	act.sa_flags = SA_RESTART;
+	sigfillset(&act.sa_mask);
+	act.sa_handler = reopen_qlog;
+	sigaction(SIGHUP, &act, &oldact);
+	sighup_handler = oldact.sa_handler;
+
+	/* open file */
+	qlog_fp = sb_fopen(qlog_path, "a");
+	if ( qlog_fp == NULL ) {
+		error("%s open failed: %s", qlog_path, strerror(errno));
+	}
+	else setlinebuf(qlog_fp);
+
+    // query log lock
+	lock.type     = IPC_TYPE_SEM;
+	lock.pid      = 0;
+	lock.pathname = qlog_path;
+
+	if ( get_sem(&lock) != SUCCESS ) return FAIL;
+	qlog_lock = lock.id;
+
 	return SUCCESS;
+}
+
+static void reopen_qlog(int sig)
+{
+	fclose(qlog_fp);
+
+	qlog_fp = sb_fopen(qlog_path, "a");
+	if ( qlog_fp == NULL ) {
+		error("%s open failed: %s", qlog_path, strerror(errno));
+	}
+	else setlinebuf(qlog_fp);
+
+	if ( sighup_handler != NULL
+			&& sighup_handler != SIG_DFL && sighup_handler != SIG_IGN )
+		sighup_handler(sig);
+}
+
+static void write_qlog(request_rec *r, softbot_handler_rec* s, int ret)
+{
+    char field_sep = '#';
+    request_t* req = s->req;
+    response_t* res = s->res;
+    char* query = apr_pstrdup(r->pool, req->query);
+
+    if(req == NULL || res == NULL) return;
+
+    ap_unescape_url(query);
+    query = replace( query , '\n', '^');
+    query = replace( query , '\r', ' ');
+
+	if ( acquire_lock(qlog_lock) != SUCCESS ) {
+		error("qlog lock failed.");
+		return;
+	}
+
+	fprintf(qlog_fp, "%s%c %d%c %u%c %s%c %d%c %s\n", 
+						  get_time("%Y-%m-%d %k:%M:%S"), field_sep,
+						  ret, field_sep,
+						  s->end_time - s->start_time, field_sep,
+						  (res->parsed_query) ? res->parsed_query : "null", field_sep,
+						  res->search_result, field_sep,
+						  query);
+
+	release_lock(qlog_lock);
+    return;
 }
 
 //--------------------------------------------------------------//
@@ -218,6 +300,7 @@ static int standard_handler(request_rec *r)
 {
         int nRet;
         softbot_handler_rec s;
+	    struct timeval tv;
 /*      const char *content_type = NULL;*/
         char *pos;
 
@@ -228,6 +311,8 @@ static int standard_handler(request_rec *r)
         s.name_space = NULL;
         s.request_name = NULL;
         s.remain_uri = NULL;
+        s.req = NULL;
+        s.res = NULL;
 /*      s.request_body = NULL;*/
 /*      s.request_content_type = NULL;*/
 /*      s.response_body = NULL;*/
@@ -298,10 +383,24 @@ static int standard_handler(request_rec *r)
         //check is_admin
         //s.is_admin= def_atoi(apr_table_get(s.parameters_in, "is_admin"), 0);
 
+		if ( query_log ) {
+			gettimeofday(&tv, NULL);
+			s.start_time = tv.tv_sec*1000 + tv.tv_usec/1000;
+		}
+
         nRet = _sub_handler(r, &s);
+
+		if ( query_log ) {
+			gettimeofday(&tv, NULL);
+			s.end_time = tv.tv_sec*1000 + tv.tv_usec/1000;
+
+            write_qlog(r, &s, nRet);
+		}
+ 
         if ( nRet != SUCCESS ) {
             _make_fail_response(r, &s, nRet);
         }
+
         INFO(" handling request end: '%s/%s', '%s'", 
                         s.name_space, s.request_name, 
                         (s.remain_uri) ? s.remain_uri : "null" );
@@ -337,10 +436,32 @@ static void get_word_db_set(configValue v)
     word_db_set = atoi( v.argument[0] );
 }
 
+static void get_query_log_path(configValue v)
+{
+    if(v.argument[0]) {
+        strncpy(qlog_path, v.argument[0], sizeof(qlog_path)-1);
+    }
+}
+
+static void get_query_log(configValue v)
+{
+    query_log = atoi( v.argument[0] );
+}
+
+static void get_query_field_sep(configValue v)
+{
+    if(v.argument[0]) {
+        query_field_seq = v.argument[0][0];
+    }
+}
+
 static config_t config[] = {
     CONFIG_GET("CdmSet", get_cdm_set, 1, "Cdm Set 0~..."),
     CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
     CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDb Set 0~..."),
+    CONFIG_GET("QueryLogPath", get_query_log_path, 1, "QueryLogPath log/query_log"),
+    CONFIG_GET("QueryLog", get_query_log, 1, "QueryLog 1"),
+    CONFIG_GET("QueryFieldSep", get_query_field_sep, 1, "QueryFieldSep #"),
     {NULL}
 };
 
