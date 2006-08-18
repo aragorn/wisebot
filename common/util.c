@@ -80,3 +80,26 @@ char* sb_right_trim(char* s)
 
     return s;
 }
+
+char *replace(char *str, char s, char d) {
+    char *ch;
+    ch = str;
+    while ( (ch = strchr(ch, s)) != NULL ) {
+        *ch = d;
+    }
+    return str;
+}
+
+/* XXX: not thread safe */
+char* get_time(const char* format) {
+    static char strtime[128];
+	time_t now;
+    struct tm *tm;
+
+	time(&now);
+    tm = localtime(&now);
+
+    strftime(strtime, 128, format, tm);
+
+    return strtime;
+}
