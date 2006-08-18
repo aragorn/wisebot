@@ -165,7 +165,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE]);
 
 static void set_weight(weight_list_t* wl, char* clause);
 static void set_output_style(request_t* req, char* clause);
-static void set_virtual_id(request_t* req, char* clause);
+static void set_virtual_id(virtual_rule_list_t* vrl, char* clause);
 
 // document type별 operation
 static int virtual_document_orderby(orderby_rule_list_t* rules);
@@ -2435,6 +2435,8 @@ static void set_select_clause(select_list_t* sl, char* clause)
 
     s = sb_trim(clause);
 
+    strncpy(sl->clause, s, sizeof(sl->clause)-1);
+
     while(1) {
 		e = strchr(s, ',');
         if(e == NULL && strlen(s) == 0) break;
@@ -2488,6 +2490,8 @@ static void set_weight(weight_list_t* wl, char* clause)
 
     s = sb_trim(clause);
 
+    strncpy(wl->clause, s, sizeof(wl->clause)-1);
+
     while(1) {
 		e = strchr(s, ',');
         if(e == NULL && strlen(s) == 0) break;
@@ -2536,7 +2540,7 @@ static void set_output_style(request_t* req, char* clause)
 	}
 }
 
-static void set_virtual_id(request_t* req, char* clause)
+static void set_virtual_id(virtual_rule_list_t* vrl, char* clause)
 {
     char* s = NULL;
     char* e = NULL;
@@ -2544,8 +2548,10 @@ static void set_virtual_id(request_t* req, char* clause)
 
     s = sb_trim(clause);
 
+    strncpy(vrl->clause, s, sizeof(vrl->clause)-1);
+
 	if(s == NULL || strlen(clause) == 0) {
-		rule = &req->virtual_rule[req->virtual_rule_cnt++];
+		rule = &vrl->list[vrl->cnt++];
 
 		rule->type = DID;
 		strncpy(rule->name, "DID", SHORT_STRING_SIZE-1);
@@ -2564,7 +2570,7 @@ static void set_virtual_id(request_t* req, char* clause)
 			/*
 			 * virtual_document는 did, docattr 만이 key가 될수 있다.
 			 */
-			rule = &req->virtual_rule[req->virtual_rule_cnt++];
+			rule = &vrl->list[vrl->cnt++];
             s = sb_trim(s);
 
 			if(strncasecmp(s, "DID", 3) == 0) {
@@ -2576,7 +2582,7 @@ static void set_virtual_id(request_t* req, char* clause)
 			}
 
 			if(e == NULL) break;
-			if(req->virtual_rule_cnt >= MAX_VID_RULE) {
+			if(vrl->cnt >= MAX_VID_RULE) {
 				warn("over max vid rule[%d]", MAX_VID_RULE);
 				break;
 			}
@@ -2671,8 +2677,8 @@ static void print_request(request_t* req)
 	debug("======= vid operation count[%d]========", req->op_list_vid.cnt);
 	print_operations(&req->op_list_vid);
 
-	for(i = 0; i < req->virtual_rule_cnt; i++) {
-		key_rule_t* rule = &req->virtual_rule[i];
+	for(i = 0; i < req->virtual_rule_list.cnt; i++) {
+		key_rule_t* rule = &req->virtual_rule_list.list[i];
 
 	    debug("virtual key[%s], type[%s]", rule->name, key_type_str[rule->type]);
 	}
@@ -2701,7 +2707,11 @@ static int init_request(request_t* req, char* query)
     while(1) {
         int clause_type = 0, len = 0;
 
-		e = strchr(s, '\n');
+        s = sb_trim(s);  // '\r'을 찾았을 경우 '\n'을 삭제하기 위해
+
+		e = strchr(s, '\r');  // window 형식의 newline을 찾아보고 없으면 unix 형색의 newline을 찾는다.
+        if(e == NULL) e = strchr(s, '\n');
+
         if(e == NULL && strlen(s) == 0) break;
 
 		if(e == NULL) {
@@ -2737,7 +2747,7 @@ static int init_request(request_t* req, char* query)
 					strncpy(req->search, sb_trim(s+len), MAX_QUERY_STRING_SIZE-1);
 					break;
 				case VIRTUAL_ID:
-					set_virtual_id(req, s+len);
+					set_virtual_id(&req->virtual_rule_list, s+len);
 					break;
                 case WEIGHT:
                     set_weight(&req->weight_list, s+len);
@@ -2787,10 +2797,6 @@ static int init_request(request_t* req, char* query)
 		s = e + 1;
     }
 
-	if(req->virtual_rule_cnt == 0) {
-	    set_virtual_id(req, NULL);
-	}
-
 	print_request(req);
 
     return SUCCESS;
@@ -2804,35 +2810,17 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
     operation_list_t* op_list = NULL;
 	select_list_t* sl = &req->select_list;
 	weight_list_t* wl = &req->weight_list;
+	virtual_rule_list_t* vrl = &req->virtual_rule_list;
 
 	memset(query, 0x00, MAX_QUERY_STRING_SIZE);
 
 	if(sl->cnt > 0) {
 		// SELECT
-		rv = memfile_appendF(buffer, "%s ", clause_type_str[SELECT]);
+		rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[SELECT], sl->clause);
 		if(rv < 0) {
 			MSG_RECORD(&req->msg, error, "can not appendF memfile");
 			memfile_free(buffer);
 			return FAIL;
-		}
-
-
-		for(i = 0; i < sl->cnt; i++) {
-			if(i == (sl->cnt-1)) { // 마지막
-				rv = memfile_appendF(buffer, "%s\n", sl->field_name[i]);
-				if(rv < 0) {
-					MSG_RECORD(&req->msg, error, "can not appendF memfile");
-					memfile_free(buffer);
-					return FAIL;
-				}
-			} else {
-				rv = memfile_appendF(buffer, "%s,", sl->field_name[i]);
-				if(rv < 0) {
-					MSG_RECORD(&req->msg, error, "can not appendF memfile");
-					memfile_free(buffer);
-					return FAIL;
-				}
-			}
 		}
     } else {
 		MSG_RECORD(&req->msg, error, "can not find select clause");
@@ -2842,101 +2830,65 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 
 	if(wl->cnt > 0) {
 		// WEIGHT
-		rv = memfile_appendF(buffer, "%s ", clause_type_str[WEIGHT]);
+		rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[WEIGHT], wl->clause);
 		if(rv < 0) {
 			MSG_RECORD(&req->msg, error, "can not appendF memfile");
 			memfile_free(buffer);
 			return FAIL;
 		}
-
-		for(i = 0; i < wl->cnt; i++) {
-			if(i == (wl->cnt-1)) { // 마지막
-				rv = memfile_appendF(buffer, "%s:%d\n", wl->list[i].name, wl->list[i].weight);
-				if(rv < 0) {
-					MSG_RECORD(&req->msg, error, "can not appendF memfile");
-					memfile_free(buffer);
-					return FAIL;
-				}
-			} else {
-				rv = memfile_appendF(buffer, "%s:%d,", wl->list[i].name, wl->list[i].weight);
-				if(rv < 0) {
-					MSG_RECORD(&req->msg, error, "can not appendF memfile");
-					memfile_free(buffer);
-					return FAIL;
-				}
-			}
-		}
-    }
+   }
 
 	// SEARCH
     if(strlen(req->search) == 0) {
 		MSG_RECORD(&req->msg, error, "can not find search word");
 		memfile_free(buffer);
         return FAIL;
+    } else {
+		rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[SEARCH], req->search);
+		if(rv < 0) {
+			MSG_RECORD(&req->msg, error, "can not appendF memfile");
+			memfile_free(buffer);
+			return FAIL;
+		}
     }
 
-	rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[SEARCH], req->search);
-	if(rv < 0) {
-        MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		memfile_free(buffer);
-		return FAIL;
-	}
+	if(vrl->cnt > 0) {
+		rv = memfile_appendF(buffer, "%s %s\n", clause_type_str[VIRTUAL_ID], vrl->clause);
+		if(rv < 0) {
+			MSG_RECORD(&req->msg, error, "can not appendF memfile");
+			memfile_free(buffer);
+			return FAIL;
+		}
 
-	rv = memfile_appendF(buffer, "%s ", clause_type_str[VIRTUAL_ID]);
-	if(rv < 0) {
-        MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		memfile_free(buffer);
-		return FAIL;
-	}
+		// VIRTUAL_ID RULE
+		if(req->op_list_did.cnt > 0) {
+			op_list = &req->op_list_did;
 
-	for(i = 0; i < req->virtual_rule_cnt; i++) {
-		key_rule_t* rule = &req->virtual_rule[i];
-
-		if(i == (req->virtual_rule_cnt-1)) { // 마지막
-			rv = memfile_appendF(buffer, "%s\n", rule->name);
+			rv = memfile_append(buffer, "(\n", 2);
 			if(rv < 0) {
 				MSG_RECORD(&req->msg, error, "can not appendF memfile");
 				memfile_free(buffer);
 				return FAIL;
 			}
-		} else {
-			rv = memfile_appendF(buffer, "%s,", rule->name);
+
+			for(i = 0; i < op_list->cnt; i++) {
+				operation_t* op = &(op_list->list[i]);
+				rv = memfile_appendF(buffer, "%s\n", op->clause);
+				if(rv < 0) {
+					MSG_RECORD(&req->msg, error, "can not appendF memfile");
+					memfile_free(buffer);
+					return FAIL;
+				}
+			}
+
+			rv = memfile_append(buffer, ")\n", 2);
 			if(rv < 0) {
 				MSG_RECORD(&req->msg, error, "can not appendF memfile");
 				memfile_free(buffer);
 				return FAIL;
 			}
 		}
-	}
-
-    // VIRTUAL_ID RULE
-	if(req->op_list_did.cnt > 0) {
-        op_list = &req->op_list_did;
-
-	    rv = memfile_append(buffer, "(\n", 2);
-		if(rv < 0) {
-            MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		    memfile_free(buffer);
-			return FAIL;
-		}
-
-	    for(i = 0; i < op_list->cnt; i++) {
-		    operation_t* op = &(op_list->list[i]);
-			rv = memfile_appendF(buffer, "%s\n", op->clause);
-			if(rv < 0) {
-                MSG_RECORD(&req->msg, error, "can not appendF memfile");
-				memfile_free(buffer);
-				return FAIL;
-			}
-		}
-
-	    rv = memfile_append(buffer, ")\n", 2);
-		if(rv < 0) {
-            MSG_RECORD(&req->msg, error, "can not appendF memfile");
-		    memfile_free(buffer);
-			return FAIL;
-		}
-	}
+    }
 	
 	op_list = &req->op_list_vid;
 	for(i = 0; i < op_list->cnt; i++) {
@@ -3041,8 +2993,8 @@ static int make_virtual_document(index_list_t* list, request_t* req)
 		vd->dochit_cnt++;
 		vd->comment_cnt++;
 
-		for(j = 0; j < req->virtual_rule_cnt; j++) {
-			key_rule_t* rule = &req->virtual_rule[j];
+		for(j = 0; j < req->virtual_rule_list.cnt; j++) {
+			key_rule_t* rule = &req->virtual_rule_list.list[j];
 
 			if(rule->type == DOCATTR) {
 				if (sb_run_docattr_get_field_integer_function(vd->docattr, 
@@ -3063,8 +3015,8 @@ static int make_virtual_document(index_list_t* list, request_t* req)
 			docattr_t* docattr = g_docattr_base_ptr + 
 				   		       g_docattr_record_size*(list->doc_hits[i].id - 1); // did는 1 base임.
 
-		    for(j = 0; j < req->virtual_rule_cnt; j++) {
-			    key_rule_t* rule = &req->virtual_rule[j];
+		    for(j = 0; j < req->virtual_rule_list.cnt; j++) {
+			    key_rule_t* rule = &req->virtual_rule_list.list[j];
 
 				if(rule->type == DOCATTR) {
 					if (sb_run_docattr_get_field_integer_function(docattr, 
@@ -3077,7 +3029,7 @@ static int make_virtual_document(index_list_t* list, request_t* req)
 				}
 			}
 
-		    for(j = 0; j < req->virtual_rule_cnt; j++) {
+		    for(j = 0; j < req->virtual_rule_list.cnt; j++) {
 				if(virtual_id_list[j] != next_virtual_id_list[j]) {
 					equals_vid = 0;
 					break;
@@ -3169,14 +3121,17 @@ static int make_groupby_rule(char* clause, groupby_rule_t* rule)
     return SUCCESS;
 }
 
-static int make_groupby_rule_list(char* clause, groupby_rule_list_t* rules)
+static int make_groupby_rule_list(char* clause, groupby_rule_list_t* grl)
 {
     char* s = NULL;
     char* e = NULL;
 
     s = sb_trim(clause);
+
+    strncpy(grl->clause, s, sizeof(grl->clause)-1);
+
     while(1) {
-		if(rules->cnt > MAX_GROUP_RULE) {
+		if(grl->cnt > MAX_GROUP_RULE) {
 			warn("over gropuby rule max count[%d]", MAX_GROUP_RULE);
 			break;
 		}
@@ -3189,8 +3144,8 @@ static int make_groupby_rule_list(char* clause, groupby_rule_list_t* rules)
 		} else {
             *e = '\0';
 		}
-        make_groupby_rule(s, &rules->list[rules->cnt]);
-		rules->cnt++;
+        make_groupby_rule(s, &grl->list[grl->cnt]);
+		grl->cnt++;
 
 		if(e == NULL) break;
         s = e+1;
@@ -3207,6 +3162,8 @@ static int make_limit_rule(char* clause, limit_t* rule)
 {
     char* split = NULL;
     clause = sb_trim(clause);
+
+    strncpy(rule->clause, clause, sizeof(rule->clause)-1);
 
     // LIMIT 1, 10 : start, count 분리
     split = strchr(clause, ',');
@@ -3227,7 +3184,7 @@ static int make_limit_rule(char* clause, limit_t* rule)
  * clause sample :	  title	asc  , 	 date 	  desc     , gubun ,,
  * si : [title:ASC] [date:DESC] [gubun:ASC]
  */
-static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules)
+static int make_orderby_rule_list(char* clause, orderby_rule_list_t* orl)
 {
     char* sort_field = NULL;
 	int cnt = 0;
@@ -3237,7 +3194,8 @@ static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules)
 		return SUCCESS;
 	}
 
-    memset(rules, 0x00, sizeof(orderby_rule_list_t));
+    clause = sb_trim(clause);
+    strncpy(orl->clause, clause, sizeof(orl->clause)-1);
 
     sort_field = strtok(clause, ",");
     while(sort_field != NULL) {
@@ -3245,58 +3203,58 @@ static int make_orderby_rule_list(char* clause, orderby_rule_list_t* rules)
         char* sort_type = NULL;
         char* p = NULL;
 
-		if(rules->cnt > MAX_SORT_RULE) {
+		if(orl->cnt > MAX_SORT_RULE) {
             warn("over orderby rule max count[%d]", MAX_SORT_RULE);
 			break;
 		}
 
-	    cnt = rules->cnt;
+	    cnt = orl->cnt;
         
         if(strlen(s) != 0) {
             p = strchr(s, ' ');
 
             if(p == NULL) {
-                strncpy(rules->list[cnt].rule.name, sb_trim(s), SHORT_STRING_SIZE);
+                strncpy(orl->list[cnt].rule.name, sb_trim(s), SHORT_STRING_SIZE);
 
 				if(strncasecmp(s, 
 						       key_type_str[RELEVANCY], 
 							   strlen(key_type_str[RELEVANCY])) == 0) {
-                    rules->list[cnt].rule.type = RELEVANCY;
+                    orl->list[cnt].rule.type = RELEVANCY;
 				} else if(strncasecmp(s, 
 						       key_type_str[DID], 
 							   strlen(key_type_str[DID])) == 0) {
-                    rules->list[cnt].rule.type = DID;
+                    orl->list[cnt].rule.type = DID;
 				} else {
-                    rules->list[cnt].rule.type = DOCATTR;
+                    orl->list[cnt].rule.type = DOCATTR;
 				}
 
-                 rules->list[cnt].type = ASC;
+                 orl->list[cnt].type = ASC;
             } else { 
                 *p = '\0';
                 sort_type = sb_trim(p+1);
 
-                strncpy(rules->list[cnt].rule.name, sb_trim(s), SHORT_STRING_SIZE);
+                strncpy(orl->list[cnt].rule.name, sb_trim(s), SHORT_STRING_SIZE);
 				if(strncasecmp(s, 
 						       key_type_str[RELEVANCY], 
 							   strlen(key_type_str[RELEVANCY])) == 0) {
-                    rules->list[cnt].rule.type = RELEVANCY;
+                    orl->list[cnt].rule.type = RELEVANCY;
 				} else if(strncasecmp(s, 
 						       key_type_str[DID], 
 							   strlen(key_type_str[DID])) == 0) {
-                    rules->list[cnt].rule.type = DID;
+                    orl->list[cnt].rule.type = DID;
 				} else {
-                    rules->list[cnt].rule.type = DOCATTR;
+                    orl->list[cnt].rule.type = DOCATTR;
 				}
 
                 if(strncasecmp(sort_type, "DESC", 4) == 0) {
-                    rules->list[cnt].type = DESC;
+                    orl->list[cnt].type = DESC;
                 } else {
-                    rules->list[cnt].type = ASC;
+                    orl->list[cnt].type = ASC;
                 }
             }
         }
 
-        rules->cnt++;
+        orl->cnt++;
         sort_field = strtok(NULL, ",");
     }
 
@@ -3538,8 +3496,8 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
 			group_count[j]++;
 		}
 
-		for(j = 0; j < req->virtual_rule_cnt; j++) {
-			key_rule_t* rule = &req->virtual_rule[j];
+		for(j = 0; j < req->virtual_rule_list.cnt; j++) {
+			key_rule_t* rule = &req->virtual_rule_list.list[j];
 
 			if(rule->type == DOCATTR) {
 		        docattr = g_docattr_base_ptr + g_docattr_record_size*(doc_hit->id-1);
@@ -3560,8 +3518,8 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
 			doc_hit = &(g_result_list->doc_hits[i]);
 
             /* 같은 가상문서인지를 먼저 체크해야 한다. */ 
-		    for(j = 0; j < req->virtual_rule_cnt; j++) {
-			    key_rule_t* rule = &req->virtual_rule[j];
+		    for(j = 0; j < req->virtual_rule_list.cnt; j++) {
+			    key_rule_t* rule = &req->virtual_rule_list.list[j];
 
 				if(rule->type == DOCATTR) {
 		            docattr = g_docattr_base_ptr + g_docattr_record_size*(doc_hit->id-1);
@@ -3576,7 +3534,7 @@ static int document_grouping(request_t* req, groupby_result_list_t* result)
 				}
 			}
 
-		    for(j = 0; j < req->virtual_rule_cnt; j++) {
+		    for(j = 0; j < req->virtual_rule_list.cnt; j++) {
 				if(virtual_id_list[j] != next_virtual_id_list[j]) {
 					equals_vid = 0;
 					break;
@@ -3686,8 +3644,8 @@ static int operation_groupby_orderby(groupby_rule_list_t* groupby_rules,
     join_orderby_rules.cnt = 0;
 
 	// DID 기준으로 정렬할때는 가상문서 키로 정렬이 되어 있어야 한다.
-	for(i = 0; i < req->virtual_rule_cnt; i++) {
-		key_rule_t* virtual_key = &req->virtual_rule[i];
+	for(i = 0; i < req->virtual_rule_list.cnt; i++) {
+		key_rule_t* virtual_key = &req->virtual_rule_list.list[i];
 
 		if(doc_type == DOCUMENT && virtual_key->type != DID) {
 			join_orderby_rules.list[join_orderby_rules.cnt].rule = *virtual_key;
@@ -3747,8 +3705,8 @@ static int operation_countby(groupby_rule_list_t* groupby_rules,
     join_orderby_rules.cnt = 0;
 
 	// DID 기준으로 정렬할때는 가상문서 키로 정렬이 되어 있어야 한다.
-	for(i = 0; i < req->virtual_rule_cnt; i++) {
-		key_rule_t* virtual_key = &req->virtual_rule[i];
+	for(i = 0; i < req->virtual_rule_list.cnt; i++) {
+		key_rule_t* virtual_key = &req->virtual_rule_list.list[i];
 
 		if(doc_type == DOCUMENT && virtual_key->type != DID) {
 			join_orderby_rules.list[join_orderby_rules.cnt].rule = *virtual_key;
