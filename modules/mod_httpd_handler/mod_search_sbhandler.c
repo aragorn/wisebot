@@ -500,6 +500,9 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 		debug("comments[%s]", qp_response.comments[i].s);
     }
 
+    // log를 위하여 setting 해준다.
+    qp_response.search_result = vd->comment_cnt;
+
 	s->msg = qp_request.msg;
 
     if(buf != NULL) memfile_free(buf);

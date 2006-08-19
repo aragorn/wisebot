@@ -27,9 +27,10 @@ cdm_db_t* cdm_db = NULL;
 static int word_db_set = 1;
 word_db_t* word_db = NULL;
 
-static int query_log = 1;
-static char query_field_seq = '#';
 // query log
+enum qlogtype{ CUSTOM, XML };
+static enum qlogtype qlog_type = CUSTOM;
+static int qlog_used = 1;
 static int qlog_lock = -1;
 static FILE* qlog_fp = NULL;
 static char qlog_path[MAX_PATH_LEN] = "logs/query_log";
@@ -108,7 +109,6 @@ static void reopen_qlog(int sig)
 
 static void write_qlog(request_rec *r, softbot_handler_rec* s, int ret)
 {
-    char field_sep = '#';
     request_t* req = s->req;
     response_t* res = s->res;
     char* query = apr_pstrdup(r->pool, req->query);
@@ -124,13 +124,45 @@ static void write_qlog(request_rec *r, softbot_handler_rec* s, int ret)
 		return;
 	}
 
-	fprintf(qlog_fp, "%s%c %d%c %u%c %s%c %d%c %s\n", 
-						  get_time("%Y-%m-%d %k:%M:%S"), field_sep,
-						  ret, field_sep,
-						  s->end_time - s->start_time, field_sep,
-						  (res->parsed_query) ? res->parsed_query : "null", field_sep,
-						  res->search_result, field_sep,
+    switch(qlog_type) {
+        case CUSTOM:
+		fprintf(qlog_fp, "[%s]"
+						 "[%s]"
+						 "[%d]"
+						 "[%u]"
+						 "[%u]"
+						 "[%s]"
+						 "[%s]"
+						 "\n",
+						  get_time("%Y-%m-%d %k:%M:%S"),
+                          s->request_name,
+						  ret,
+						  res->search_result,
+						  s->end_time - s->start_time,
+						  res->parsed_query,
 						  query);
+        break;
+        case XML:
+		fprintf(qlog_fp, "<query_log>"
+						 "<date>%s</date>"
+						 "<request_name>%s</request_name>"
+						 "<ret_code>%d</ret_code>"
+						 "<result_count>%u</result_count>"
+						 "<elapsed_time>%u</elapsed_time>"
+						 "<parsed_morph><![CDATA[%s]]></parsed_morph>"
+						 "<query><![CDATA[%s]]></query>"
+						 "</query_log>\n",
+						  get_time("%Y-%m-%d %k:%M:%S"),
+                          s->request_name,
+						  ret,
+						  res->search_result,
+						  s->end_time - s->start_time,
+						  res->parsed_query",
+						  query);
+        break;
+        default:
+        break;
+    }
 
 	release_lock(qlog_lock);
     return;
@@ -383,14 +415,14 @@ static int standard_handler(request_rec *r)
         //check is_admin
         //s.is_admin= def_atoi(apr_table_get(s.parameters_in, "is_admin"), 0);
 
-		if ( query_log ) {
+		if ( qlog_used ) {
 			gettimeofday(&tv, NULL);
 			s.start_time = tv.tv_sec*1000 + tv.tv_usec/1000;
 		}
 
         nRet = _sub_handler(r, &s);
 
-		if ( query_log ) {
+		if ( qlog_used ) {
 			gettimeofday(&tv, NULL);
 			s.end_time = tv.tv_sec*1000 + tv.tv_usec/1000;
 
@@ -443,16 +475,14 @@ static void get_query_log_path(configValue v)
     }
 }
 
-static void get_query_log(configValue v)
+static void get_query_log_used(configValue v)
 {
-    query_log = atoi( v.argument[0] );
+    qlog_used = atoi( v.argument[0] );
 }
 
-static void get_query_field_sep(configValue v)
+static void get_query_log_type(configValue v)
 {
-    if(v.argument[0]) {
-        query_field_seq = v.argument[0][0];
-    }
+    qlog_type = atoi(v.argument[0]);
 }
 
 static config_t config[] = {
@@ -460,8 +490,8 @@ static config_t config[] = {
     CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
     CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDb Set 0~..."),
     CONFIG_GET("QueryLogPath", get_query_log_path, 1, "QueryLogPath log/query_log"),
-    CONFIG_GET("QueryLog", get_query_log, 1, "QueryLog 1"),
-    CONFIG_GET("QueryFieldSep", get_query_field_sep, 1, "QueryFieldSep #"),
+    CONFIG_GET("QueryLogUsed", get_query_log_used, 1, "QueryLogUsed 1"),
+    CONFIG_GET("QueryLogType", get_query_log_type, 1, "QueryLogType CUSTOM:0 XML:1"),
     {NULL}
 };
 
