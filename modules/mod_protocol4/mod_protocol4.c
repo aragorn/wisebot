@@ -1621,6 +1621,7 @@ static int sb4s_register_doc2(int sockfd)
 
 		if ( n < 0 ) {
 			if ( send_nak_with_message(sockfd, "cdm register failed") != SUCCESS ) return FAIL;
+			sb_run_buffer_freebuf(&var_buf);
 			continue;
 		}
 		
@@ -1636,11 +1637,16 @@ static int sb4s_register_doc2(int sockfd)
 
 		/* send OP_ACK for successful receiving of BODY */
 		n = TCPSendData(sockfd, SB4_OP_ACK, 3, TRUE);
-		if ( n != SUCCESS ) return FAIL;
+		if ( n != SUCCESS ) {
+			sb_run_buffer_freebuf(&var_buf);
+            return FAIL;
+        }
 		
 		if (docid % 1000 == 0) {
 			info("%u documents is registered.", docid);
 		}
+
+		sb_run_buffer_freebuf(&var_buf);
 	} // while(1) // ACK 이 전송될 때까지 등록하려는 문서를 계속 받는다
 
 	setproctitle("softbotd: mod_softbot4.c(%s:ended)",__FILE__);
