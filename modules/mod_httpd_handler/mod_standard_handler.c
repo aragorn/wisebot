@@ -157,7 +157,7 @@ static void write_qlog(request_rec *r, softbot_handler_rec* s, int ret)
 						  ret,
 						  res->search_result,
 						  s->end_time - s->start_time,
-						  res->parsed_query",
+						  res->parsed_query,
 						  query);
         break;
         default:
