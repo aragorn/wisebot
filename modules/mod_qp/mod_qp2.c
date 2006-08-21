@@ -2435,6 +2435,8 @@ static void set_select_clause(select_list_t* sl, char* clause)
 
     s = sb_trim(clause);
 
+    if(s == NULL || strlen(s) == 0) return;
+
     strncpy(sl->clause, s, sizeof(sl->clause)-1);
 
     while(1) {
@@ -2489,6 +2491,8 @@ static void set_weight(weight_list_t* wl, char* clause)
     char* p = NULL;
 
     s = sb_trim(clause);
+
+    if(s == NULL || strlen(s) == 0) return;
 
     strncpy(wl->clause, s, sizeof(wl->clause)-1);
 
@@ -2548,15 +2552,15 @@ static void set_virtual_id(virtual_rule_list_t* vrl, char* clause)
 
     s = sb_trim(clause);
 
-    strncpy(vrl->clause, s, sizeof(vrl->clause)-1);
-
-	if(s == NULL || strlen(clause) == 0) {
+	if(s == NULL || strlen(s) == 0) {
 		rule = &vrl->list[vrl->cnt++];
 
 		rule->type = DID;
 		strncpy(rule->name, "DID", SHORT_STRING_SIZE-1);
 		info("virtual_id field is null, set default DID");
 	} else {
+        strncpy(vrl->clause, s, sizeof(vrl->clause)-1);
+
 		while(1) {
 			e = strchr(s, ',');
 			if(e == NULL && strlen(s) == 0) break;
@@ -2796,6 +2800,11 @@ static int init_request(request_t* req, char* query)
 		if(e == NULL) break;
 		s = e + 1;
     }
+
+     /* virtual id가 없을경우 default로 did로 셋팅하도록 */
+	 if(req->virtual_rule_list.cnt == 0) { 	 
+		 set_virtual_id(&req->virtual_rule_list, NULL); 	 
+	 }
 
 	print_request(req);
 
@@ -3128,6 +3137,8 @@ static int make_groupby_rule_list(char* clause, groupby_rule_list_t* grl)
 
     s = sb_trim(clause);
 
+    if(s == NULL || strlen(s) == 0) return SUCCESS;
+
     strncpy(grl->clause, s, sizeof(grl->clause)-1);
 
     while(1) {
@@ -3163,6 +3174,8 @@ static int make_limit_rule(char* clause, limit_t* rule)
     char* split = NULL;
     clause = sb_trim(clause);
 
+    if(clause == NULL || strlen(clause) == 0) return SUCCESS;
+
     strncpy(rule->clause, clause, sizeof(rule->clause)-1);
 
     // LIMIT 1, 10 : start, count 분리
@@ -3195,6 +3208,8 @@ static int make_orderby_rule_list(char* clause, orderby_rule_list_t* orl)
 	}
 
     clause = sb_trim(clause);
+    if(clause == NULL || strlen(clause) == 0) return SUCCESS;
+
     strncpy(orl->clause, clause, sizeof(orl->clause)-1);
 
     sort_field = strtok(clause, ",");
