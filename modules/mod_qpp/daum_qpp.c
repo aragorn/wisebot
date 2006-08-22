@@ -80,6 +80,9 @@ struct daum_tree_node* parse_daum_query(index_word_t* indexwords, int count)
 	for ( i = 0; i < count; i++ ) {
 		enum daum_op op;
 
+		if(strlen(indexwords[i].word) == 0)
+			continue;
+
 		if ( indexwords[i].word[1] == '\0' ) {
 			char c = indexwords[i].word[0];
 

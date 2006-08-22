@@ -105,6 +105,13 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t *ind
 			*e = '\0';
 		}
 
+		if(strlen(s) == 0) {
+			if(e == NULL) break;
+
+			s = e+1;
+			continue;
+		}
+
 		//warn("add word[%s]", s);
 		strncpy(index_word[index_word_idx].word, strtoupper(s), MAX_WORD_LEN);
 		index_word[index_word_idx].word[MAX_WORD_LEN-1] = '\0';
@@ -164,6 +171,15 @@ static int daum_dha_analyze(index_word_extractor_t *extractor, index_word_t *ind
 			} else {
 				*e = '\0';
 			}
+
+			//warn("word[%s]", s);
+
+            if(strlen(s) == 0) {
+				if(e == NULL) break;
+
+				s = e+1;
+                continue;
+            }
 
 			//warn("word[%s]", s);
 			strncpy(index_word[index_word_idx].word, strtoupper(s), MAX_WORD_LEN);
