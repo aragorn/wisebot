@@ -197,6 +197,7 @@ static int virtual_document_fill_comment(request_t* req, response_t* res);
 static int do_filter_operation(request_t* req, response_t* res, enum doc_type doc_type);
 static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, char* comment);
 
+static void add_delete_where(operation_list_t* op_list);
 static void print_weight(weight_list_t* wl);
 static void print_orderby(orderby_rule_t* rule);
 static void print_limit(limit_t* rule);
@@ -2640,6 +2641,7 @@ static void print_operations(operation_list_t* op_list)
 			case WHERE:
 				debug("where[%s]", op->clause);
 				break;
+			case COUNT_BY:
 			case GROUP_BY:
 			   {
 				   debug("group rule count[%d]", op->rule.groupby.cnt);
@@ -2688,6 +2690,33 @@ static void print_request(request_t* req)
 	}
 
 	debug("output style[%s]", output_style_str[req->output_style]);
+}
+
+static void add_delete_where(operation_list_t* op_list)
+{
+	int i = 0;
+    int has_where = 0;
+
+	for(i = 0; i < op_list->cnt; i++) {
+		operation_t* op = &op_list->list[i]; 
+
+		if(op->type == WHERE) {
+            has_where = 1;
+        }
+    }
+
+    if(has_where == 0 && op_list->cnt < MAX_OPERATION) {
+        operation_list_t tmp_op_list = *op_list;
+
+        memcpy(&op_list->list[1], &tmp_op_list.list[0], sizeof(operation_t)*op_list->cnt);
+
+        op_list->list[0].type = WHERE;
+        strcpy(op_list->list[0].clause, "delete=0");
+        strcpy(op_list->list[0].rule.where, "delete=0");
+        op_list->cnt++;
+    }
+
+    return;
 }
 
 static int init_request(request_t* req, char* query)
@@ -2801,10 +2830,14 @@ static int init_request(request_t* req, char* query)
 		s = e + 1;
     }
 
-     /* virtual id가 없을경우 default로 did로 셋팅하도록 */
-	 if(req->virtual_rule_list.cnt == 0) { 	 
-		 set_virtual_id(&req->virtual_rule_list, NULL); 	 
-	 }
+    /* virtual id가 없을경우 default로 did로 셋팅하도록 */
+	if(req->virtual_rule_list.cnt == 0) { 	 
+        set_virtual_id(&req->virtual_rule_list, NULL); 	 
+	}
+
+    add_delete_where(&req->op_list_did);
+    /* did operation만 하면 된다 */
+    //add_delete_where(&req->op_list_vid);
 
 	print_request(req);
 
