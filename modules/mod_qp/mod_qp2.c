@@ -2711,7 +2711,7 @@ static void add_delete_where(operation_list_t* op_list)
         memcpy(&op_list->list[1], &tmp_op_list.list[0], sizeof(operation_t)*op_list->cnt);
 
         op_list->list[0].type = WHERE;
-        strcpy(op_list->list[0].clause, "delete=0");
+        strcpy(op_list->list[0].clause, "WHERE delete=0");
         strcpy(op_list->list[0].rule.where, "delete=0");
         op_list->cnt++;
     }
