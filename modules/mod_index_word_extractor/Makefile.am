@@ -9,7 +9,8 @@ pkglib_LTLIBRARIES   = mod_bigram.la \
                        mod_koma.la \
                        mod_dummy_ma.la \
                        mod_kor2chn_translator.la \
-                       mod_daum_koma.la
+                       mod_daum_koma.la \
+                       mod_daum_koma_exact.la
 
 lib_LTLIBRARIES      = liboldcodetrans.la
 
@@ -58,6 +59,9 @@ mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 if USE_DAUM_KOMA
 mod_daum_koma_la_SOURCES = mod_daum_koma.c
 mod_daum_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
+
+mod_daum_koma_exact_la_SOURCES = mod_daum_exact.c
+mod_daum_koma_exact_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
 else
 mod_daum_koma_la_SOURCES = 
 mod_daum_koma_la_LDFLAGS = -module -avoid-version 
