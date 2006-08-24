@@ -13,8 +13,10 @@ Field  6    pattern            yes        0               0                no   
 Field  7    date               no         0               0                no            RETURN
 Field  8    time               no         0               0                no            RETURN
 Field  9    review_type        no         0               0                no            RETURN
+Field  10   bookid_int         no         0               0                no            RETURN
 
-Field  10   pub_ymd            no         0               0                no            RETURN
-Field  11   review_id          no         0               0                no            RETURN
+Field  11   pub_ymd            no         0               0                no            RETURN
+Field  12   review_id          no         0               0                no            RETURN
+Field  13   book_id            no         0               0                no            RETURN
 
-Field  12   oid                no         0               0                no            RETURN
+Field  14   oid                no         0               0                no            RETURN
