@@ -528,7 +528,11 @@ static char *make_allow(request_rec * r)
     apr_int64_t mask;
     apr_array_header_t *allow =
 	apr_array_make(r->pool, 10, sizeof(char *));
-    apr_hash_index_t *hi = apr_hash_first(r->pool, methods_registry);
+    apr_hash_index_t *hi = NULL;
+
+    if(methods_registry != NULL) {
+        apr_hash_first(r->pool, methods_registry);
+    }
 
     mask = r->allowed_methods->method_mask;
 
