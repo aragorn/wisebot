@@ -19,4 +19,5 @@ Field  12   bookid_int         no         0               0                no   
 Field  13   cate_nm            no         0               0                no            RETURN
 
 Field  14   link_barcode       no         0               0                no            RETURN
-Field  15   oid                no         0               0                no            RETURN
+Field  15   cover_url          no         0               0                no            RETURN
+Field  16   oid                no         0               0                no            RETURN
