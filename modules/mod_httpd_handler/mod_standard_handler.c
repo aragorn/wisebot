@@ -283,7 +283,7 @@ static int append_file(request_rec *r, char *path){
 }
 
 
-static int append_xml_msg_record(request_rec *r, msg_record_t *msg){
+static int append_xml_msg_record(memfile *m, msg_record_t *msg){
     int nRet;
     char buf[MAX_RECORDED_MSG_LEN];
 
@@ -292,20 +292,16 @@ static int append_xml_msg_record(request_rec *r, msg_record_t *msg){
         return FAIL;
     }
 
-    if (strncmp(r->content_type, "text/xml", 8) != 0 ){/*strlen("text/xml")*/
-        error("invalid content_type[%s]", r->content_type);
-        return FAIL;
-    }   
-        
-    ap_rprintf(r, "<messages>\n");
+    memfile_appendF(m, "<li>messages</li>\n<ul>\n");
     msg_record_rewind(msg);
     while(1){
         nRet = msg_record_read(msg, buf);
         if ( nRet != SUCCESS )  break;
-        ap_rprintf(r, "\t<msgline><![CDATA[%s]]></msgline>\n", buf);
+        memfile_appendF(m, "\t<li>%s</li>\n", buf);
     }   
 
-    ap_rprintf(r, "</messages>\n");
+    memfile_appendF(m, "</ul>\n");
+
     return SUCCESS;
 }  
 
@@ -313,13 +309,34 @@ static void _make_fail_response(request_rec *r, softbot_handler_rec *s, int ret_
     if( equals_content_type(r, "x-softbotd/binary") == TRUE) {
         return;
     } else {
+        char* error = NULL;
+        int error_size = 0;
+
+	    memfile *mfile = memfile_new();
+		if ( !mfile ) {
+			error("memfile_new failed");
+			return;
+		}
+
 		ap_set_content_type(r, "text/xml");
-		ap_rprintf(r,
-				"<?xml version=\"1.0\" encoding=\"euc-kr\" ?>"
-				"<xml>\n<retcode>%d</retcode>\n"
-				"<result>Response Failed</result>\n", ret_code);
-		append_xml_msg_record(r, &s->msg);
-		ap_rprintf(r, "</xml>");
+
+        memfile_appendF(mfile, 
+				"<ul>\n"
+				"<li>return code : %d</li>\n"
+				"<li>reason : Response Failed</li>\n", ret_code);
+		append_xml_msg_record(mfile, &s->msg);
+        memfile_appendF(mfile, "</ul>");
+
+        error_size = memfile_getSize(mfile);
+        error = apr_palloc(r->pool, error_size + 1);
+        memfile_setOffset(mfile, 0);
+        memfile_read(mfile, error, error_size);
+        error[error_size] = '\0';
+
+		apr_table_set(r->notes, "error-notes", error);
+		apr_table_set(r->notes, "verbose-error-to", "*");
+        
+        memfile_free(mfile);
     }
 
     return;
