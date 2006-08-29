@@ -9,6 +9,7 @@ SOFTBOTD=bin/softbotd
 SOFTBOTD_CONF=etc/softbot.conf
 SOFTBOTD_PID_FILE=logs/softbotd.pid
 SOFTBOTD_LOG_FILE=logs/error_log
+SOFTBOTD_QUERY_LOG_FILE=logs/query_log
 
 # set WITH_RMAS=1 when you use rmas daemon
 WITH_RMAS=1
@@ -421,6 +422,13 @@ cron() {
 	start
 }
 
+cron_non_stop() {
+	$SOFTBOT_ROOT/scripts/logrotate.pl -s 100M $SOFTBOT_ROOT/$SOFTBOTD_LOG_FILE
+	$SOFTBOT_ROOT/scripts/logrotate.pl -s 100M $SOFTBOT_ROOT/$RMAS_LOG_FILE
+	$SOFTBOT_ROOT/scripts/logrotate.pl -s 100M $SOFTBOT_ROOT/$SOFTBOTD_QUERY_LOG_FILE
+    reopen
+}
+
 check_errors
 case "$1" in
 start)  start
@@ -436,7 +444,9 @@ reopen) reopen
 status) status
 	;;
 cron) cron
-        ;;
+    ;;
+cron_non_stop) cron_non_stop
+    ;;
 *)	echo "Usage: $0 start|stop|status|restart|reopen|cron"
 	exit 1 
     ;;
