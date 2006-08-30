@@ -79,6 +79,8 @@ struct weight_t {
 #define MAX_WEIGHT (16)
 struct weight_list_t {
 	int cnt;
+    int reset;
+    int reset_value;
 	weight_t list[MAX_WEIGHT];
     char clause[LONG_STRING_SIZE];
 };

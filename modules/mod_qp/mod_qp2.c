@@ -772,17 +772,19 @@ static index_list_t *read_index_list(index_list_t *list)
                         for(w = 0; w < wl->cnt; w++) {
 							if ( wl->list[w].field_id ==  list->doc_hits[i].hits[j].std_hit.field  ) {
 								weight += wl->list[w].weight;
-                                //debug("did[%u], weight:%d(%s)\n", list->doc_hits[i].id, weight, wl->list[w].name);
+                                debug("did[%u], weight:%d(%s)\n", list->doc_hits[i].id, weight, wl->list[w].name);
                             }
                         }
 					}
 				}	
 				
-				tot_index_doccnt = sb_run_last_indexed_did();
-
-				list->relevance[idx-1] = (((int)log10( (tot_index_doccnt*3) / (ndochits))+1 ) * nWordHit)+weight;
-
-										
+                // reset일 경우 기존 relevance를 모두 무시한다.
+                if(wl->reset) {
+					list->relevance[idx-1] = wl->reset_value + weight;
+                } else {
+					tot_index_doccnt = sb_run_last_indexed_did();
+					list->relevance[idx-1] = (((int)log10( (tot_index_doccnt*3) / (ndochits))+1 ) * nWordHit)+weight;
+                }
 			}
 		}
 		list->ndochits = idx;
@@ -2512,13 +2514,21 @@ static void set_weight(weight_list_t* wl, char* clause)
             continue;
         } else {
             int idx = 0;
+            char* name = NULL;
             *p = '\0';
-            strncpy(wl->list[wl->cnt].name, sb_trim(s), SHORT_STRING_SIZE); 
-            wl->list[wl->cnt].weight = atoi(p+1);
 
-            if( is_exist_return_field(wl->list[wl->cnt].name, &idx) != FALSE) {
-                wl->list[wl->cnt].field_id = field_info[idx].id;
-                wl->cnt++;
+            name = sb_trim(s);
+            if( strcasecmp("RESET", name) == 0) {
+				wl->reset = 1;
+				wl->reset_value = atoi(p+1);
+            } else {
+				strncpy(wl->list[wl->cnt].name, name, SHORT_STRING_SIZE); 
+				wl->list[wl->cnt].weight = atoi(p+1);
+
+				if( is_exist_return_field(wl->list[wl->cnt].name, &idx) != FALSE) {
+					wl->list[wl->cnt].field_id = field_info[idx].id;
+					wl->cnt++;
+				}
             }
         }
 
