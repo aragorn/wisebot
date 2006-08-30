@@ -4,3 +4,4 @@
     RebuildDocAttrField     sale_qty
     RebuildDocAttrField     bookid_int
     RebuildDocAttrField     content_search_yn
+    RebuildDocAttrField     sale_yn

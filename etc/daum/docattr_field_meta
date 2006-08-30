@@ -4,3 +4,4 @@ DocAttrField cate_type           Enum
 DocAttrField sale_qty            Integer 
 DocAttrField bookid_int          Integer 
 DocAttrField content_search_yn   Enum
+DocAttrField sale_yn             Enum
