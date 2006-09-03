@@ -3,6 +3,7 @@
 #include "common_core.h"
 #include "util.h"
 #include <string.h>
+#include <time.h>
 
 const char *sb_get_server_version(void)
 {
