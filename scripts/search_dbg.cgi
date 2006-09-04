@@ -2,7 +2,7 @@
 use strict;
 use CGI;
 
-my $cvs_id = qw( $Id$ );
+my $cvs_id = q( $Id$ );
 my $q = new CGI;
 my $target = $q->param("target") || "http://localhost:3000/search/search";
 my $query  = $q->param("query")  || "";
@@ -107,6 +107,6 @@ OUTPUT_STYLE SOFTBOT4
 </body>
 END
 
-print qw( <address> $Id$ </address> </html> );
+print q( <address> $Id$ </address> </html> );
 
 }
