@@ -67,7 +67,7 @@ mod_daum_koma_la_SOURCES =
 mod_daum_koma_la_LDFLAGS = -module -avoid-version 
 
 mod_daum_koma_exact_la_SOURCES = 
-mod_daum_koma_exact_la_LDFLAGS = 
+mod_daum_koma_exact_la_LDFLAGS = -module -avoid-version
 endif
 
 include ../install-pkglib.mk
