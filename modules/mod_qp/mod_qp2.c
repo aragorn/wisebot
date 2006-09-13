@@ -67,11 +67,20 @@ static field_info_t field_info[MAX_EXT_FIELD];
 
 ///////////////////////////////////////////////////////////
 // 최대 요약문 크기
-static int max_comment_bytes = 1024;
+static int max_comment_bytes = 200;
 
 ///////////////////////////////////////////////////////////
 // 구버전 cdm 사용여부
 static int b_use_cdm = 0;
+///////////////////////////////////////////////////////////
+
+#define MAX_FIELD_SIZE (1024*1024*1024)
+///////////////////////////////////////////////////////////
+// 검색어 bold 처리
+#define MAX_HIGHTLIGHT_TAG 64
+
+static char highlight_pre_tag[MAX_HIGHTLIGHT_TAG];
+static char highlight_post_tag[MAX_HIGHTLIGHT_TAG];
 ///////////////////////////////////////////////////////////
 
 enum DbType {
@@ -2022,7 +2031,142 @@ static int is_exist_return_field(char* field_name, int* idx)
     return FALSE;        
 }
 
-#define MAX_FIELD_SIZE (1024*1024*1024)
+static int is_seperator(char* c, int* sep_size)
+{
+	static char seps1[] = " \0\t\r\n!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+    static char seps2[][2] = {"，", "」", "「"};
+
+	static int seps1_size = sizeof(seps1);
+	static int seps2_size = sizeof(seps2)/2;
+	int i = 0;
+
+    for(i = 0; i < seps1_size; i++) {
+        if(*c == seps1[i]) {
+            *sep_size = 1;
+            return TRUE; 
+        }
+	}
+
+    for(i = 0; i < seps2_size; i++) {
+        if(*c == seps2[i][0] && *(c+1) == seps2[i][1]) {
+            *sep_size = 2;
+            return TRUE; 
+        }
+	}
+
+    *sep_size = 1;
+
+	return FALSE;
+}
+
+static int is_matched(char* word, word_list_t* wl)
+{
+	int i = 0;
+
+    for(i = 0; i < wl->cnt; i++) {
+        char* p = strstr(word, wl->word[i]);
+
+		if(p != NULL) return TRUE;
+	}
+
+	return FALSE;
+}
+
+/* 
+ * FIXME: field_value의 tag 추가로 인해 크기가 늘어나게 되는데
+ *        buffer 경계를 체크하지 않는 문제가 있다. --정시욱
+ */
+static int highlight(char* field_value, word_list_t* wl) 
+{
+	memfile *buffer = memfile_new();
+	char* p = field_value;
+    char* s = field_value;
+	char sep[3] = {0,0,0};
+	int len = 0;
+	int rv = 0;
+
+    while( 1 ) {
+        int sep_size = 1;
+		if( is_seperator(p, &sep_size) ) {
+			sep[0] = *p;
+			sep[1] = '\0';
+			*p = '\0';
+
+            if(sep_size == 2) {
+			    sep[1] = *(p+1);
+			    sep[2] = '\0';
+			    *(p+1) = '\0';
+            } 
+
+			if( is_matched(s, wl) ) {
+                //debug("is matched[%s]", s);
+	            rv = memfile_append(buffer, highlight_pre_tag, strlen(highlight_pre_tag));             
+				if(rv < 0) {
+					error("can not append memfile");
+					memfile_free(buffer);
+					return FAIL;
+				}
+
+	            rv = memfile_append(buffer, s, strlen(s));
+				if(rv < 0) {
+					error("can not append memfile");
+					memfile_free(buffer);
+					return FAIL;
+				}
+
+	            rv = memfile_append(buffer, highlight_post_tag, strlen(highlight_post_tag));             
+				if(rv < 0) {
+					error("can not append memfile");
+					memfile_free(buffer);
+					return FAIL;
+				}
+			} else {
+                //debug("miss matched[%s]", s);
+	            rv = memfile_append(buffer, s, strlen(s));
+				if(rv < 0) {
+					error("can not append memfile");
+					memfile_free(buffer);
+					return FAIL;
+				}
+			}
+			/* 마지막 어절 체크 */
+			if(sep[0] == '\0') break;
+
+	        rv = memfile_append(buffer, sep, strlen(sep));
+			if(rv < 0) {
+				error("can not append memfile");
+				memfile_free(buffer);
+				return FAIL;
+			}
+
+			s = p + sep_size;
+		}
+
+		p += sep_size;
+	}
+
+	memfile_setOffset(buffer, 0);
+	len = memfile_getSize(buffer);
+
+	if(len >= MAX_FIELD_SIZE) {
+		error("field value size[%d] larger than MAX_FIELD_SIZE[%d]",
+				len, MAX_FIELD_SIZE);
+		memfile_free(buffer);
+		return FAIL;
+	}
+
+	rv = memfile_read(buffer, field_value, len);
+	if(rv != len) {
+		error("can not appendF memfile");
+		memfile_free(buffer);
+		return FAIL;
+	}
+	field_value[len] = '\0';
+
+	memfile_free(buffer);
+	return SUCCESS;
+}
+
 static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, char* comment) 
 {
 	int i = 0, k = -1;
@@ -2030,6 +2174,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	DocObject *docBody = 0x00; 
 	cdm_doc_t* cdmdoc;
 	memfile *buffer = memfile_new();
+    int all_highlight = 0;
 
 	char *field_value = 0x00; 
 	static char* _field_value = NULL;
@@ -2062,10 +2207,11 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 		return FAIL;
 	} 
 
-	//memset(comment, 0x00, LONG_LONG_STRING_SIZE); 
-
-	if(sl->field_name[0][0] == '*')
+	if(sl->field[0].name[0] == '*') {
 		sl->cnt = field_count;
+
+        all_highlight = sl->field[0].is_highlight;
+    }
 
 	if(output_style == STYLE_XML) {
 		rv = memfile_appendF(buffer, "<fields count=\"%d\">", sl->cnt);
@@ -2079,11 +2225,11 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	}
 
 	for (i = 0; i < sl->cnt; i++) {
-		if(sl->field_name[0][0] == '*') {
+		if(sl->field[0].name[0] == '*') {
 			if(k < field_count) {
 				k++;
 			}
-		} else if(is_exist_return_field(sl->field_name[i], &k) == TRUE) {
+		} else if(is_exist_return_field(sl->field[i].name, &k) == TRUE) {
             // select 항목에 존재하고 NONE이 아닐경우에만 추출한다.
 			if(field_info[k].type == NONE) { // enum field_type 참조.
 				continue;
@@ -2135,7 +2281,11 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 				cut_string( field_value, max_comment_bytes-1 );
 
 	            if(output_style == STYLE_XML) {
-					rv = memfile_appendF(buffer, "<![CDATA[%s]]>", field_value);
+					if(all_highlight || sl->field[i].is_highlight) {
+						highlight(field_value, &req->word_list);
+					}
+				    rv = memfile_appendF(buffer, "<![CDATA[%s]]>", field_value);
+
 					if(rv < 0) {
 						MSG_RECORD(&req->msg, error, "can not appendF memfile");
 						memfile_free(buffer);
@@ -2143,7 +2293,11 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 					}
 				} else {
 					if(strlen(field_value) != 0) {
+						if(all_highlight || sl->field[i].is_highlight) {
+							highlight(field_value, &req->word_list);
+						}
 						rv = memfile_appendF(buffer, "%s", field_value);
+
 						if(rv < 0) {
 							MSG_RECORD(&req->msg, error, "can not appendF memfile");
 							memfile_free(buffer);
@@ -2156,16 +2310,13 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 			case SUM:
 			case SUM_OR_FIRST:
 				{
-					char summary[210];
 					int exist_summary = 0;
 					int m = 0;
-
-					summary[0] = '\0';
+					char* summary = sb_calloc(sizeof(char), max_comment_bytes*2);
 
 					for(m = 0; m < doc_hits->nhits; m++) {
 						if ( field_info[k].id == doc_hits->hits[m].std_hit.field ) {
 							int summary_pos = 0;
-							memset(summary, 0x00, 210);
 
                             if(field_info[k].morpid == 16) {
 							    summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
@@ -2174,8 +2325,8 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
                             }
 
 //warn("field_value[%s], summary_pos[%d], position[%u]", field_value, summary_pos, doc_hits->hits[m].std_hit.position);
-							strncpy(summary, field_value + summary_pos, 201);
-							cut_string( summary, 200 );
+							strncpy(summary, field_value + summary_pos, max_comment_bytes);
+							cut_string( summary, max_comment_bytes-1);
 							exist_summary = 1;
 							break;
 						}
@@ -2183,13 +2334,20 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 					
 					/* 본문에 단어가  없을경우 */
 					if(field_info[k].type == SUM_OR_FIRST && exist_summary == 0) {
-						memset(summary, 0x00, 210);
-						strncpy(summary, field_value, 201);
-						cut_string( summary, 200 );
+						strncpy(summary, field_value, max_comment_bytes);
+						cut_string( summary, max_comment_bytes-1);
 					}
 
+					// field_value size : 1M, hightlight 시 충분한 버퍼가 필요하기 때문에 다시 옮김. 
+					strcpy(field_value, summary);
+				    if(summary != NULL) sb_free(summary);
+
 					if(output_style == STYLE_XML) {
-						rv = memfile_appendF(buffer, "<![CDATA[%s]]>", summary);
+						if(all_highlight || sl->field[i].is_highlight) {
+							highlight(field_value, &req->word_list);
+						}
+
+						rv = memfile_appendF(buffer, "<![CDATA[%s]]>", field_value);
 						if(rv < 0) {
 							MSG_RECORD(&req->msg, error, "can not appendF memfile");
 							memfile_free(buffer);
@@ -2197,7 +2355,11 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						}
 					} else {
 					    if(strlen(field_value) != 0) {
-							rv = memfile_appendF(buffer, "%s", summary);
+							if(all_highlight || sl->field[i].is_highlight) {
+								highlight(field_value, &req->word_list);
+							}
+
+							rv = memfile_appendF(buffer, "%s", field_value);
 							if(rv < 0) {
 								MSG_RECORD(&req->msg, error, "can not appendF memfile");
 								memfile_free(buffer);
@@ -2206,6 +2368,9 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						}
 					}
 				}
+			break;
+			default:
+                warn("field return type configuration is wrong");
 			break;
 		}
 
@@ -2458,13 +2623,27 @@ static void set_select_clause(select_list_t* sl, char* clause)
 				break;
 			} 
 
-            sl->field_name[0][0] = '*';
+            sl->field[0].name[0] = '*';
             sl->cnt = 1;
+
+			if(strncasecmp(s+1, ":H", 2) == 0) {
+                sl->field[0].is_highlight = 1;
+			}
 
 			/* 다른건 확인할 필요가 없다. */
 			break;
 		} else {
-            strncpy(sl->field_name[sl->cnt++], sb_trim(s), SHORT_STRING_SIZE); 
+			char* name = sb_trim(s);
+			char* highlight = NULL;
+
+			// name에 :H 의 존재유무만 확인한다.
+			if( ( highlight = strstr(name, ":H") ) == NULL) {
+                strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE); 
+			} else {
+				*highlight = '\0';
+				sl->field[sl->cnt].is_highlight = 1;
+                strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE); 
+			}
         }
 
 		if(e == NULL) break;
@@ -2679,6 +2858,14 @@ static void print_operations(operation_list_t* op_list)
 	}
 }
 
+static void print_search_word(word_list_t* wl)
+{
+    int i = 0;
+    for(i = 0; i < wl->cnt; i++) {
+        debug("word[%s]", wl->word[i]);
+    }
+}
+
 static void print_request(request_t* req)
 {
 	int i  = 0;
@@ -2686,6 +2873,7 @@ static void print_request(request_t* req)
     debug("req->query[%s]", req->query);
     debug("req->search[%s]", req->search);
 
+	print_search_word(&req->word_list);
 	print_select(&req->select_list);
 	print_weight(&req->weight_list);
 	debug("======= did operation count[%d]========", req->op_list_did.cnt);
@@ -2727,6 +2915,52 @@ static void add_delete_where(operation_list_t* op_list)
     }
 
     return;
+}
+
+static void set_search_words(request_t* req)
+{
+    int i = 0;
+    char* s = NULL;
+    char* e = NULL;
+    char* q = sb_calloc(sizeof(char), strlen(req->search)+1);
+	int len = 0;
+    word_list_t* wl = &req->word_list;
+
+    strncpy(q, req->search, strlen(req->search));
+    len = strlen(q);
+
+	for(i = 0; i < len; i++) {
+		if ( q[i] == '(' || q[i] == ')' || q[i] == '+' || 
+		     q[i] == '&' || q[i] == '!' || q[i] == '!' || 
+			 q[i] == ',' || q[i] == '<' || q[i] == '>' )
+			 q[i] = ' ';
+	}
+
+    s = sb_trim(q);
+warn("s[%s]", s);
+	while(1) {
+		e = strchr(s, ' ');
+		if(e == NULL && strlen(s) == 0) break;
+
+		if(e == NULL) {
+			// 마지막 clause도 처리하기 위해.
+		} else {
+			*e = '\0';
+		}
+
+		s = sb_trim(s);
+        strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
+
+		if(e == NULL) break;
+		if(wl->cnt >= MAX_QUERY_NODES) {
+			warn("over max word count[%d]", MAX_QUERY_NODES);
+			break;
+		}
+	
+		s = e+1;
+	}
+
+    sb_free(q);
 }
 
 static int init_request(request_t* req, char* query)
@@ -2788,6 +3022,9 @@ static int init_request(request_t* req, char* query)
 					break;
 				case SEARCH:
 					strncpy(req->search, sb_trim(s+len), MAX_QUERY_STRING_SIZE-1);
+
+					//highlighting 을 위한 어절을 추출한다.
+					set_search_words(req);
 					break;
 				case VIRTUAL_ID:
 					set_virtual_id(&req->virtual_rule_list, s+len);
@@ -3829,7 +4066,8 @@ static void print_select(select_list_t* rule)
     int i = 0;
 
     for(i = 0; i < rule->cnt; i++) {
-        debug("select field[%s]", rule->field_name[i]);
+        debug("select field[%s], is_highlight[%d]", 
+		      rule->field[i].name, rule->field[i].is_highlight);
     } 
 }
 
@@ -4020,7 +4258,6 @@ time_status();
 	return SUCCESS;
 }
 
-#define MAX_QUERY_NODES 60
 static int light_search (request_t *req, response_t *res)
 {
 	int num_of_node, rv;
@@ -4277,6 +4514,18 @@ static void setCdmSet(configValue v)
 	mCdmSet = atoi( v.argument[0] );
 }
 
+static void set_highlight_post_tag(configValue v)
+{
+	strncpy(highlight_post_tag, v.argument[0], MAX_HIGHTLIGHT_TAG);
+	highlight_post_tag[MAX_HIGHTLIGHT_TAG-1] = '\0';
+}
+
+static void set_highlight_pre_tag(configValue v)
+{
+	strncpy(highlight_pre_tag, v.argument[0], MAX_HIGHTLIGHT_TAG);
+	highlight_pre_tag[MAX_HIGHTLIGHT_TAG-1] = '\0';
+}
+
 static void get_commentfield(configValue v)
 {
 	if (v.argNum < 7) return;
@@ -4338,6 +4587,8 @@ static config_t config[] = {
 	CONFIG_GET("Field",get_commentfield,VAR_ARG, "Field which needs to be shown in result"),
 	CONFIG_GET("FieldSortingOrder",get_FieldSortingOrder,2, "Field sorting order"),
 	CONFIG_GET("MaxCommentBytes",set_max_comment_bytes, 1, "Max comment bytes"),
+	CONFIG_GET("HighlightPreTag",set_highlight_pre_tag, 1, "highliight pre tag ex) <b>"),
+	CONFIG_GET("HighlightPostTag",set_highlight_post_tag, 1, "highliight post tag ex) </b>"),
 	{NULL}
 };
 
