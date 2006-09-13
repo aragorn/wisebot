@@ -20,13 +20,16 @@ typedef struct groupby_rule_list_t groupby_rule_list_t;
 typedef struct virtual_rule_list_t virtual_rule_list_t;
 typedef struct operation_t operation_t;
 typedef struct operation_list_t operation_list_t;
+typedef struct select_t select_t;
 typedef struct select_list_t select_list_t;
 typedef struct user_data_t user_data_t;
 typedef struct comment_t comment_t;
 typedef struct weight_t weight_t;
 typedef struct weight_list_t weight_list_t;
+typedef struct word_list_t word_list_t;
 
 #include "docattr2.h"
+#include "qpp.h"
 #include "indexer.h"
 #include "msg_record.h"
 
@@ -45,6 +48,8 @@ typedef struct weight_list_t weight_list_t;
 // 최대 하위 노드 수
 // 4bit로 표현할수 있는 수.
 #define MAX_SEARCH_NODE             (1 << 4) // 2^4 = 16(0은 사용 않함)
+
+#define MAX_QUERY_NODES 60
 
 enum index_list_type {
 	EXCLUDE,
@@ -171,9 +176,14 @@ struct operation_list_t {
     operation_t list[MAX_OPERATION];
 };
 
+struct select_t {
+    char name[SHORT_STRING_SIZE];
+	int is_highlight;
+};
+
 struct select_list_t {
 	int cnt;
-	char field_name[MAX_EXT_FIELD][SHORT_STRING_SIZE];
+	select_t field[MAX_EXT_FIELD];
     char clause[LONG_STRING_SIZE];
 };
 
@@ -190,9 +200,15 @@ struct virtual_rule_list_t {
     char clause[LONG_STRING_SIZE];
 };
 
+struct word_list_t {
+    int cnt;
+	char word[MAX_QUERY_NODES][MAX_WORD_LEN];
+};
+
 struct request_t {
 	char query[MAX_QUERY_STRING_SIZE];
     char search[MAX_QUERY_STRING_SIZE];
+	word_list_t word_list;
     select_list_t select_list;
     weight_list_t weight_list;
 	operation_list_t op_list_vid;
