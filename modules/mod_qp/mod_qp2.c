@@ -74,7 +74,7 @@ static int max_comment_bytes = 200;
 static int b_use_cdm = 0;
 ///////////////////////////////////////////////////////////
 
-#define MAX_FIELD_SIZE (1024*1024*1024)
+#define MAX_FIELD_SIZE (1024*1024)
 ///////////////////////////////////////////////////////////
 // 검색어 bold 처리
 #define MAX_HIGHTLIGHT_TAG 64
@@ -2179,13 +2179,17 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	char *field_value = 0x00; 
 	static char* _field_value = NULL;
 
-    if(_field_value == NULL) {
-        _field_value = sb_malloc(MAX_FIELD_SIZE);
-    }
-
 	int rv = 0;
 	uint32_t docid = doc_hits->id;
 	enum output_style output_style = req->output_style;
+
+    if(_field_value == NULL) {
+        _field_value = sb_malloc(MAX_FIELD_SIZE);
+		if(_field_value == NULL) {
+            error("not enough memory");
+			return FAIL;
+		}
+    }
 
 	if (docid == 0) {
 		MSG_RECORD(&req->msg, error, "docid(%u) < 0",(uint32_t)docid);
@@ -2917,6 +2921,18 @@ static void add_delete_where(operation_list_t* op_list)
     return;
 }
 
+/* body:대검 -> 대검 */
+static char* remove_field(char* word)
+{
+    char* p = strchr(word, ':');
+
+	if(p == NULL) {
+		return word;
+	} else {
+	    return (p+1);
+	}
+}
+
 static void set_search_words(request_t* req)
 {
     int i = 0;
@@ -2937,7 +2953,7 @@ static void set_search_words(request_t* req)
 	}
 
     s = sb_trim(q);
-warn("s[%s]", s);
+
 	while(1) {
 		e = strchr(s, ' ');
 		if(e == NULL && strlen(s) == 0) break;
@@ -2949,7 +2965,7 @@ warn("s[%s]", s);
 		}
 
 		s = sb_trim(s);
-        strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
+        strncpy(wl->word[wl->cnt++], remove_field(s), MAX_WORD_LEN-1);
 
 		if(e == NULL) break;
 		if(wl->cnt >= MAX_QUERY_NODES) {
