@@ -79,8 +79,8 @@ static int b_use_cdm = 0;
 // 검색어 bold 처리
 #define MAX_HIGHTLIGHT_TAG 64
 
-static char highlight_pre_tag[MAX_HIGHTLIGHT_TAG];
-static char highlight_post_tag[MAX_HIGHTLIGHT_TAG];
+static char highlight_pre_tag[MAX_HIGHTLIGHT_TAG] = {"<B>"};
+static char highlight_post_tag[MAX_HIGHTLIGHT_TAG] = {"</B>"};
 ///////////////////////////////////////////////////////////
 
 enum DbType {
