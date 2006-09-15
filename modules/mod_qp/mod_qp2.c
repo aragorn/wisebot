@@ -2038,7 +2038,7 @@ static int is_exist_return_field(char* field_name, int* idx)
 static int is_seperator(char* c, int* sep_size)
 {
 	int seps1_cnt = strlen(seps1);
-	int seps2_cnt = strlen(seps2)/2;
+	int seps2_cnt = strlen(seps2);
 
 	int i = 0;
 
