@@ -81,6 +81,10 @@ static int b_use_cdm = 0;
 
 static char highlight_pre_tag[MAX_HIGHTLIGHT_TAG] = {"<B>"};
 static char highlight_post_tag[MAX_HIGHTLIGHT_TAG] = {"</B>"};
+
+#define MAX_HIGHLIGHT_SEP_LEN 256
+static char seps1[MAX_HIGHLIGHT_SEP_LEN] = " \t\r\n!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+static char seps2[MAX_HIGHLIGHT_SEP_LEN] = "，」「·";
 ///////////////////////////////////////////////////////////
 
 enum DbType {
@@ -2033,22 +2037,20 @@ static int is_exist_return_field(char* field_name, int* idx)
 
 static int is_seperator(char* c, int* sep_size)
 {
-	static char seps1[] = " \0\t\r\n!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
-    static char seps2[][2] = {"，", "」", "「"};
+	int seps1_cnt = strlen(seps1);
+	int seps2_cnt = strlen(seps2)/2;
 
-	static int seps1_size = sizeof(seps1);
-	static int seps2_size = sizeof(seps2)/2;
 	int i = 0;
 
-    for(i = 0; i < seps1_size; i++) {
+    for(i = 0; i < seps1_cnt; i++) {
         if(*c == seps1[i]) {
             *sep_size = 1;
             return TRUE; 
         }
 	}
 
-    for(i = 0; i < seps2_size; i++) {
-        if(*c == seps2[i][0] && *(c+1) == seps2[i][1]) {
+    for(i = 0; i < seps2_cnt; i+=2) {
+        if(*c == seps2[i] && *(c+1) == seps2[i+1]) {
             *sep_size = 2;
             return TRUE; 
         }
@@ -2087,7 +2089,7 @@ static int highlight(char* field_value, word_list_t* wl)
 
     while( 1 ) {
         int sep_size = 1;
-		if( is_seperator(p, &sep_size) ) {
+		if( is_seperator(p, &sep_size) || *p == '\0') {
 			sep[0] = *p;
 			sep[1] = '\0';
 			*p = '\0';
@@ -2342,7 +2344,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						cut_string( summary, max_comment_bytes-1);
 					}
 
-					// field_value size : 1M, hightlight 시 충분한 버퍼가 필요하기 때문에 다시 옮김. 
+					// field_value size : 1M, highlight 시 충분한 버퍼가 필요하기 때문에 다시 옮김. 
 					strcpy(field_value, summary);
 				    if(summary != NULL) sb_free(summary);
 
@@ -4591,6 +4593,22 @@ static void get_word_db_set(configValue v)
 	word_db_set = atoi( v.argument[0] );
 }
 
+static void set_highlight_seperator1byte(configValue v)
+{
+	strncpy(seps1, v.argument[0], MAX_HIGHLIGHT_SEP_LEN);
+	seps1[MAX_HIGHLIGHT_SEP_LEN-1] = '\0';
+
+	debug("a byte seperator[%s]", seps1);
+}
+
+static void set_highlight_seperator2byte(configValue v)
+{
+	strncpy(seps2, v.argument[0], MAX_HIGHLIGHT_SEP_LEN);
+	seps2[MAX_HIGHLIGHT_SEP_LEN-2] = '\0';
+
+	debug("two byte seperator[%s]", seps2);
+}
+
 static config_t config[] = {
 	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDbSet {number}"),
 	CONFIG_GET("DbType",setDbType,1, "vrfi or indexdb"),
@@ -4605,6 +4623,8 @@ static config_t config[] = {
 	CONFIG_GET("MaxCommentBytes",set_max_comment_bytes, 1, "Max comment bytes"),
 	CONFIG_GET("HighlightPreTag",set_highlight_pre_tag, 1, "highliight pre tag ex) <b>"),
 	CONFIG_GET("HighlightPostTag",set_highlight_post_tag, 1, "highliight post tag ex) </b>"),
+	CONFIG_GET("HighlightSeperator1Byte",set_highlight_seperator1byte, 1, "highliight seperator 1 byte) </b>"),
+	CONFIG_GET("HighlightSeperator2Byte",set_highlight_seperator2byte, 1, "highliight seperator 2 byte) </b>"),
 	{NULL}
 };
 
