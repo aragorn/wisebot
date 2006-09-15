@@ -247,6 +247,14 @@ static void getConfig(const char line[], int *i ,char argument[])
 
         while (line[num] != '"') {
 			argument[pos++] = line[num++];
+	
+			// escape \"
+			if (line[num] == '\\') {
+				if(line[num+1] == '"') {
+					argument[pos++] = '"';
+					num +=2;
+				}
+			}
 
 			if (STRING_SIZE <= pos) {
 				error("config length over [%s]",line );
