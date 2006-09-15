@@ -2868,7 +2868,7 @@ static void print_search_word(word_list_t* wl)
 {
     int i = 0;
     for(i = 0; i < wl->cnt; i++) {
-        debug("word[%s]", wl->word[i]);
+        debug("highlight word[%s]", wl->word[i]);
     }
 }
 
@@ -2966,8 +2966,10 @@ static void set_search_words(request_t* req)
 			*e = '\0';
 		}
 
-		s = sb_trim(s);
-        strncpy(wl->word[wl->cnt++], remove_field(s), MAX_WORD_LEN-1);
+		s = sb_trim(remove_field(s));
+		if(strlen(s) != 0) {
+            strncpy(wl->word[wl->cnt++], remove_field(s), MAX_WORD_LEN-1);
+	    }
 
 		if(e == NULL) break;
 		if(wl->cnt >= MAX_QUERY_NODES) {
