@@ -1,3 +1,4 @@
+/* $Id$ */
 #include "common_core.h"
 #include "common_util.h"
 
@@ -168,7 +169,8 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 
 	if(apr_table_get(s->parameters_in, "q") == NULL ||
 			strlen(apr_table_get(s->parameters_in, "q")) == 0) {
-	    MSG_RECORD(&s->msg, error, "query is null, must use http get method");
+	    MSG_RECORD(&s->msg, error, "Parameter 'q' is null or has zero length. query is null."
+									" You have to input a valid query or use GET method instead of POST.");
         return FAIL;
 	}
 
