@@ -1,6 +1,11 @@
 #!/usr/bin/perl -w
 use strict;
 use CGI;
+use CGI::Util qw(unescape escape);
+
+use Benchmark qw(:hireswallclock);
+use LWP::UserAgent;
+use HTTP::Request::Common;
 
 my $cvs_id = q( $Id$ );
 my $q = new CGI;
@@ -11,15 +16,35 @@ my $result = "";
 
 if ($submit eq "ok")
 {
-  $result = "$target + $query";
-  print $q->header(-type=>"text/xml", -charset=>'euc-kr');
+  my $ua = LWP::UserAgent->new;
+  $ua->agent("WiseBot Client/0.1");
+
+  my $escaped_query = escape($query);
+  my $t1 = new Benchmark;
+  my $r = $ua->request(GET $target . "?q=" . $escaped_query);
+  my $t2 = new Benchmark;
+  my $output;
+  if ($r->is_success)
+  {
+    $output = $r->content;
+    #$output = $r->as_string;
+  } else {
+    $output = $r->error_as_HTML;
+  }
+  my $elapsed_time = "<elapsed_time>" . timestr(timediff($t2,$t2), 'nop') . "</elapsed_time>";
+  $output =~ s/(<xml>|<html>)/$1 $elapsed_time/i;
+  my $content_type = "text/plain";
+  $content_type = "text/xml"  if (substr($output,0,50) =~ m/<xml>/i);
+  $content_type = "text/html" if (substr($output,0,50) =~ m/<html>/i);
+
+  print $q->header(-type=>$content_type, -charset=>'cp949');
   print <<END;
-hello, world, submit = $submit;
+$output
 END
   exit;
 } else {
 
-print $q->header(-type=>"text/html", -charset=>'euc-kr');
+print $q->header(-type=>"text/html", -charset=>'cp949', -expires => '-1y');
 print <<END;
 <html>
 <head>
@@ -34,12 +59,13 @@ DIV  {
  margin: 3px;
 }
 
+/* FIXME uncomment when you debug.
+
 * { outline: 1px dotted red; padding: 1px}
 * * { outline: 1px dotted green; padding: 3px }
 * * * { outline: 1px dotted orange; padding: 3px }
 * * * * { outline: 1px dotted blue; padding: 3px }
 * * * * * { outline: 2px solid red; padding: 3px }
-/*
 * * * * * * { outline: 2px solid green }
 * * * * * * * { outline: 2px solid orange }
 * * * * * * * * { outline: 2px solid blue }
