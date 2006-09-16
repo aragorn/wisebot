@@ -27,7 +27,7 @@ END
 $SIG{INT} = sub { $stop++; };
 
 my $UA = LWP::UserAgent->new;
-$UA->agent("WiseBot Register/0.1");
+$UA->agent("WiseBot Client/0.1");
 
 process_data_file($host, $port, $file, $confirm);
 exit;
