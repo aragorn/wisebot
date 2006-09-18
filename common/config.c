@@ -255,6 +255,27 @@ static void getConfig(const char line[], int *i ,char argument[])
 					num +=2;
 				}
 			}
+			// escape \r
+			if (line[num] == '\\') {
+				if(line[num+1] == 'r') {
+					argument[pos++] = '\r';
+					num +=2;
+				}
+			}
+			// escape \n
+			if (line[num] == '\\') {
+				if(line[num+1] == 'n') {
+					argument[pos++] = '\n';
+					num +=2;
+				}
+			}
+			// escape \t
+			if (line[num] == '\\') {
+				if(line[num+1] == 't') {
+					argument[pos++] = '\t';
+					num +=2;
+				}
+			}
 
 			if (STRING_SIZE <= pos) {
 				error("config length over [%s]",line );
