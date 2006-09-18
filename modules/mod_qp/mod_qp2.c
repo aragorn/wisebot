@@ -81,11 +81,16 @@ static int b_use_cdm = 0;
 
 static char highlight_pre_tag[MAX_HIGHTLIGHT_TAG] = {"<B>"};
 static char highlight_post_tag[MAX_HIGHTLIGHT_TAG] = {"</B>"};
+static char highlight_word_len = 0;
 
 #define MAX_HIGHLIGHT_SEP_LEN 256
 static char seps1[MAX_HIGHLIGHT_SEP_LEN] = " \t\r\n!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 static char seps2[MAX_HIGHLIGHT_SEP_LEN] = "，」「·";
+
 ///////////////////////////////////////////////////////////
+// query에서 필드 추출시 삭제해야할 문자
+#define MAX_REMOVE_CHAR_QUERY 64
+static char remove_char_query[MAX_REMOVE_CHAR_QUERY] = {"()+&!k<>*\""};
 
 enum DbType {
 	TYPE_VRFI,
@@ -2642,8 +2647,12 @@ static void set_select_clause(select_list_t* sl, char* clause)
 			char* name = sb_trim(s);
 			char* highlight = NULL;
 
-			// name에 :H 의 존재유무만 확인한다.
+			// name에 :H 의 존재유무만 확인한다. The strcasestr() function is a non-standard extension.
 			if( ( highlight = strstr(name, ":H") ) == NULL) {
+			    highlight = strstr(name, ":h");
+			}
+
+			if( highlight == NULL) {
                 strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE); 
 			} else {
 				*highlight = '\0';
@@ -2938,20 +2947,24 @@ static char* remove_field(char* word)
 static void set_search_words(request_t* req)
 {
     int i = 0;
+    int j = 0;
     char* s = NULL;
     char* e = NULL;
     char* q = sb_calloc(sizeof(char), strlen(req->search)+1);
 	int len = 0;
+	int remove_char_len = strlen(remove_char_query);
     word_list_t* wl = &req->word_list;
 
     strncpy(q, req->search, strlen(req->search));
     len = strlen(q);
 
 	for(i = 0; i < len; i++) {
-		if ( q[i] == '(' || q[i] == ')' || q[i] == '+' || 
-		     q[i] == '&' || q[i] == '!' || q[i] == '!' || 
-			 q[i] == ',' || q[i] == '<' || q[i] == '>' )
-			 q[i] = ' ';
+	    for(j = 0; j < remove_char_len; j++) {
+			if ( q[i] == remove_char_query[j]) {
+				 q[i] = ' ';
+				 break;
+			}
+		}
 	}
 
     s = sb_trim(q);
@@ -2967,8 +2980,8 @@ static void set_search_words(request_t* req)
 		}
 
 		s = sb_trim(remove_field(s));
-		if(strlen(s) != 0) {
-            strncpy(wl->word[wl->cnt++], remove_field(s), MAX_WORD_LEN-1);
+		if(strlen(s) > highlight_word_len) {
+            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
 	    }
 
 		if(e == NULL) break;
@@ -4611,6 +4624,19 @@ static void set_highlight_seperator2byte(configValue v)
 	debug("two byte seperator[%s]", seps2);
 }
 
+static void set_highlight_word_length(configValue v)
+{
+	highlight_word_len = atoi( v.argument[0] );
+}
+
+static void set_remove_char_query(configValue v)
+{
+	strncpy(remove_char_query, v.argument[0], MAX_REMOVE_CHAR_QUERY);
+	remove_char_query[MAX_REMOVE_CHAR_QUERY-1] = '\0';
+
+	debug("remove char query[%s]", remove_char_query);
+}
+
 static config_t config[] = {
 	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDbSet {number}"),
 	CONFIG_GET("DbType",setDbType,1, "vrfi or indexdb"),
@@ -4625,8 +4651,10 @@ static config_t config[] = {
 	CONFIG_GET("MaxCommentBytes",set_max_comment_bytes, 1, "Max comment bytes"),
 	CONFIG_GET("HighlightPreTag",set_highlight_pre_tag, 1, "highliight pre tag ex) <b>"),
 	CONFIG_GET("HighlightPostTag",set_highlight_post_tag, 1, "highliight post tag ex) </b>"),
-	CONFIG_GET("HighlightSeperator1Byte",set_highlight_seperator1byte, 1, "highliight seperator 1 byte) </b>"),
-	CONFIG_GET("HighlightSeperator2Byte",set_highlight_seperator2byte, 1, "highliight seperator 2 byte) </b>"),
+	CONFIG_GET("HighlightSeperator1Byte",set_highlight_seperator1byte, 1, "highliight seperator 1 byte"),
+	CONFIG_GET("HighlightSeperator2Byte",set_highlight_seperator2byte, 1, "highliight seperator 2 byte"),
+	CONFIG_GET("HighlightWordLength",set_highlight_word_length, 1, "highlight word len"),
+	CONFIG_GET("RemoveCharQuery",set_remove_char_query, 1, "remove char query"),
 	{NULL}
 };
 
