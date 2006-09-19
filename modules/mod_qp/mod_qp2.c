@@ -854,7 +854,7 @@ inline static int fast_square(int x)
 static void insert_one_to_result(index_list_t *dest, int idx, 
 					  index_list_t *l1, int idx1) {
 	int pos_weight=0;
-	DEBUG("pos_weight[%d]",pos_weight);
+	//DEBUG("pos_weight[%d]",pos_weight);
 	
 	dest->doc_hits[idx] = l1->doc_hits[idx1];
 	dest->relevance[idx] = l1->relevance[idx1];
