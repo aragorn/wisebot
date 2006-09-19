@@ -84,12 +84,13 @@ static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 static void makeUpperLetter(QueryNode *pQuNode);
 /*static int processSyn(StateObj *pStObj,QueryNode *pQuNode);*/
 
+static char operatorName[12][16] = 
+{"QPP_OP_AND","QPP_OP_OR","QPP_OP_NOT","QPP_OP_PARA",
+ "QPP_OP_WITHIN","QPP_OP_FUZZY","QPP_OP_OPERAND","QPP_OP_MORP",
+ "QPP_OP_SYN","QPP_OP_FILTER","QPP_OP_PHRASE","QPP_OP_NUMERIC"};
+
 int QPP_postfixPrint(QueryNode postfix[],int numNode) {
 	int i = 0;
-	char operatorName[12][16] = 
-		{"QPP_OP_AND","QPP_OP_OR","QPP_OP_NOT","QPP_OP_PARA",
-		 "QPP_OP_WITHIN","QPP_OP_FUZZY","QPP_OP_OPERAND","QPP_OP_MORP",
-		 "QPP_OP_SYN","QPP_OP_FILTER","QPP_OP_PHRASE","QPP_OP_NUMERIC"};
 	char opNum = 0;
 
 	for ( i=0; i<numNode; i++) {
@@ -112,10 +113,6 @@ int QPP_postfixPrint(QueryNode postfix[],int numNode) {
 int QPP_postfixBuffer(char *result, QueryNode postfix[],int numNode) {
 	int i = 0;
 	char tmpbuf[1024];
-	char operatorName[12][16] = 
-		{"QPP_OP_AND","QPP_OP_OR","QPP_OP_NOT","QPP_OP_PARA",
-		 "QPP_OP_WITHIN","QPP_OP_FUZZY","QPP_OP_OPERAND","QPP_OP_MORP",
-		 "QPP_OP_SYN","QPP_OP_FILTER","QPP_OP_PHRASE","QPP_OP_NUMERIC"};
 	char opNum = 0;
 
 	memset(tmpbuf, 0x00, 1024);
@@ -649,9 +646,13 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 		return pushRightEndBigram(word_db, pStObj, pQuNode);
 	}
 
+	debug("morp_id[%d], mMorpIdForPhrase[%d], virtualfield_morpid[%d]",
+	       morp_id, mMorpIdForPhrase, pStObj->virtualfield_morpid);
+
 	morp_id = mMorpAnalyzerId[pStObj->searchField]; 
 	if (pStObj->posWithinPhrase == TRUE) {
-		morp_id = mMorpIdForPhrase;
+	    /* 구문검색시 무조건 바이그램을 쓰지 않도록 수정 */
+		//morp_id = mMorpIdForPhrase;
 	}
 
 	if (pStObj->virtualfield != 0) {
