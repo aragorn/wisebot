@@ -31,11 +31,11 @@ if ($submit eq "ok")
   } else {
     $output = $r->error_as_HTML;
   }
-  my $elapsed_time = "<elapsed_time>" . timestr(timediff($t2,$t2), 'nop') . "</elapsed_time>";
-  $output =~ s/(<xml>|<html>)/$1 $elapsed_time/i;
+  my $elapsed_time = "<elapsed_time>" . timestr(timediff($t2,$t1), 'nop') . "</elapsed_time>";
+  $output =~ s/(<xml[^>]*>|<html[^>]*>)/$1 $elapsed_time/i;
   my $content_type = "text/plain";
-  $content_type = "text/xml"  if (substr($output,0,50) =~ m/<xml>/i);
-  $content_type = "text/html" if (substr($output,0,50) =~ m/<html>/i);
+  $content_type = "text/xml"  if (substr($output,0,150) =~ m/<xml/i);
+  $content_type = "text/html" if (substr($output,0,150) =~ m/<html/i);
 
   print $q->header(-type=>$content_type, -charset=>'cp949');
   print <<END;
@@ -76,7 +76,7 @@ DIV  {
 <body>
 <h3>WiseBot Search Debug <small>($cvs_id)</small></h3>
 
-<form id="search" action="#" style="float:left;" target="result">
+<form id="search" action="#" style="float:left;" target="result" method="post">
 <!--div style="float:left; width:60px"> URL </div-->
 <div style="float:left;"> <input type="text" name="target" size="50" value="$target"/> </div>
 <br style="clear:left">
