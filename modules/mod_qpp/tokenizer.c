@@ -1223,10 +1223,16 @@ const char* qpp_op_to_string(int op, int param)
 		case QPP_OP_AND: return m_opAND[0];
 		case QPP_OP_OR: return m_opOR[0];
 		case QPP_OP_NOT: return m_opNOT[0];
+        case QPP_OP_PARA: return m_opPARA[0];
 		case QPP_OP_WITHIN:
 			snprintf(buf, sizeof(buf), "%s%d%s", m_opWITHIN[0], param, m_opWITHIN[0]);
 			return buf;
-
+        case QPP_OP_FUZZY: return m_opFUZZY[0];
+        case QPP_OP_FIELD: return m_opFIELD[0];
+        case QPP_OP_STAR: return m_opSTAR[0];
+        case QPP_OP_PHRASE:
+			snprintf(buf, sizeof(buf), "%c", m_opBEGIN_PHRASE);
+			return buf;
 		default: return "[unknown op]";
 	}
 }
