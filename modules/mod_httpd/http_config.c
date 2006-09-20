@@ -72,8 +72,9 @@ AP_CORE_DECLARE(int) ap_invoke_handler(request_rec *r)
             "handler \"%s\" not found for: %s", r->handler, r->filename);
     }
 
-	debug("ended");
-    return result == DECLINE ? HTTP_INTERNAL_SERVER_ERROR : result;
+	debug("ended result[%d]", result);
+    //return result == DECLINE ? HTTP_INTERNAL_SERVER_ERROR : result;
+    return result;
 }
 
 
