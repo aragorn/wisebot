@@ -610,7 +610,7 @@ static int default_handler(request_rec *r)
 
 	debug("dh 4");
     if (r->method_number == M_GET || r->method_number == M_POST) {
-		debug("dh 4-1");
+		debug("dh 4-1 filetype[%d], path_info[%s], filename[%s]", r->finfo.filetype, r->path_info, r->filename);
         if (r->finfo.filetype == 0) {
             ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, r,
                           "File does not exist: %s", r->filename);

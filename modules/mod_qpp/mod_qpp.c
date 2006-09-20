@@ -646,10 +646,11 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 		return pushRightEndBigram(word_db, pStObj, pQuNode);
 	}
 
+	morp_id = mMorpAnalyzerId[pStObj->searchField]; 
+
 	debug("morp_id[%d], mMorpIdForPhrase[%d], virtualfield_morpid[%d]",
 	       morp_id, mMorpIdForPhrase, pStObj->virtualfield_morpid);
 
-	morp_id = mMorpAnalyzerId[pStObj->searchField]; 
 	if (pStObj->posWithinPhrase == TRUE) {
 	    /* 구문검색시 무조건 바이그램을 쓰지 않도록 수정 */
 		//morp_id = mMorpIdForPhrase;
