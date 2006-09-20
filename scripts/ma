@@ -18,9 +18,12 @@ sub HELP_MESSAGE {
 Usage: $0 [-r] <host> <port> <header> <file> [<confirm>]
     host
     port
-    header  - fieldname#fieldnum:morp_id^ ex) body#0:11^ 
-    file    - text data file or cdm data file to register
-    confirm - set 1 if you want to confirm every document by key input
+    header   - fieldname#fieldnum:morp_id^ ex) body#0:11^ 
+    file     - text data file or cdm data file to register
+    confirm  - set 1 if you want to confirm every document by key input
+
+Options:
+    -r       - prints koma's raw output instead of rmas output
 END
 	exit;
 }
