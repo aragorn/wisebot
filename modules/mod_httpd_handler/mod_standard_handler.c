@@ -239,6 +239,7 @@ static int _sub_handler(request_rec *rec, softbot_handler_rec *s){
 	if ( rv != SUCCESS ) { return FAIL; }
 
     rv =  sb_run_sbhandler_get_table(s->name_space, (void **) &tab);
+	if ( rv == DECLINE) return rv;
     if ( rv != SUCCESS || !tab ) {
         error("sb_run_sbhandler_get_table() failed");
         return FAIL;
@@ -446,7 +447,7 @@ static int standard_handler(request_rec *r)
             write_qlog(r, &s, nRet);
 		}
  
-        if ( nRet != SUCCESS ) {
+        if ( nRet != SUCCESS) {
             _make_fail_response(r, &s, nRet);
         }
 
@@ -454,8 +455,11 @@ static int standard_handler(request_rec *r)
                         s.name_space, s.request_name, 
                         (s.remain_uri) ? s.remain_uri : "null" );
 
-        if(nRet != SUCCESS)
+        if(nRet != SUCCESS) {
+		    if(nRet == DECLINE) return nRet;
+
             return HTTP_INTERNAL_SERVER_ERROR;
+		}
         else
             return SUCCESS;
 }
