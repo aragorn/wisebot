@@ -113,9 +113,9 @@ function show_hint(id)
 <form name="select_hint">
 <div id="htabmenu" style="position:absolute; right:0; float:right;">
 <strong>Hints: </strong>
-<input type="radio" name="hint" value="none"        onClick="show_hint(this.value);"/>none &nbsp;
-<input type="radio" name="hint" value="search_hint" onClick="show_hint(this.value);"/>search &nbsp;
-<input type="radio" name="hint" value="ma_hint"     onClick="show_hint(this.value);"/>morph analyze &nbsp;
+<input type="radio" name="hint" value="none" checked onClick="show_hint(this.value);"/>none &nbsp;
+<input type="radio" name="hint" value="search_hint"  onClick="show_hint(this.value);"/>search &nbsp;
+<input type="radio" name="hint" value="ma_hint"      onClick="show_hint(this.value);"/>morph analyze &nbsp;
 </div> 
 </form>
 <div id="search_hint" style="position:absolute; top:10ex; right:0; float:right; display:none;">
@@ -157,6 +157,26 @@ OUTPUT_STYLE SOFTBOT4
 <div id="ma_hint" style="position:absolute; top:10ex; right:0; float:right; display:none;">
 <textarea name="example" rows="15" cols="50">
 형태소 분석
+
+http://192.168.10.21:8600/document/ma?contenttype=text&rawkomatext=
+http://192.168.10.21:8600/document/ma?contenttype=text&metadata=
+
+header - fieldname#fieldnum:morp_id^
+body#0:11^
+
+http://localhost:3000/search/search
+
+<Document>
+<body><![CDATA[삼한지 9초판 1쇄 인쇄 2006년 3월 6일 | 초판 1쇄 발행 2006년 3월 10일지은이 김정산 | 펴낸이 김태영상무 신화섭 | 편집장
+ 박선영 | 책임편집 양은하기획편집 1팀 이효선 도은주 성화현 | 2팀 오유미 가정실 | 3팀 최혜진 정지연 한수미디자인 김정숙 하은혜 차기윤
+  | 콘텐츠기획 노진선미 이유정 이화진 | 제작 이재승 송현주마케팅 신민식 정덕식 권대관 송재광 임태순 박신용 김형준 | 영업관리 이재희 
+  김은실인터넷사업 정은선 왕인정 김미애 | 홍보 김현종 허형식 | 광고 김정민 이세윤 임효구경영지원 하인숙 김범수 봉소아 김성자 | 인사교
+  육 송진혁펴낸곳 (주)위즈덤하우스 | 출판등록 2000년 5월 23일 제13-1071호주소 (121-763)서울시 마포구 도화1동 22번지 창강빌딩 15층전화 
+  (02)704-3861 | 팩스 (02)704-3891전자우편 yedam1\@wisdomhouse.co.kr | 홈페이지 www.yedamco.co.kr출력 엔터 | 종이 화인페이퍼 | 인쇄·제
+  본 (주) 현문값 8, 500원ISBN 89-5913-143-1 04810ISBN 89-5913-134-2 (전10권)R잘못된 책은 바꿔드립니다.R이 책의 내용과 편집 체재의 무단
+   전재 및 복제를 금합니다.]]></body>
+</Document>
+
 </textarea>
 </div>
 
