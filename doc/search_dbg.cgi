@@ -11,6 +11,7 @@ my $cvs_id = q( $Id$ );
 my $q = new CGI;
 my $target = $q->param("target") || "http://localhost:3000/search/search";
 my $query  = $q->param("query")  || "";
+my $xslt   = $q->param("xslt")   || "";
 my $submit = $q->param("submit") || "";
 my $result = "";
 
@@ -27,13 +28,13 @@ if ($submit eq "ok")
   if ($r->is_success)
   {
     $output = $r->content;
-#    $output =~ s/(<\?xml [^>]*\?>)/$1\n<?xml-stylesheet type="text\/xsl" href="search.xsl"?>/i;
+    $output =~ s/(<\?xml [^>]*\?>)/$1\n<?xml-stylesheet type="text\/xsl" href="$xslt"?>/i if $xslt;
 
     #$output = $r->as_string;
   } else {
     $output = $r->error_as_HTML;
   }
-  my $elapsed_time = "<elapsed_time>" . timestr(timediff($t2,$t1), 'nop') . "</elapsed_time>";
+  my $elapsed_time = "<loading_time>" . timestr(timediff($t2,$t1), 'nop') . "</loading_time>";
   $output =~ s/(<xml[^>]*>|<html[^>]*>)/$1 $elapsed_time/i;
   my $content_type = "text/plain";
   $content_type = "text/xml"  if (substr($output,0,150) =~ m/<xml/i);
@@ -46,7 +47,7 @@ END
   exit;
 } else {
 
-print $q->header(-type=>"text/html", -charset=>'cp949', -expires => '-1y');
+print $q->header(-type=>"text/html", -charset=>'x-windows-949', -expires => '-1y');
 print <<END;
 <html>
 <head>
@@ -62,9 +63,8 @@ DIV  {
 }
 
 /* FIXME uncomment when you debug.
-
 * { outline: 1px dotted red; padding: 1px}
-* * { outline: 1px dotted green; padding: 3px }
+* * { outline: 1px dotted green; padding: 2px }
 * * * { outline: 1px dotted orange; padding: 3px }
 * * * * { outline: 1px dotted blue; padding: 3px }
 * * * * * { outline: 2px solid red; padding: 3px }
@@ -74,25 +74,51 @@ DIV  {
 */
 
 --></style>
+<script language="JavaScript" type="text/javascript"><!--
+
+function hide(id)
+{
+  var div = eval(document.getElementById(id));
+  if (div) div.style.display = "none";
+}
+
+function show_hint(id)
+{
+  hide("search_hint");
+  hide("ma_hint");
+
+  var div = document.getElementById(id);
+  if (div) div.style.display = "inline";
+}
+//--></script>
 </head>
 <body>
 <h3>WiseBot Search Debug <small>($cvs_id)</small></h3>
 
-<form id="search" action="#" style="float:left;" target="result" method="post">
-<!--div style="float:left; width:60px"> URL </div-->
-<div style="float:left;"> <input type="text" name="target" size="50" value="$target"/> </div>
-<br style="clear:left">
-
-<!--div style="float:left; width:60px"> Query </div-->
-<div style="float:left;"> <textarea name="query" rows="10" cols="50">$query</textarea> </div>
-<br style="clear:left">
-
-<!--div style="float:left; width:60px"> </div-->
+<form id="search" action="#" style="float:left; width:100%" target="result" method="post">
+<div style="float:left;"> <input type="text" name="target" size="50" value="$target"/> </div> <br style="clear:left">
+<div style="float:left; width:100%;"> <textarea name="query" rows="10" cols="80" style="width:100%;">$query</textarea> </div> <br style="clear:left">
+<div style="float:left"> 
+  <select name="xslt" style="width:10em">
+  <option value="">no xsl</option>
+  <option value="search.xsl">search.xsl</option>
+  <option value="search.xsl">search.xsl</option>
+  <option value="search.xsl">search.xsl</option>
+  </select>
+</div>
 <div style="float:left"> <input type="submit" value=" Search "/> </div>
 <input type="hidden" name="submit" value="ok"/>
 </form>
 
-<div style="float:right;">
+<form name="select_hint">
+<div id="htabmenu" style="position:absolute; right:0; float:right;">
+<strong>Hints: </strong>
+<input type="radio" name="hint" value="none"        onClick="show_hint(this.value);"/>none &nbsp;
+<input type="radio" name="hint" value="search_hint" onClick="show_hint(this.value);"/>search &nbsp;
+<input type="radio" name="hint" value="ma_hint"     onClick="show_hint(this.value);"/>morph analyze &nbsp;
+</div> 
+</form>
+<div id="search_hint" style="position:absolute; top:10ex; right:0; float:right; display:none;">
 <textarea name="example" rows="15" cols="50">
 ----------------------------------------------
 본문검색
@@ -128,10 +154,16 @@ OUTPUT_STYLE SOFTBOT4
 </textarea>
 </div>
 
+<div id="ma_hint" style="position:absolute; top:10ex; right:0; float:right; display:none;">
+<textarea name="example" rows="15" cols="50">
+형태소 분석
+</textarea>
+</div>
+
 
 
 <br style="clear:left">
-<iframe name="result" width="100%" height="100%"> </iframe>
+<iframe name="result" width="100%" height="50%"> </iframe>
 </body>
 END
 

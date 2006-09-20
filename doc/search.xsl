@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="cp949"?>
+<?xml version="1.0" encoding="euc-kr"?>
 <!DOCTYPE xsl:stylesheet [
 	<!ENTITY nbsp "&#160;">
 ]> 
@@ -37,25 +37,55 @@ DIV  {
 </head>
 
 <body>
+<xsl:apply-templates/>
+<!--
 <xsl:apply-templates select="query"/>
 <xsl:apply-templates select="parsed_query"/>
-<xsl:apply-templates select="result_count"/>
-<ol>
-<xsl:for-each select="vdocs/vdoc">
-  <xsl:apply-templates select="vdoc"/> 
-</xsl:for-each>
-</ol>
+<xsl:apply-templates select="elapsed_time"/>
+-->
 </body>
 </html>
 </xsl:template>
 
 <xsl:template match="vdocs">
+<ol>
   <xsl:for-each select="vdoc">
-  <h1><xsl:value-of select="text()"/></h1>
+  <li> vid = 
+    <!--
+    <xsl:for-each select="docs/doc">
+    <h3><xsl:value-of select="text()"/></h3>
+    </xsl:for-each>
+    -->
+    <xsl:apply-templates/> 
+  </li>
+  </xsl:for-each>
+</ol>
+</xsl:template>
+
+<xsl:template match="loading_time">
+<b>소요시간:</b> <xsl:apply-templates/><br/>
+</xsl:template>
+
+<xsl:template match="status">
+<b>상태:</b> <xsl:apply-templates/><br/>
 </xsl:template>
 
 <xsl:template match="query">
-  <xsl:value-of select="text()"/>
-</xsl:template> 
+<b>검색질의:</b> <xsl:apply-templates/><br/>
+</xsl:template>
+
+<xsl:template match="parsed_query">
+<b>분석단어:</b> <xsl:apply-templates/><br/>
+</xsl:template>
+
+<xsl:template match="result_count">
+<b>결과건수:</b> <xsl:apply-templates/><br/>
+</xsl:template>
+
+<xsl:template match="elapsed_time">
+<b>서버소요시간:</b> <xsl:apply-templates/> ms<br/>
+</xsl:template>
+
 
 </xsl:stylesheet>
+
