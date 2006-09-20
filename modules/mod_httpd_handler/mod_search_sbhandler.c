@@ -520,7 +520,7 @@ static void set_node_id(configValue v)
     }
 
 	char subprefix[SHORT_STRING_SIZE];
-	snprintf(subprefix, sizeof(subprefix), "node%d", this_node_id);
+	snprintf(subprefix, sizeof(subprefix), "n%d", this_node_id);
 	setproctitle_subprefix(subprefix);
 }
 
