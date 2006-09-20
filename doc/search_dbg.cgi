@@ -49,7 +49,7 @@ END
 
 print $q->header(-type=>"text/html", -charset=>'x-windows-949', -expires => '-1y');
 print <<END;
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>WiseBot Search Debug</title>
 <style type="text/css"><!--
