@@ -287,9 +287,29 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
 	int data_size =0;
 	uint32_t buffer_size=0;
 	char *buffer = NULL;
-    int is_binary = FAIL;
+    int is_binary = 0;
+	int is_plantext = 0;
+	int is_raw_koma_text = 0;
+    char* contenttype = NULL;
+    char* rawkomatext = NULL;
 
     is_binary = equals_content_type(r, "x-softbotd/binary");
+
+    contenttype = apr_pstrdup(r->pool, apr_table_get(s->parameters_in, "contenttype"));
+	if(contenttype == NULL) {
+        is_plantext = 0; // xml
+	} else if(strncasecmp("xml", contenttype, 3) == 0) {
+        is_plantext = 0; // xml
+	} else if(strncasecmp("text", contenttype, 4) == 0) {
+        is_plantext = 1; // text
+	}
+
+    rawkomatext = apr_pstrdup(r->pool, apr_table_get(s->parameters_in, "rawkomatext"));
+	if(rawkomatext == NULL) {
+        is_raw_koma_text = 0;
+	} else {
+        is_raw_koma_text = 1;
+	}
 
     metadata = apr_pstrdup(r->pool, apr_table_get(s->parameters_in, "metadata"));
 
@@ -413,9 +433,11 @@ info("xml doc[%s]", document);
         info("field_name[%s], field_id[%d], morph_id[%d], field_value:[%s]", field_name, field_id, ma_id, buffer);
 
         tmp_data = NULL;
+
+		if(is_raw_koma_text) ma_id = 100;
         rv = sb_run_rmas_morphological_analyzer(field_id, buffer, &tmp_data,
                 &data_size, ma_id);
-        if (rv == FAIL) {
+        if (rv == FAIL || rv == DECLINE) {
             MSG_RECORD(&s->msg, warn, "failed to do morp.. analysis for doc(while analyzing)");
             sb_run_xmlparser_free_parser(parser);
             return FAIL;
@@ -442,17 +464,32 @@ info("xml doc[%s]", document);
         int i;
         index_word_t *idx = NULL;
         int cnt = merge_buffer.data_size / sizeof(index_word_t);
+	    char tag[5];
 
-        ap_rwrite("<?xml version=\"1.0\" encoding=\"euc-kr\" ?>", strlen("<?xml version=\"1.0\" encoding=\"euc-kr\" ?>"), r);
-        ap_rwrite("<xml>\n", strlen("<xml>\n"), r);
-        ap_rprintf(r, "<words count=\"%d\">", cnt);
-        for(i = 0; i < cnt; i++) {
-            idx = (index_word_t*)merge_buffer.data + i;
+#define XML_EUC_KR_HEADER "<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n"
+        if(is_plantext) {
+				ap_rprintf(r, "%d\n", cnt);
+				for(i = 0; i < cnt; i++) {
+					idx = (index_word_t*)merge_buffer.data + i;
 
-            ap_rprintf(r, "<word pos = \"%d\"  field=\"%d\"><![CDATA[%s]]></word>\n", idx->pos, idx->field, idx->word);
-        }
-        ap_rprintf(r, "</words>");
-        ap_rwrite("</rmas>\n", strlen("</rmas>\n"), r);
+					memcpy(tag, &idx->attribute, 4);
+					tag[4] = '\0';
+
+					ap_rprintf(r, "%s %d %s\n", idx->word, idx->pos, tag);
+				}
+		} else {
+				ap_rwrite(XML_EUC_KR_HEADER, strlen(XML_EUC_KR_HEADER), r);
+				ap_rprintf(r, "<items count=\"%d\">", cnt);
+				for(i = 0; i < cnt; i++) {
+					idx = (index_word_t*)merge_buffer.data + i;
+
+					memcpy(tag, &idx->attribute, 4);
+					tag[4] = '\0';
+
+					ap_rprintf(r, "<word pos = \"%d\"  field=\"%d\" tag=\"%s\"><![CDATA[%s]]></word>\n", idx->pos, idx->field, tag, idx->word);
+				}
+				ap_rprintf(r, "</items>");
+	    }
     }
 
     return SUCCESS;
