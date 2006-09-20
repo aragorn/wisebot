@@ -455,7 +455,7 @@ FINISH:
 static int _koma_analyze(index_word_extractor_t *extractor, index_word_t *indexwords, int max)
 {
     // XXX: why not just DECLINE?.. 2002/11/15
-    if(extractor->id != MY_EXTRACTOR_ID && extractor->id != MY_RAW_EXTRACTOR_ID) return DECLINE;
+    if(extractor->id != MY_EXTRACTOR_ID && extractor->id != MY_RAW_EXTRACTOR_ID) return MINUS_DECLINE;
 
     if(extractor->id == MY_RAW_EXTRACTOR_ID) {
         ((koma_handle_t*)extractor->handle)->is_raw_koma_text = 1;
