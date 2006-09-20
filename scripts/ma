@@ -2,20 +2,20 @@
 # $Id$
 use strict;
 
+use CGI::Util qw(unescape escape);
 use Benchmark qw(:hireswallclock);
 use LWP::UserAgent;
 use HTTP::Request::Common;
+use Getopt::Std;
 
-my $host  = shift;
-my $port  = shift;
-my $file = shift;
-my $confirm = shift || 0;
-my $stop = 0;
-my $max_size = 10_000_000;
+sub BEGIN {
+	$Getopt::Std::STANDARD_HELP_VERSION = 1;
+	our $VERSION = "1.0";
+}
 
-unless ($host and $port and $header and $file) {
+sub HELP_MESSAGE {
 	print <<END;
-Usage: $0 <host> <port> <header> <file> [<confirm>]
+Usage: $0 [-r] <host> <port> <header> <file> [<confirm>]
     host
     port
     header  - fieldname#fieldnum:morp_id^ ex) body#0:11^ 
@@ -24,6 +24,24 @@ Usage: $0 <host> <port> <header> <file> [<confirm>]
 END
 	exit;
 }
+
+###################################
+#         options 정리
+#
+
+HELP_MESSAGE() unless( getopts( "r" ) );
+our ( $opt_r );
+my $USE_RAW_KOMA = $opt_r;
+
+my $host  = shift;
+my $port  = shift;
+my $header = shift;
+my $file  = shift;
+my $confirm = shift || 0;
+my $stop = 0;
+my $max_size = 10_000_000;
+
+HELP_MESSAGE() unless ($host and $port and $header and $file);
 
 process_data_file($host, $port, $header, $file, $confirm);
 exit;
@@ -82,12 +100,13 @@ sub process_data_file {
 		if ($state == 3) {
 			/^-{78,82}$/ and $body =~ /<\/Document>/ and do {
 				$state = 1;
-				print "." if (($count % 50) == 0);
+				#print "." if (($count % 50) == 0);
 				if ($confirm > 1 and $count < $confirm) {
 					$count++;
 					next;
 				}
 				morph_analyze($dit, $body, $host, $port, $header);
+				my $tmp = <STDIN> if $confirm;
 				$count++;
 				next;
 			};
@@ -101,143 +120,33 @@ sub process_data_file {
 
 sub morph_analyze
 {
-  print STDERR ".";
-  return;
+  my ($dit,$body,$host,$port,$header) = @_;
 
-}
+  my $ua = LWP::UserAgent->new;
+  $ua->agent("WiseBot Client/0.1");
+  my $target = "http://" . $host . ":" . $port . "/document/ma?contenttype=text";
+  $target .= "&rawkomatext=" if $USE_RAW_KOMA;
 
+  my $escaped_header = escape($header);
 
-
-
-
-__END__
-
-
-
-
-
-my $ua = LWP::UserAgent->new;
-$ua->agent("WiseBot Client/0.1");
-
-
-
-  my $escaped_query = escape($query);
   my $t1 = new Benchmark;
-  my $r = $ua->request(GET $target . "?q=" . $escaped_query);
+  my $r = $ua->request(POST $target . "&metadata=" . $escaped_header,
+  						[ body => $body ] );
   my $t2 = new Benchmark;
   my $output;
   if ($r->is_success)
   {
     $output = $r->content;
-    $output =~ s/(<\?xml [^>]*\?>)/$1\n<?xml-stylesheet type="text\/xsl" href="$xslt"?>/i if $xslt;
+    #$output =~ s/(<\?xml [^>]*\?>)/$1\n<?xml-stylesheet type="text\/xsl" href="$xslt"?>/i if $xslt;
 
     #$output = $r->as_string;
   } else {
     $output = $r->error_as_HTML;
   }
-  my $elapsed_time = "<loading_time>" . timestr(timediff($t2,$t1), 'nop') . "</loading_time>";
-  $output =~ s/(<xml[^>]*>|<html[^>]*>)/$1 $elapsed_time/i;
-  my $content_type = "text/plain";
-  $content_type = "text/xml"  if (substr($output,0,150) =~ m/<xml/i);
-  $content_type = "text/html" if (substr($output,0,150) =~ m/<html/i);
 
-  print $q->header(-type=>$content_type, -charset=>'cp949');
-  print <<END;
-$output
-END
-  exit;
-} else {
+  print "-" x 80, "\n", $dit, "\n\n", $output, "\n";
 
-print $q->header(-type=>"text/html", -charset=>'cp949', -expires => '-1y');
-print <<END;
-<html>
-<head>
-<title>WiseBot Search Debug</title>
-<style type="text/css"><!--
-BODY {
- font-family : Helvetica, sans-serif;
- font-size   : 10pt;
-}
-
-DIV  {
- margin: 3px;
+  return;
 }
 
 
-* { outline: 1px dotted red; padding: 1px}
-* * { outline: 1px dotted green; padding: 3px }
-* * * { outline: 1px dotted orange; padding: 3px }
-* * * * { outline: 1px dotted blue; padding: 3px }
-/* FIXME uncomment when you debug.
-* * * * * { outline: 2px solid red; padding: 3px }
-* * * * * * { outline: 2px solid green }
-* * * * * * * { outline: 2px solid orange }
-* * * * * * * * { outline: 2px solid blue }
-*/
-
---></style>
-</head>
-<body>
-<h3>WiseBot Search Debug <small>($cvs_id)</small></h3>
-
-<form id="search" action="#" style="float:left" target="result" method="post">
-<div style="float:left;"> <input type="text" name="target" size="50" value="$target"/> </div> <br style="clear:left">
-<div style="float:left;"> <textarea name="query" rows="10" cols="50">$query</textarea> </div> <br style="clear:left">
-<div style="float:left"> 
-  <select name="xslt" style="width:10em">
-  <option value="">no xsl</option>
-  <option value="search.xsl">search.xsl</option>
-  <option value="search.xsl">search.xsl</option>
-  <option value="search.xsl">search.xsl</option>
-  </select>
-</div>
-<div style="float:left"> <input type="submit" value=" Search "/> </div>
-<input type="hidden" name="submit" value="ok"/>
-</form>
-
-<div style="float:right;">
-<textarea name="example" rows="15" cols="50">
-----------------------------------------------
-본문검색
-----------------------------------------------
-SELECT *
-SEARCH body:거울
-ORDER_BY RELEVANCY DESC
-LIMIT 0, 10
-
-----------------------------------------------
-통합검색
-----------------------------------------------
-SELECT *
-SEARCH body:거울
-VIRTUAL_ID BOOKID
-(
-GROUP_BY BOOKID LIMIT 3
-ORDER_BY RELEVANCY DESC
-)
-ORDER_BY RELEVANCY DESC
-LIMIT 2
-
---------------
-SELECT *
-SEARCH pattern:softwisezzz
-VIRTUAL_ID BOOKID
-(
-WHERE bookid=2307
-GROUP_BY BOOKID LIMIT 2, 5
-ORDER_BY RELEVANCY DESC, page
-)
-OUTPUT_STYLE SOFTBOT4
-</textarea>
-</div>
-
-
-
-<br style="clear:left">
-<iframe name="result" width="100%" height="100%"> </iframe>
-</body>
-END
-
-print q( <address> $Id$ </address> </html> );
-
-}
