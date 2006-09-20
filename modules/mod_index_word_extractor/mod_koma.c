@@ -13,6 +13,7 @@
 #define MODE_TREAT_JUPMISA 0 // 立固荤 贸府
 
 #define MY_EXTRACTOR_ID 	10
+#define MY_RAW_EXTRACTOR_ID 100
 
 // XXX: should be read from configuration
 static char m_fstfile[STRING_SIZE]="dat/koma/main.FST";
@@ -62,7 +63,7 @@ static index_word_extractor_t* new_koma_analyzer(int id)
 	index_word_extractor_t *extractor = NULL;
 	koma_handle_t *handle=NULL;
 
-	if (id != MY_EXTRACTOR_ID)
+	if (id != MY_EXTRACTOR_ID && id != MY_RAW_EXTRACTOR_ID)
 		return (index_word_extractor_t*)MINUS_DECLINE;
 
 	extractor = sb_calloc(1, sizeof(index_word_extractor_t));
@@ -160,7 +161,7 @@ static int _koma_set_text(index_word_extractor_t* extractor, char* text)
 {
 	koma_handle_t *handle = NULL;
 
-	if (extractor->id != MY_EXTRACTOR_ID)
+	if (extractor->id != MY_EXTRACTOR_ID && extractor->id != MY_RAW_EXTRACTOR_ID)
 		return DECLINE;
 
 	handle = extractor->handle;
@@ -276,9 +277,20 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 			token_len = strlen(token_string);
             debug("num_of_cut[%d], token_string[%s] tag[%s]", num_of_cut, token_string, tag);
 
+            if(h->is_raw_koma_text) {
+                strncpy(out[idx_of_index_word].word, token_string, MAX_WORD_LEN);
+                out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
+                out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
+                out[idx_of_index_word].pos = *cur_pos;
+                memcpy(&(out[idx_of_index_word].attribute), tag,
+                                    sizeof(out[idx_of_index_word].attribute));
+                
+                out[idx_of_index_word].bytepos = h->current_bytes_position + h->bPos[i];
+				idx_of_index_word++;
+            }
 #ifdef MODE_TREAT_JUPDUSA
 			// 立滴荤 傈贸府 
-			if ( num_of_cut == 0 && TAG_IS_JUPDUSA(tag, token_len) ) {
+			else if ( num_of_cut == 0 && TAG_IS_JUPDUSA(tag, token_len) ) {
 				// XXX: length of jupdusa is always 2. we can assert!!!
 				strncpy(jupdusa_string, token_string, token_len);
 				jupdusa_string[token_len] = '\0';
@@ -439,15 +451,18 @@ FINISH:
 	return idx_of_index_word;
 
 }
-static int _koma_analyze(index_word_extractor_t *extractor, 
-								index_word_t *indexwords, int max)
+
+static int _koma_analyze(index_word_extractor_t *extractor, index_word_t *indexwords, int max)
 {
-	// XXX: why not just DECLINE?.. 2002/11/15
-	if (extractor->id != MY_EXTRACTOR_ID) return MINUS_DECLINE;
+    // XXX: why not just DECLINE?.. 2002/11/15
+    if(extractor->id != MY_EXTRACTOR_ID && extractor->id != MY_RAW_EXTRACTOR_ID) return DECLINE;
 
-	return koma_analyze(extractor->handle, indexwords, max);
+    if(extractor->id == MY_RAW_EXTRACTOR_ID) {
+        ((koma_handle_t*)extractor->handle)->is_raw_koma_text = 1;
+    }
+
+    return koma_analyze(extractor->handle, indexwords, max);
 }
-
 
 void delete_koma(koma_handle_t *handle)
 {
@@ -457,7 +472,7 @@ void delete_koma(koma_handle_t *handle)
 	
 static int delete_koma_analyzer(index_word_extractor_t *extractor)
 {
-	if (extractor->id != MY_EXTRACTOR_ID) return DECLINE;
+	if (extractor->id != MY_EXTRACTOR_ID && extractor->id != MY_RAW_EXTRACTOR_ID) return DECLINE;
 
 	delete_koma(extractor->handle);
 

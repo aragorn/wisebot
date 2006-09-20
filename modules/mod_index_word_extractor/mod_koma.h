@@ -158,6 +158,7 @@ typedef	struct koma_handle_t {
 	char *next_text;	// 다음에 분석할 text start point
 	int  koma_done;
 	int  current_bytes_position;
+    int  is_raw_koma_text; // koma를 실행한 원본 결과 추출
 } koma_handle_t;
 
 extern koma_handle_t* new_koma();
