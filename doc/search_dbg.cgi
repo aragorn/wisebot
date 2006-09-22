@@ -63,14 +63,14 @@ DIV  {
 }
 
 /* FIXME uncomment when you debug.
-* { outline: 1px dotted red; padding: 1px}
-* * { outline: 1px dotted green; padding: 2px }
-* * * { outline: 1px dotted orange; padding: 3px }
-* * * * { outline: 1px dotted blue; padding: 3px }
-* * * * * { outline: 2px solid red; padding: 3px }
-* * * * * * { outline: 2px solid green }
-* * * * * * * { outline: 2px solid orange }
-* * * * * * * * { outline: 2px solid blue }
+* { border: 1px dotted red; padding: 1px}
+* * { border: 1px dotted green; padding: 2px }
+* * * { border: 1px dotted orange; padding: 3px }
+* * * * { border: 1px dotted blue; padding: 3px }
+* * * * * { border: 2px solid red; padding: 3px }
+* * * * * * { border: 2px solid green }
+* * * * * * * { border: 2px solid orange }
+* * * * * * * * { border: 2px solid blue }
 */
 
 --></style>
@@ -111,7 +111,7 @@ function show_hint(id)
 </form>
 
 <form name="select_hint">
-<div id="htabmenu" style="position:absolute; right:0; float:right;">
+<div id="htabmenu" style="position:absolute; top:6ex; right:0;">
 <strong>Hints: </strong>
 <input type="radio" name="hint" value="none" checked onClick="show_hint(this.value);"/>none &nbsp;
 <input type="radio" name="hint" value="search_hint"  onClick="show_hint(this.value);"/>search &nbsp;

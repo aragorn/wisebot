@@ -5,7 +5,7 @@
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
-<xsl:output method="html" version="4.0" encoding="x-windows-949" indent="yes"/>
+<xsl:output method="html" version="4.0" encoding="euc-kr" indent="yes"/>
 
 <xsl:template match="xml">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -76,12 +76,18 @@ table tr td {
 
 <xsl:template match="field">
   <b><xsl:value-of select="@name"/></b> - 
-  <xsl:value-of select="text()"/>
+  original: <xsl:value-of select="text()"/><br/>
+  <xsl:apply-templates/> 
   <!--
+  <div onLoad="self.innerHTML="/>
   <xsl:variable name="field_text" select="text()"/>
   <xsl:value-of disable-output-escaping="yes" select="{$field_text}"/>
   -->
 <br/>
+</xsl:template>
+
+<xsl:template match="b">
+  <italic><xsl:apply-templates/></italic>
 </xsl:template>
 
 </xsl:stylesheet>
