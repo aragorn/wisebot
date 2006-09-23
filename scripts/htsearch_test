@@ -23,7 +23,9 @@ Options:
     -p    - print search result
     -q    - print query
     -l    - restart search infinitely
-    -l mode       - search mode, 1 or 2 or 3
+    -l mode       - search mode, 1 - 형태소분석
+	                          or 2 - 바이그램
+							  or 3 - 바이그램 ! 형태소분석
     -t sleep_time - sleep time(seconds) between query search [default:1]
 END
 	exit;
