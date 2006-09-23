@@ -68,6 +68,7 @@ static field_info_t field_info[MAX_EXT_FIELD];
 ///////////////////////////////////////////////////////////
 // 최대 요약문 크기
 static int max_comment_bytes = 200;
+static int max_comment_return_bytes = 200;
 
 ///////////////////////////////////////////////////////////
 // 구버전 cdm 사용여부
@@ -2289,7 +2290,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 			case RETURN:
 			{
 				// 길이가 너무 길면 좀 자른다. 한글 안다치게...
-				cut_string( field_value, max_comment_bytes-1 );
+				cut_string( field_value, max_comment_return_bytes-1 );
 
 	            if(output_style == STYLE_XML) {
 					if(all_highlight || sl->field[i].is_highlight) {
@@ -4542,6 +4543,16 @@ static void set_max_comment_bytes(configValue v)
 	}
 }
 
+static void set_max_comment_return_bytes(configValue v)
+{
+    max_comment_return_bytes = atoi(v.argument[0]);
+
+	if(max_comment_return_bytes >= LONG_LONG_STRING_SIZE) {
+		max_comment_return_bytes = LONG_LONG_STRING_SIZE-1;
+
+		warn("fixed max comment return bytes[%d]", LONG_LONG_STRING_SIZE-1);
+	}
+}
 static void setCdmSet(configValue v)
 {
 	mCdmSet = atoi( v.argument[0] );
@@ -4649,6 +4660,7 @@ static config_t config[] = {
 	CONFIG_GET("Field",get_commentfield,VAR_ARG, "Field which needs to be shown in result"),
 	CONFIG_GET("FieldSortingOrder",get_FieldSortingOrder,2, "Field sorting order"),
 	CONFIG_GET("MaxCommentBytes",set_max_comment_bytes, 1, "Max comment bytes"),
+	CONFIG_GET("MaxCommentReturnBytes",set_max_comment_return_bytes, 1, "Max comment return bytes"),
 	CONFIG_GET("HighlightPreTag",set_highlight_pre_tag, 1, "highliight pre tag ex) <b>"),
 	CONFIG_GET("HighlightPostTag",set_highlight_post_tag, 1, "highliight post tag ex) </b>"),
 	CONFIG_GET("HighlightSeperator1Byte",set_highlight_seperator1byte, 1, "highliight seperator 1 byte"),
