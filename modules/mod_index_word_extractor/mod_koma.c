@@ -9,37 +9,33 @@
 #include <errno.h>
 
 // XXX: 인터넷에서는 기본적으로 단음절 변형을 사용하지 않는다.  -- dyaus
-#define MODE_TREAT_JUPDUSA 0 // 접두사 처리
-#define MODE_TREAT_JUPMISA 0 // 접미사 처리
+#define MODE_TREAT_JUPDUSA 1 // 접두사 처리
+#define MODE_TREAT_JUPMISA 1 // 접미사 처리
 
 #define MY_EXTRACTOR_ID 	10
 #define MY_RAW_EXTRACTOR_ID 100
 
-// XXX: should be read from configuration
-static char m_fstfile[STRING_SIZE]="dat/koma/main.FST";
-static char m_abs_fstfile[STRING_SIZE]="";
+static int HAS_LOADED_KOMA_ENGINE = 0;
+static int HAS_LOADED_HANTAG_ENGINE = 0;
 
-static char m_dictfile[STRING_SIZE]="dat/koma/main.dat";
-static char m_abs_dictfile[STRING_SIZE]="";
+static char MAIN_FST_FILE[SHORT_STRING_SIZE] = "share/koma/main.FST";
+static char MAIN_DAT_FILE[SHORT_STRING_SIZE] = "share/koma/main.dat";
+static char CONNECTION_FILE[SHORT_STRING_SIZE] = "share/koma/connection.txt";
+static char TAG_FILE[SHORT_STRING_SIZE]      = "share/koma/tag.nam";
+static char TAGOUT_FILE[SHORT_STRING_SIZE]   = "share/koma/tagout.nam";
 
-static char m_connection[STRING_SIZE]="dat/koma/connection.txt";
-static char m_abs_connection[STRING_SIZE]="";
+static char PROB_FST_FILE[SHORT_STRING_SIZE] = "share/koma/prob.FST";
+static char PROB_DAT_FILE[SHORT_STRING_SIZE] = "share/koma/prob.dat";
 
-static char m_tag_file[STRING_SIZE]="dat/koma/tag.nam";
-static char m_abs_tag_file[STRING_SIZE]="";
-
-static char m_tagout_file[STRING_SIZE]="dat/koma/tagout.nam";
-static char m_abs_tagout_file[STRING_SIZE]="";
-
-static char m_probfst_file[STRING_SIZE]="dat/koma/prob.FST";
-static char m_abs_probfst_file[STRING_SIZE]="";
-
-static char m_prob_data_file[STRING_SIZE]="dat/koma/prob.dat";
-static char m_abs_prob_data_file[STRING_SIZE]="";
+static int load_koma_engine();
+static int load_hantag_engine();
 
 koma_handle_t* new_koma()
 {
 	koma_handle_t *koma = NULL;
+
+	if (! HAS_LOADED_KOMA_ENGINE)   load_koma_engine();
+	if (! HAS_LOADED_HANTAG_ENGINE) load_hantag_engine();
 
 	koma = sb_calloc(1, sizeof(koma_handle_t));
 	if (koma == NULL) {
@@ -481,50 +477,63 @@ static int delete_koma_analyzer(index_word_extractor_t *extractor)
 	return SUCCESS;
 }
 
-int load_koma_engine(char *fstfile, char *dictfile, char *connection,
-					 char *tag_file, char *tagout_file)
+static int load_koma_engine()
 {
-	if (LoadKomaEngine(fstfile,
-					   dictfile, connection, tag_file, tagout_file) == 0) {
+	char fstfile[STRING_SIZE];
+	char dictfile[STRING_SIZE];
+	char connection[STRING_SIZE];
+	char tag_file[STRING_SIZE];
+	char tagout_file[STRING_SIZE];
+
+	if (HAS_LOADED_KOMA_ENGINE) return SUCCESS;
+
+	snprintf(fstfile,     STRING_SIZE, "%s/%s", gSoftBotRoot, MAIN_FST_FILE);
+	snprintf(dictfile,    STRING_SIZE, "%s/%s", gSoftBotRoot, MAIN_DAT_FILE);
+	snprintf(connection,  STRING_SIZE, "%s/%s", gSoftBotRoot, CONNECTION_FILE);
+	snprintf(tag_file,    STRING_SIZE, "%s/%s", gSoftBotRoot, TAG_FILE);
+	snprintf(tagout_file, STRING_SIZE, "%s/%s", gSoftBotRoot, TAGOUT_FILE);
+
+	if (LoadKomaEngine(fstfile, dictfile, connection, tag_file, tagout_file) == 0) {
 		crit("cannot load KOMA engine: %s", strerror(errno));
 		return FAIL;
 	}
+
+	HAS_LOADED_KOMA_ENGINE = 1;
 	return SUCCESS;
 }
 
-int load_hantag_engine(char* probfst_file, char* prob_data_file)
+static int load_hantag_engine()
 {
-    if (LoadHanTagEngine(probfst_file, prob_data_file) == 0) {
+	char prob_fst[STRING_SIZE];
+	char prob_dat[STRING_SIZE];
+
+	if (HAS_LOADED_HANTAG_ENGINE) return SUCCESS;
+
+	snprintf(prob_fst, STRING_SIZE, "%s/%s", gSoftBotRoot, PROB_FST_FILE);
+	snprintf(prob_dat, STRING_SIZE, "%s/%s", gSoftBotRoot, PROB_DAT_FILE);
+
+    if (LoadHanTagEngine(prob_fst, prob_dat) == 0) {
 		crit("cannot load HanTag engine: %s", strerror(errno));
 		return FAIL;
 	}
+
+	HAS_LOADED_HANTAG_ENGINE = 1;
 	return SUCCESS;
 }
 
-static int init(void)
-{
-	int rv=0;
-
-	snprintf(m_abs_fstfile,STRING_SIZE, "%s/%s", gSoftBotRoot, m_fstfile);
-	snprintf(m_abs_dictfile,STRING_SIZE,  "%s/%s", gSoftBotRoot, m_dictfile);
-	snprintf(m_abs_connection,STRING_SIZE, "%s/%s",gSoftBotRoot, m_connection);
-	snprintf(m_abs_tag_file,STRING_SIZE, "%s/%s", gSoftBotRoot, m_tag_file);
-	snprintf(m_abs_tagout_file,STRING_SIZE,"%s/%s",gSoftBotRoot,m_tagout_file);
-
-	rv=load_koma_engine(m_abs_fstfile, m_abs_dictfile,
-				m_abs_connection, m_abs_tag_file, m_abs_tagout_file);
-	if (rv != SUCCESS) return rv;
-
-	snprintf(m_abs_probfst_file, STRING_SIZE,
-									"%s/%s", gSoftBotRoot, m_probfst_file);
-	snprintf(m_abs_prob_data_file, STRING_SIZE,
-									"%s/%s", gSoftBotRoot, m_prob_data_file);
-
-	rv=load_hantag_engine(m_abs_probfst_file, m_abs_prob_data_file);
-	if (rv != SUCCESS) return rv;
-	
-	return SUCCESS;
-}
+/** config stuff **/
+static config_t config[] = {
+/*
+    CONFIG_GET("MainFstFile", setMainFstFile, 1, "main.FST file"),
+    CONFIG_GET("MainDatFile", setMainDatFile, 1, "main.dat file"),
+    CONFIG_GET("ConnectionFile", setConnectionFile, 1, "connection.txt file"),
+    CONFIG_GET("TagFile", setTagFile, 1, "tag.nam file"),
+    CONFIG_GET("TagOutFile", setTagOutFile, 1, "tagout.nam file"),
+    CONFIG_GET("ProbFstFile", setProbFstFile, 1, "prob.FST file"),
+    CONFIG_GET("ProbDatFile", setProbDatFile, 1, "prob.dat file"),
+*/
+	{ NULL }
+};
 
 static void register_hooks(void)
 {
@@ -539,9 +548,9 @@ static void register_hooks(void)
 
 module koma_module = {
     STANDARD_MODULE_STUFF,
-    NULL, 	                /* config */
+    config, 	            /* config */
     NULL,                   /* registry */
-	init,					/* module initialize */
+	NULL,					/* module initialize */
     NULL,					/* child_main */
     NULL,                   /* scoreboard */
     register_hooks          /* register hook api */
