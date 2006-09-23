@@ -1,0 +1,148 @@
+#!/usr/bin/perl
+
+use strict;
+use Getopt::Std;
+use CGI::Util qw(unescape escape);
+use LWP::UserAgent;
+use HTTP::Request::Common;
+use XML::LibXSLT;
+use XML::LibXML;
+
+sub BEGIN {
+	$Getopt::Std::STANDARD_HELP_VERSION = 1;
+	our $VERSION = "1.0";
+}
+
+sub HELP_MESSAGE {
+	print <<END;
+Usage: $0 [-p] [-q] [-l] [-m mode] [-t sleep_time] <host> <port> [-/file]
+    host  - hostname of search server
+    port  - port number that softbot use
+    file  - contains query samples. - means stdin
+Options:
+    -p    - print search result
+    -q    - print query
+    -l    - restart search infinitely
+    -l mode       - search mode, 1 or 2 or 3
+    -t sleep_time - sleep time(seconds) between query search [default:1]
+END
+	exit;
+}
+
+###################################
+#         options 정리
+
+my ( $print_query, $print_result, $mode, $loop );
+my $sleep_time = 0;
+
+HELP_MESSAGE() unless( getopts( "qplm:t:" ) );
+our ( $opt_q, $opt_p, $opt_l, $opt_m, $opt_t );
+
+$print_query  = ( $opt_q or $opt_p );
+$print_result = $opt_p;
+$mode         = $opt_m;
+$sleep_time   = $opt_t if ( $opt_t eq "0" or $opt_t );
+$loop         = $opt_l;
+
+my $host = shift;
+my $port = shift;
+my $file = shift;
+
+
+$file = "-" if ( !$file );
+
+HELP_MESSAGE() unless ($host and $port and $file);
+print "host: $host, port: $port, file: $file\n";
+my $target = "http://" . $host . ":" . $port . "/search/search";
+
+do {
+	if ( not $file eq "-" ) {
+		open STDIN, "<$file" or die $!;
+	}
+
+	my $query;
+	while ( $query = <STDIN> ) {
+		chomp $query;
+		next unless $query;
+		print "*" x 60, "\n";
+		print "질의단어: ($query)" if ( $print_query );
+
+		my $wisebot_query = get_wisebot_query($query);
+		my $output = wisebot_search($target, $wisebot_query);
+
+		print $output; #if ( $print_result );
+		sleep( $sleep_time );
+	}
+
+	close STDIN;
+} while ( $loop );
+
+sub wisebot_search
+{
+	my $target = shift;
+	my $query = shift;
+	my $mode  = shift;
+
+	my $ua = LWP::UserAgent->new;
+	$ua->agent("WiseBot Client/0.1");
+
+	my $escaped_query = escape($query);
+	my $r = $ua->request(GET $target . "?q=" . $escaped_query);
+	my $output;
+	if ($r->is_success)
+	{
+		$output = $r->content;
+		my $xsl = "../doc/search_test.xsl";
+		eval {
+		  my $parser = new XML::LibXML;
+		  my $xslt = new XML::LibXSLT;
+		  my $source = $parser->parse_string($output) or die "cannot parse xml result: $!";
+			my $style_doc = $parser->parse_file($xsl) or die "cannot parse xsl: $!";
+			my $stylesheet = $xslt->parse_stylesheet($style_doc) or die "cannot parse style_doc[$style_doc]: $!";
+			my $results = $stylesheet->transform($source);
+			$output = $stylesheet->output_string($results);
+			#$output =~ s/(<\?xml [^>]*\?>)/$1\n<?xml-stylesheet type="text\/xsl" href="$xslt"?>/i if $xslt;
+
+		};
+		$output = "XSL Error: $@" if $@;
+		#$output = $r->as_string;
+	} else {
+		$output = $r->error_as_HTML;
+	}
+	return $output;
+}
+
+sub get_wisebot_query
+{
+	my $query = shift || "";
+	my $mode  = shift || 1;
+
+	my $str;
+	if    ($mode == 3) { $str = "BIGRAM:(" . $query . ") ! (" . $query . ")"; }
+	elsif ($mode == 2) { $str = "BIGRAM:(" . $query . ")"; }
+	else               { $str =        "(" . $query . ")"; }
+
+	my $r = <<END;
+SELECT *
+SEARCH $str
+ORDER_BY PronounceDate DESC, CaseNum1 DESC, CaseNum2 ASC, CaseNum3 DESC
+LIMIT 0,10
+END
+
+	return $r;
+}
+
+sub print_result
+{
+	my $sb = shift;
+	print "==========================================\n";
+	print "word list: $sb->{wordlist}\n";
+	print "total count: $sb->{totalcnt}\n";
+	print "recv count: $sb->{recvcnt}\n";
+
+	foreach my $i ( 0..($sb->{recvcnt}-1) ) {
+		print "docinfo[$i] = $sb->{docinfo}[$i]\n";
+	}
+	print "==========================================\n";
+}
+
