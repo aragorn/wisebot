@@ -80,6 +80,8 @@ AH_TOP([#ifndef AUTO_CONFIG_H
 #define CONFIG_PATH     "etc"
 #define DB_PATH         "dat"
 #define LOG_PATH        "logs"
+#define LOCALSTATEDIR   "var"
+#define DATADIR         "share"
 
 /* whether to compile with DEBUG option */
 #define DEBUG_SOFTBOT 1
