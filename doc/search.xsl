@@ -68,22 +68,23 @@ table tr td {
 </xsl:template>
 
 <xsl:template match="docs">
+  <table>
   <xsl:for-each select="doc">
-    <b>doc_id</b> <xsl:value-of select="@doc_id"/> <br/>
-    <xsl:apply-templates/> 
+    <tr><th>doc id</th><td><xsl:value-of select="@doc_id"/></td></tr>
+    <xsl:apply-templates/>
   </xsl:for-each>
+  </table>
 </xsl:template>
 
 <xsl:template match="field">
-  <b><xsl:value-of select="@name"/></b> - 
-  original: <xsl:value-of select="text()"/><br/>
-  <xsl:apply-templates/> 
+    <tr><th><xsl:value-of select="@name"/></th>
+        <td><xsl:value-of disable-output-escaping="yes" select="text()"/></td>
+    </tr>
   <!--
   <div onLoad="self.innerHTML="/>
   <xsl:variable name="field_text" select="text()"/>
   <xsl:value-of disable-output-escaping="yes" select="{$field_text}"/>
   -->
-<br/>
 </xsl:template>
 
 <xsl:template match="b">

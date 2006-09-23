@@ -6,12 +6,14 @@ use CGI::Util qw(unescape escape);
 use Benchmark qw(:hireswallclock);
 use LWP::UserAgent;
 use HTTP::Request::Common;
+use XML::LibXSLT;
+use XML::LibXML;
 
 my $cvs_id = q( $Id$ );
 my $q = new CGI;
 my $target = $q->param("target") || "http://localhost:3000/search/search";
 my $query  = $q->param("query")  || "";
-my $xslt   = $q->param("xslt")   || "";
+my $xsl    = $q->param("xsl")    || "";
 my $submit = $q->param("submit") || "";
 my $result = "";
 
@@ -28,8 +30,20 @@ if ($submit eq "ok")
   if ($r->is_success)
   {
     $output = $r->content;
-    $output =~ s/(<\?xml [^>]*\?>)/$1\n<?xml-stylesheet type="text\/xsl" href="$xslt"?>/i if $xslt;
-
+    if ($xsl)
+    {
+      eval {
+        my $parser = new XML::LibXML;
+        my $xslt = new XML::LibXSLT;
+        my $source = $parser->parse_string($output) or die "cannot parse xml result: $!";
+        my $style_doc = $parser->parse_file($xsl) or die "cannot parse xsl: $!";
+        my $stylesheet = $xslt->parse_stylesheet($style_doc) or die "cannot parse style_doc[$style_doc]: $!";
+        my $results = $stylesheet->transform($source);
+        $output = $stylesheet->output_string($results);
+        #$output =~ s/(<\?xml [^>]*\?>)/$1\n<?xml-stylesheet type="text\/xsl" href="$xslt"?>/i if $xslt;
+      };
+      $output = "XSL Error: $@" if $@;
+    }
     #$output = $r->as_string;
   } else {
     $output = $r->error_as_HTML;
@@ -99,7 +113,7 @@ function show_hint(id)
 <div style="float:left;"> <input type="text" name="target" size="50" value="$target"/> </div> <br style="clear:left">
 <div style="float:left; width:100%;"> <textarea name="query" rows="10" cols="80" style="width:100%;">$query</textarea> </div> <br style="clear:left">
 <div style="float:left"> 
-  <select name="xslt" style="width:10em">
+  <select name="xsl" style="width:10em">
   <option value="">no xsl</option>
   <option value="search.xsl">search.xsl</option>
   <option value="search.xsl">search.xsl</option>
