@@ -142,7 +142,8 @@
 								|| TAG_IS_KWANHYUNGSA(tag) || TAG_IS_BUSA(tag) )
 					
 #define TAG_TO_BE_IGNORED(tag) 	( TAG_IS_GAMTAN(tag) || TAG_IS_MUNJANGBUHO(tag) \
-								|| TAG_IS_UMI(tag) || TAG_IS_JOSA(tag) )
+								|| TAG_IS_UMI(tag) || TAG_IS_JOSA(tag) \
+								|| TAG_IS_KYUKJOSA(tag) )
 
 typedef	struct koma_handle_t {
 	char *Wrd[MAX_NUM_OF_MORPHEMES];
