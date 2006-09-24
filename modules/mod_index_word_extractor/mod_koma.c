@@ -223,9 +223,14 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 	int previous_idx_of_index_word;
 	int	num_of_cut=0, jupdusa_exist;
 
-	char temp_string[STRING_SIZE];
-	char token_string[STRING_SIZE];
-	char jupdusa_string[STRING_SIZE];
+	/* NOTE: 가끔씩 문자열의 길이가 비정상적으로 긴 텍스트가 존재한다.
+	 *       이런 경우를 대비해, temp_string[] 등의 길이를 STRING_SIZE가
+	 *       아닌 LONG_STRING_SIZE로 지정하여야 한다.
+	 *       --2006-09-24 김정겸
+	 */
+	char temp_string[LONG_STRING_SIZE];
+	char token_string[LONG_STRING_SIZE];
+	char jupdusa_string[LONG_STRING_SIZE];
 	char *ptemp_string;
 	char tag[KOMA_TAG_LEN+1];
 	koma_handle_t *h=NULL;
@@ -251,8 +256,8 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 		// XXX: koma 결과에 버그 있음. 에러 안나고 넘어가게만 조치. 나중에라도 수정되야함. 
 		if (h->Result[i][0] == 0x00) continue; // skip
 
-		strncpy(temp_string, h->Result[i][0], STRING_SIZE);
-		temp_string[STRING_SIZE-1]='\0';
+		strncpy(temp_string, h->Result[i][0], LONG_STRING_SIZE);
+		temp_string[LONG_STRING_SIZE-1]='\0';
 
 		debug("index[%d] temp_string[%s]", i, temp_string);
 		ptemp_string = temp_string;
@@ -296,8 +301,8 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 				if (!(TAG_TO_BE_IGNORED(tag)) ) {
 				    int tmp_len = 0;
 					tmp_len = strlen(jupdusa_string);
-					strncat(jupdusa_string, token_string, STRING_SIZE-tmp_len);
-					jupdusa_string[STRING_SIZE-1]='\0';
+					strncat(jupdusa_string, token_string, LONG_STRING_SIZE-tmp_len);
+					jupdusa_string[LONG_STRING_SIZE-1]='\0';
 					token_len = strlen(jupdusa_string);
 
 					jupdusa_exist = FALSE;
