@@ -2,11 +2,9 @@
 # $Id$
 use strict;
 
-use CGI::Util qw(unescape escape);
-use Benchmark qw(:hireswallclock);
-use LWP::UserAgent;
-use HTTP::Request::Common;
 use Getopt::Std;
+
+require "lib_http_client.pl";
 
 sub BEGIN {
 	$Getopt::Std::STANDARD_HELP_VERSION = 1;
@@ -108,7 +106,9 @@ sub process_data_file {
 					$count++;
 					next;
 				}
-				morph_analyze($dit, $body, $host, $port, $header);
+				my $output = lib_morph_analyze($host, $port, $header, $body);
+				print "-" x 80, "\n", $dit, "\n\n", $output, "\n";
+
 				my $tmp = <STDIN> if $confirm;
 				$count++;
 				next;
@@ -119,37 +119,4 @@ sub process_data_file {
 	close(FILE);
 	print "\nregistered $count docs.\n";
 }
-
-
-sub morph_analyze
-{
-  my ($dit,$body,$host,$port,$header) = @_;
-
-  my $ua = LWP::UserAgent->new;
-  $ua->agent("WiseBot Client/0.1");
-  my $target = "http://" . $host . ":" . $port . "/document/ma?contenttype=text";
-  $target .= "&rawkomatext=" if $USE_RAW_KOMA;
-
-  my $escaped_header = escape($header);
-
-  my $t1 = new Benchmark;
-  my $r = $ua->request(POST $target . "&metadata=" . $escaped_header,
-  						[ body => $body ] );
-  my $t2 = new Benchmark;
-  my $output;
-  if ($r->is_success)
-  {
-    $output = $r->content;
-    #$output =~ s/(<\?xml [^>]*\?>)/$1\n<?xml-stylesheet type="text\/xsl" href="$xslt"?>/i if $xslt;
-
-    #$output = $r->as_string;
-  } else {
-    $output = $r->error_as_HTML;
-  }
-
-  print "-" x 80, "\n", $dit, "\n\n", $output, "\n";
-
-  return;
-}
-
 
