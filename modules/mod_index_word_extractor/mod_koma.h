@@ -16,6 +16,7 @@
 
 #define TAG_IS(a, b, c)			(!strncmp((a), (b), (c))) 
 
+/* a = tag, b = token_len */
 #define TAG_IS_JUPDUSA(a,b)		(b == 2 && (TAG_IS((a), "NNCG", 4) || \
 								TAG_IS((a), "NNCV", 4) || \
 								TAG_IS((a), "NNCJ", 4) || \

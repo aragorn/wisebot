@@ -17,6 +17,9 @@
 
 static int HAS_LOADED_KOMA_ENGINE = 0;
 static int HAS_LOADED_HANTAG_ENGINE = 0;
+static int DO_TREAT_JUPDUSA = 1;
+static int DO_TREAT_JUPMISA = 1;
+static int TAGGING_METHOD = PATH_BASED_TAGGING;
 
 static char MAIN_FST_FILE[SHORT_STRING_SIZE] = "share/koma/main.FST";
 static char MAIN_DAT_FILE[SHORT_STRING_SIZE] = "share/koma/main.dat";
@@ -220,11 +223,9 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 	int previous_idx_of_index_word;
 	int	num_of_cut=0, jupdusa_exist;
 
-	char temp_string[LONG_STRING_SIZE];
-	char token_string[LONG_STRING_SIZE];
-#ifdef MODE_TREAT_JUPDUSA
-	char jupdusa_string[LONG_STRING_SIZE];
-#endif
+	char temp_string[STRING_SIZE];
+	char token_string[STRING_SIZE];
+	char jupdusa_string[STRING_SIZE];
 	char *ptemp_string;
 	char tag[KOMA_TAG_LEN+1];
 	koma_handle_t *h=NULL;
@@ -237,25 +238,21 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 	}
 
 	if ( h->koma_done == FALSE) { 
-		info( "h->text: %s", h->text );
-		DoKomaAndHanTag(h->HanTag,
-						PATH_BASED_TAGGING, h->text, h->Wrd, h->bPos, h->Result);
+		debug( "h->text: %s", h->text );
+		DoKomaAndHanTag(h->HanTag, TAGGING_METHOD, h->text, h->Wrd, h->bPos, h->Result);
 		h->koma_done = TRUE;
 		h->result_count = 0;
 		for(i=0;i<MAX_NUM_OF_MORPHEMES && h->Wrd[i];i++) 
 			h->result_count++;
-
 	}
 
 	for (i = h->current_index; i< h->result_count; i++) {
 
 		// XXX: koma 결과에 버그 있음. 에러 안나고 넘어가게만 조치. 나중에라도 수정되야함. 
+		if (h->Result[i][0] == 0x00) continue; // skip
 
-		if (h->Result[i][0] == 0x00)
-			continue; // skip
-
-		strncpy(temp_string, h->Result[i][0], LONG_STRING_SIZE);
-		temp_string[LONG_STRING_SIZE-1]='\0';
+		strncpy(temp_string, h->Result[i][0], STRING_SIZE);
+		temp_string[STRING_SIZE-1]='\0';
 
 		debug("index[%d] temp_string[%s]", i, temp_string);
 		ptemp_string = temp_string;
@@ -273,7 +270,7 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 			token_len = strlen(token_string);
             debug("num_of_cut[%d], token_string[%s] tag[%s]", num_of_cut, token_string, tag);
 
-            if(h->is_raw_koma_text) {
+            if ( h->is_raw_koma_text ) {
                 strncpy(out[idx_of_index_word].word, token_string, MAX_WORD_LEN);
                 out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
                 out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
@@ -283,34 +280,31 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
                 
                 out[idx_of_index_word].bytepos = h->current_bytes_position + h->bPos[i];
 				idx_of_index_word++;
-            }
-#ifdef MODE_TREAT_JUPDUSA
-			// 접두사 전처리 
-			else if ( num_of_cut == 0 && TAG_IS_JUPDUSA(tag, token_len) ) {
+            } else if ( DO_TREAT_JUPDUSA
+			            && num_of_cut == 0 && TAG_IS_JUPDUSA(tag, token_len) ) {
+			    /* 접두사 전처리 */
 				// XXX: length of jupdusa is always 2. we can assert!!!
 				strncpy(jupdusa_string, token_string, token_len);
 				jupdusa_string[token_len] = '\0';
 				jupdusa_exist = TRUE;
-			} else
-			// 접두사 후처리
-			if ( num_of_cut == 1 && jupdusa_exist == TRUE ) {
-				int tmp_len=0;
+			} else if ( DO_TREAT_JUPDUSA
+			            && num_of_cut == 1 && jupdusa_exist == TRUE ) {
+			    /* 접두사 후처리 */
 
 				// XXX: 연결할 단어의 품사를 확인해서,
 				// 기존의 색인어인 경우에는 앞어절을 연결한 색인어를 만든다.
 				if (!(TAG_TO_BE_IGNORED(tag)) ) {
+				    int tmp_len = 0;
 					tmp_len = strlen(jupdusa_string);
-					strncat(jupdusa_string, token_string, LONG_STRING_SIZE-tmp_len);
-					jupdusa_string[LONG_STRING_SIZE-1]='\0';
+					strncat(jupdusa_string, token_string, STRING_SIZE-tmp_len);
+					jupdusa_string[STRING_SIZE-1]='\0';
 					token_len = strlen(jupdusa_string);
 
 					jupdusa_exist = FALSE;
 
-					strncpy(out[idx_of_index_word].word,
-							jupdusa_string, MAX_WORD_LEN);
+					strncpy(out[idx_of_index_word].word, jupdusa_string, MAX_WORD_LEN);
 					out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
-					out[idx_of_index_word].len =
-							strlen(out[idx_of_index_word].word);
+					out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
 					out[idx_of_index_word].pos = *cur_pos;
 					// XXX: sizeof(int) is must be 4 byte
 					memcpy(&(out[idx_of_index_word].attribute),
@@ -321,11 +315,9 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 				// 문장부호 & 조사 처리 
 				// 단음절 색인어를 만들고, 조사나 문장부호는 버린다.
 				if ( TAG_IS_JOSA(tag) || TAG_IS_MUNJANGBUHO(tag) ){
-					strncpy(out[idx_of_index_word].word,
-							jupdusa_string, MAX_WORD_LEN);
+					strncpy(out[idx_of_index_word].word, jupdusa_string, MAX_WORD_LEN);
 					out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
-					out[idx_of_index_word].len =
-							strlen(out[idx_of_index_word].word);
+					out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
 
 					out[idx_of_index_word].pos = *cur_pos;
 
@@ -345,27 +337,26 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 					out[idx_of_index_word].len = 0;
 					jupdusa_string[0]='\0';
 					jupdusa_exist = FALSE;
-				}
-			} else
-#endif
-#ifdef MODE_TREAT_JUPMISA
-			// 접미사 처리
+				} // if (!(TAG_TO_BE_IGNORED(tag)) )
+			} /* 접두사 후처리 완료 */
+            else if ( DO_TREAT_JUPMISA
+			          && idx_of_index_word > 0
+					  && TAG_IS_JUPMISA(tag, token_len)
+                      && out[idx_of_index_word-1].pos == *cur_pos ) {
+			  /* 접미사 처리 */
 
-			if ( idx_of_index_word > 0 && TAG_IS_JUPMISA(tag, token_len)
-                        && out[idx_of_index_word-1].pos == *cur_pos) {
-
-				int len = MAX_WORD_LEN - out[idx_of_index_word-1].len;
-				if (len < 0) {
-					crit("length of word[%s] is larger than MAX_WORD_LEN[%d]",
+			  int len = MAX_WORD_LEN - out[idx_of_index_word-1].len;
+			  if (len < 0) {
+			    crit("length of word[%s] is larger than MAX_WORD_LEN[%d]",
 							out[idx_of_index_word-1].word, MAX_WORD_LEN);
-					len = 0;
-				}
+			    len = 0;
+			  }
 				strncat(out[idx_of_index_word-1].word , token_string , len);
 				out[idx_of_index_word-1].word[MAX_WORD_LEN-1]='\0';
 				out[idx_of_index_word-1].len =
 									strlen(out[idx_of_index_word-1].word);
-			} else
-#endif
+			} /* 접미사 처리 완료 */
+			else
 			// 그외 품사 처리 
 			// 색인단어에서 제외할 품사들
 			// TAG_TO_BE_IGNORED_MORE or TAG_TO_BE_IGNORED
@@ -521,6 +512,23 @@ static int load_hantag_engine()
 	return SUCCESS;
 }
 
+static void setTreatJupdusa(configValue v) {
+	if ( strncasecmp(v.argument[0], "NO", SHORT_STRING_SIZE) == 0 )
+		DO_TREAT_JUPDUSA = 0;
+}
+
+static void setTreatJupmisa(configValue v) {
+	if ( strncasecmp(v.argument[0], "NO", SHORT_STRING_SIZE) == 0 )
+		DO_TREAT_JUPMISA = 0;
+}
+
+static void setTaggingMethod(configValue v) {
+	if ( strncasecmp(v.argument[0], "PATH_BASED", SHORT_STRING_SIZE) == 0 )
+		DO_TREAT_JUPMISA = PATH_BASED_TAGGING;
+	else if ( strncasecmp(v.argument[0], "STATE_BASED", SHORT_STRING_SIZE) == 0 )
+		DO_TREAT_JUPMISA = STATE_BASED_TAGGING;
+}
+
 /** config stuff **/
 static config_t config[] = {
 /*
@@ -532,6 +540,9 @@ static config_t config[] = {
     CONFIG_GET("ProbFstFile", setProbFstFile, 1, "prob.FST file"),
     CONFIG_GET("ProbDatFile", setProbDatFile, 1, "prob.dat file"),
 */
+    CONFIG_GET("TreatJupdusa", setTreatJupdusa, 1, "YES or NO. Default value is YES."),
+    CONFIG_GET("TreatJupmisa", setTreatJupmisa, 1, "YES or NO. Default value is YES."),
+    CONFIG_GET("TaggingMethod", setTaggingMethod, 1, "PATH_BASED or STATE_BASED. Default is PATH_BASED."),
 	{ NULL }
 };
 
