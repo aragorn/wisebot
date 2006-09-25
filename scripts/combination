@@ -13,10 +13,11 @@ sub BEGIN {
 
 sub HELP_MESSAGE {
 	print <<END;
-Usage: $0 <host> <port> [-/file]
+Usage: $0 <host> <port> <file1> <file2>
     host  - hostname of search server
     port  - port number that softbot use
-    file  - contains query samples. - means stdin
+    file1 - contains query samples.
+    file2 - contains query samples.
 Options:
 END
 	exit;
@@ -31,44 +32,47 @@ our ( $opt_q );
 
 my $host = shift;
 my $port = shift;
-my $file = shift;
+my $file1 = shift;
+my $file2 = shift;
 
 
-$file = "-" if ( !$file );
+HELP_MESSAGE() unless ($host and $port and $file1 and $file2);
 
-HELP_MESSAGE() unless ($host and $port and $file);
-
-print "host: $host, port: $port, file: $file\n";
+print "host: $host, port: $port, file1: $file1, file2: $file2\n";
 
 
-unless ( $file eq "-" ) {
-	open STDIN, "<$file" or die $!;
-}
-
-my @words;
-while ( <STDIN> )
+my (@words1, @words2);
+open(FILE, $file1) or die "cannot open $file1: $!";
+while ( <FILE> )
 {
 	chomp;
-	push @words, $_;
+	push @words1, $_;
 }
+close(FILE);
+
+open(FILE, $file2) or die "cannot open $file2: $!";
+while ( <FILE> )
+{
+	chomp;
+	push @words2, $_;
+}
+close(FILE);
 
 
-foreach my $i ( 0..$#words )
+foreach my $i ( 0..$#words1 )
 {
 	printf "|| %30s || %30s || %3d || %3s || %3s || %3s || %3s || %3s ||\n",
 	         "질의어A", "질의어B", "A", "B", "A B", "A/5/B", "A!B", "B!A";
-	foreach my $j ( $i+1..$#words )
+	foreach my $j ( 0..$#words2 )
 	{
-		next if ( $i == $j );
-
 		my @count;
 		foreach my $mode ( 1..6 )
 		{
-			$count[$mode] = get_result_count($words[$i], $words[$j], $mode);
+			$count[$mode] = get_result_count($words1[$i], $words2[$j], $mode);
 		}
 
 		printf "|| %30s || %30s || %3d || %3d || %3d || %3d || %3d || %3d ||\n",
-			$words[$i], $words[$j],
+			$words1[$i], $words2[$j],
 			$count[1], $count[2], $count[3], $count[4], $count[5], $count[6];
 	}
 }
