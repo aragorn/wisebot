@@ -151,7 +151,7 @@ start_daemon()
 	local PID=`is_running "$ROOT" "$PID_FILE"`
 	(( PID > 0 )) && printf "[ERROR: already running($PID)] " && return
 
-	[ ! -e "$ROOT/dat/koma" ] && printf "\ndat/koma is not exists\n" && exit 1
+	[ ! -e "$ROOT/share/koma" ] && printf "\nshare/koma is not exists\n" && exit 1
 
 	$SOFTBOT_ROOT/scripts/logrotate.pl -n 2 -s 2000M $SOFTBOT_ROOT/$SOFTBOTD_LOG_FILE > /dev/null 2>&1
 
