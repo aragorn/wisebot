@@ -11,46 +11,44 @@
 
 #define KOMA_TAG_LEN			(4)
 
-// #define MODE_NEW_KOMA		// -죄 분리
-#undef MODE_NEW_KOMA		// -죄 분리
+#define MODE_NEW_KOMA		// -죄 분리
+//#undef MODE_NEW_KOMA		// -죄 분리
 
 #define TAG_IS(a, b, c)			(!strncmp((a), (b), (c))) 
 
 /* a = tag, b = token_len */
-#define TAG_IS_JUPDUSA(a,b)		(b == 2 && (TAG_IS((a), "NNCG", 4) || \
+#define TAG_IS_JUPDUSA(a,b)	  ( b == 2 && \
+							   (TAG_IS((a), "NNCG", 4) || \
 								TAG_IS((a), "NNCV", 4) || \
 								TAG_IS((a), "NNCJ", 4) || \
-								TAG_IS((a), "NNP", 3) || \
-								TAG_IS((a), "NPP", 3) || \
-								TAG_IS((a), "NPI", 3) || \
-								TAG_IS((a), "NNB", 3) || \
-								TAG_IS((a), "XPNN", 4)))
+								TAG_IS((a), "NNP",  3) || \
+								TAG_IS((a), "NPP",  3) || \
+								TAG_IS((a), "NPI",  3) || \
+								TAG_IS((a), "NNB",  3) || \
+								TAG_IS((a), "XPNN", 4)) )
 
 #ifdef MODE_NEW_KOMA
-#define TAG_IS_JUPMISA(a,b)		(b == 2 && (TAG_IS((a), "XSNN", 4) || \
-								TAG_IS((a), "XSD", 3) || \
-								TAG_IS((a), "NU", 2) || \
-								TAG_IS((a), "DU", 2) || \
-								TAG_IS((a), "EFC", 3) || \
-								TAG_IS((a), "EFN", 3)))
-#endif
-#ifndef MODE_NEW_KOMA
-#define TAG_IS_JUPMISA(a,b)		(b == 2 && (TAG_IS((a), "XSNN", 4) || \
-								TAG_IS((a), "XSD", 3) || \
+#  define TAG_IS_JUPMISA(a,b) ( b == 2 && \
+							   (TAG_IS((a), "XSNN", 4) || \
+								TAG_IS((a), "XSD",  3)) )
+#else // MODE_NEW_KOMA
+#  define TAG_IS_JUPMISA(a,b) ( b == 2 && \
+							   (TAG_IS((a), "XSNN", 4) || \
+								TAG_IS((a), "XSD",  3) || \
 								TAG_IS((a), "NNCG", 4) || \
 								TAG_IS((a), "NNCV", 4) || \
 								TAG_IS((a), "NNCJ", 4) || \
-								TAG_IS((a), "NNP", 3) || \
-								TAG_IS((a), "NPP", 3) || \
-								TAG_IS((a), "NPI", 3) || \
-								TAG_IS((a), "NNB", 3) || \
-								TAG_IS((a), "NU", 2) || \
-								TAG_IS((a), "DU", 2) || \
-								TAG_IS((a), "EFC", 3) || \
-								TAG_IS((a), "EFN", 3)))
+								TAG_IS((a), "NNP",  3) || \
+								TAG_IS((a), "NPP",  3) || \
+								TAG_IS((a), "NPI",  3) || \
+								TAG_IS((a), "NNB",  3) || \
+								TAG_IS((a), "NU",   2) || \
+								TAG_IS((a), "DU",   2) || \
+								TAG_IS((a), "EFC",  3) || \
+								TAG_IS((a), "EFN",  3)) )
 #endif
 
-#define TAG_IS_JOSA(a)			(TAG_IS((a), "PS", 2) || \
+#define TAG_IS_JOSA(a)		   (TAG_IS((a), "PS", 2) || \
 								TAG_IS((a), "PC",2) || \
 								TAG_IS((a), "PO", 2) || \
 								TAG_IS((a), "PD", 2) || \
@@ -59,7 +57,7 @@
 								TAG_IS((a), "PN", 2) || \
 								TAG_IS((a), "PX", 2)) 
 
-#define TAG_IS_MUNJANGBUHO(a)	(TAG_IS((a), "SS.", 3) || \
+#define TAG_IS_MUNJANGBUHO(a)  (TAG_IS((a), "SS.", 3) || \
 								TAG_IS((a), "SS?", 3) || \
 								TAG_IS((a), "SS!", 3) || \
 								TAG_IS((a), "SS,", 3) || \
@@ -72,7 +70,7 @@
 								TAG_IS((a), "SS)", 3) || \
 								TAG_IS((a), "SS-", 3) || \
 								TAG_IS((a), "SSA", 3) || \
-								TAG_IS((a), "SSX", 3) ) 
+								TAG_IS((a), "SSX", 3) )
 
 #define TAG_IS_GAMTAN(a)		TAG_IS((a), "C", 1)
 
@@ -80,14 +78,14 @@
 
 #define	TAG_IS_SPACE(a)			TAG_IS((a), "SPAC", 4)
 
-#define	TAG_IS_UMI(a)			(TAG_IS((a), "EFF", 3) || \
+#define	TAG_IS_UMI(a)		   (TAG_IS((a), "EFF", 3) || \
 								TAG_IS((a), "EFC", 3) || \
 								TAG_IS((a), "EFN", 3) || \
 				 				TAG_IS((a), "EFD", 3) || \
 				 				TAG_IS((a), "EFA", 3) || \
 								TAG_IS((a), "EP", 2) )
 
-#define TAG_IS_JUPSA(a)			(TAG_IS((a), "XSNN", 4) || \
+#define TAG_IS_JUPSA(a)		   (TAG_IS((a), "XSNN", 4) || \
 								TAG_IS((a), "XSNP", 4) || \
 								TAG_IS((a), "XSNU", 4) || \
 								TAG_IS((a), "XPNN", 4) || \
@@ -97,7 +95,19 @@
 								TAG_IS((a), "XSVV", 4) || \
 								TAG_IS((a), "XSVJ", 4) )
 
-#define TAG_IS_KWANHYUNGSA(a)	(TAG_IS((a), "DA", 2) || \
+/* 접사 가운데, 명사를 만드는 접미사, '-적'을 골라낸다.
+ * 즉, XSA, XSVV, XSVJ 등 용언을 만드는 접사를 판별할 수
+ * 있게 도와준다.
+ * -하다/XSVV 가 앞의 명사와 결합하여 복합명사/COMP를 만들어내지
+ * 않아야 한다. --김정겸, 2006-09-25 */
+#define TAG_IS_XSN_XSD(a)	   (TAG_IS((a), "XSNN", 4) || \
+								TAG_IS((a), "XSNP", 4) || \
+								TAG_IS((a), "XSNU", 4) || \
+								TAG_IS((a), "XPNN", 4) || \
+								TAG_IS((a), "XPNU", 4) || \
+								TAG_IS((a), "XSD",  3) )
+
+#define TAG_IS_KWANHYUNGSA(a)  (TAG_IS((a), "DA", 2) || \
 								TAG_IS((a), "DI", 2) || \
 								TAG_IS((a), "DU", 2) )
 
@@ -114,20 +124,20 @@
 								TAG_IS((a), "V?", 2) )
 
 #define TAG_IS_NOUN(a)			(TAG_IS((a), "NNCG", 4) || \
-								TAG_IS((a), "NNCV", 4) || \
-								TAG_IS((a), "NNCJ", 4) || \
-								TAG_IS((a), "NNB", 3) || \
-								TAG_IS((a), "NNBU", 4) || \
-								TAG_IS((a), "NNP", 3) || \
-								TAG_IS((a), "NPP", 3) || \
-								TAG_IS((a), "NPI", 3) || \
-								TAG_IS((a), "NU", 2) || \
-								TAG_IS((a), "UNK", 3) || \
-								TAG_IS((a), "COMP", 4) )
+								 TAG_IS((a), "NNCV", 4) || \
+								 TAG_IS((a), "NNCJ", 4) || \
+								 TAG_IS((a), "NNB",  3) || \
+								 TAG_IS((a), "NNBU", 4) || \
+								 TAG_IS((a), "NNP",  3) || \
+								 TAG_IS((a), "NPP",  3) || \
+								 TAG_IS((a), "NPI",  3) || \
+								 TAG_IS((a), "NU",   2) || \
+								 TAG_IS((a), "UNK",  3) || \
+								 TAG_IS((a), "COMP", 4) )
 
 #define TAG_IS_ETC(a)			(TAG_IS((a), "SCF", 3) || \
-								TAG_IS((a), "SCH", 3) || \
-								TAG_IS((a), "SCD", 3) )
+								 TAG_IS((a), "SCH", 3) || \
+								 TAG_IS((a), "SCD", 3) )
 
 // XXX for move_text function
 // assuming avg. word len 3, 256 is max white space-tokenized length by mod-koma
@@ -143,7 +153,8 @@
 					
 #define TAG_TO_BE_IGNORED(tag) 	( TAG_IS_GAMTAN(tag) || TAG_IS_MUNJANGBUHO(tag) \
 								|| TAG_IS_UMI(tag) || TAG_IS_JOSA(tag) \
-								|| TAG_IS_KYUKJOSA(tag) )
+								|| TAG_IS_KYUKJOSA(tag) \
+								|| (TAG_IS_JUPSA(tag) && (! TAG_IS_XSN_XSD(tag))) )
 
 typedef	struct koma_handle_t {
 	char *Wrd[MAX_NUM_OF_MORPHEMES];

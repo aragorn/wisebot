@@ -9,8 +9,8 @@
 #include <errno.h>
 
 // XXX: 인터넷에서는 기본적으로 단음절 변형을 사용하지 않는다.  -- dyaus
-#define MODE_TREAT_JUPDUSA 1 // 접두사 처리
-#define MODE_TREAT_JUPMISA 1 // 접미사 처리
+#define MODE_TREAT_XPNN 1 // 접두사 처리
+#define MODE_TREAT_XSNN 1 // 접미사 처리
 
 #define MY_EXTRACTOR_ID 	10
 #define MY_RAW_EXTRACTOR_ID 100
@@ -298,7 +298,7 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 
 				// XXX: 연결할 단어의 품사를 확인해서,
 				// 기존의 색인어인 경우에는 앞어절을 연결한 색인어를 만든다.
-				if (!(TAG_TO_BE_IGNORED(tag)) ) {
+				if (!(TAG_TO_BE_IGNORED(tag))) {
 				    int tmp_len = 0;
 					tmp_len = strlen(jupdusa_string);
 					strncat(jupdusa_string, token_string, LONG_STRING_SIZE-tmp_len);
@@ -342,7 +342,7 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 					out[idx_of_index_word].len = 0;
 					jupdusa_string[0]='\0';
 					jupdusa_exist = FALSE;
-				} // if (!(TAG_TO_BE_IGNORED(tag)) )
+				} // if (!( _TAG_TO_BE_IGNORED_(tag)) )
 			} /* 접두사 후처리 완료 */
             else if ( DO_TREAT_JUPMISA
 			          && idx_of_index_word > 0
