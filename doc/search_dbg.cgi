@@ -144,8 +144,7 @@ function show_hint(id)
   <option value="search.xsl">search.xsl</option>
   <option value="scourt_prec.xsl">scourt_prec.xsl</option>
   <option value="scourt_prec_excel.xsl">scourt_prec_excel.xsl</option>
-  <option value="search.xsl">search.xsl</option>
-  <option value="search.xsl">search.xsl</option>
+  <option value="ma.xsl">ma.xsl</option>
   </select>
 
   <input type="hidden" name="submit" value="ok"/>
