@@ -174,17 +174,11 @@ SEARCH BIGRAM:도로건설
 ORDER_BY PronounceDate DESC, CaseNum1 DESC, CaseNum2 ASC, CaseNum3 DESC
 LIMIT 0,10
 
-----------------------------------------------
-본문검색
-----------------------------------------------
 SELECT *
 SEARCH body:거울
 ORDER_BY RELEVANCY DESC
 LIMIT 0, 10
 
-----------------------------------------------
-통합검색
-----------------------------------------------
 SELECT *
 SEARCH body:거울
 VIRTUAL_ID BOOKID
@@ -211,7 +205,8 @@ OUTPUT_STYLE SOFTBOT4
 <div id="ma_hint" align="right"
      style="position:absolute; width:90%; top:10ex; right:1ex; float:right; display:none;">
 <textarea name="example" rows="15" cols="60" style="width:100%">
-http://192.168.10.21:8600/document/ma?contenttype=text&rawkomatext=
+http://192.168.10.21:8600/document/ma?contenttype=xml&detail=&
+http://192.168.10.21:8600/document/ma?contenttype=xml&
 http://192.168.10.21:8600/document/ma?contenttype=text&
 
 header - fieldname#fieldnum:morp_id^
