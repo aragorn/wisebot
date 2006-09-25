@@ -1,0 +1,14 @@
+DocAttrField CourtType #대법원, 하급심, 헌법재판소
+DocAttrField LawType #민사, 형사, 세무, 행정, 가사, 특허
+DocAttrField GAN #판례등급
+DocAttrField WON #판례등급
+DocAttrField MIGANOPEN #미간행공개판결 2006.02
+DocAttrField DEL #판례등급
+DocAttrField CLOSE #판례등급
+DocAttrField PronounceDate #선고일자
+DocAttrField Court #법원명
+DocAttrField CaseNum1 #사건번호
+DocAttrField CaseNum2
+DocAttrField CaseNum3
+DocAttrField CaseName
+

@@ -1,0 +1,13 @@
+    RebuildDocAttrField     CaseName
+    RebuildDocAttrField     Court
+    RebuildDocAttrField     CourtType
+    RebuildDocAttrField     LawType
+    RebuildDocAttrField     GAN
+    RebuildDocAttrField     WON
+    RebuildDocAttrField     MIGANOPEN
+    RebuildDocAttrField     DEL
+    RebuildDocAttrField     CLOSE
+    RebuildDocAttrField     PronounceDate
+    RebuildDocAttrField     CaseNum1
+    RebuildDocAttrField     CaseNum2
+    RebuildDocAttrField     CaseNum3

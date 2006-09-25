@@ -1,0 +1,20 @@
+Enum 전체               255
+
+# CourtType
+Enum 대                 1 #대법원
+Enum 하                 2 #하급심
+Enum 헌                 3 #헌법재판소
+
+# LawType
+Enum 민사               10
+Enum 형사               11
+Enum 세무               12
+Enum 행정               13
+Enum 일반행정           13
+Enum 가사               14
+Enum 특허               15
+
+# for GAN, WON, DEL, CLOSE
+Enum 0 1
+Enum 1 2
+
