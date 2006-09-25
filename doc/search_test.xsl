@@ -24,7 +24,8 @@
 <xsl:template match="docs">
 <xsl:for-each select="doc">
 <!--  docid = <xsl:value-of select="@doc_id"/> -->
- <xsl:value-of select="fields/field[@name='Court']"/> - <xsl:value-of select="fields/field[@name='PronounceDate']"/> - <xsl:value-of select="fields/field[@name='CaseNum']"/> - <xsl:value-of select="fields/field[@name='DecisionType']"/> [<xsl:value-of select="fields/field[@name='CaseName']"/>]
+ <xsl:value-of select="fields/field[@name='Court']"/> - <xsl:value-of select="fields/field[@name='PronounceDate']"/> - <xsl:value-of select="fields/field[@name='CaseNum']"/> - 
+<xsl:value-of select="fields/field[@name='DecisionType']"/> [<xsl:value-of select="fields/field[@name='CaseName']"/>]
  Abstract: <xsl:value-of select="normalize-space(fields/field[@name='B_Abstract'])"/>
  JudgementNote: <xsl:value-of select="normalize-space(fields/field[@name='B_JudgementNote'])"/>
  Body: <xsl:value-of select="normalize-space(fields/field[@name='B_Body'])"/>

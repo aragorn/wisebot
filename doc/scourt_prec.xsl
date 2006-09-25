@@ -83,7 +83,7 @@ table tr.result td.result_body {
 <xsl:template match="vdocs">
 <table>
   <tr class="header">
-    <td width="30">번호</td><td>검색결과</td>
+    <td width="30">번호</td><td>판시사항/판결요지/전문</td>
   </tr>
   <xsl:for-each select="vdoc">
   <tr class="result">
@@ -107,46 +107,31 @@ table tr.result td.result_body {
     <xsl:element name="a">
       <xsl:attribute name="target">_blank</xsl:attribute>
       <xsl:attribute name="href"><xsl:value-of select="$target"/>/../../document/select?did=<xsl:value-of select="$docid"/></xsl:attribute>
-    DocID:<xsl:value-of select="$docid"/> Hit:<xsl:value-of select="$relevance"/>
+      <xsl:value-of select="fields/field[@name='Court']"/>&nbsp;
+      <xsl:value-of select="substring(fields/field[@name='PronounceDate'],1,4)"/>.<xsl:value-of
+             select="substring(fields/field[@name='PronounceDate'],5,2)"/>.<xsl:value-of
+             select="substring(fields/field[@name='PronounceDate'],7,2)"/>&nbsp;
+      <xsl:value-of select="fields/field[@name='CaseNum']"/>&nbsp;
+      <xsl:value-of select="fields/field[@name='DecisionType']"/>
     </xsl:element>
-    <xsl:text>【</xsl:text>
-       <xsl:value-of select="fields/field[@name='CaseName']"/>
-       <xsl:value-of select="fields/field[@name='Title']"/>
-       <xsl:value-of select="fields/field[@name='title']"/>
-       <xsl:value-of select="fields/field[@name='Subject']"/>
-       <xsl:value-of select="fields/field[@name='subject']"/>
-    <xsl:text>】</xsl:text>
+    <xsl:text>【</xsl:text><xsl:value-of select="fields/field[@name='CaseName']"/><xsl:text>】</xsl:text>
+    DocID:<xsl:value-of select="$docid"/> Hit:<xsl:value-of select="$relevance"/>
     <br/>
     <xsl:apply-templates/>
   </xsl:for-each>
 </xsl:template>
 
 <xsl:template match="fields">
-  <xsl:for-each select="field">
-    <xsl:value-of select="@name"/> - <xsl:value-of disable-output-escaping="yes" select="."/><br/>
-  </xsl:for-each>
+    판시사항 - <xsl:value-of disable-output-escaping="yes" select="field[@name='Abstract']"/><br/>
+    판결요지 - <xsl:value-of disable-output-escaping="yes" select="field[@name='JudgementNote']"/><br/>
+    전 &nbsp; &nbsp; &nbsp; &nbsp;문 - <xsl:value-of disable-output-escaping="yes" select="field[@name='Body']"/><br/>
 </xsl:template>
-
-<!--
-<xsl:template match="docs">
-  <table>
-  <xsl:for-each select="doc">
-    <tr><th>doc id</th><td><a href="/document/select?did="><xsl:value-of select="@doc_id"/></a></td></tr>
-    <xsl:apply-templates/>
-  </xsl:for-each>
-  </table>
-</xsl:template>
-
-<xsl:template match="field">
-    <tr><th><xsl:value-of select="@name"/></th>
-        <td><xsl:value-of disable-output-escaping="yes" select="text()"/></td>
-    </tr>
-</xsl:template>
--->
 
 <xsl:template match="b">
   <italic><xsl:apply-templates/></italic>
 </xsl:template>
 
+<xsl:template name="style">
+</xsl:template>
 </xsl:stylesheet>
 

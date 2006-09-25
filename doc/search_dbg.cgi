@@ -17,6 +17,7 @@ my $xsl    = $q->param("xsl")    || "";
 my $submit = $q->param("submit") || "";
 my $param_name  = $q->param("param_name")  || "";
 my $param_value = $q->param("param_value") || "";
+my $download    = $q->param("download")    || "";
 my $result = "";
 
 if ($submit eq "ok")
@@ -36,10 +37,12 @@ if ($submit eq "ok")
     $r = $ua->request(POST $target . "&" . $escaped_param_name . "=" . $escaped_param_value, [ q => $query ] );
   }
   my $t2 = new Benchmark;
+  my $elapsed_time = "<loading_time>" . timestr(timediff($t2,$t1), 'nop') . "</loading_time>";
   my $output;
   if ($r->is_success)
   {
     $output = $r->content;
+    $output =~ s/(<xml[^>]*>|<html[^>]*>)/$1 $elapsed_time/i;
     if ($xsl)
     {
       eval {
@@ -48,7 +51,7 @@ if ($submit eq "ok")
         my $source = $parser->parse_string($output) or die "cannot parse xml result: $!";
         my $style_doc = $parser->parse_file($xsl) or die "cannot parse xsl: $!";
         my $stylesheet = $xslt->parse_stylesheet($style_doc) or die "cannot parse style_doc[$style_doc]: $!";
-        my $results = $stylesheet->transform($source);
+        my $results = $stylesheet->transform($source, target => "'$target'");
         $output = $stylesheet->output_string($results);
         #$output =~ s/(<\?xml [^>]*\?>)/$1\n<?xml-stylesheet type="text\/xsl" href="$xslt"?>/i if $xslt;
       };
@@ -59,13 +62,16 @@ if ($submit eq "ok")
     $output = $r->error_as_HTML;
     $output .= $target . "&" . $escaped_param_name . "=" . $escaped_param_value;
   }
-  my $elapsed_time = "<loading_time>" . timestr(timediff($t2,$t1), 'nop') . "</loading_time>";
-  $output =~ s/(<xml[^>]*>|<html[^>]*>)/$1 $elapsed_time/i;
   my $content_type = "text/plain";
   $content_type = "text/xml"  if (substr($output,0,150) =~ m/<xml/i);
   $content_type = "text/html" if (substr($output,0,150) =~ m/<html/i);
+  $content_type = "application/vnd.ms-excel" if ($download eq "checked");
 
-  print $q->header(-type=>$content_type, -charset=>'cp949');
+  print $q->header(-type=>$content_type, -charset=>'cp949') unless $download eq "yes";
+  print $q->header(-type=>"application/vnd.ms-excel",
+                   -charset=>'cp949',
+                   -content_disposition=>'attachment; filename="scourt_bmt.xls"')
+                                                                if $download eq "yes";
   print <<END;
 $output
 END
@@ -87,10 +93,14 @@ DIV  {
  margin: 3px;
 }
 
+TEXTAREA {
+ font-size   : 9pt;
+}
+
 /* FIXME uncomment when you debug.
-* { border: 1px dotted red; padding: 1px}
-* * { border: 1px dotted green; padding: 2px }
-* * * { border: 1px dotted orange; padding: 3px }
+* { border: 1px dotted red; padding: 0px}
+* * { border: 1px dotted green; padding: 1px }
+* * * { border: 1px dotted orange; padding: 1px }
 * * * * { border: 1px dotted blue; padding: 3px }
 * * * * * { border: 2px solid red; padding: 3px }
 * * * * * * { border: 2px solid green }
@@ -120,37 +130,51 @@ function show_hint(id)
 <body>
 <h3>WiseBot Search Debug <small>($cvs_id)</small></h3>
 
-<form id="search" action="#" style="float:left; width:100%" target="result" method="post">
-<div style="float:left;"> <input type="text" name="target" size="100" value="$target"/> </div> <br style="clear:left"/>
+<form id="search" action="#" style="float:left; width:98%" target="result" method="post">
+<div style="float:left;"> <input type="text" name="target" size="90" value="$target"/> </div> <br style="clear:left"/>
 <div style="float:left; width:100%;">
   <textarea name="query" rows="10" cols="80" style="width:100%;">$query</textarea> </div> <br style="clear:left"/>
 <div style="float:left">
   <input type="text" name="param_name"  size="10" value="metadata"/>
-  <input type="text" name="param_value" size="30" value="body#0:11^"/> <br style="clear:left"/>
-</div> <br style="clear:left"/>
+  <input type="text" name="param_value" size="30" value="Abstract#0:11^JudgementNote#1:11^Body#2:11^"/> <br style="clear:left"/>
+</div> <!--br style="clear:left"/-->
 <div style="float:left">  
-  <select name="xsl" style="width:10em">
+  <select name="xsl" style="width:15em">
   <option value="">no xsl</option>
   <option value="search.xsl">search.xsl</option>
+  <option value="scourt_prec.xsl">scourt_prec.xsl</option>
+  <option value="scourt_prec_excel.xsl">scourt_prec_excel.xsl</option>
   <option value="search.xsl">search.xsl</option>
   <option value="search.xsl">search.xsl</option>
   </select>
 
   <input type="hidden" name="submit" value="ok"/>
   <input type="submit" value=" Search "/>
+  <input type="checkbox" name="download" value="yes"> Download
 </div>
 </form>
 
 <form name="select_hint">
-<div id="htabmenu" style="position:absolute; top:6ex; right:0;">
+<div id="htabmenu" style="position:absolute; top:6ex; right:1ex;">
 <strong>Hints: </strong>
 <input type="radio" name="hint" value="none" checked onClick="show_hint(this.value);"/>none &nbsp;
 <input type="radio" name="hint" value="search_hint"  onClick="show_hint(this.value);"/>search &nbsp;
 <input type="radio" name="hint" value="ma_hint"      onClick="show_hint(this.value);"/>morph analyze &nbsp;
 </div> 
 </form>
-<div id="search_hint" style="position:absolute; top:10ex; right:0; float:right; display:none;">
-<textarea name="example" rows="15" cols="100">
+<div id="search_hint" align="right"
+     style="position:absolute; width:90%; top:10ex; right:1ex; float:right; display:none;">
+<textarea name="example" rows="15" cols="60" style="width:100%">
+SELECT *
+SEARCH 도로건설
+ORDER_BY PronounceDate DESC, CaseNum1 DESC, CaseNum2 ASC, CaseNum3 DESC
+LIMIT 0,10
+
+SELECT *
+SEARCH BIGRAM:도로건설
+ORDER_BY PronounceDate DESC, CaseNum1 DESC, CaseNum2 ASC, CaseNum3 DESC
+LIMIT 0,10
+
 ----------------------------------------------
 본문검색
 ----------------------------------------------
@@ -185,10 +209,9 @@ OUTPUT_STYLE SOFTBOT4
 </textarea>
 </div>
 
-<div id="ma_hint" style="position:absolute; top:10ex; right:0; float:right; display:none;">
-<textarea name="example" rows="15" cols="100">
-형태소 분석
-
+<div id="ma_hint" align="right"
+     style="position:absolute; width:90%; top:10ex; right:1ex; float:right; display:none;">
+<textarea name="example" rows="15" cols="60" style="width:100%">
 http://192.168.10.21:8600/document/ma?contenttype=text&rawkomatext=
 http://192.168.10.21:8600/document/ma?contenttype=text&
 
@@ -197,6 +220,7 @@ metadata = body#0:11^
 
 <Document>
 <body><![CDATA[
+
 원심이 피고 성남시에 대하여 위와 같은 이유로 불법행위 책임의 성립을 인정하여 이 사건 냉해로 인한 손해배상 책임을 인정한 것은 다음과 같은 이유로 수긍하기 어렵다.
   원심 판시 자체에 의하더라도 피고 성남시는, 약정에 기하여 부담하는 '1996. 10.경까지 새로운 용수공급시설 공사를 완료하여 줄 채무'를 불이행한 것에 불과하다 할 것이고, 어떠한 위>
 법한 행위를 하였다는 것이 아니므로, 채무불이행 책임을 지게 됨은 별론으로 하고, 위법한 행위로 타인에게 손해를 가한 경우에만 인정되는 불법행위 책임을 진다고는 볼 수 없을 뿐만 아>
@@ -210,16 +234,24 @@ metadata = body#0:11^
   육 송진혁펴낸곳 (주)위즈덤하우스 | 출판등록 2000년 5월 23일 제13-1071호주소 (121-763)서울시 마포구 도화1동 22번지 창강빌딩 15층전화 
   (02)704-3861 | 팩스 (02)704-3891전자우편 yedam1\@wisdomhouse.co.kr | 홈페이지 www.yedamco.co.kr출력 엔터 | 종이 화인페이퍼 | 인쇄·제
   본 (주) 현문값 8, 500원ISBN 89-5913-143-1 04810ISBN 89-5913-134-2 (전10권)R잘못된 책은 바꿔드립니다.R이 책의 내용과 편집 체재의 무단
-   전재 및 복제를 금합니다.]]></body>
+   전재 및 복제를 금합니다.
+
+]]></body>
 </Document>
 
+<Document>
+<body><![CDATA[
+
+
+]]></body>
+</Document>
 </textarea>
 </div>
 
 
 
 <br style="clear:left">
-<iframe name="result" width="100%" height="50%"> </iframe>
+<iframe name="result" width="99%" height="50%"> </iframe>
 </body>
 END
 
