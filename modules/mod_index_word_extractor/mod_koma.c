@@ -347,6 +347,8 @@ int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
             else if ( DO_TREAT_JUPMISA
 			          && idx_of_index_word > 0
 					  && TAG_IS_JUPMISA(tag, token_len)
+					  && strncmp("도",token_string,2) != 0
+					  && strncmp("뿐",token_string,2) != 0
                       && out[idx_of_index_word-1].pos == *cur_pos ) {
 			  /* 접미사 처리 */
 
