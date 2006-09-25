@@ -3,6 +3,8 @@
 use CGI::Util qw(unescape escape);
 use LWP::UserAgent;
 use HTTP::Request::Common;
+use XML::LibXSLT;
+use XML::LibXML;
 
 =rem
 lib_search

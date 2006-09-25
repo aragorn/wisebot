@@ -1,0 +1,118 @@
+#!/usr/bin/perl
+
+use strict;
+use Getopt::Std;
+use CGI::Util qw(unescape escape);
+
+require "lib_http_client.pl";
+
+sub BEGIN {
+	$Getopt::Std::STANDARD_HELP_VERSION = 1;
+	our $VERSION = "1.0";
+}
+
+sub HELP_MESSAGE {
+	print <<END;
+Usage: $0 <host> <port> [-/file]
+    host  - hostname of search server
+    port  - port number that softbot use
+    file  - contains query samples. - means stdin
+Options:
+END
+	exit;
+}
+
+my $EXTENSION_FOR_SCOURT = 1;
+###################################
+#         options 정리
+
+HELP_MESSAGE() unless( getopts( "q" ) );
+our ( $opt_q );
+
+my $host = shift;
+my $port = shift;
+my $file = shift;
+
+
+$file = "-" if ( !$file );
+
+HELP_MESSAGE() unless ($host and $port and $file);
+
+print "host: $host, port: $port, file: $file\n";
+
+
+unless ( $file eq "-" ) {
+	open STDIN, "<$file" or die $!;
+}
+
+my @words;
+while ( <STDIN> )
+{
+	chomp;
+	push @words, $_;
+}
+
+
+foreach my $i ( 0..$#words )
+{
+	printf "|| %30s || %30s || %3d || %3s || %3s || %3s || %3s || %3s ||\n",
+	         "질의어A", "질의어B", "A", "B", "A B", "A/5/B", "A!B", "B!A";
+	foreach my $j ( $i+1..$#words )
+	{
+		next if ( $i == $j );
+
+		my @count;
+		foreach my $mode ( 1..6 )
+		{
+			$count[$mode] = get_result_count($words[$i], $words[$j], $mode);
+		}
+
+		printf "|| %30s || %30s || %3d || %3d || %3d || %3d || %3d || %3d ||\n",
+			$words[$i], $words[$j],
+			$count[1], $count[2], $count[3], $count[4], $count[5], $count[6];
+	}
+}
+
+exit;
+
+
+sub get_result_count
+{
+	my $a = shift;
+	my $b = shift;
+	my $mode = shift;
+
+	my $query;
+	if    ($mode == 1) { $query = $a; }
+	elsif ($mode == 2) { $query = $b; }
+	elsif ($mode == 3) { $query = "(".$a.") (".$b.")"; }
+	elsif ($mode == 4) { $query = "(".$a.")/5/(".$b.")"; }
+	elsif ($mode == 5) { $query = "(".$a.")!(".$b.")"; }
+	elsif ($mode == 6) { $query = "(".$b.")!(".$a.")"; }
+	else               { return -1; }
+
+	
+	my $wisebot_query = get_wisebot_query($query);
+
+	my $output = lib_search($host, $port, $wisebot_query);
+	$output =~ m/문서수\s+: (\d+)/;
+
+	my $count = $1;
+
+	return $count;
+}
+
+sub get_wisebot_query
+{
+	my $str = shift || "";
+
+	my $r = <<END;
+SELECT *
+SEARCH $str
+ORDER_BY PronounceDate DESC, CaseNum1 DESC, CaseNum2 ASC, CaseNum3 DESC
+LIMIT 0,1
+END
+
+	return $r;
+}
+

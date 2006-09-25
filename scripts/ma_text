@@ -1,0 +1,81 @@
+#!/usr/bin/perl
+
+use strict;
+use Getopt::Std;
+
+require "lib_http_client.pl";
+
+sub BEGIN {
+	$Getopt::Std::STANDARD_HELP_VERSION = 1;
+	our $VERSION = "1.0";
+}
+
+sub HELP_MESSAGE {
+	print <<END;
+Usage: $0 -m morph_id <host> <port> [-/file]
+    입력파일의 텍스트를 형태소분석하여 그 결과를 출력한다.
+    host  - hostname of search server
+    port  - port number that softbot use
+    file  - contains query samples. - means stdin
+
+Options:
+    -m morph_id   - 형태소분석 ID, 기본값은 11
+END
+	exit;
+}
+
+my $EXTENSION_FOR_SCOURT = 1;
+###################################
+#         options 정리
+
+HELP_MESSAGE() unless( getopts( "m:" ) );
+our ( $opt_m );
+
+my $morph_id     = $opt_m || 11;
+
+my $host = shift;
+my $port = shift;
+my $file = shift;
+
+$file = "-" unless $file;
+
+HELP_MESSAGE() unless ($host and $port and $file);
+
+print "host: $host, port: $port, file: $file\n";
+
+if ( not $file eq "-" ) {
+	open STDIN, "<$file" or die $!;
+}
+
+my $query;
+while ( $query = <STDIN> ) {
+	chomp $query;
+	next unless $query;
+
+
+	print get_koma_result($host, $port, $query, $morph_id), "\n";
+}
+
+close STDIN;
+
+exit;
+
+sub get_koma_result
+{
+	my $host  = shift;
+	my $port  = shift;
+	my $string = shift;
+	my $morph_id = shift;
+	my $header = "Body#0:$morph_id^";
+
+	my $body = <<END;
+<Document><Body><![CDATA[$string]]></Body></Document>
+END
+	
+	my $result = lib_morph_analyze($host, $port, $header, $body);
+	my ($count, @words) = split(/\n/, $result);
+	foreach ( @words ) { s/\s/\//g; }
+	my $output = join(" + ", @words);
+
+	return $output;
+}
