@@ -67,9 +67,9 @@ if ($submit eq "ok")
   $content_type = "text/html" if (substr($output,0,150) =~ m/<html/i);
   $content_type = "application/vnd.ms-excel" if ($download eq "checked");
 
-  print $q->header(-type=>$content_type, -charset=>'cp949') unless $download eq "yes";
+  print $q->header(-type=>$content_type, -charset=>'euc-kr') unless $download eq "yes";
   print $q->header(-type=>"application/vnd.ms-excel",
-                   -charset=>'cp949',
+                   -charset=>'euc-kr',
                    -content_disposition=>'attachment; filename="scourt_bmt.xls"')
                                                                 if $download eq "yes";
   print <<END;
@@ -78,7 +78,7 @@ END
   exit;
 } else {
 
-print $q->header(-type=>"text/html", -charset=>'x-windows-949', -expires => '-1y');
+print $q->header(-type=>"text/html", -charset=>'cp949', -expires => '-1y');
 print <<END;
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -245,7 +245,7 @@ metadata = body#0:11^
 
 
 <br style="clear:left">
-<iframe name="result" width="99%" height="50%"> </iframe>
+<iframe name="result" width="99%" height="100%"> </iframe>
 </body>
 END
 
