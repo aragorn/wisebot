@@ -5,6 +5,9 @@
 #include "mod_api/rmas.h"
 #include "mod_api/index_word_extractor.h"
 
+#include <errno.h>
+#include <string.h>
+
 #define MAX_RMAS_INDEX_WORD_LEN	1024
 #define RMS_INITIAL_BUFFER_NUM (MAX_RMAS_INDEX_WORD_LEN*10)
 
@@ -19,7 +22,7 @@ int rmas_merge_index_word_array ( sb4_merge_buffer_t *mbuf , void *catdata , int
 		mbuf->allocated_size = RMS_INITIAL_BUFFER_NUM * sizeof(index_word_t);
 		mbuf->data = sb_malloc(mbuf->allocated_size);
 		if (mbuf->data == NULL) {
-			error("allocation fail : rmas_merge_index_word_array");
+			error("allocation failed: %s", strerror(errno));
 			return FAIL;
 		}
 		mbuf->data_size = 0;
@@ -39,7 +42,7 @@ int rmas_merge_index_word_array ( sb4_merge_buffer_t *mbuf , void *catdata , int
 		mbuf->data = sb_realloc(mbuf->data , mbuf->allocated_size);
 
 		if (mbuf->data == NULL) {
-			error("allocation fail : rmas_merge_index_word_array");
+			error("allocation failed: %s", strerror(errno));
 			return FAIL;
 		}
 	}
@@ -47,12 +50,12 @@ int rmas_merge_index_word_array ( sb4_merge_buffer_t *mbuf , void *catdata , int
 	memcpy(mbuf->data + mbuf->data_size , catdata , catdata_size);
 
 	mbuf->data_size += catdata_size;
-	INFO("mbuf->datasize[%d]", mbuf->data_size);
+	debug("mbuf->datasize[%d]", mbuf->data_size);
 
 	return SUCCESS;
 }
 
-int rmas_morphological_analyzer(int field_id , char* input , void **output , int *output_size , int morpheme_id)
+int rmas_morphological_analyzer(int field_id , const char* input , void **output , int *output_size , int morpheme_id)
 {
 	index_word_extractor_t *extractor=NULL;
 	index_word_t *index_word_array=NULL;

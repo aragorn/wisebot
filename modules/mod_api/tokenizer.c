@@ -10,7 +10,7 @@ HOOK_STRUCT(
 )
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(tokenizer_t*, new_tokenizer, (void),(),NULL)
-SB_IMPLEMENT_HOOK_RUN_VOID_ALL(tokenizer_set_text, (tokenizer_t* tokenizer, char* text),\
+SB_IMPLEMENT_HOOK_RUN_VOID_ALL(tokenizer_set_text, (tokenizer_t* tokenizer, const char* text),\
 										(tokenizer, text))
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, get_tokens,(tokenizer_t* tokenizer, token_t t[], int max),\
 										(tokenizer, t, max), DECLINE)

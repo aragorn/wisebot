@@ -13,5 +13,5 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, rmas_merge_index_word_array, \
 
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, rmas_morphological_analyzer, \
-	(int field_id, char *input, void **output, int *num_of_output, int morpheme_id), \
+	(int field_id, const char *input, void **output, int *num_of_output, int morpheme_id), \
 	(field_id, input, output, num_of_output, morpheme_id), DECLINE)

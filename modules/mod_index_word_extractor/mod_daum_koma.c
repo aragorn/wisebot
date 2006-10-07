@@ -61,7 +61,7 @@ static index_word_extractor_t* create_daum_dha_handler(int id)
 	return extractor;
 }
 
-static int daum_dha_set_text(index_word_extractor_t* extractor, char* text)
+static int daum_dha_set_text(index_word_extractor_t* extractor, const char* text)
 {
 	dha_handle_t *handle = NULL;
 

@@ -13,7 +13,7 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(index_word_extractor_t*, new_index_word_extractor, (
 							(id), (index_word_extractor_t*)MINUS_DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, index_word_extractor_set_text, \
-				(index_word_extractor_t *extractor, char *text), (extractor,text), DECLINE)
+				(index_word_extractor_t *extractor, const char *text), (extractor,text), DECLINE)
 
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, delete_index_word_extractor,\
 				(index_word_extractor_t *extractor), (extractor), DECLINE)

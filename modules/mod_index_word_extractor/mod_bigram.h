@@ -19,7 +19,7 @@ typedef struct {
 } bigram_t;
 
 extern bigram_t* new_bigram();
-extern void bigram_set_text(bigram_t *handle, char* text);
+extern void bigram_set_text(bigram_t *handle, const char* text);
 extern void delete_bigram_generator(bigram_t *handle);
 extern int bigram_generator(bigram_t *handle, index_word_t index_word[], int32_t max_index_word);
 

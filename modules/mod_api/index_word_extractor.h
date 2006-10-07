@@ -27,7 +27,7 @@ typedef struct {
 } index_word_extractor_t;
 
 SB_DECLARE_HOOK(index_word_extractor_t*, new_index_word_extractor, (int id))
-SB_DECLARE_HOOK(int, index_word_extractor_set_text, (index_word_extractor_t *extractor, char *text))
+SB_DECLARE_HOOK(int, index_word_extractor_set_text, (index_word_extractor_t *extractor, const char *text))
 SB_DECLARE_HOOK(int, delete_index_word_extractor, (index_word_extractor_t* extractor))
 SB_DECLARE_HOOK(int, get_index_words, (index_word_extractor_t *extractor, index_word_t* index_word, int max))
 #endif

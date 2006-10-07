@@ -1,20 +1,26 @@
 /* $Id$ */
-#include <time.h>
-#include <unistd.h>
 #include "common_core.h"
 #include "scoreboard.h"
 #include "memory.h"
 #include "ipc.h"
 #include "setproctitle.h"
+
 #include "mod_api/cdm.h"
 #include "mod_api/cdm2.h"
 #include "mod_api/indexer.h"
 #include "mod_api/tcp.h"
 #include "mod_api/protocol4.h"
-#include "mod_api/indexer.h"
+
 #include "mod_api/http_client.h"
 #include "mod_httpd/http_util.h"
 #include "mod_httpd_handler/handler_util.h"
+
+#include <signal.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <unistd.h> // sleep
+#include <time.h>
 
 #define MAX_SERVERS			16
 #define MAX_PROCESSES		64

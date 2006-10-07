@@ -68,7 +68,7 @@ static index_word_extractor_t* new_bigram_generator(int id)
 	return extractor;
 }
 
-void bigram_set_text(bigram_t *handle, char* text)
+void bigram_set_text(bigram_t *handle, const char* text)
 {
 	sb_run_tokenizer_set_text(handle->tokenizer, text);
 	handle->last_token.type = TOKEN_END_OF_DOCUMENT;
@@ -77,7 +77,7 @@ void bigram_set_text(bigram_t *handle, char* text)
 	handle->position = 1;
 }
 
-static int _bigram_set_text(index_word_extractor_t* extractor, char* text)
+static int _bigram_set_text(index_word_extractor_t* extractor, const char* text)
 {
 	bigram_t *handle = NULL;
 

@@ -48,7 +48,7 @@ index_word_extractor_t *new_bigram_generator2(int id)
 	return extractor;
 }
 
-static int bigram_set_text2(index_word_extractor_t* extractor, char* text)
+static int bigram_set_text2(index_word_extractor_t* extractor, const char* text)
 {
 	bigram_wrapper_t *wrapper=NULL;
 	if (extractor->id != MY_EXTRACTOR_ID)

@@ -51,7 +51,7 @@ static index_word_extractor_t *new_koma_wrapper(int id)
 	return extractor;
 }
 
-static int koma_wrapper_set_text(index_word_extractor_t* extractor, char* text)
+static int koma_wrapper_set_text(index_word_extractor_t* extractor, const char* text)
 {
 	koma_complex_noun_support_t* wrapper=NULL;
 

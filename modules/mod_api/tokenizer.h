@@ -24,7 +24,7 @@ typedef struct {
 #define TOKEN_END_OF_DOCUMENT	0x40
 
 SB_DECLARE_HOOK(tokenizer_t*,new_tokenizer,(void))
-SB_DECLARE_HOOK(void, tokenizer_set_text, (tokenizer_t* tokenizer, char* text))
+SB_DECLARE_HOOK(void, tokenizer_set_text, (tokenizer_t* tokenizer, const char* text))
 SB_DECLARE_HOOK(int, get_tokens, (tokenizer_t* tokenizer, token_t t[], int max))
 SB_DECLARE_HOOK(void, delete_tokenizer, (tokenizer_t* tokenizer))
 #endif

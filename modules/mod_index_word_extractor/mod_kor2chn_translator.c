@@ -66,7 +66,7 @@ static index_word_extractor_t* new_kor2chn_translator(int id)
 	return extractor;
 }
 
-static int kor2chn_translator_set_text(index_word_extractor_t* extractor, char* text)
+static int kor2chn_translator_set_text(index_word_extractor_t* extractor, const char* text)
 {
 	kor2chn_translator_handle_t *handle = NULL;
 

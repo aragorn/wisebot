@@ -80,7 +80,7 @@ static index_word_extractor_t* new_dummy_analyzer(int id)
 	return extractor;
 }
 
-static int dummy_set_text(index_word_extractor_t* extractor, char* text)
+static int dummy_set_text(index_word_extractor_t* extractor, const char* text)
 {
 	dummy_handle_t *handle = NULL;
 
