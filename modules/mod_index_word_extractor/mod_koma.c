@@ -98,7 +98,7 @@ static index_word_extractor_t* new_koma_analyzer(int id)
 	return extractor;
 }
 
-static int exists_in(char *list[], int size, const char* str)
+static int exists_in(char list[][5], int size, const char* str)
 {
 	int i;
 	for (i = 0; i < size; i++)
@@ -249,19 +249,18 @@ static char* split_morph_tag_pair(char *str, char *morph, char *tag)
 	}
 }
 
-int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
+int koma_analyze(koma_handle_t *h, index_word_t *out, int max)
 {
     int idx;
-	int	idx_of_index_word=0;
+	int	idx_of_index_word = 0;
 	int previous_idx_of_index_word;
 
-	koma_handle_t *h=NULL;
-
-	h = handle;
 
 	if (h->text == NULL) {
 		return 0;
 	}
+
+AGAIN:
 
 	/* 이전 DoKomaAndHanTag()의 결과를 모두 return한 경우 */
 	if ( h->koma_done == TRUE ) {
@@ -437,11 +436,11 @@ FINISH:
 		 * 값을 되돌려주어야 한다. 따라서 move_text() 하지 않도록, koma_done을 FALSE로
 		 * 지정한다. */
 		h->koma_done = FALSE;
-	} else if ( h->next_text ) {
-		h->koma_done = TRUE;
  	} else {
 		h->koma_done = TRUE;
 	}
+
+	if (idx_of_index_word == 0) goto AGAIN;
 
 	return idx_of_index_word;
 }
