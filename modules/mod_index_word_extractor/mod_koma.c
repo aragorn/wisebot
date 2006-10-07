@@ -17,8 +17,17 @@
 
 static int HAS_LOADED_KOMA_ENGINE = 0;
 static int HAS_LOADED_HANTAG_ENGINE = 0;
+
 static int DO_TREAT_JUPDUSA = 1;
+#define MAX_NUM_JUPDUSA (32)
+static int  JUPDUSA_COUNT = 0;
+static char JUPDUSA_LIST[MAX_NUM_JUPDUSA][5];
+
 static int DO_TREAT_JUPMISA = 1;
+#define MAX_NUM_JUPMISA (64)
+static int  JUPMISA_COUNT = 0;
+static char JUPMISA_LIST[MAX_NUM_JUPMISA][5];
+
 static int TAGGING_METHOD = PATH_BASED_TAGGING;
 static int MAX_SENTENCE_LENGTH = MOD_KOMA_SENTENCE_LEN;
 
@@ -89,10 +98,21 @@ static index_word_extractor_t* new_koma_analyzer(int id)
 	return extractor;
 }
 
+static int exists_in(char *list[], int size, const char* str)
+{
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		if (strncmp(list[i], str, 5) == 0) return 1;
+	}
+	return 0;
+}
+
 static const char *find_newline(const char *start, const char* end)
 {
 	while (start < end)
 	{
+		if (*start == '\0') return start;
 		if (*start == '\n') return start;
 		++start;
 	}
@@ -105,9 +125,11 @@ static const char *find_sentence_end(const char *start, const char* end)
 	while (start < end)
 	{
 		++start;
-		if (IS_WHITE_CHAR(*start) && *(start -1) == '.') return end;
-		if (IS_WHITE_CHAR(*start) && *(start -1) == '?') return end;
-		if (IS_WHITE_CHAR(*start) && *(start -1) == '!') return end;
+		if (IS_WHITE_CHAR(*start) && *(start -1) == '.') return start;
+		if (IS_WHITE_CHAR(*start) && *(start -1) == '?') return start;
+		if (IS_WHITE_CHAR(*start) && *(start -1) == '!') return start;
+
+		if (*start == '\0') return start;
 	}
 
 	return NULL;
@@ -138,41 +160,51 @@ static const char *find_last_hangul(const char *start, const char *end)
 }
 
 /* koma 에서 한번에 처리할 수 있는 문자열 길이로 분할한다. */
-static void move_text(koma_handle_t *handle)
+static void move_text(koma_handle_t *h)
 {
-	const char *start = handle->next_text;
+	const char *start = h->next_text;
 	const char *end   = start + MAX_SENTENCE_LENGTH;
 	const char *test = NULL;
 
-	if      ((test = find_newline(start, end)) != NULL)      { end = test; }
-	else if ((test = find_sentence_end(start, end)) != NULL) { end = test; }
-	else if ((test = find_whitespace(start, end)) != NULL)   { end = test; }
-	else if ((test = find_last_hangul(start, end)) != NULL)  { end = test; }
+	if (h->next_text == NULL || strlen(h->next_text) == 0)
+	{
+		debug("no more text");
+		h->text[0] = '\0';
+		return;
+	}
 
-	strncpy(handle->text, start, end-start);
-	handle->text[end-start] = '\0';
-	handle->current_length = end-start;
-	handle->next_text = end + 1;
-	handle->next_length = strlen(handle->next_text);
+	if      ((test = find_newline(start, end)) != NULL)      { end = test; debug("newline"); }
+	else if ((test = find_sentence_end(start, end)) != NULL) { end = test; debug("sentence_end"); }
+	else if ((test = find_whitespace(start, end)) != NULL)   { end = test; debug("whitespace"); }
+	else if ((test = find_last_hangul(start, end)) != NULL)  { end = test; debug("last_hangul"); }
 
-	if (handle->next_length == 0) handle->next_text = NULL;
+	strncpy(h->text, start, end-start);
+	h->text[end-start] = '\0';
+	h->text_length = end-start;
+	h->byte_position += h->text_length;
+	debug("text[%p:%s] next_text[%p:%s]", h->text, h->text, h->next_text, h->next_text);
+
+	h->next_text = end + 1;
+	h->next_length = strlen(h->next_text);
+
+	h->result_index = 0;
+	h->result_count = 0;
+	if (h->next_length == 0) h->next_text = NULL;
 }
 
-// XXX 분석할 문자열의 위치를 지정한다.
+/* 형태소분석할 텍스트를 설정한다. */
 void koma_set_text(koma_handle_t* handle, const char* text)
 {
 
 	// set handle
 	handle->orig_text = text;
 	handle->position = 1;
-	handle->current_index = 0;
-	handle->current_bytes_position = 0;
+	handle->byte_position = 0;
 	handle->next_text = handle->orig_text;
 	handle->next_length = strlen(handle->next_text);
 	handle->text[0] = '\0';
 
-	move_text(handle);
-	handle->koma_done = FALSE;
+	handle->koma_done = TRUE;
 }
 
 static int _koma_set_text(index_word_extractor_t* extractor, const char* text)
@@ -189,280 +221,229 @@ static int _koma_set_text(index_word_extractor_t* extractor, const char* text)
 	return SUCCESS;
 }
 
-// XXX 분석될 결과에서 형태소와 품사를 분리한다.
-static char* koma_get_token_and_pumsa( char *str, char *tok, char *tag)
+// "형태소/품사"쌍 문자열에서 형태소와 품사를 분리한다.
+static char* split_morph_tag_pair(char *str, char *morph, char *tag)
 {
-	int i,j;
+	char *slash, *plus;
 
-	tag[0] = tok[0] = '\0';
+	morph[0] = tag[0] = '\0';
 
-	for(i=0; *str != '/'; str++, i++ ) {
-
-		if (*str=='\0') {
-			tok[i] = '\0';
-			return NULL;
-		}
-
-		tok[i] = *str;
-	}
-
-	tok[i] = '\0';
-
+	slash = strchr(str, '/');
+	if ( slash == NULL ) return NULL; /* '/'를 찾을 수 없다. */
+	for( ; str < slash; str++, morph++ ) { *morph = *str; }
+	*morph = '\0';
 	str++;
 
-	for(j=0; j<KOMA_TAG_LEN && *str != '+'; str++, j++ ) {
 
-		if (*str=='\0') 
-			return NULL;
-
-		tag[j] = *str;
-	}
-	
-	str++;
-
-	// XXX '/' 경우에 null str 이 생성되게 된다.
-	if (!(strncmp(tag, "/SS/", 4))) {
-		*tok = '/';
-		*(tok+1) = '/';
-		strncpy(tag, "SS/", 3);
-	}
-
-	if (*str=='\0')
+	plus = strchr(str, '+');
+	if ( plus )
+	{
+		for( ; str < plus; str++, tag++ ) { *tag = *str; }
+		*tag = '\0';
+		str++;
+		return str;
+	} else {
+		strncpy(tag, str, KOMA_TAG_LEN);
+		tag[KOMA_TAG_LEN] = '\0';
 		return NULL;
-
-	return str;
-
+	}
 }
 
 int koma_analyze(koma_handle_t *handle, index_word_t *out, int max)
 {
-    int i;
-	int token_len , *cur_pos;
+    int idx;
 	int	idx_of_index_word=0;
 	int previous_idx_of_index_word;
-	int	num_of_cut=0, jupdusa_exist;
 
-	/* NOTE: 가끔씩 문자열의 길이가 비정상적으로 긴 텍스트가 존재한다.
-	 *       이런 경우를 대비해, temp_string[] 등의 길이를 STRING_SIZE가
-	 *       아닌 LONG_STRING_SIZE로 지정하여야 한다.
-	 *       --2006-09-24 김정겸
-	 */
-	char temp_string[LONG_STRING_SIZE];
-	char token_string[LONG_STRING_SIZE];
-	char jupdusa_string[LONG_STRING_SIZE];
-	char *ptemp_string;
-	char tag[KOMA_TAG_LEN+1];
 	koma_handle_t *h=NULL;
 
 	h = handle;
 
-	cur_pos = &(h->position);
 	if (h->text == NULL) {
 		return 0;
 	}
 
-	if ( h->koma_done == FALSE) { 
-		debug( "h->text: %s", h->text );
-		DoKomaAndHanTag(h->HanTag, TAGGING_METHOD, h->text, h->Wrd, h->bPos, h->Result);
-		h->koma_done = TRUE;
-		h->result_count = 0;
-		for(i=0;i<MAX_NUM_OF_MORPHEMES && h->Wrd[i];i++) 
-			h->result_count++;
+	/* 이전 DoKomaAndHanTag()의 결과를 모두 return한 경우 */
+	if ( h->koma_done == TRUE ) {
+		move_text(h);
+		debug("h->text: %s", h->text );
+		/*              핸들       태깅방식        텍스트, 어절목록, 바이트위치, 결과목록 */
+		h->result_count = DoKomaAndHanTag(h->HanTag, TAGGING_METHOD, h->text, h->Wrd, h->bPos, h->Result);
+		h->koma_done = FALSE; /* Result 배열의 값을 모두 index_word_t* out 으로 내보내면, 
+								 h->koma_done = TRUE 가 된다. */
 	}
 
-	for (i = h->current_index; i< h->result_count; i++) {
+	/* 형태소 분석 결과의 각 어절단위로 루프를 돈다. */
+	for (idx = h->result_index; idx < h->result_count; idx++, h->position++) {
+		int morpheme_count;
+		char morph_tag_pairs[LONG_STRING_SIZE]; /* 이 문자열은 STRING_SIZE를 벗어날 수 있다. */
+		char *pairs;
+		char jupdusa[STRING_SIZE]; int jupdusa_exist;
 
 		// XXX: koma 결과에 버그 있음. 에러 안나고 넘어가게만 조치. 나중에라도 수정되야함. 
-		if (h->Result[i][0] == 0x00) continue; // skip
+		if (h->Result[idx][0] == 0x00) continue; // skip
 
-		strncpy(temp_string, h->Result[i][0], LONG_STRING_SIZE);
-		temp_string[LONG_STRING_SIZE-1]='\0';
+		/* morph_tag_pairs 는 다음과 같은 꼴의 문자열이다.
+		 * "세/DU+번/NNBU+째/XSNN+문장/NNCG+이/I+ㅂ니다/EFF" */
+		strncpy(morph_tag_pairs, h->Result[idx][0], STRING_SIZE-1);
 
-		debug("index[%d] temp_string[%s]", i, temp_string);
-		ptemp_string = temp_string;
+		debug("idx[%d] morph_tag_pair[%s]", idx, morph_tag_pairs);
 
 		previous_idx_of_index_word = idx_of_index_word; // roll back
 
-		for (num_of_cut=0, jupdusa_exist=FALSE;
-			 ptemp_string != NULL;
-			 num_of_cut++)
+		/* 태깅 이후에는 Result[idx][] 배열에 0번째 값만 하나 채워진다. 태깅을 하지 않는 경우
+		 * 여러 분석 후보가 나타날 수 있으나, 태깅은 이 가운데 하나만을 선택해 준다.
+		 * 따라서 Result[idx][1], Result[idx][2] 등의 값은 참조하지 않아도 된다.
+		 */
+		for (pairs = morph_tag_pairs, morpheme_count = 0, jupdusa_exist = FALSE;
+			 pairs != NULL;
+			 morpheme_count++)
 		{
-			memset(tag, 0x00, KOMA_TAG_LEN+1); /* initialize 품사 tag */
-			ptemp_string = 
-					koma_get_token_and_pumsa(ptemp_string, token_string, tag);
+			int morpheme_len = 0;
+			char morpheme[STRING_SIZE] = "";
+			char tag[KOMA_TAG_LEN+1] = "";
+			pairs = split_morph_tag_pair(pairs, morpheme, tag);
 
-			token_len = strlen(token_string);
-            debug("num_of_cut[%d], token_string[%s] tag[%s]", num_of_cut, token_string, tag);
+			morpheme_len = strlen(morpheme);
+            debug("count[%d], m[%s] tag[%s]", morpheme_count, morpheme, tag);
 
             if ( h->is_raw_koma_text ) {
-                strncpy(out[idx_of_index_word].word, token_string, MAX_WORD_LEN);
+                strncpy(out[idx_of_index_word].word, morpheme, MAX_WORD_LEN);
                 out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
                 out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
-                out[idx_of_index_word].pos = *cur_pos;
+                out[idx_of_index_word].pos = h->position;
                 memcpy(&(out[idx_of_index_word].attribute), tag,
                                     sizeof(out[idx_of_index_word].attribute));
                 
-                out[idx_of_index_word].bytepos = h->current_bytes_position + h->bPos[i];
+                out[idx_of_index_word].bytepos = h->byte_position + h->bPos[idx];
 				idx_of_index_word++;
             } else if ( DO_TREAT_JUPDUSA
-			            && num_of_cut == 0 && TAG_IS_JUPDUSA(tag, token_len) ) {
+			            && morpheme_count == 0
+						&& TAG_IS_JUPDUSA(tag, morpheme_len)
+						&& exists_in(JUPDUSA_LIST, JUPDUSA_COUNT, morpheme) ) {
 			    /* 접두사 전처리 */
-				// XXX: length of jupdusa is always 2. we can assert!!!
-				strncpy(jupdusa_string, token_string, token_len);
-				jupdusa_string[token_len] = '\0';
+				strcpy(jupdusa, morpheme);
 				jupdusa_exist = TRUE;
+				debug("접두사 기억: %s/%s", morpheme, tag);
 			} else if ( DO_TREAT_JUPDUSA
-			            && num_of_cut == 1 && jupdusa_exist == TRUE ) {
+			            && morpheme_count == 1
+					   	&& jupdusa_exist == TRUE ) {
 			    /* 접두사 후처리 */
 
-				// XXX: 연결할 단어의 품사를 확인해서,
-				// 기존의 색인어인 경우에는 앞어절을 연결한 색인어를 만든다.
+				/* 연결할 형태소의 품사를 확인하여 색인할 품사인 경우에는 앞어절을 연결한 색인어를 만든다. */
 				if (!(TAG_TO_BE_IGNORED(tag))) {
-				    int tmp_len = 0;
-					tmp_len = strlen(jupdusa_string);
-					strncat(jupdusa_string, token_string, LONG_STRING_SIZE-tmp_len);
-					jupdusa_string[LONG_STRING_SIZE-1]='\0';
-					token_len = strlen(jupdusa_string);
+					char merged_morpheme[STRING_SIZE] = "";
+					strncat(merged_morpheme, jupdusa, STRING_SIZE);
+					strncat(merged_morpheme, morpheme, STRING_SIZE);
 
 					jupdusa_exist = FALSE;
 
-					strncpy(out[idx_of_index_word].word, jupdusa_string, MAX_WORD_LEN);
+					strncpy(out[idx_of_index_word].word, merged_morpheme, MAX_WORD_LEN);
 					out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
 					out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
-					out[idx_of_index_word].pos = *cur_pos;
-					// XXX: sizeof(int) is must be 4 byte
+					out[idx_of_index_word].pos = h->position;
 					memcpy(&(out[idx_of_index_word].attribute),
 						   tag, sizeof(out[idx_of_index_word].attribute));
-					out[idx_of_index_word].bytepos =  h->current_bytes_position + h->bPos[i];
+					out[idx_of_index_word].bytepos =  h->byte_position + h->bPos[idx];
 					idx_of_index_word++;
-				} else 
-				// 문장부호 & 조사 처리 
-				// 단음절 색인어를 만들고, 조사나 문장부호는 버린다.
-				if ( TAG_IS_JOSA(tag) || TAG_IS_MUNJANGBUHO(tag) ){
-					strncpy(out[idx_of_index_word].word, jupdusa_string, MAX_WORD_LEN);
-					out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
-					out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
-
-					out[idx_of_index_word].pos = *cur_pos;
-
+					debug("접두사 완료: %s/%s + %s/%s => %s/%s",
+						jupdusa, "????", morpheme, tag, merged_morpheme, tag);
+				} else {
+				/* 이번 형태소의 품사가 색인하지 않을 품사인 경우, 접두사 정보를 버린다. */
+					jupdusa[0] = '\0';
 					jupdusa_exist = FALSE;
-
-					// 품사 정보 처리 : FIXME
-					memcpy(&(out[idx_of_index_word].attribute),
-						   "NNCG", sizeof(out[idx_of_index_word].attribute));
-					// byteposition 처리 : FIXME
-					out[idx_of_index_word].bytepos 
-							=  h->current_bytes_position + h->bPos[i] - 1;
-					idx_of_index_word++;
-				}
-				else {
-				// 분리된 단음절과 다음 token을 버린다.
-					out[idx_of_index_word].word[0] = '\0';
-					out[idx_of_index_word].len = 0;
-					jupdusa_string[0]='\0';
-					jupdusa_exist = FALSE;
-				} // if (!( _TAG_TO_BE_IGNORED_(tag)) )
+					debug("접두사 버림: %s/%s + %s/%s => skip",
+						jupdusa, "????", morpheme, tag);
+				} /* if (!( _TAG_TO_BE_IGNORED_(tag)) ) */
 			} /* 접두사 후처리 완료 */
             else if ( DO_TREAT_JUPMISA
 			          && idx_of_index_word > 0
-					  && TAG_IS_JUPMISA(tag, token_len)
-					  && strncmp("도",token_string,2) != 0
-					  && strncmp("뿐",token_string,2) != 0
-                      && out[idx_of_index_word-1].pos == *cur_pos ) {
+					  && TAG_IS_JUPMISA(tag, morpheme_len)
+					  && exists_in(JUPMISA_LIST, JUPMISA_COUNT, morpheme)
+                      && out[idx_of_index_word-1].pos == h->position ) {
 			  /* 접미사 처리 */
 
-			  int len = MAX_WORD_LEN - out[idx_of_index_word-1].len;
-			  if (len < 0) {
-			    crit("length of word[%s] is larger than MAX_WORD_LEN[%d]",
+				int len = MAX_WORD_LEN - out[idx_of_index_word-1].len;
+				if (len < 0) {
+			 	 crit("length of word[%s] is longer than MAX_WORD_LEN[%d]",
 							out[idx_of_index_word-1].word, MAX_WORD_LEN);
-			    len = 0;
-			  }
-				strncat(out[idx_of_index_word-1].word , token_string , len);
+			 	 len = 0;
+				}
+				debug("접미사: %s/%s + %s/%s => %s%s/%s",
+						out[idx_of_index_word-1].word,
+						(char*)&out[idx_of_index_word-1].attribute,
+						morpheme, tag, 
+						out[idx_of_index_word-1].word, morpheme,
+						(char*)&out[idx_of_index_word-1].attribute);
+
+				strncat(out[idx_of_index_word-1].word, morpheme , len);
 				out[idx_of_index_word-1].word[MAX_WORD_LEN-1]='\0';
-				out[idx_of_index_word-1].len =
-									strlen(out[idx_of_index_word-1].word);
+				out[idx_of_index_word-1].len = strlen(out[idx_of_index_word-1].word);
 			} /* 접미사 처리 완료 */
 			else
-			// 그외 품사 처리 
+			/* 그외 품사 처리 */
 			// 색인단어에서 제외할 품사들
 			// TAG_TO_BE_IGNORED_MORE or TAG_TO_BE_IGNORED
 			if ( ! TAG_TO_BE_IGNORED(tag) ) {
 				/* 색인단어에서 제외할 품사들이 아니면 ... */
-				strncpy(out[idx_of_index_word].word,
-						token_string, MAX_WORD_LEN);
+				strncpy(out[idx_of_index_word].word, morpheme, MAX_WORD_LEN);
 				out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
-				out[idx_of_index_word].len =
-										strlen(out[idx_of_index_word].word);
-				out[idx_of_index_word].pos = *cur_pos;
+				out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
+				out[idx_of_index_word].pos = h->position;
 				memcpy(&(out[idx_of_index_word].attribute), tag,
 									sizeof(out[idx_of_index_word].attribute));
 
-				out[idx_of_index_word].bytepos = h->current_bytes_position + h->bPos[i];
-				if (idx_of_index_word>max)
-					CRIT("idx_of_index_word : wrong value %d [%s]", max, token_string);
-
+				out[idx_of_index_word].bytepos = h->byte_position + h->bPos[idx];
+				if (idx_of_index_word > max)
+					CRIT("idx_of_index_word[%d] is bigger than parameter max[%d]: morpheme[%s]",
+							idx_of_index_word, max, morpheme);
 				idx_of_index_word++;
+            	debug("색인어: %s/%s", morpheme, tag);
 			} else {
-            	debug("[%s]/[%s] is ignored.", token_string, tag);
+            	debug("무시함: %s/%s", morpheme, tag);
 			}
+			/* end: if ( h->is_raw_koma_text ) */
 
 			if ( idx_of_index_word >= max ) {
-				if (previous_idx_of_index_word == 0) {
-					crit("too small max_index_word_size[%d]!", max);
+				debug("idx_of_index_word[%d] >= max[%d]", idx_of_index_word, max);
+				debug("idx[%d]/result_index[%d]/result_count[%d]", idx, h->result_index, h->result_count);
+				if ( previous_idx_of_index_word == 0 ) {
+					crit("Too small max_index_words[%d]. It cannot hold several morphemes from first one eojeol.", max);
 					idx_of_index_word = max;
-					h->current_index = i+1;
+					h->result_index = idx + 1;
 				}
 				else {
-					h->current_index = i;
+					h->result_index = idx;
 					idx_of_index_word = previous_idx_of_index_word;
 				}
 
 				goto FINISH;
-			} 
+			} else {
+				/* 정상적으로 index_word 배열 생성을 완료함. */
+				;
+			}
 	
-		} // for num_of_cut
+		} /* for (pairs = morph_tag_pairs, morpheme_count = 0, jupdusa_exist = FALSE; */
 
-		// 접두사 전처리후 다음이 없으면 색인어로 처리한다.
-		// 닭, 비 등이 이것에 의해 색인어가 된다.
-		if ( jupdusa_exist == TRUE ) {
-			strncpy(out[idx_of_index_word].word,
-					jupdusa_string, MAX_WORD_LEN);
-			out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
-			out[idx_of_index_word].len =
-					strlen(out[idx_of_index_word].word);
+	} /* for (idx = h->current_index; idx < h->result_count; idx++) */
 
-			out[idx_of_index_word].pos = *cur_pos;
-
-			jupdusa_exist = FALSE;
-
-			// 품사 정보 처리 : FIXME
-			memcpy(&(out[idx_of_index_word].attribute),
-				   "NNCG", sizeof(out[idx_of_index_word].attribute));
-			// byteposition 처리 : FIXME
-			out[idx_of_index_word].bytepos 
-					=  h->current_bytes_position + h->bPos[i] - 1;
-			idx_of_index_word++;
-		}
-
-		(*cur_pos)++;	
-
-	} // for koma_result
-
-	h->current_index = i;
-
-	h->current_bytes_position = h->next_text - h->orig_text;
-//	h->current_bytes_position += h->current_length;
+	h->result_index = idx;
 
 FINISH:
 
-	if ( i >= h->result_count ) {
-		move_text(h);
+	debug("idx[%d]/result_index[%d]/result_count[%d]", idx, h->result_index, h->result_count);
+	if ( h->result_index < h->result_count ) {
+		/* 아직 Result[] 배열의 값을 모두 되돌려주지 못하였다. 다음번 호출에 남은 배열의
+		 * 값을 되돌려주어야 한다. 따라서 move_text() 하지 않도록, koma_done을 FALSE로
+		 * 지정한다. */
 		h->koma_done = FALSE;
-	 	h->current_index = 0;
- 	}
+	} else if ( h->next_text ) {
+		h->koma_done = TRUE;
+ 	} else {
+		h->koma_done = TRUE;
+	}
 
 	return idx_of_index_word;
-
 }
 
 static int _koma_analyze(index_word_extractor_t *extractor, index_word_t *indexwords, int max)
@@ -543,9 +524,31 @@ static void setTreatJupdusa(configValue v) {
 		DO_TREAT_JUPDUSA = 0;
 }
 
+static void setJupdusa(configValue v) {
+	int n;
+
+	for (n = 0; n < v.argNum; n++)
+	{
+		strncpy(JUPDUSA_LIST[JUPDUSA_COUNT], v.argument[n], 5);
+		JUPDUSA_LIST[JUPDUSA_COUNT][4] = '\0';
+		JUPDUSA_COUNT++;
+	}
+}
+
 static void setTreatJupmisa(configValue v) {
 	if ( strncasecmp(v.argument[0], "NO", SHORT_STRING_SIZE) == 0 )
 		DO_TREAT_JUPMISA = 0;
+}
+
+static void setJupmisa(configValue v) {
+	int n;
+
+	for (n = 0; n < v.argNum; n++)
+	{
+		strncpy(JUPMISA_LIST[JUPMISA_COUNT], v.argument[n], 5);
+		JUPMISA_LIST[JUPMISA_COUNT][4] = '\0';
+		JUPMISA_COUNT++;
+	}
 }
 
 static void setTaggingMethod(configValue v) {
@@ -567,7 +570,9 @@ static config_t config[] = {
     CONFIG_GET("ProbDatFile", setProbDatFile, 1, "prob.dat file"),
 */
     CONFIG_GET("TreatJupdusa", setTreatJupdusa, 1, "YES or NO. Default value is YES."),
+    CONFIG_GET("Jupdusa", setJupdusa, VAR_ARG, "List of Jupdusa."),
     CONFIG_GET("TreatJupmisa", setTreatJupmisa, 1, "YES or NO. Default value is YES."),
+    CONFIG_GET("Jupmisa", setJupmisa, VAR_ARG, "List of Jupmisa."),
     CONFIG_GET("TaggingMethod", setTaggingMethod, 1, "PATH_BASED or STATE_BASED. Default is PATH_BASED."),
 	{ NULL }
 };
@@ -593,17 +598,61 @@ module koma_module = {
     register_hooks          /* register hook api */
 };
 
+static void test_sentence(char *t, int morph_id)
+{
+	int n;
+
+	index_word_extractor_t *extractor = NULL;
+	index_word_t *index_word_array = NULL;
+
+	extractor = new_koma_analyzer(morph_id);
+	warn("morph_id[%d] set_text(e, [%s])", morph_id, t);
+	_koma_set_text(extractor, t);
+	index_word_array = (index_word_t*)sb_calloc(10, sizeof(index_word_t));
+
+	while ( ( n = _koma_analyze(extractor, index_word_array, 10) ) > 0 )
+	{
+		int i;
+
+		for ( i = 0; i < n; i++ )
+		{
+			char tag[KOMA_TAG_LEN+1] = "";
+			memcpy(tag, (char *)&index_word_array[i].attribute, KOMA_TAG_LEN);
+			tag[KOMA_TAG_LEN] = '\0';
+			info("[%s] [%s] [%d]", index_word_array[i].word, tag, index_word_array[i].pos);
+		}
+	}
+
+	info("test is done.");
+}
+
 int test_mod_koma(void)
 {
-	MAX_SENTENCE_LENGTH = 10;
+	MAX_SENTENCE_LENGTH = 100;
 
-	char *t = "한글문자열을잘떼어내는지테스트합니다.\n두번째 문장 입니다. 세번째문장입니다\n네번째입니다";
-	char *end;
+	char *t1 = "한글문자열을잘떼어내는지테스트합니다.\n"
+			"두번째 문장입니다. 색인어수 초과. 슬래시/테스트. 한글ABC입력.\n"
+			"안녕하세요. 반갑습니다.\n"
+			"마지막 문장.  끝에 줄바꿈 문제가 없음.\n";
+	char *t2 = "두번째 테스트.\n"
+			"두번째 마지막 문장.  끝에 줄바꿈 문제가 없음.";
+	char *t3 = "세번째 테스트.\n"
+			"세번째 마지막 문장.  끝에 줄바꿈 문제가 없음";
+	char *t4 = "네번째 테스트.\n"
+			"네번째 마지막 문장.  끝에 줄바꿈 문제가 없음y";
+	char *t5 = "다섯째 테스트.\n"
+			"다섯째 마지막 문장.  끝에 줄바꿈 문제가 없y음";
 	
-	end = find_newline(t, t+strlen(t));
-	printf("find_newline[%s]", end);
-	end = find_sentence_end(t, t+strlen(t));
-	printf("find_sentence_end[%s]", end);
-
+	test_sentence(t1, MY_RAW_EXTRACTOR_ID);
+	test_sentence(t2, MY_RAW_EXTRACTOR_ID);
+	test_sentence(t3, MY_RAW_EXTRACTOR_ID);
+	test_sentence(t4, MY_RAW_EXTRACTOR_ID);
+	test_sentence(t5, MY_RAW_EXTRACTOR_ID);
+	test_sentence(t1, MY_EXTRACTOR_ID);
+	test_sentence(t2, MY_EXTRACTOR_ID);
+	test_sentence(t3, MY_EXTRACTOR_ID);
+	test_sentence(t4, MY_EXTRACTOR_ID);
+	test_sentence(t5, MY_EXTRACTOR_ID);
+	
 	return 0;
 }

@@ -17,7 +17,13 @@
 #define TAG_IS(a, b, c)			(!strncmp((a), (b), (c))) 
 
 /* a = tag, b = token_len */
-#define TAG_IS_JUPDUSA(a,b)	  ( b == 2 && \
+
+#ifdef MODE_NEW_KOMA
+#  define TAG_IS_JUPDUSA(a,b) ( TAG_IS((a), "XPN", 3) ) 
+#  define TAG_IS_JUPMISA(a,b) ( TAG_IS((a), "XSNN", 4) || \
+								TAG_IS((a), "XSD",  3) )
+#else // MODE_NEW_KOMA
+#  define TAG_IS_JUPDUSA(a,b) ( b == 2 && \
 							   (TAG_IS((a), "NNCG", 4) || \
 								TAG_IS((a), "NNCV", 4) || \
 								TAG_IS((a), "NNCJ", 4) || \
@@ -26,12 +32,6 @@
 								TAG_IS((a), "NPI",  3) || \
 								TAG_IS((a), "NNB",  3) || \
 								TAG_IS((a), "XPNN", 4)) )
-
-#ifdef MODE_NEW_KOMA
-#  define TAG_IS_JUPMISA(a,b) ( b == 2 && \
-							   (TAG_IS((a), "XSNN", 4) || \
-								TAG_IS((a), "XSD",  3)) )
-#else // MODE_NEW_KOMA
 #  define TAG_IS_JUPMISA(a,b) ( b == 2 && \
 							   (TAG_IS((a), "XSNN", 4) || \
 								TAG_IS((a), "XSD",  3) || \
@@ -100,7 +100,7 @@
  * 있게 도와준다.
  * -하다/XSVV 가 앞의 명사와 결합하여 복합명사/COMP를 만들어내지
  * 않아야 한다. --김정겸, 2006-09-25 */
-#define TAG_IS_XSN_XSD(a)	   (TAG_IS((a), "XSNN", 4) || \
+#define TAG_IS_XPN_XSN_XSD(a)  (TAG_IS((a), "XSNN", 4) || \
 								TAG_IS((a), "XSNP", 4) || \
 								TAG_IS((a), "XSNU", 4) || \
 								TAG_IS((a), "XPNN", 4) || \
@@ -161,23 +161,23 @@
 #define TAG_TO_BE_IGNORED(tag) 	( TAG_IS_GAMTAN(tag) || TAG_IS_MUNJANGBUHO(tag) \
 								|| TAG_IS_UMI(tag) || TAG_IS_JOSA(tag) \
 								|| TAG_IS_KYUKJOSA(tag) \
-								|| (TAG_IS_JUPSA(tag) && (! TAG_IS_XSN_XSD(tag))) )
+								|| (TAG_IS_JUPSA(tag) && (! TAG_IS_XPN_XSN_XSD(tag))) )
 
 typedef	struct koma_handle_t {
 	char *Wrd[MAX_NUM_OF_MORPHEMES];
 	int  bPos[MAX_NUM_OF_MORPHEMES];
 	char *Result[MAX_NUM_OF_MORPHEMES][MAX_RESULT_NUM];
-	int  result_count;
+	int  result_count; /* DoKomaAndHanTag()의 리턴값 = 어절 갯수 */
+	int	 result_index; /* 현재 Result 배열의 index */
 	void *HanTag;
-	int	 position;
-	int	 current_index;
-	int  current_length;
+	int	 position;      /* 현재 어절 위치 */
+	int  byte_position; /* 현재 바이트 위치 */
 	int	 next_length;
 	const char *orig_text;	// 원래 text point
 	const char *next_text;	// 다음에 분석할 text start point
 	char text[MOD_KOMA_SENTENCE_LEN]; // 현재 분석할 text 
+	int  text_length;
 	int  koma_done;
-	int  current_bytes_position;
     int  is_raw_koma_text; // koma를 실행한 원본 결과 추출
 } koma_handle_t;
 
