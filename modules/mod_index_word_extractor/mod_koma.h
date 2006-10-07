@@ -139,9 +139,16 @@
 								 TAG_IS((a), "SCH", 3) || \
 								 TAG_IS((a), "SCD", 3) )
 
-// XXX for move_text function
-// assuming avg. word len 3, 256 is max white space-tokenized length by mod-koma
-#define MOD_KOMA_SENTENCE_LEN	 (256*3)
+/* This is for move_text() function.
+ * Assuming that avg. word len 3, 256 is max number of 어절 by mod_koma.
+ * 2001-??-??
+ */
+/* MAX_SENTENCE of koma2c/include/koma_global.h is now 10240 bytes
+ * and MaxNumWrd (한 문장 내의 최대 어절 개수) is now 5120.
+ * We can increase MOD_KOMA_SENTENCE_LEN to 10240.
+ * 2006-10-07 김정겸
+ */
+#define MOD_KOMA_SENTENCE_LEN	 (1024*10)
 #define IS_WHITE_CHAR(c)	( (c)==' ' || (c)=='\n' || (c)=='\r' || (c)=='\t')
 
 // XXX for koma_analyzer function
@@ -166,9 +173,9 @@ typedef	struct koma_handle_t {
 	int	 current_index;
 	int  current_length;
 	int	 next_length;
-	char *orig_text;	// 원래 text point
-	char *text;			// 현재 분석할 text 
-	char *next_text;	// 다음에 분석할 text start point
+	const char *orig_text;	// 원래 text point
+	const char *next_text;	// 다음에 분석할 text start point
+	char text[MOD_KOMA_SENTENCE_LEN]; // 현재 분석할 text 
 	int  koma_done;
 	int  current_bytes_position;
     int  is_raw_koma_text; // koma를 실행한 원본 결과 추출
@@ -176,7 +183,7 @@ typedef	struct koma_handle_t {
 
 extern koma_handle_t* new_koma();
 extern void delete_koma(koma_handle_t *handle);
-extern void koma_set_text(koma_handle_t* handle, char* text);
+extern void koma_set_text(koma_handle_t* handle, const char* text);
 extern int koma_analyze(koma_handle_t *handle, index_word_t *out, int max);
 
 #endif

@@ -20,6 +20,7 @@ static int HAS_LOADED_HANTAG_ENGINE = 0;
 static int DO_TREAT_JUPDUSA = 1;
 static int DO_TREAT_JUPMISA = 1;
 static int TAGGING_METHOD = PATH_BASED_TAGGING;
+static int MAX_SENTENCE_LENGTH = MOD_KOMA_SENTENCE_LEN;
 
 static char MAIN_FST_FILE[SHORT_STRING_SIZE] = "share/koma/main.FST";
 static char MAIN_DAT_FILE[SHORT_STRING_SIZE] = "share/koma/main.dat";
@@ -88,75 +89,90 @@ static index_word_extractor_t* new_koma_analyzer(int id)
 	return extractor;
 }
 
-// XXX koma 에서 한번에 처리할 수 있는 문자열 길이로 분할한다.
+static const char *find_newline(const char *start, const char* end)
+{
+	while (start < end)
+	{
+		if (*start == '\n') return start;
+		++start;
+	}
+
+	return NULL;
+}
+
+static const char *find_sentence_end(const char *start, const char* end)
+{
+	while (start < end)
+	{
+		++start;
+		if (IS_WHITE_CHAR(*start) && *(start -1) == '.') return end;
+		if (IS_WHITE_CHAR(*start) && *(start -1) == '?') return end;
+		if (IS_WHITE_CHAR(*start) && *(start -1) == '!') return end;
+	}
+
+	return NULL;
+}
+
+static const char *find_whitespace(const char *start, const char *end)
+{
+	while (start < end)
+	{
+		if (IS_WHITE_CHAR(*end)) return end;
+		--end;
+	}
+
+	return NULL;
+}
+
+static const char *find_last_hangul(const char *start, const char *end)
+{
+	int count = 0;
+	while (start < end - count)
+	{
+		if ( *(end - count) & 0x80 ) count++;
+		else break;
+	}
+
+	if ( count % 2 ) return end;
+	else return end-1;
+}
+
+/* koma 에서 한번에 처리할 수 있는 문자열 길이로 분할한다. */
 static void move_text(koma_handle_t *handle)
 {
-	int k, i, cnt=0;
-	char *text;
+	const char *start = handle->next_text;
+	const char *end   = start + MAX_SENTENCE_LENGTH;
+	const char *test = NULL;
 
-	text = handle->next_text;
+	if      ((test = find_newline(start, end)) != NULL)      { end = test; }
+	else if ((test = find_sentence_end(start, end)) != NULL) { end = test; }
+	else if ((test = find_whitespace(start, end)) != NULL)   { end = test; }
+	else if ((test = find_last_hangul(start, end)) != NULL)  { end = test; }
 
-	if (handle->next_length > MOD_KOMA_SENTENCE_LEN) { 
-		k = MOD_KOMA_SENTENCE_LEN;
-
-		while ( (! IS_WHITE_CHAR(text[k]) ) && k > 0) { 
-			k--; 
-		}
-
-		if (k == 0) {
-			// 한글이 잘리지 않게... chaeyk
-			cnt = 0;
-			for( i = MOD_KOMA_SENTENCE_LEN; i >= 0; i-- ) {
-				if ( text[i] & 0x80 ) cnt++;
-				else break;
-			}
-
-			if ( cnt % 2 ) k = MOD_KOMA_SENTENCE_LEN;
-			else k = MOD_KOMA_SENTENCE_LEN - 1;
-
-			handle->next_text = &(text[k+1]);
-			if ( text[k] & 0x80 && text[k-1] & 0x80 ) text[k-1] = '\0';
-			text[k] = '\0';
-			handle->text = text;
-		} else {
-			handle->next_text = &(text[k+1]);
-			text[k] = '\0';
-			handle->text = text;
-		}
-	
-		handle->current_length = k;
-		handle->next_length = strlen(handle->next_text);
-
-		if (handle->next_length <= 0) {
-			handle->next_text = NULL;
-			handle->next_length = 0;
-		}
-
-	} else {
-		handle->text = text;
-		handle->next_text = NULL;
-		handle->next_length = 0;
-	}
+	strncpy(handle->text, start, end-start);
+	handle->text[end-start] = '\0';
+	handle->next_text = end + 1;
+	handle->next_length = strlen(handle->next_text);
 }
 
 // XXX 분석할 문자열의 위치를 지정한다.
-void koma_set_text(koma_handle_t* handle, char* text)
+void koma_set_text(koma_handle_t* handle, const char* text)
 {
-	handle->next_length = strlen(text);
 
 	// set handle
 	handle->orig_text = text;
 	handle->position = 1;
 	handle->current_index = 0;
 	handle->current_bytes_position = 0;
-	handle->next_text = text;
-	handle->text = text;
+	handle->next_text = handle->orig_text;
+	handle->next_length = strlen(handle->next_text);
+	handle->text[0] = '\0';
 
 	move_text(handle);
 	handle->koma_done = FALSE;
 }
 
-static int _koma_set_text(index_word_extractor_t* extractor, char* text)
+static int _koma_set_text(index_word_extractor_t* extractor, const char* text)
 {
 	koma_handle_t *handle = NULL;
 
@@ -574,3 +590,17 @@ module koma_module = {
     register_hooks          /* register hook api */
 };
 
+int test_mod_koma(void)
+{
+	MAX_SENTENCE_LENGTH = 10;
+
+	char *t = "한글문자열을잘떼어내는지테스트합니다.\n두번째 문장 입니다. 세번째문장입니다\n네번째입니다";
+	char *end;
+	
+	end = find_newline(t, t+strlen(t));
+	printf("find_newline[%s]", end);
+	end = find_sentence_end(t, t+strlen(t));
+	printf("find_sentence_end[%s]", end);
+
+	return 0;
+}
