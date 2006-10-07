@@ -60,9 +60,10 @@ mod_koma_la_SOURCES = mod_koma.c mod_koma.h \
                       mod_koma_complex_noun_support.h
 mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 
-test_mod_koma_SOURCES = test_mod_koma.c
+test_mod_koma_SOURCES = test_mod_koma.c mod_koma.c
+test_mod_koma_CFLAGS  = -DTEST_PROGRAM
 test_mod_koma_LDFLAGS = -L$(libdir) -lkoma -lkomatagger
-test_mod_koma_LDADD   = $(libdir)/libcommon_core.la $(pkglibdir)/mod_api2.la mod_koma.la
+test_mod_koma_LDADD   = $(libdir)/libcommon_core.la $(pkglibdir)/mod_api2.la
 
 if USE_DAUM_KOMA
 mod_daum_koma_la_SOURCES = mod_daum_koma.c
