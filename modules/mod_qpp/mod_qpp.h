@@ -1,6 +1,6 @@
 /* $Id$ */
-#ifndef MOD_QPP_H
-#define MOD_QPP_H 1
+#ifndef _MOD_QPP_H_
+#define _MOD_QPP_H_ 1
 
 #define QPP_OP_OPERAND		(-1)
 #define QPP_OP_STAR			(20)
@@ -13,8 +13,6 @@
 #define QPP_OP_NATURAL_END   (26)
 
 #define FIELD_CLEAR		(2)
-
-extern char *mMorpAnalyzerId;
 
 typedef struct {
 	Stack postfixStack;

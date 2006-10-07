@@ -1,15 +1,6 @@
 /* $Id$ */
-#ifndef QPP_TOKENIZER_H
-#define QPP_TOKENIZER_H
-
-#include "auto_config.h"
-
-#ifdef HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-#ifdef HAVE_STDINT_H
-#  include <stdint.h>
-#endif
+#ifndef _TOKENIZER_H_
+#define _TOKENIZER_H_
 
 #include "mod_api/qpp.h" /* QueryNode */
 
@@ -44,6 +35,9 @@ void tk_setString(TokenObj *pObj,char* theString);
 int tk_getNextToken(TokenObj *pObj,QueryNode *pQueryNode,int maxLen);
 int tk_init();
 void tk_printAllOperators();
+
+extern char *mQppMorpAnalyzerId;
+extern char *mIndexerMorpAnalyzerId;
 
 // configuration setting functions
 void set_op_and(configValue v);

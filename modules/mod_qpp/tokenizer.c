@@ -1,8 +1,4 @@
 /* $Id$ */
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
 #include "common_core.h"
 #include "common_util.h"
 #include "mod_api/indexer.h"
@@ -10,8 +6,20 @@
 #include "tokenizer.h"
 #include "mod_qpp.h"
 
+#include <string.h> /* strncpy(3) */
+#include <stdlib.h> /* atoi(3) */
+
 #define MAX_QPP_OP_NUM			(128)
 #define MAX_QPP_OP_STR			(32)
+
+/* NOTE: QppMorphemeAnalyzerId[0] 은 field가 명시되지 않은 경우 적용되는 ID 이다.
+ * 이 값은 mod_qpp.c의 set_def_morp_analyzer()에서 설정된다.
+ */
+static char QppMorpAnalyzerId[MAX_EXT_FIELD] = { 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1 };
+static char IndexerMorpAnalyzerId[MAX_EXT_FIELD];
+char *mIndexerMorpAnalyzerId = IndexerMorpAnalyzerId;
+char *mQppMorpAnalyzerId     = QppMorpAnalyzerId + 1;
+/* +1 이 붙는 이유는 바로 위의 NOTE 때문이다. */
 
 static char  m_aUselessChars[256];	// useless chars like ` ~ ! @ .., etc.
 static int   m_isUselessCharsSet = FALSE;
@@ -1148,7 +1156,8 @@ void set_fieldname(configValue v)
 	mFieldName[fieldid][MAX_FIELD_STRING-1] = '\0';
 	warn("mFieldName[%d] = %s", fieldid, mFieldName[fieldid]);
 	
-	mMorpAnalyzerId[fieldid]=atoi(v.argument[4]);
+	mIndexerMorpAnalyzerId[fieldid]=atoi(v.argument[3]);
+	mQppMorpAnalyzerId[fieldid]=atoi(v.argument[4]);
 
 	if (mNumOfField != fieldid)
 		warn("Field should be sorted by fieldid (ascending)");
@@ -1196,7 +1205,7 @@ void set_op_phrase(configValue v)
 		addStopChar(m_opEND_PHRASE);
 	}
 	else {
-		warn("phrase operator can be wrongly set");
+		warn("illegal phrase operator may be set.");
 		m_isPhraseOperatorSame = TRUE;
 		m_opBEGIN_PHRASE = v.argument[0][0];
 		m_opEND_PHRASE = m_opBEGIN_PHRASE;

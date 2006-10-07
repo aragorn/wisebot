@@ -1,6 +1,4 @@
 /* $Id$ */
-#include <string.h>
-#include <stdlib.h>
 #include "common_core.h"
 #include "memory.h"
 #include "util.h"
@@ -8,11 +6,13 @@
 #include "mod_api/lexicon.h"
 #include "mod_api/qp.h"
 
-
 #include "stack.h"
 #include "tokenizer.h"
 #include "mod_qpp.h"
 #include "daum_qpp.h"
+
+#include <string.h>
+#include <stdlib.h>
 
 #define BIGRAM_TRUNCATION_SEARCH
 //#undef BIGRAM_TRUNCATION_SEARCH
@@ -30,10 +30,6 @@ static uint32_t mDefaultSearchField=0xffffffff;
 static uint32_t mDefaultPhraseField=0xffffffff;
 static int mMorpIdForPhrase = 20;
 
-// XXX: 첫 번째 id는 field가 명시되지 않았을 경우 적용되는 id (ask jiwon)
-char morphemeAnalyzerId[MAX_EXT_FIELD]={ 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1 };
-char *mMorpAnalyzerId=(morphemeAnalyzerId+1);
-								// 형태소 분석을 해야 하는지, field별로 flag
 static char mPrecedence[32];		// operator precedence
 
 static QueryNode m_defaultOperatorNode = {
@@ -646,7 +642,7 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 		return pushRightEndBigram(word_db, pStObj, pQuNode);
 	}
 
-	morp_id = mMorpAnalyzerId[pStObj->searchField]; 
+	morp_id = mQppMorpAnalyzerId[pStObj->searchField]; 
 
 	debug("morp_id[%d], mMorpIdForPhrase[%d], virtualfield_morpid[%d]",
 	       morp_id, mMorpIdForPhrase, pStObj->virtualfield_morpid);
@@ -1303,7 +1299,7 @@ void set_def_morp_analyzer(configValue v)
 	char id=0;
 
 	id = atoi(v.argument[0]);
-	mMorpAnalyzerId[-1] = id;
+	mQppMorpAnalyzerId[-1] = id;
 
 	INFO("Setting default morpheme analyzer : %d",id);
 }
