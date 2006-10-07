@@ -151,8 +151,11 @@ static void move_text(koma_handle_t *handle)
 
 	strncpy(handle->text, start, end-start);
 	handle->text[end-start] = '\0';
+	handle->current_length = end-start;
 	handle->next_text = end + 1;
 	handle->next_length = strlen(handle->next_text);
+
+	if (handle->next_length == 0) handle->next_text = NULL;
 }
 
 // XXX 분석할 문자열의 위치를 지정한다.
