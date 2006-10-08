@@ -148,7 +148,6 @@ static int document_insert(request_rec *r, softbot_handler_rec *s)
     }
 
     document++;
-	debug("xml doc[%s]", document);
 
 	rv = sb_run_cdm_put_xmldoc(cdm_db, did_db, OID,
 			document, strlen(document), &docid, &olddocid);
@@ -362,7 +361,6 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
     }
 
     document++;
-	debug("xml doc[%s]", document);
 
     parser = sb_run_xmlparser_parselen("CP949" , (char *)document, strlen(document));
     if (parser == NULL) { 
@@ -384,7 +382,6 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
         void* tmp_data = NULL;
 
         p = get_field_and_ma_id_from_meta_data(p , field_name,  &ma_id);
-        debug("fieldname: %s", field_name);
 
         field_id_ptr = strchr(field_name, '#');
 
@@ -431,8 +428,6 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
 
         memcpy(buffer, field_value, field_length);
         buffer[field_length] = '\0';
-
-        debug("field_name[%s], field_id[%d], morph_id[%d], field_value:[%s]", field_name, field_id, ma_id, buffer);
 
         tmp_data = NULL;
 
