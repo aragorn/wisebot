@@ -1,4 +1,5 @@
-#include <stdlib.h>
+/* $Id$ */
+#include "common_core.h"
 #include "mod_standard_handler.h"
 #include "handler_util.h"
 #include "mod_httpd/http_util.h"
@@ -12,6 +13,7 @@
 #include "mod_api/cdm2.h"
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/xmlparser.h"
+#include <stdlib.h>
 
 static char *canned_doc = NULL;
 

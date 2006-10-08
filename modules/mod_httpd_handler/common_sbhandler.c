@@ -1,7 +1,9 @@
-#include <stdlib.h>
+/* $Id$ */
+#include "common_core.h"
 #include "mod_standard_handler.h"
 #include "mod_httpd/protocol.h"
 #include "mod_api/sbhandler.h"
+#include <stdlib.h>
 
 static int view_status_handler(request_rec *r, softbot_handler_rec *s);
 
