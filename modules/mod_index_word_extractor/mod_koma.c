@@ -43,26 +43,33 @@ static char PROB_DAT_FILE[SHORT_STRING_SIZE] = "share/koma/prob.dat";
 
 static int load_koma_engine();
 static int load_hantag_engine();
+static void *HanTag = NULL;
 
+/* HanTag object를 singleton 으로 사용하도록 한다. index_word_extractor와
+ * 함께 생성되고 종료되는 경우, 오버헤드가 상당히 크다. --2006-10-09 김정겸
+ */
 koma_handle_t* new_koma()
 {
-	koma_handle_t *koma = NULL;
+	koma_handle_t* koma;
 
 	if (! HAS_LOADED_KOMA_ENGINE)   load_koma_engine();
 	if (! HAS_LOADED_HANTAG_ENGINE) load_hantag_engine();
 
+	
 	koma = sb_calloc(1, sizeof(koma_handle_t));
 	if (koma == NULL) {
-		crit("failed to malloc koma_handle");
+		crit("failed to malloc koma_handle: %s", strerror(errno));
 		return NULL;
 	}
 
-	koma->HanTag = CreateHanTag();
-	if (koma->HanTag == NULL) {
-		crit("cannot make HanTag instance");
+	if (HanTag == NULL) HanTag = CreateHanTag();
+	if (HanTag == NULL) {
+		crit("cannot make HanTag instance: %s", strerror(errno));
 		sb_free(koma);
 		return NULL;
 	}
+	koma->HanTag = HanTag;
+	debug("koma[%p]->HanTag[%p] is created.", koma, koma->HanTag);
 
 	return koma;
 }
@@ -498,7 +505,10 @@ static int _koma_analyze(index_word_extractor_t *extractor, index_word_t *indexw
 
 void delete_koma(koma_handle_t *handle)
 {
-	FreeHanTag(handle->HanTag);
+	/* NOTE: koma_handle_t 는 이제 singleton으로 사용한다. 따라서
+	 *       index_word_extractor와 함께 koma handle을 삭제하지 않아도 된다.
+	 */
+	/* FreeHanTag(handle->HanTag); */
 	sb_free(handle);
 }
 	
@@ -507,7 +517,6 @@ static int delete_koma_analyzer(index_word_extractor_t *extractor)
 	if (extractor->id != MY_EXTRACTOR_ID && extractor->id != MY_RAW_EXTRACTOR_ID) return DECLINE;
 
 	delete_koma(extractor->handle);
-
 	sb_free(extractor);
 
 	return SUCCESS;
