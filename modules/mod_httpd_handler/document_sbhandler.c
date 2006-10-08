@@ -362,7 +362,7 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
     }
 
     document++;
-info("xml doc[%s]", document);
+	debug("xml doc[%s]", document);
 
     parser = sb_run_xmlparser_parselen("CP949" , (char *)document, strlen(document));
     if (parser == NULL) { 
@@ -384,7 +384,7 @@ info("xml doc[%s]", document);
         void* tmp_data = NULL;
 
         p = get_field_and_ma_id_from_meta_data(p , field_name,  &ma_id);
-        info("fieldname: %s", field_name);
+        debug("fieldname: %s", field_name);
 
         field_id_ptr = strchr(field_name, '#');
 
@@ -432,7 +432,7 @@ info("xml doc[%s]", document);
         memcpy(buffer, field_value, field_length);
         buffer[field_length] = '\0';
 
-        info("field_name[%s], field_id[%d], morph_id[%d], field_value:[%s]", field_name, field_id, ma_id, buffer);
+        debug("field_name[%s], field_id[%d], morph_id[%d], field_value:[%s]", field_name, field_id, ma_id, buffer);
 
         tmp_data = NULL;
 
@@ -444,7 +444,7 @@ info("xml doc[%s]", document);
             sb_run_xmlparser_free_parser(parser);
             return FAIL;
         }
-        info("finish ma: data_size: %d", data_size);
+        info("finished ma: data_size: %d", data_size);
 
         rv = sb_run_rmas_merge_index_word_array( &merge_buffer , tmp_data , data_size);
         if (rv == FAIL) {
