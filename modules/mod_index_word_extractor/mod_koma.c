@@ -44,20 +44,20 @@ static char PROB_DAT_FILE[SHORT_STRING_SIZE] = "share/koma/prob.dat";
 static int load_koma_engine();
 static int load_hantag_engine();
 static void *HanTag = NULL;
+static koma_handle_t *KomaHandle = NULL;
 
 /* HanTag object를 singleton 으로 사용하도록 한다. index_word_extractor와
  * 함께 생성되고 종료되는 경우, 오버헤드가 상당히 크다. --2006-10-09 김정겸
  */
 koma_handle_t* new_koma()
 {
-	koma_handle_t* koma;
-
 	if (! HAS_LOADED_KOMA_ENGINE)   load_koma_engine();
 	if (! HAS_LOADED_HANTAG_ENGINE) load_hantag_engine();
 
+	if (KomaHandle != NULL) return KomaHandle;
 	
-	koma = sb_calloc(1, sizeof(koma_handle_t));
-	if (koma == NULL) {
+	KomaHandle = sb_calloc(1, sizeof(koma_handle_t));
+	if (KomaHandle == NULL) {
 		crit("failed to malloc koma_handle: %s", strerror(errno));
 		return NULL;
 	}
@@ -65,13 +65,12 @@ koma_handle_t* new_koma()
 	if (HanTag == NULL) HanTag = CreateHanTag();
 	if (HanTag == NULL) {
 		crit("cannot make HanTag instance: %s", strerror(errno));
-		sb_free(koma);
 		return NULL;
 	}
-	koma->HanTag = HanTag;
-	debug("koma[%p]->HanTag[%p] is created.", koma, koma->HanTag);
+	KomaHandle->HanTag = HanTag;
+	debug("koma[%p]->HanTag[%p] is created.", KomaHandle, KomaHandle->HanTag);
 
-	return koma;
+	return KomaHandle;
 }
 
 
@@ -321,7 +320,7 @@ AGAIN:
 	/* 형태소 분석 결과의 각 어절단위로 루프를 돈다. */
 	for (idx = h->result_index; idx < h->result_count; idx++, h->position++) {
 		int morpheme_count;
-		char morph_tag_pairs[LONG_STRING_SIZE]; /* 이 문자열은 STRING_SIZE를 벗어날 수 있다. */
+		char morph_tag_pairs[LONG_STRING_SIZE+1]; /* 이 문자열은 STRING_SIZE를 벗어날 수 있다. */
 		char *pairs;
 		char jupdusa[STRING_SIZE]; int jupdusa_exist;
 
@@ -330,7 +329,7 @@ AGAIN:
 
 		/* morph_tag_pairs 는 다음과 같은 꼴의 문자열이다.
 		 * "세/DU+번/NNBU+째/XSNN+문장/NNCG+이/I+ㅂ니다/EFF" */
-		strncpy(morph_tag_pairs, h->Result[idx][0], STRING_SIZE-1);
+		strnhcpy(morph_tag_pairs, h->Result[idx][0], LONG_STRING_SIZE);
 
 		debug("idx[%d] morph_tag_pair[%s]", idx, morph_tag_pairs);
 
@@ -509,7 +508,9 @@ void delete_koma(koma_handle_t *handle)
 	 *       index_word_extractor와 함께 koma handle을 삭제하지 않아도 된다.
 	 */
 	/* FreeHanTag(handle->HanTag); */
-	sb_free(handle);
+	/* sb_free(handle); */
+	memset(handle, 0x00, sizeof(handle));
+	handle->HanTag = HanTag;
 }
 	
 static int delete_koma_analyzer(index_word_extractor_t *extractor)
