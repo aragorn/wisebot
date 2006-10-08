@@ -13,7 +13,8 @@
 
 static int max_number_of_index_words = 400000;
 
-int rmas_merge_index_word_array ( sb4_merge_buffer_t *mbuf , void *catdata , int catdata_size ) // need to free after this function
+// need to free after this function
+int rmas_merge_index_word_array(sb4_merge_buffer_t *mbuf, void *catdata, int catdata_size)
 {
 	int times = 1;
 	int32_t needed_size=0;
@@ -35,10 +36,12 @@ int rmas_merge_index_word_array ( sb4_merge_buffer_t *mbuf , void *catdata , int
 
 		mbuf->allocated_size *= times; // doubling
 
-// FIXME if debugged clear me
-//		INFO("mbuf->allocated_size[%d], times[%d], neededsize[%d]",
-//							mbuf->allocated_size, times, needed_size);
-//		CRIT("reallicating: %d", mbuf->allocated_size);
+		// FIXME delete me if debugged.
+/*
+		INFO("mbuf->allocated_size[%d], times[%d], neededsize[%d]",
+							mbuf->allocated_size, times, needed_size);
+		CRIT("reallocating: %d", mbuf->allocated_size);
+*/
 		mbuf->data = sb_realloc(mbuf->data , mbuf->allocated_size);
 
 		if (mbuf->data == NULL) {
@@ -78,29 +81,31 @@ int rmas_morphological_analyzer(int field_id , const char* input , void **output
 	index_word_array = 
 		(index_word_t*)sb_calloc(MAX_RMAS_INDEX_WORD_LEN, sizeof(index_word_t));
 	if (index_word_array == NULL) {
-		error("cannot allocate memory..");
+		error("cannot allocate memory[size:%dx%d]: %s",
+					MAX_RMAS_INDEX_WORD_LEN,sizeof(index_word_t),strerror(errno));
 		sb_run_delete_index_word_extractor(extractor);
 		return FAIL;
 	}
 
-	INFO("before sb_run_get_index_words() loop...");
+	debug("before sb_run_get_index_words() loop...");
 	while( ( n = sb_run_get_index_words(extractor, 
 					index_word_array, MAX_RMAS_INDEX_WORD_LEN) ) > 0 )
 	{
-		INFO("sb_run_get_index_words() returned %d", n);
-	
-		// XXX : should be deleted ..
-		for(i=0; i < n ; i++)
+		debug("sb_run_get_index_words() returned %d", n);
+
+		/* XXX sb_run_get_index_words() 결과에 이미 field_id가 지정되어 있어야 한다.
+		 * 임시로 문제를 해결하기 위해 field_id를 덮어쓴다.
+		 * 2006-10-09 현재 문제가 해결되지 않았다. --김정겸
+		 */	
+		for(i = 0; i < n; i++)
 			index_word_array[i].field = field_id;
 
 		nret = rmas_merge_index_word_array(&buf, 
 										   index_word_array,
 										   n * sizeof(index_word_t));
 
-		INFO("rmas_merge_index_word_array() returned %d", nret);
-
 		if (nret == FAIL) {
-			error("merge index word array fail");
+			error("merge index word array failed.");
 			sb_free(index_word_array);
 			sb_run_delete_index_word_extractor(extractor);
 			return FAIL;
@@ -108,7 +113,7 @@ int rmas_morphological_analyzer(int field_id , const char* input , void **output
 
 		if ( buf.data_size >
 				max_number_of_index_words * sizeof(index_word_t) ) {
-			DEBUG("buf.data_size[%d] > max_words[%d] * sizeof(index_word_t)[%d]",
+			notice("buf.data_size[%d] > max_words[%d] * sizeof(index_word_t)[%d]",
 				buf.data_size, max_number_of_index_words,
 				(int)sizeof(index_word_t));
 
@@ -116,7 +121,7 @@ int rmas_morphological_analyzer(int field_id , const char* input , void **output
 			break;
 		}	
 	}
-	INFO("done sb_run_get_index_words() loop, output_size = %d", buf.data_size);
+	debug("done sb_run_get_index_words() loop, output_size = %d bytes.", buf.data_size);
 
 
 	*output = buf.data;

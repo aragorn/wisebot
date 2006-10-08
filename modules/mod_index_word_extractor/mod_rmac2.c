@@ -857,6 +857,10 @@ static int morphological_analyze_local(uint32_t docid, void *pCdmData, long cdmL
 		return FAIL;
 	}
 
+	merge_buffer.data = NULL;
+	merge_buffer.data_size = 0;
+	merge_buffer.allocated_size = 0;
+
 	for( i = 0; i < MAX_EXT_FIELD; i++ ) {
 		char xpath[STRING_SIZE] = "/Document/";
 		int field_id, morpid, r;
@@ -902,7 +906,7 @@ static int morphological_analyze_local(uint32_t docid, void *pCdmData, long cdmL
 
 	sb_run_xmlparser_free_parser(parser); parser = NULL;
 
-	pRmasData = merge_buffer.data;
+	*pRmasData = merge_buffer.data;
 	*rmasLength = merge_buffer.data_size;
 
 	return SUCCESS;
@@ -917,7 +921,7 @@ static int send_to_indexer(uint32_t docid, int is_normal_doc, void *pRmasData, l
 	const char *indexer_socket_file;
 
     if (is_normal_doc == TRUE && rmasLength <= 0) {
-        error("wrong send_data_size : %ld", rmasLength);
+        error("invalid rmasLength: %ld", rmasLength);
         return FAIL;
     }
 
@@ -937,13 +941,15 @@ static int send_to_indexer(uint32_t docid, int is_normal_doc, void *pRmasData, l
 
         if (is_normal_doc != TRUE) rmasLength = 0;
 
+		/* buf = 4 + 4 + 4 = 12 bytes */
 		*(int*)(buf) = MAGICNUMBER;
 		*(uint32_t*)(buf+4) = docid;
 		*(long*)(buf+8) = rmasLength;
 
         /* 1. send header */
         if ( sb_run_tcp_send(sockfd, buf, sizeof(buf), sb_run_tcp_client_timeout()) != SUCCESS ) {
-            error("cannot send RMA_HEAD_DATA");
+            error("sockfd[%d] cannot send RMA_HEAD_DATA[size:%d]: %s",
+					sockfd, sizeof(buf), strerror(errno));
             sb_run_tcp_close(sockfd);
             sleep(RETRY_WAIT);
             continue;
@@ -953,7 +959,8 @@ static int send_to_indexer(uint32_t docid, int is_normal_doc, void *pRmasData, l
         {
             /* 2. send data */
             if ( sb_run_tcp_send(sockfd, pRmasData, rmasLength, sb_run_tcp_client_timeout()) != SUCCESS ) {
-                error("cannot send RMA_SRC_DATA");
+            	error("sockfd[%d] cannot send RMA_SRC_DATA[size:%ld,%p]: %s",
+					sockfd, rmasLength, pRmasData, strerror(errno));
                 sb_run_tcp_close(sockfd);
                 sleep(RETRY_WAIT);
                 continue;
