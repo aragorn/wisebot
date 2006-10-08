@@ -938,5 +938,7 @@ http_print(http_t *http){
 	return;
 }
 
+void *sb_hack_http_print = http_print;
+
 //----------------------------------------------------------
 //
