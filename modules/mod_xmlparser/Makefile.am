@@ -38,19 +38,19 @@ testparser_SOURCES = testparser.c parser.c dh.c stack.c checksum.c
 if SOLARIS
 testparser_LDADD = $(LIBEXPAT_LA) \
                    $(LIBICONV_LA) \
-                   $(libdir)/libsoftbot.la
+                   $(libdir)/libcommon_core.la
 else
 if CYGWIN
-testparser_LDADD = $(libdir)/libsoftbot.la
+testparser_LDADD = $(libdir)/libcommon_core.la
 else
 testparser_LDADD = $(LIBEXPAT_LA) \
-                   $(libdir)/libsoftbot.la
+                   $(libdir)/libcommon_core.la
 endif
 endif
 testparser_LDFLAGS = -export-dynamic $(DYN_LIB)
 
 teststree_SOURCES = teststree.c simpletree.c
-teststree_LDADD   = $(libdir)/libsoftbot.la
+teststree_LDADD   = $(libdir)/libcommon_core.la
 teststree_LDFLAGS = -export-dynamic $(DYN_LIB)
 
 testsimpleparser_SOURCES = mod_simple_xmlparser.c

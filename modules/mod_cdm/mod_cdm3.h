@@ -55,7 +55,7 @@ typedef struct {
 struct cdmfield_t {
 	char name[SHORT_STRING_SIZE];
 	enum field_type_t { SHORT, LONG } type;
-	int size;   // for SHORT type
+	int size;         // for SHORT type
 	int is_index;     // if non-zero, not updatable
 	int is_docattr;   // if non-zero, true
 };
@@ -69,5 +69,5 @@ extern int docattr_field_count;
 extern char field_root_name[SHORT_STRING_SIZE];*/
 /////////////////////////////////////////////////////////////
 
-#endif // _MOD_CDM2_H_
+#endif // _MOD_CDM3_H_
 
