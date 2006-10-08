@@ -9,7 +9,14 @@
 #include "mod_api/cdm2.h"
 #include "mod_api/indexer.h"
 #include "mod_api/tcp.h"
+#include "mod_api/rmas.h"
 #include "mod_api/protocol4.h"
+
+#include "mod_api/http_client.h"
+#include "mod_httpd/http_util.h"
+#include "mod_httpd_handler/handler_util.h"
+
+#include "mod_api/xmlparser.h"
 
 #include <signal.h>
 #include <string.h>
@@ -35,8 +42,18 @@
 #define INDEXER_SIGNAL      SIGPIPE
 
 typedef struct {
+    int id;         /* field id */
+    char name[SHORT_STRING_SIZE];
+    int index;      /* 1 for yes, 0 for no */
+    int indexer_morpid;
+    int qpp_morpid;
+    int type;       // enum field_type
+} field_info_t;
+
+typedef struct {
 	char address[STRING_SIZE];
 	char port[STRING_SIZE];
+	http_client_t* http_client;
 } server_t;
 
 typedef struct {
@@ -44,6 +61,12 @@ typedef struct {
 	int    use_cnt;
 } rmas_state_t;
 
+enum rma_protocols {
+	PROT_SOFTBOT4 = 0,
+	PROT_HTTP,
+	PROT_LOCAL,
+	PROT_UNKNOWN
+};
 static scoreboard_t scoreboard[] = { PROCESS_SCOREBOARD(MAX_PROCESSES) };
 
 static server_t rmas_addr[MAX_SERVERS];
@@ -51,7 +74,10 @@ static int      num_of_rmas = 0;
 static char*    meta_data = NULL;
 static int      meta_data_size = 0; // buffer length
 static int      needed_processes=1;
+static int		rma_protocol = PROT_SOFTBOT4;
 static int      rmas_retry=10; // 0이면 무조건 계속 시도
+
+static field_info_t field_info[MAX_EXT_FIELD];
 
 /////////////////////////////////////////////////
 // registry를 통해 공유된다.
@@ -90,7 +116,11 @@ static void     init_scoreboard();
 static slot_t*  get_minimum_docid_slot();
 static int      wait_until_minimum_docid(slot_t *slot);
 static int      signal_if_minimum_is_wait();
-static int      morphological_analyze(uint32_t docid, void *pCdmData, long cdmLength,
+static int      morphological_analyze_softbot4(uint32_t docid, void *pCdmData, long cdmLength,
+									  void **pRmasData, long *rmasLength);
+static int      morphological_analyze_http(uint32_t docid, void *pCdmData, long cdmLength,
+									  void **pRmasData, long *rmasLength);
+static int      morphological_analyze_local(uint32_t docid, void *pCdmData, long cdmLength,
 									  void **pRmasData, long *rmasLength);
 static int      send_to_indexer(uint32_t docid, int is_normal_doc, void *pRmasData, long rmasLength);
 
@@ -269,8 +299,19 @@ static int process_main (slot_t *slot)
 		if ( is_normal_doc == TRUE ) {
 			set_title( "analyze document with rmas", docid_to_index );
 
-			ret = morphological_analyze(
-					docid_to_index, pCdmData, cdmLength, &pRmasData, &rmasLength );
+			switch(rma_protocol) {
+				case PROT_LOCAL:
+					ret = morphological_analyze_local(docid_to_index, pCdmData, cdmLength, &pRmasData, &rmasLength );
+					break;
+				case PROT_HTTP:
+					ret = morphological_analyze_http(docid_to_index, pCdmData, cdmLength, &pRmasData, &rmasLength );
+					break;
+				case PROT_SOFTBOT4:
+				default:
+					ret = morphological_analyze_softbot4(docid_to_index, pCdmData, cdmLength, &pRmasData, &rmasLength );
+					break;
+			}
+
 			if ( ret != SUCCESS ) {
 				error( "morphological_analyze returned error [%d], docid[%u]", ret, docid_to_index );
 				is_normal_doc = FALSE;
@@ -634,12 +675,10 @@ static int signal_if_minimum_is_wait()
 }
 
 // pCdmData의 문서를 rmas에서 분석해 pRmasData에 저장한다.
-static int morphological_analyze(uint32_t docid, void *pCdmData, long cdmLength, void **pRmasData, long *rmasLength)
+static int morphological_analyze_softbot4(uint32_t docid, void *pCdmData, long cdmLength, void **pRmasData, long *rmasLength)
 {
 	int svrID, sockfd;
 	int i, ret;
-
-#define RMAS_RETRY 5
 
 	for( i = 0; rmas_retry <= 0 || i < rmas_retry; ) {
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
@@ -691,6 +730,182 @@ static int morphological_analyze(uint32_t docid, void *pCdmData, long cdmLength,
 	// retry 해도 안되면..
 	error( "rmas analyzing failed. docid[%u]", docid );
 	return FAIL;
+}
+
+// pCdmData의 문서를 rmas에서 분석해 pRmasData에 저장한다.
+static int morphological_analyze_http(uint32_t docid, void *pCdmData, long cdmLength, void **pRmasData, long *rmasLength)
+{
+	int svrID, i;
+    char escaped_metadata[LONG_STRING_SIZE];
+	char request_uri[LONG_STRING_SIZE];
+    http_client_t* client = NULL;
+    memfile* mem_body = NULL;
+
+	if ( snprintf(request_uri, LONG_STRING_SIZE,
+			"/document/ma?metadata=%s",
+			escape_path(meta_data, escaped_metadata)) <= 0 ) {
+		error("query is too long, max[%d].", LONG_STRING_SIZE);
+		return FAIL;
+	}
+
+	for( i = 0; rmas_retry <= 0 || i < rmas_retry; ) {
+		if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
+			return FAIL;
+
+		svrID = find_a_server_to_connect();
+		if ( svrID < 0 ) return FAIL;
+		info("docid[%d] will be analyzed from rmas(%d)[%s:%s]",
+				docid, svrID, rmas_addr[svrID].address, rmas_addr[svrID].port);
+
+		if (rmas_addr[svrID].http_client  == NULL)
+			rmas_addr[svrID].http_client =
+				sb_run_http_client_new(rmas_addr[svrID].address, rmas_addr[svrID].port);
+
+        client = rmas_addr[svrID].http_client;
+		if (client == NULL) {
+            error("cannot connect to server(%d)[%s:%s], docid[%u], (%d)%s",
+                    svrID, rmas_addr[svrID].address , rmas_addr[svrID].port, docid,
+					errno, strerror(errno));
+			mark_rmas_error( svrID );
+
+			if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
+				return FAIL;
+
+			/* connect 에러의 경우, 재시도한다. */
+            continue;
+        } else {
+            sb_run_http_client_reset(client);
+        }
+
+        client->http->request_http_ver = 1001;
+        client->http->method = "POST";
+        client->http->host = rmas_addr[svrID].address;
+        client->http->path = request_uri;
+
+        mem_body = memfile_new();
+        if(mem_body == NULL) {
+            error("memfile_new() failed: %s", strerror(errno));
+            return FAIL;
+        }
+
+        memfile_append(mem_body, "body=", strlen("body=")); 
+        memfile_append(mem_body, pCdmData, cdmLength); 
+        http_setMessageBody(client->http, mem_body, "x-softbotd/binary", memfile_getSize(mem_body));
+
+        http_print(client->http);
+        sb_run_http_client_makeRequest(client, NULL);
+
+        if ( sb_run_http_client_connect(client) == SUCCESS && 
+             sb_run_http_client_sendRequest(client) == SUCCESS && 
+             sb_run_http_client_recvResponse(client) == SUCCESS &&
+		     sb_run_http_client_parseResponse(client) == SUCCESS ) {
+            ; /* SUCCESS. do nothing. */
+        	memfile_free(mem_body);
+		} else { /* error */
+        	memfile_free(mem_body);
+
+			error("http rma request to server(%d)[%s:%s] failed, docid[%u]: %s(%d)",
+					svrID, rmas_addr[svrID].address, rmas_addr[svrID].port,
+					docid, strerror(errno), errno);
+            sb_run_http_client_conn_close(client);
+
+			if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
+				return FAIL;
+
+			// 계속 다시 시도하지만 일정 회수를 넘으면 loop을 빠져서 FAIL
+			// 대부분.. 그냥 rmas를 먼저 종료했기 때문일 것이다.
+        	mark_rmas_error( svrID );
+			i++;
+			continue;
+		}
+
+        mem_body = client->http->content_buf;
+        memfile_setOffset(mem_body, 0);
+
+        *rmasLength = memfile_getSize(mem_body);
+        *pRmasData = sb_malloc(*rmasLength);
+
+        memfile_read(mem_body, *pRmasData, *rmasLength);
+
+        //sb_run_http_client_free(client);
+        //rmas_addr[svrID].client = NULL;
+		//
+		return SUCCESS;
+	} // for ( i )
+
+	// retry 해도 안되면..
+	error( "rmas analyzing failed. docid[%u]", docid );
+	return FAIL;
+}
+
+// pCdmData의 문서를 rmas에서 분석해 pRmasData에 저장한다.
+static int morphological_analyze_local(uint32_t docid, void *pCdmData, long cdmLength,
+										void **pRmasData, long *rmasLength)
+{
+	void *parser = NULL;
+	sb4_merge_buffer_t merge_buffer;
+	int i;
+
+	/* NOTE: This code is copied from sb4s_remote_morphological_analyze_doc()
+	 * of mod_protocol4.c .
+	 * 2006-10-07 김정겸
+	 */
+
+	parser = sb_run_xmlparser_parselen("CP949" , (char *)pCdmData, cdmLength);
+	if (parser == NULL) { 
+		error("cannot parse document. docid[%u]", docid);
+		return FAIL;
+	}
+
+	for( i = 0; i < MAX_EXT_FIELD; i++ ) {
+		char xpath[STRING_SIZE] = "/Document/";
+		int field_id, morpid, r;
+		char *field_value; int field_length;
+		void *output_buffer; int output_size;
+
+		if (field_info[i].index == 0) continue;
+
+		field_id = field_info[i].id;
+		strncat(xpath, field_info[i].name, SHORT_STRING_SIZE);
+		morpid = field_info[i].indexer_morpid;
+
+		r = sb_run_xmlparser_retrieve_field(parser, xpath, &field_value, &field_length);
+		if (r != SUCCESS) {
+			warn("cannot retrieve field[%s]", xpath);
+			continue;
+		}
+
+		if (field_length == 0) { continue; }
+
+		output_buffer = NULL;
+		r = sb_run_rmas_morphological_analyzer(field_id, field_value, &output_buffer, 
+				&output_size, morpid);
+		if (r != SUCCESS) {
+			warn("failed to rmas_morphological_analyzer() for field[%s] with morpid[%d]",
+					field_info[i].name, morpid);
+			sb_free(output_buffer);
+			continue;
+		}
+
+		r = sb_run_rmas_merge_index_word_array(&merge_buffer, output_buffer, output_size);
+		if (r != SUCCESS) {
+			error("failed to rmas_merge_index_word_array() for field[%s] with morpid[%d]",
+					field_info[i].name, morpid);
+			sb_free(output_buffer);
+			sb_free(merge_buffer.data);
+			sb_run_xmlparser_free_parser(parser);
+			return FAIL;
+		}
+		sb_free(output_buffer);
+
+	} // for ( i )
+
+	sb_run_xmlparser_free_parser(parser); parser = NULL;
+
+	pRmasData = merge_buffer.data;
+	*rmasLength = merge_buffer.data_size;
+
+	return SUCCESS;
 }
 
 // pRmasData의 내용을 indexer로 보낸다.
@@ -807,16 +1022,30 @@ static void set_ip_and_port(configValue v)
 static void set_meta_data(configValue v)
 {
 	char buf[STRING_SIZE];
-	int buflen, left;
+	int buflen, left, field_id;
 
-	if (strcmp("yes", v.argument[2]) != 0) return;
-	buflen = sprintf(buf, "%s#%s:%s^", v.argument[1], v.argument[0], v.argument[3]);
+	field_id = atoi(v.argument[0]);
+	if (field_id < 0 || field_id >= MAX_EXT_FIELD) {
+        error("Invalid field id(%s).", v.argument[0]);
+		return;
+	}
 
-	if ( atoi(v.argument[0]) >= MAX_STD_FIELD ) {
-		error("max indexable fieldid is %d. field[%s, id:%s] would not be indexed.",
+	field_info[field_id].id = field_id;
+	strncpy(field_info[field_id].name,v.argument[1],SHORT_STRING_SIZE);
+
+	if (strncasecmp("yes", v.argument[2], 4) != 0) return;
+	else field_info[field_id].index = 1;
+
+	if (field_id >= MAX_STD_FIELD ) {
+		error("max indexable field_id is %d. field[%s, id:%s] would not be indexed.",
 				MAX_STD_FIELD-1, v.argument[1], v.argument[0]);
 		return;
 	}
+
+    field_info[field_id].indexer_morpid=atoi(v.argument[3]);
+    field_info[field_id].qpp_morpid=atoi(v.argument[4]);
+
+	buflen = sprintf(buf, "%s#%s:%s^", v.argument[1], v.argument[0], v.argument[3]);
 
 	if ( meta_data == NULL ) {
 		meta_data_size = STRING_SIZE;
@@ -864,6 +1093,16 @@ static void set_processes_num(configValue v)
 	needed_processes = atoi(v.argument[0]);
 }
 
+static void set_protocol(configValue v)
+{
+	if (strncasecmp(v.argument[0], "http", 5) == 0)
+		rma_protocol = PROT_HTTP;
+	else if (strncasecmp(v.argument[0], "local", 5) == 0)
+		rma_protocol = PROT_LOCAL;
+	else
+		rma_protocol = PROT_SOFTBOT4;
+}
+
 static void set_rmas_retry(configValue v)
 {
 	rmas_retry = atoi(v.argument[0]);
@@ -885,13 +1124,14 @@ static registry_t registry[] = {
 };
 
 static config_t config[] = {
-	CONFIG_GET("AddServer", set_ip_and_port, 1, "rmas ip:port"),
-	CONFIG_GET("Field", set_meta_data , VAR_ARG ,
+	CONFIG_GET("AddServer",	set_ip_and_port, 1, "rmas ip:port"),
+	CONFIG_GET("Field",		set_meta_data , VAR_ARG ,
             "field and mophological analizer id :  ex) title:0^author:1^ "),
-	CONFIG_GET("Threads", set_processes_num, 1, "number of processes"), // 호환성땜에...
-	CONFIG_GET("Processes", set_processes_num, 1, "number of processes"),
-	CONFIG_GET("RmasRetry", set_rmas_retry, 1, "retry rmas analyze"),
-	CONFIG_GET("CdmSet", set_cdm_set, 1, "select CDM set"),
+	CONFIG_GET("Threads",	set_processes_num, 1, "number of processes"), // 호환성땜에...
+	CONFIG_GET("Processes",	set_processes_num, 1, "number of processes"),
+	CONFIG_GET("Protocol",	set_protocol,	1, "softbot4, http or local"),
+	CONFIG_GET("RmasRetry",	set_rmas_retry, 1, "retry count to rmas-analyze. 0 for infinite."),
+	CONFIG_GET("CdmSet",	set_cdm_set, 1, "select CDM set"),
 	{NULL}
 };
 
