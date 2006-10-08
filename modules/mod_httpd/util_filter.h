@@ -2,13 +2,11 @@
 #ifndef UTIL_FILTER_H
 #define UTIL_FILTER_H
 
-#include "apr.h"
+#include "mod_httpd.h" /* request_rec */
 #include "apr_buckets.h"
 
-#include "mod_httpd.h"
-
 #if APR_HAVE_STDARG_H
-#include <stdarg.h>
+#  include <stdarg.h>
 #endif
 
 #ifdef __cplusplus
@@ -22,12 +20,12 @@ extern "C" {
 
 /** Returned by the bottom-most filter if no data was written.
  *  @see ap_pass_brigade(). */
-#define AP_NOBODY_WROTE         -1
+#define AP_NOBODY_WROTE         (-1)
 /** Returned by the bottom-most filter if no data was read.
  *  @see ap_get_brigade(). */
-#define AP_NOBODY_READ          -2
+#define AP_NOBODY_READ          (-2)
 /** Returned when?? @bug find out when! */
-#define AP_FILTER_ERROR         -3
+#define AP_FILTER_ERROR         (-3)
 
 /**
  * input filtering modes
@@ -474,4 +472,4 @@ AP_DECLARE_NONSTD(apr_status_t) ap_fprintf(ap_filter_t *f,
 }
 #endif
 
-#endif  /* !AP_FILTER_H */
+#endif  /* !UTIL_FILTER_H */

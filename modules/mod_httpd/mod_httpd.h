@@ -2,11 +2,10 @@
 #ifndef MOD_HTTPD_H
 #define MOD_HTTPD_H
 
-#include "common_core.h"
-#include "apr.h"
-#include "apu.h"
-#include "apr_tables.h"
-#include "apr_buckets.h"
+//#include "common_core.h" /* slot_t */
+#include "apr_tables.h" /* apr_array_header_t */
+#include "apr_buckets.h" /* apr_bucket_brigade */
+#include "apr_uri.h" /* apr_uri_t */
 
 /* ----------------------------- config dir ------------------------------ */
 
@@ -14,21 +13,21 @@
  * file with a relative pathname will have this added.
  */
 #ifndef HTTPD_ROOT
-#ifdef OS2
+# ifdef OS2
 /* Set default for OS/2 file system */
-#define HTTPD_ROOT "/os2httpd"
-#elif defined(WIN32)
+#  define HTTPD_ROOT "/os2httpd"
+# elif defined(WIN32)
 /* Set default for Windows file system */
-#define HTTPD_ROOT "/apache"
-#elif defined (BEOS)
+#  define HTTPD_ROOT "/apache"
+# elif defined (BEOS)
 /* Set the default for BeOS */
-#define HTTPD_ROOT "/boot/home/apache"
-#elif defined (NETWARE)
+#  define HTTPD_ROOT "/boot/home/apache"
+# elif defined (NETWARE)
 /* Set the default for NetWare */
-#define HTTPD_ROOT "/apache"
-#else
-#define HTTPD_ROOT "/usr/local/apache"
-#endif
+#  define HTTPD_ROOT "/apache"
+# else
+#  define HTTPD_ROOT "/usr/local/apache"
+# endif
 #endif /* HTTPD_ROOT */
 
 /* 
@@ -215,6 +214,7 @@
  */
 # define AP_DECLARE_NONSTD(type)    type
 #endif
+
 #ifndef AP_DECLARE_DATA
 # define AP_DECLARE_DATA
 #endif
@@ -222,9 +222,11 @@
 #ifndef AP_MODULE_DECLARE
 # define AP_MODULE_DECLARE(type)    type
 #endif
+
 #ifndef AP_MODULE_DECLARE_NONSTD
 # define AP_MODULE_DECLARE_NONSTD(type)  type
 #endif
+
 #ifndef AP_MODULE_DECLARE_DATA
 # define AP_MODULE_DECLARE_DATA
 #endif
@@ -459,10 +461,6 @@ struct process_rec {
 	/** The program name used to execute the program */
 	const char *short_name;
 };
-
-/* ### would be nice to not include this from httpd.h ... */
-/* This comes after we have defined the request_rec type */
-#include "apr_uri.h"
 
 /** A structure that represents the current request */
 struct request_rec {
@@ -898,13 +896,9 @@ typedef struct core_net_rec {
 } core_net_rec;
 
 
-
 int graceful_stop_signalled(void);
 int update_slot_state(slot_t *slot, int state, request_rec *r);
 char *ap_response_code_string(request_rec *r, int error_index);
 const char *ap_psignature(const char *prefix, request_rec *r);
 
-// http_log.h
-#include "log.h"
-
-#endif
+#endif /* !MOD_HTTPD_H */

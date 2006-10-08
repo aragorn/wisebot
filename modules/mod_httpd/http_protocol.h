@@ -2,7 +2,6 @@
 #ifndef _HTTP_PROTOCOL_H_
 #define _HTTP_PROTOCOL_H_
 
-#include "hook.h"
 #include "apr_hooks.h"
 #include "apr_portable.h"
 #include "apr_mmap.h"
@@ -35,21 +34,6 @@ extern "C" {
  * @deffunc void ap_send_error_response(request_rec *r, int recursive_error)
  */
 AP_DECLARE(void) ap_send_error_response(request_rec *r, int recursive_error);
-
-/* Set last modified header line from the lastmod date of the associated file.
- * Also, set content length.
- *
- * May return an error status, typically HTTP_NOT_MODIFIED (that when the
- * permit_cache argument is set to one).
- */
-
-/**
- * Set the content length for this request
- * @param r The current request
- * @param length The new content length
- * @deffunc void ap_set_content_length(request_rec *r, apr_off_t length)
- */
-AP_DECLARE(void) ap_set_content_length(request_rec *r, apr_off_t length);
 
 /**
  * Set the keepalive status for this request
@@ -87,13 +71,6 @@ AP_DECLARE(char *) ap_make_etag(request_rec *r, int force_weak);
  * @deffunc void ap_set_etag(request_rec *r)
  */
 AP_DECLARE(void) ap_set_etag(request_rec *r);
-
-/**
- * Set the last modified time for the file being sent
- * @param r The current request
- * @deffunc void ap_set_last_modified(request_rec *r)
- */
-AP_DECLARE(void) ap_set_last_modified(request_rec *r);
 
 /**
  * Implements condition GET rules for HTTP/1.1 specification.  This function

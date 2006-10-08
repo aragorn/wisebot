@@ -4,11 +4,11 @@
 /*
  * core.h
  */
-#include "conf.h"
+#include "pcreposix.h" /* regex_t : line 199 */
+#include "apr_hash.h" /* apr_hash_t : line 207 */
+#include "http_config.h" /* cmd_parms line 456 */
 
 //#include "apr.h"
-#include "apr_hash.h"
-#include "pcreposix.h"
 
 /**
  * @package CORE HTTP Daemon
@@ -415,6 +415,29 @@ AP_DECLARE(apr_off_t) ap_get_limit_req_body(const request_rec *r);
  */
 AP_DECLARE(size_t) ap_get_limit_xml_body(const request_rec *r);
 
+/**
+ * Reserve an element in the core_request_config->notes array
+ * for some application-specific data
+ * @return An integer key that can be passed to ap_get_request_note()
+ *         during request processing to access this element for the
+ *         current request.
+ */
+AP_DECLARE(apr_size_t) ap_register_request_note(void);
+
+/**
+ * Retrieve a pointer to an element in the core_request_config->notes array
+ * @param r The request
+ * @param note_num  A key for the element: either a value obtained from
+ *        ap_register_request_note() or one of the predefined AP_NOTE_*
+ *        values.
+ * @return NULL if the note_num is invalid, otherwise a pointer to the
+ *         requested note element.
+ * @remark At the start of a request, each note element is NULL.  The
+ *         handle provided by ap_get_request_note() is a pointer-to-pointer
+ *         so that the caller can point the element to some app-specific
+ *         data structure.  The caller should guarantee that any such
+ *         structure will last as long as the request itself.
+ */
 AP_DECLARE(void **) ap_get_request_note(request_rec *r, apr_size_t note_num);
 
 

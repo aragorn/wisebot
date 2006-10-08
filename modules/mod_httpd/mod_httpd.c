@@ -1,18 +1,18 @@
 /* $Id$ */
-#include <sys/types.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 #include "common_core.h"
 #include "common_util.h"
 #include "mod_httpd.h"
 #include "timelog.h"
 #include "connection.h"
 #include "listen.h"
-#include "conf.h" /* ugly workaround for name collision */
+#include "http_config.h"
 #include "apr_hooks.h" /* for apr_global_hook_pool */
 #include "apr_poll.h"
 #include "apr_lib.h"
+
+#include <sys/types.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 /* XXX:should run process version for the time being. --jiwon */
 #undef THREAD_VER

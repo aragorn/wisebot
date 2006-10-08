@@ -4,7 +4,7 @@
 
 #include "mod_httpd.h"
 #include "pcreposix.h"
-#include "conf.h"
+#include "http_config.h"
 
 
 /**

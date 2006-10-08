@@ -2,7 +2,7 @@
 /*
  * http_core.c
  */
-
+#include "common_core.h"
 #include "mod_httpd.h"
 #include "http_core.h"
 #include "http_config.h"

@@ -11,7 +11,7 @@
  * #define DEBUG            to trace all cfg_open*()/cfg_closefile() calls
  * #define DEBUG_CFG_LINES  to trace every line read from the config files
  */
-
+#include "common_core.h"
 #include "mod_httpd.h"
 #include "http_util.h"
 #include "http_config.h"

@@ -78,6 +78,14 @@ AP_DECLARE(const char *) ap_make_content_type(request_rec *r,
  */
 AP_DECLARE(void) ap_set_content_type(request_rec *r, const char *ct);
 
+/* Set last modified header line from the lastmod date of the associated file.
+ * Also, set content length.
+ *
+ * May return an error status, typically HTTP_NOT_MODIFIED (that when the
+ * permit_cache argument is set to one).
+ */
+AP_DECLARE(void) ap_set_last_modified(request_rec *r);
+
 /**
  * Set the content length for this request
  * @param r The current request
@@ -96,7 +104,6 @@ int ap_vrprintf(request_rec *r, const char *fmt, va_list va);
 int ap_rprintf(request_rec *r, const char *fmt, ...);
 int ap_rvputs(request_rec *r, ...);
 int ap_rflush(request_rec *r);
-void ap_set_last_modified(request_rec *r);
 
 
 /**

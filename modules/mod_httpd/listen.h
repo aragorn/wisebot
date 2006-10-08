@@ -1,6 +1,6 @@
 /* $Id$ */
-#ifndef _LISTEN_H_
-#define _LISTEN_H_
+#ifndef LISTEN_H
+#define LISTEN_H
 
 #include "apr_errno.h"
 #include "apr_network_io.h"

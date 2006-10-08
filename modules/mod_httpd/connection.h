@@ -2,6 +2,12 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
+/* This is a workaround for exports.c which does not include "common_core.h"
+ * by default. */
+#include "common_core.h"
+#include "hook.h"
+#include "mod_httpd.h"
+
 SB_DECLARE_HOOK(conn_rec *,create_connection,
 	(apr_socket_t *sock, server_rec *server,
 	 slot_t *slot, apr_bucket_alloc_t *alloc, apr_pool_t *p))

@@ -1,7 +1,8 @@
 /* $Id$ */
-#include "listen.h"
+#include "common_core.h"
 #include "mod_httpd.h"
 #include "apr_portable.h" // apr_os_sock_get()
+#include "listen.h"
 
 listen_rec *listeners = NULL;
 

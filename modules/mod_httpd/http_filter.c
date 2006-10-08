@@ -16,6 +16,7 @@
 #include "http_request.h"
 #include "http_util.h"
 #include "util_time.h"
+#include "log.h" /* ap_log_rerror */
 #include "apr_lib.h"
 #include "apr_strings.h"
 

@@ -1,7 +1,4 @@
 /* $Id$ */
-/*
- * core.c
- */
 #include "common_core.h"
 #include "protocol.h"
 #include "request.h"
@@ -12,6 +9,7 @@
 #include "http_filter.h"
 #include "http_core.h" /* AP_MIN_BYTES_TO_WRITE */
 #include "apr_strings.h"
+#include "log.h" /* ap_log_rerror */
 #include "core.h"
 
 /* LimitXMLRequestBody handling */
@@ -780,11 +778,6 @@ static int core_create_req(request_rec *r)
     return SUCCESS;
 }
 
-static int core_create_proxy_req(request_rec *r, request_rec *pr)
-{
-    return core_create_req(pr);
-}
-
 
 static void core_insert_filter(request_rec *r)
 {
@@ -847,8 +840,6 @@ static void register_hooks(void)
 	sb_hook_fixups(core_override_type,NULL,NULL,HOOK_REALLY_FIRST);
 	sb_hook_access_checker(do_nothing,NULL,NULL,HOOK_REALLY_LAST);
 	sb_hook_create_request(core_create_req, NULL, NULL, HOOK_MIDDLE);
-/*	APR_OPTIONAL_HOOK(proxy, create_req, core_create_proxy_req, NULL, NULL,*/
-/*	                  HOOK_MIDDLE);*/
 /*	sb_hook_pre_mpm(ap_create_scoreboard, NULL, NULL, HOOK_MIDDLE);*/
 
 	/* register the core's insert_filter hook and register core-provided

@@ -2,8 +2,7 @@
 /*
  * filter.c
  */
-
-#include "mod_httpd.h"
+#include "common_core.h"
 #include "filter.h"
 #include "http_core.h"
 #include "http_config.h"

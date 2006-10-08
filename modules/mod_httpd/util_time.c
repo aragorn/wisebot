@@ -1,5 +1,6 @@
 /* $Id$ */
-
+#include "common_core.h"
+#include "mod_httpd.h"
 #include "util_time.h"
 
 /* Cache for exploded values of recent timestamps

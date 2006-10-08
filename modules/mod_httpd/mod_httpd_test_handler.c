@@ -1,5 +1,6 @@
 /* $Id$ */
-#include "softbot.h"
+#include "common_core.h"
+//#include "mod_httpd.h"
 #include "conf.h"
 #include "protocol.h"
 #include "mod_mp/mod_mp.h"

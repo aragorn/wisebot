@@ -2,8 +2,6 @@
 #ifndef _HTTP_REQUEST_H_
 #define _HTTP_REQUEST_H_
 
-#include "hook.h"
-#include "apr_hooks.h"
 #include "util_filter.h"
 
 #ifdef __cplusplus
@@ -45,9 +43,6 @@ extern "C" {
  * @return The return code for the request
  */
 AP_DECLARE(int) ap_process_request_internal(request_rec *r);
-
-
-
 
 
 /*

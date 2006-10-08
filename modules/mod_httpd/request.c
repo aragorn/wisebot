@@ -1,9 +1,9 @@
 /* $Id$ */
 #define HTTPD_CORE_PRIVATE
+#include "common_core.h"
 #include "mod_httpd.h"
-#include "conf.h"
-#include "filter.h"
 #include "request.h"
+#include "filter.h"
 #include "protocol.h"
 #include "http_request.h"
 #include "http_protocol.h"
@@ -12,6 +12,7 @@
 #include "http_util.h"
 #include "util_filter.h"
 #include "util_time.h"
+#include "log.h" /* ap_log_rerror */
 
 #include "apr_strings.h"
 #include "apr_fnmatch.h"
@@ -57,169 +58,6 @@ SB_IMPLEMENT_HOOK_RUN_VOID_ALL(insert_filter, (request_rec *r), (r))
 SB_IMPLEMENT_HOOK_RUN_ALL(int, create_request,
                           (request_rec *r), (r), SUCCESS, DECLINE)
 
-
-static int decl_die(int status, char *phase, request_rec *r)
-{   
-	if (status == DECLINE) {
-		ap_log_rerror(APLOG_MARK, APLOG_CRIT, 0, r,
-					  "configuration error:  couldn't %s: %s", phase, r->uri);
-		return HTTP_INTERNAL_SERVER_ERROR;
-	}
-	else {
-		return status;
-	}
-}
-
-/* This is the master logic for processing requests.  Do NOT duplicate
- * this logic elsewhere, or the security model will be broken by future
- * API changes.  Each phase must be individually optimized to pick up
- * redundant/duplicate calls by subrequests, and redirects.
- */
-AP_DECLARE(int) ap_process_request_internal(request_rec *r)
-{
-    int file_req = (r->main && r->filename);
-    int access_status = DECLINE;
-
-	debug("started");
-    /* Ignore embedded %2F's in path for proxy requests */
-    if (!r->proxyreq && r->parsed_uri.path) {
-        access_status = ap_unescape_url(r->parsed_uri.path);
-        if (access_status) {
-            return access_status;
-        }
-    }
-
-    ap_getparents(r->uri);     /* OK --- shrinking transformations... */
-
-debug("here 1");
-    /* All file subrequests are a huge pain... they cannot bubble through the
-     * next several steps.  Only file subrequests are allowed an empty uri,
-     * otherwise let translate_name kill the request.
-     */
-    if (!file_req) {
-        if ((access_status = ap_location_walk(r))) {
-            return access_status;
-        }
-
-        if ((access_status = sb_run_translate_name(r))) {
-            return decl_die(access_status, "translate", r);
-        }
-    }
-debug("here 2");
-
-    /* Reset to the server default config prior to running map_to_storage
-     */
-    r->per_dir_config = r->server->lookup_defaults;
-
-    if ((access_status = sb_run_map_to_storage(r))) {
-        /* This request wasn't in storage (e.g. TRACE) */
-        return access_status;
-    }
-
-    /* Excluding file-specific requests with no 'true' URI...
-     */
-    if (!file_req) {
-        /* Rerun the location walk, which overrides any map_to_storage config.
-         */
-        if ((access_status = ap_location_walk(r))) {
-            return access_status;
-        }
-    }
-
-debug("here 3");
-    /* Only on the main request! */
-    if (r->main == NULL) {
-        if ((access_status = sb_run_header_parser(r))) {
-            return access_status;
-        }
-    }
-debug("here 4");
-
-    /* Skip authn/authz if the parent or prior request passed the authn/authz,
-     * and that configuration didn't change (this requires optimized _walk()
-     * functions in map_to_storage that use the same merge results given
-     * identical input.)  If the config changes, we must re-auth.
-     */
-    if (r->main && (r->main->per_dir_config == r->per_dir_config)) {
-        r->user = r->main->user;
-        r->auth_type = r->main->auth_type;
-    }
-    else if (r->prev && (r->prev->per_dir_config == r->per_dir_config)) {
-        r->user = r->prev->user;
-        r->auth_type = r->prev->auth_type;
-    }
-    else {
-        switch (ap_satisfies(r)) {
-        case SATISFY_ALL:
-        case SATISFY_NOSPEC:
-            if ((access_status = sb_run_access_checker(r)) != 0) {
-                return decl_die(access_status, "check access", r);
-            }
-
-            if (ap_some_auth_required(r)) {
-                if (((access_status = sb_run_check_user_id(r)) != 0)
-                    || !ap_auth_type(r)) {
-                    return decl_die(access_status, ap_auth_type(r)
-                                  ? "check user.  No user file?"
-                                  : "perform authentication. AuthType not set!",
-                                  r);
-                }
-
-                if (((access_status = sb_run_auth_checker(r)) != 0)
-                    || !ap_auth_type(r)) {
-                    return decl_die(access_status, ap_auth_type(r)
-                                  ? "check access.  No groups file?"
-                                  : "perform authentication. AuthType not set!",
-                                   r);
-                }
-            }
-            break;
-
-        case SATISFY_ANY:
-            if (((access_status = sb_run_access_checker(r)) != 0)
-                || !ap_auth_type(r)) {
-                if (!ap_some_auth_required(r)) {
-                    return decl_die(access_status, ap_auth_type(r)
-                                  ? "check access"
-                                  : "perform authentication. AuthType not set!",
-                                  r);
-                }
-
-                if (((access_status = sb_run_check_user_id(r)) != 0)
-                    || !ap_auth_type(r)) {
-                    return decl_die(access_status, ap_auth_type(r)
-                                  ? "check user.  No user file?"
-                                  : "perform authentication. AuthType not set!",
-                                  r);
-                }
-
-                if (((access_status = sb_run_auth_checker(r)) != 0)
-                    || !ap_auth_type(r)) {
-                    return decl_die(access_status, ap_auth_type(r)
-                                  ? "check access.  No groups file?"
-                                  : "perform authentication. AuthType not set!",
-                                  r);
-                }
-            }
-            break;
-        }
-    }
-debug("here 5");
-    /* XXX Must make certain the ap_run_type_checker short circuits mime
-     * in mod-proxy for r->proxyreq && r->parsed_uri.scheme
-     *                              && !strcmp(r->parsed_uri.scheme, "http")
-     */
-    if ((access_status = sb_run_type_checker(r)) != 0) {
-        return decl_die(access_status, "find types", r);
-    }
-
-    if ((access_status = sb_run_fixups(r)) != 0) {
-        return access_status;
-    }
-
-	debug("ended");
-    return SUCCESS;
-}
 
 
 /*****************************************************************************/

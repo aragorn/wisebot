@@ -1,6 +1,8 @@
 /* $Id$ */
 #include "common_core.h"
-#include "conf.h"
+#include "hook.h"
+#include "mod_httpd.h"
+#include "http_config.h"
 #include "util_filter.h"
 #include "connection.h"
 

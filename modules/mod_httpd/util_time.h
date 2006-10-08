@@ -2,7 +2,6 @@
 #ifndef APACHE_UTIL_TIME_H
 #define APACHE_UTIL_TIME_H
 
-#include "mod_httpd.h"
 #include "apr.h"
 #include "apr_time.h"
 

@@ -1,8 +1,9 @@
 /* $Id$ */
-#ifndef __FILTER_H__
-#define __FILTER_H__
+#ifndef FILTER_H
+#define FILTER_H
 
-#include "util_filter.h"
+#include "apr_buckets.h" /* apr_bucket_brigade */
+#include "util_filter.h" /* ap_filter_rec_t */
 
 typedef struct {
     apr_bucket_brigade *bb;

@@ -1,7 +1,7 @@
 /* $Id$ */
 /*****************************************************************************/
 /* protocol.c */
-
+#include "common_core.h"
 #include "mod_httpd.h"
 #include "http_config.h"
 
@@ -20,6 +20,7 @@
 #include "apr_strings.h"
 #include "apr_lib.h"
 #include "apr_strmatch.h" /* apr_strmatch_pattern */
+#include "log.h" /* ap_log_rerror */
 
 #ifndef DEFAULT_LOCKFILE
 #  define DEFAULT_LOCKFILE "/tmp/softbot_httpd_lock"
@@ -530,6 +531,22 @@ AP_DECLARE(const char *)ap_make_content_type(request_rec *r, const char *type)
     return type;
 }
 
+/*
+ * This function sets the Last-Modified output header field to the value
+ * of the mtime field in the request structure - rationalized to keep it from
+ * being in the future.
+ */
+void ap_set_last_modified(request_rec *r)
+{
+    if (!r->assbackwards) {
+        apr_time_t mod_time = ap_rationalize_mtime(r, r->mtime);
+        char *datestr = apr_palloc(r->pool, APR_RFC822_DATE_LEN);
+
+        apr_rfc822_date(datestr, mod_time);
+        apr_table_setn(r->headers_out, "Last-Modified", datestr);
+    }
+}
+
 
 void ap_set_content_length(request_rec *r, apr_off_t clength)
 {
@@ -764,22 +781,6 @@ int ap_rflush(request_rec *r)
         return -1;
 
     return 0;
-}
-
-/*
- * This function sets the Last-Modified output header field to the value
- * of the mtime field in the request structure - rationalized to keep it from
- * being in the future.
- */
-void ap_set_last_modified(request_rec *r)
-{
-    if (!r->assbackwards) {
-        apr_time_t mod_time = ap_rationalize_mtime(r, r->mtime);
-        char *datestr = apr_palloc(r->pool, APR_RFC822_DATE_LEN);
-
-        apr_rfc822_date(datestr, mod_time);
-        apr_table_setn(r->headers_out, "Last-Modified", datestr);
-    }
 }
 
 /*****************************************************************************/

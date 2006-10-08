@@ -1,1 +1,5 @@
 gen_test_char
+exports.c
+export_vars.h
+export_files
+mod_httpd.exp

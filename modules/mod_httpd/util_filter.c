@@ -1,14 +1,13 @@
 /* $Id$ */
 #define APR_WANT_STRFUNC
-#include "mod_httpd.h"
-
+#include "common_core.h"
 #include "apr_want.h"
 #include "apr_lib.h"
 #include "apr_hash.h"
 #include "apr_strings.h"
 
 #include "util_filter.h"
-#include "util_string.h"
+//#include "util_string.h"
 
 /* NOTE: Apache's current design doesn't allow a pool to be passed thru,
    so we depend on a global to hold the correct pool

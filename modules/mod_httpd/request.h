@@ -1,44 +1,8 @@
 /* $Id$ */
-#ifndef _REQUEST_H_
-#define _REQUEST_H_
+#ifndef REQUEST_H
+#define REQUEST_H
 
-#include "hook.h"
-#include "mod_httpd.h"
-#include "util_filter.h"
-#include "core.h"
-
-/**
- * @file http_request.h
- * @brief Apache Request library
- */
-
-/* http_request.c is the code which handles the main line of request
- * processing, once a request has been read in (finding the right per-
- * directory configuration, building it if necessary, and calling all
- * the module dispatch functions in the right order).
- *
- * The pieces here which are public to the modules, allow them to learn
- * how the server would handle some other file or URI, or perhaps even
- * direct the server to serve that other file instead of the one the
- * client requested directly.
- *
- * There are two ways to do that.  The first is the sub_request mechanism,
- * which handles looking up files and URIs as adjuncts to some other
- * request (e.g., directory entries for multiviews and directory listings);
- * the lookup functions stop short of actually running the request, but
- * (e.g., for includes), a module may call for the request to be run
- * by calling run_sub_req.  The space allocated to create sub_reqs can be
- * reclaimed by calling destroy_sub_req --- be sure to copy anything you care
- * about which was allocated in its apr_pool_t elsewhere before doing this.
- */
-
-/**
- * An internal handler used by the ap_process_request, all sub request mechanisms
- * and the redirect mechanism.
- * @param r The request, subrequest or internal redirect to pre-process
- * @return The return code for the request
- */
-AP_DECLARE(int) ap_process_request_internal(request_rec *r);
+#include "util_filter.h" /* ap_filter_t */
 
 AP_DECLARE(int) ap_directory_walk(request_rec *r);
 AP_DECLARE(int) ap_location_walk(request_rec *r);

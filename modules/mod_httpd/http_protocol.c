@@ -1,9 +1,6 @@
 /* $Id$ */
-/*****************************************************************************/
-/* http_protocol.c */
-
+#include "common_core.h"
 #include "mod_httpd.h"
-/*#include "request.h"*/
 #include "protocol.h"
 #include "http_core.h"
 #include "http_request.h"
@@ -11,6 +8,7 @@
 #include "http_util.h"
 #include "util_string.h"
 #include "util_time.h"
+#include "log.h" /* ap_log_rerror */
 
 /*#include "apr.h"*/
 /*#include "apr_buckets.h"*/
