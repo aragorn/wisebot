@@ -1140,7 +1140,7 @@ void set_fieldname(configValue v)
 		return ;
 	}
 
-	if (strcasecmp("YES",v.argument[2]) != 0) {
+	if (strncasecmp("YES",v.argument[2], 4) != 0) {
 		debug("Field %s does not need indexing",v.argument[1]);
 		return;
 	}
