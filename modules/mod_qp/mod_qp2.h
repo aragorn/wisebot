@@ -13,10 +13,12 @@ enum field_type {
 
 // 필드명, 필드 속성
 typedef struct {
+    int id;         /* field id */
     char name[SHORT_STRING_SIZE];
-    int morpid;       // morp id
+    int index;      /* 1 for yes, 0 for no */
+    int indexer_morpid;
+    int qpp_morpid;
     int type;       // enum field_type
-    int id;         // field id
 } field_info_t;
 ///////////////////////////////////////////////////////////
 
