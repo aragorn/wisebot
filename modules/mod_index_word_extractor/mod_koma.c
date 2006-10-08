@@ -352,8 +352,7 @@ AGAIN:
             debug("count[%d], m[%s] tag[%s]", morpheme_count, morpheme, tag);
 
             if ( h->is_raw_koma_text ) {
-                strncpy(out[idx_of_index_word].word, morpheme, MAX_WORD_LEN);
-                out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
+                strnhcpy(out[idx_of_index_word].word, morpheme, MAX_WORD_LEN-1);
                 out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
                 out[idx_of_index_word].pos = h->position;
                 memcpy(&(out[idx_of_index_word].attribute), tag,
@@ -382,8 +381,7 @@ AGAIN:
 
 					jupdusa_exist = FALSE;
 
-					strncpy(out[idx_of_index_word].word, merged_morpheme, MAX_WORD_LEN);
-					out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
+					strnhcpy(out[idx_of_index_word].word, merged_morpheme, MAX_WORD_LEN-1);
 					out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
 					out[idx_of_index_word].pos = h->position;
 					memcpy(&(out[idx_of_index_word].attribute),
@@ -430,8 +428,7 @@ AGAIN:
 			// TAG_TO_BE_IGNORED_MORE or TAG_TO_BE_IGNORED
 			if ( ! TAG_TO_BE_IGNORED(tag) ) {
 				/* 색인단어에서 제외할 품사들이 아니면 ... */
-				strncpy(out[idx_of_index_word].word, morpheme, MAX_WORD_LEN);
-				out[idx_of_index_word].word[MAX_WORD_LEN-1] = '\0';
+				strnhcpy(out[idx_of_index_word].word, morpheme, MAX_WORD_LEN-1);
 				out[idx_of_index_word].len = strlen(out[idx_of_index_word].word);
 				out[idx_of_index_word].pos = h->position;
 				memcpy(&(out[idx_of_index_word].attribute), tag,
