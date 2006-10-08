@@ -121,6 +121,7 @@ struct scoreboard_t {
 
 SB_DECLARE(scoreboard_t*) init_one_scoreboard(module *mod);
 SB_DECLARE(void) init_all_scoreboards();
+
 SB_DECLARE(slot_t*) get_slot_by_pid(scoreboard_t *scoreboard, pid_t pid);
 SB_DECLARE(slot_t*) get_slot_by_name(scoreboard_t *scoreboard, const char *name);
 SB_DECLARE(int)  is_working_slot(slot_t *slot);
@@ -128,6 +129,7 @@ SB_DECLARE(int)  get_pids_by_name(const char *name, pid_t pids[], int *size);
                  /* get_pids_by_name: returns number of processes for given name */
 SB_DECLARE(slot_t*) get_slot_by_name_global(const char *name);
 SB_DECLARE(void) set_proc_desc(slot_t *slt, const char *format, ...);
+
 SB_DECLARE(void) list_scoreboard(FILE *out, char *module_name);
 SB_DECLARE(void) list_scoreboard_xml(FILE *out, char *module_name);
 SB_DECLARE(void) list_scoreboard_str(char *result, char *module_name);

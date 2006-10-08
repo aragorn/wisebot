@@ -135,6 +135,20 @@ char *strntolower(char *str, int size)
 	return str;
 }
 
+char* strnhcpy(char* dest, char const* src, int len)
+{
+    int i = 0, j, last;
+    do {
+        if(src[i] == 0) return dest[i] = 0, dest;
+        last = ((unsigned char)src[i] >= 0x80 &&
+                (unsigned char)src[i+1] >= 0x30) ? 2 : 1;
+        for(j = 0; j < last; i++, j++) dest[i] = src[i];
+    } while(i < len && src[i] != 0);
+    if(i > len) i -= last;
+    dest[i] = 0;
+    return dest;
+} 
+
 /*
  * NOTICE:
  * The comparison function must return an integer less than, equal to, or 

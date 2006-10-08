@@ -42,6 +42,9 @@ SB_DECLARE(char*) strtolower(char *str);
 SB_DECLARE(char*) strntoupper(char *str, int size);
 SB_DECLARE(char*) strntolower(char *str, int size);
 
+/* 한글이 깨어지지 않게 문자열을 복사한다. len보다 짧게 문자열을 복사하고,
+ * 마지막에 항상 NULL을 붙여준다. */
+SB_DECLARE(char*) strnhcpy(char* dest, char const* src, int len);
 /*
  * NOTICE:
  * The comparison function must return an integer less than, equal to, or 
