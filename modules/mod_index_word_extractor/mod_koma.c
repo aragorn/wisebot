@@ -255,13 +255,12 @@ int koma_analyze(koma_handle_t *h, index_word_t *out, int max)
 	int	idx_of_index_word = 0;
 	int previous_idx_of_index_word;
 
-
-	if (h->text == NULL) {
+AGAIN:
+/*
+	if (h->text == NULL || h->text[0] == '\0') {
 		return 0;
 	}
-
-AGAIN:
-
+*/
 	/* 이전 DoKomaAndHanTag()의 결과를 모두 return한 경우 */
 	if ( h->koma_done == TRUE ) {
 		move_text(h);
@@ -440,7 +439,7 @@ FINISH:
 		h->koma_done = TRUE;
 	}
 
-	if (idx_of_index_word == 0) goto AGAIN;
+	if (idx_of_index_word == 0 && h->next_text != NULL) goto AGAIN;
 
 	return idx_of_index_word;
 }
