@@ -899,6 +899,5 @@ typedef struct core_net_rec {
 int graceful_stop_signalled(void);
 int update_slot_state(slot_t *slot, int state, request_rec *r);
 char *ap_response_code_string(request_rec *r, int error_index);
-const char *ap_psignature(const char *prefix, request_rec *r);
 
 #endif /* !MOD_HTTPD_H */

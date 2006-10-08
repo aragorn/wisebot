@@ -222,6 +222,137 @@ AP_DECLARE(int) ap_satisfies(request_rec *r)
     return conf->satisfy;
 }
 
+
+/* Code from Harald Hanche-Olsen <hanche@imf.unit.no> */
+static APR_INLINE void do_double_reverse (conn_rec *conn)
+{
+    apr_sockaddr_t *sa;
+    apr_status_t rv;
+
+    if (conn->double_reverse) {
+        /* already done */
+        return;
+    }
+
+    if (conn->remote_host == NULL || conn->remote_host[0] == '\0') {
+        /* single reverse failed, so don't bother */
+        conn->double_reverse = -1;
+        return;
+    }
+
+    rv = apr_sockaddr_info_get(&sa, conn->remote_host, APR_UNSPEC, 0, 0, conn->pool);
+    if (rv == APR_SUCCESS) {
+        while (sa) {
+            if (apr_sockaddr_equal(sa, conn->remote_addr)) {
+                conn->double_reverse = 1;
+                return;
+            }
+
+            sa = sa->next;
+        }
+    }
+
+    conn->double_reverse = -1;
+}
+
+AP_DECLARE(const char *) ap_get_remote_host(conn_rec *conn, void *dir_config,
+                                            int type, int *str_is_ip)
+{
+    int hostname_lookups;
+
+    if (str_is_ip) { /* if caller wants to know */
+        *str_is_ip = 0;
+    }
+
+    /* If we haven't checked the host name, and we want to */
+    if (dir_config) {
+        hostname_lookups =
+            ((core_dir_config *)ap_get_module_config(dir_config, CORE_HTTPD_MODULE))
+            ->hostname_lookups;
+
+        if (hostname_lookups == HOSTNAME_LOOKUP_UNSET) {
+            hostname_lookups = HOSTNAME_LOOKUP_OFF;
+        }
+    }
+    else {
+        /* the default */
+        hostname_lookups = HOSTNAME_LOOKUP_OFF;
+    }
+
+    if (type != REMOTE_NOLOOKUP
+        && conn->remote_host == NULL
+        && (type == REMOTE_DOUBLE_REV
+        || hostname_lookups != HOSTNAME_LOOKUP_OFF)) {
+
+        if (apr_getnameinfo(&conn->remote_host, conn->remote_addr, 0)
+            == APR_SUCCESS) {
+            ap_str_tolower(conn->remote_host);
+
+            if (hostname_lookups == HOSTNAME_LOOKUP_DOUBLE) {
+                do_double_reverse(conn);
+                if (conn->double_reverse != 1) {
+                    conn->remote_host = NULL;
+                }
+            }
+        }
+
+        /* if failed, set it to the NULL string to indicate error */
+        if (conn->remote_host == NULL) {
+            conn->remote_host = "";
+        }
+    }
+
+    if (type == REMOTE_DOUBLE_REV) {
+        do_double_reverse(conn);
+        if (conn->double_reverse == -1) {
+            return NULL;
+        }
+    }
+
+    /*
+     * Return the desired information; either the remote DNS name, if found,
+     * or either NULL (if the hostname was requested) or the IP address
+     * (if any identifier was requested).
+     */
+    if (conn->remote_host != NULL && conn->remote_host[0] != '\0') {
+        return conn->remote_host;
+    }
+    else {
+        if (type == REMOTE_HOST || type == REMOTE_DOUBLE_REV) {
+            return NULL;
+        }
+        else {
+            if (str_is_ip) { /* if caller wants to know */
+                *str_is_ip = 1;
+            }
+
+            return conn->remote_ip;
+        }
+    }
+}
+
+AP_DECLARE(const char *) ap_get_remote_logname(request_rec *r)
+{
+    core_dir_config *dir_conf;
+
+    if (r->connection->remote_logname != NULL) {
+        return r->connection->remote_logname;
+    }
+
+    /* If we haven't checked the identity, and we want to */
+    dir_conf = (core_dir_config *)ap_get_module_config(r->per_dir_config,
+                                                       CORE_HTTPD_MODULE);
+
+    if (dir_conf->do_rfc1413 & 1) {
+		/* XXX Adopting ap_rfc1413.[ch] requires some hacking. */
+        //return ap_rfc1413(r->connection, r->server);
+        return NULL;
+    }
+    else {
+        return NULL;
+    }
+}
+
 AP_DECLARE(apr_off_t) ap_get_limit_req_body(const request_rec *r)
 {
     core_dir_config *d =

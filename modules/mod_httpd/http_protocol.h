@@ -103,6 +103,7 @@ AP_DECLARE(int) ap_meets_conditions(request_rec *r);
  * @param nbytes Amount of data actually sent
  * @deffunc apr_status_t ap_send_fd(apr_file_t *fd, request_rec *r, apr_off_t offset, apr_size_t length, apr_size_t *nbytes);
  */
+#if 0
 AP_DECLARE(apr_status_t) ap_send_fd(apr_file_t *fd, request_rec *r, apr_off_t offset, 
                                    apr_size_t length, apr_size_t *nbytes);
 
@@ -116,10 +117,13 @@ AP_DECLARE(apr_status_t) ap_send_fd(apr_file_t *fd, request_rec *r, apr_off_t of
  * @return The number of bytes sent
  * @deffunc size_t ap_send_mmap(apr_mmap_t *mm, request_rec *r, size_t offset, size_t length)
  */
+
 AP_DECLARE(size_t) ap_send_mmap(apr_mmap_t *mm, request_rec *r, size_t offset,
                              size_t length);
+
 #endif
 
+#endif
 
 /**
  * Register a new request method, and return the offset that will be
@@ -302,7 +306,7 @@ AP_DECLARE(int) ap_index_of_response(int status);
  * @return The Status-Line
  * @deffunc const char *ap_get_status_line(int status)
  */
-AP_DECLARE(const char *) ap_get_status_line(int status);
+//AP_DECLARE(const char *) ap_get_status_line(int status);
 
 /* Reading a block of data from the client connection (e.g., POST arg) */
 
@@ -329,7 +333,7 @@ AP_DECLARE(int) ap_setup_client_block(request_rec *r, int read_policy);
  * @return 0 if there is no message to read, 1 otherwise
  * @deffunc int ap_should_client_block(request_rec *r)
  */
-AP_DECLARE(int) ap_should_client_block(request_rec *r);
+//AP_DECLARE(int) ap_should_client_block(request_rec *r);
 
 /**
  * Call this in a loop.  It will put data into a buffer and return the length
@@ -341,7 +345,7 @@ AP_DECLARE(int) ap_should_client_block(request_rec *r);
  *         if EOF, or -1 if there was an error
  * @deffunc long ap_get_client_block(request_rec *r, char *buffer, apr_size_t bufsiz)
  */
-AP_DECLARE(long) ap_get_client_block(request_rec *r, char *buffer, apr_size_t bufsiz);
+//AP_DECLARE(long) ap_get_client_block(request_rec *r, char *buffer, apr_size_t bufsiz);
 
 /**
  * In HTTP/1.1, any method can have a body.  However, most GET handlers
@@ -364,7 +368,7 @@ AP_DECLARE(int) ap_discard_request_body(request_rec *r);
  * @param r The current request
  * @deffunc void ap_note_auth_failure(request_rec *r)
  */ 
-AP_DECLARE(void) ap_note_auth_failure(request_rec *r);
+//AP_DECLARE(void) ap_note_auth_failure(request_rec *r);
 
 /**
  * Setup the output headers so that the client knows how to authenticate
@@ -373,7 +377,7 @@ AP_DECLARE(void) ap_note_auth_failure(request_rec *r);
  * @param r The current request
  * @deffunc void ap_note_basic_auth_failure(request_rec *r)
  */ 
-AP_DECLARE(void) ap_note_basic_auth_failure(request_rec *r);
+//AP_DECLARE(void) ap_note_basic_auth_failure(request_rec *r);
 
 /**
  * Setup the output headers so that the client knows how to authenticate
@@ -382,7 +386,7 @@ AP_DECLARE(void) ap_note_basic_auth_failure(request_rec *r);
  * @param r The current request
  * @deffunc void ap_note_digest_auth_failure(request_rec *r)
  */ 
-AP_DECLARE(void) ap_note_digest_auth_failure(request_rec *r);
+//AP_DECLARE(void) ap_note_digest_auth_failure(request_rec *r);
 
 /**
  * Get the password from the request headers
@@ -397,7 +401,7 @@ AP_DECLARE(void) ap_note_digest_auth_failure(request_rec *r);
  *         decline as well).
  * @deffunc int ap_get_basic_auth_pw(request_rec *r, const char **pw)
  */
-AP_DECLARE(int) ap_get_basic_auth_pw(request_rec *r, const char **pw);
+//AP_DECLARE(int) ap_get_basic_auth_pw(request_rec *r, const char **pw);
 
 /**
  * parse_uri: break apart the uri
@@ -423,7 +427,7 @@ AP_CORE_DECLARE(void) ap_parse_uri(request_rec *r, const char *uri);
  *         -1 for miscellaneous errors
  * @deffunc int ap_method_number_of(const char *method)
  */
-AP_DECLARE(int) ap_getline(char *s, int n, request_rec *r, int fold);
+//AP_DECLARE(int) ap_getline(char *s, int n, request_rec *r, int fold);
 
 #if 0
 /**
@@ -476,7 +480,7 @@ AP_DECLARE(int) ap_method_number_of(const char *method);
  * @param methnum An integer value corresponding to an internal method number
  * @return The name corresponding to the method number
  */
-AP_DECLARE(const char *) ap_method_name_of(apr_pool_t *p, int methnum);
+//AP_DECLARE(const char *) ap_method_name_of(apr_pool_t *p, int methnum);
 
 
 

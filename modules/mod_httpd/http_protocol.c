@@ -1330,8 +1330,6 @@ void ap_send_error_response(request_rec * r, int recursive_error)
 				"ErrorDocument to handle the request.</p>\n",
 				NULL);
 		}
-		// FIXME
-		//ap_rvputs(rlast, ap_psignature("<hr />\n", r), NULL);
 		ap_rvputs(rlast, "</body></html>\n", NULL);
     }
 #if 0

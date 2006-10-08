@@ -1,0 +1,18 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+while ( <STDIN> )
+{
+	chomp;
+	next unless $_;
+	my $r = `grep $_ *.c | grep -v exports.c`;
+
+	my @r = split(/\n/, $r);
+	my $lines = @r;
+	next if ( $lines > 2 );
+
+	print "-" x 80, "\n";
+	print "grep $_ *.c", "\n", $r, "\n";
+	print "lines: $lines\n";
+}

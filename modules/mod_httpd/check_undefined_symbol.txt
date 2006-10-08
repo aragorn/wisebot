@@ -1,0 +1,561 @@
+--------------------------------------------------------------------------------
+grep ap_allow_overrides *.c
+core.c:AP_DECLARE(int) ap_allow_overrides(request_rec *r)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_auth_name *.c
+core.c:AP_DECLARE(const char *) ap_auth_name(request_rec *r)
+core.c:    return conf->ap_auth_name;
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_get_limit_req_body *.c
+core.c:AP_DECLARE(apr_off_t) ap_get_limit_req_body(const request_rec *r)
+http_filter.c:            ctx->limit = ap_get_limit_req_body(f->r);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_register_request_note *.c
+core.c:AP_DECLARE(apr_size_t) ap_register_request_note(void)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_create_per_dir_config *.c
+http_config.c:AP_CORE_DECLARE(ap_conf_vector_t *) ap_create_per_dir_config(apr_pool_t *p)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_create_conn_config *.c
+connection.c:	c->conn_config = ap_create_conn_config(p);
+http_config.c:AP_CORE_DECLARE(ap_conf_vector_t *) ap_create_conn_config(apr_pool_t *p)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_core_translate *.c
+core.c:AP_DECLARE_NONSTD(int) ap_core_translate(request_rec *r)
+core.c:	sb_hook_translate_name(ap_core_translate,NULL,NULL,HOOK_REALLY_LAST);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_set_keepalive *.c
+http_filter.c:    ap_set_keepalive(r);
+http_protocol.c:AP_DECLARE(int) ap_set_keepalive(request_rec *r)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_rationalize_mtime *.c
+protocol.c:apr_time_t ap_rationalize_mtime(request_rec *r, apr_time_t mtime)
+protocol.c:        apr_time_t mod_time = ap_rationalize_mtime(r, r->mtime);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_set_etag *.c
+core.c:        ap_set_etag(r);
+http_protocol.c:AP_DECLARE(void) ap_set_etag(request_rec *r)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_meets_conditions *.c
+core.c:        if ((errstatus = ap_meets_conditions(r)) != SUCCESS) {
+http_protocol.c:AP_DECLARE(int) ap_meets_conditions(request_rec *r)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_send_fd *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_send_mmap *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_method_register *.c
+http_protocol.c:AP_DECLARE(int) ap_method_register(apr_pool_t * p, const char *methname)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_method_registry_init *.c
+http_protocol.c:void ap_method_registry_init(apr_pool_t * p)
+http_protocol.c:	ap_method_registry_init(p);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_copy_method_list *.c
+http_protocol.c:AP_DECLARE(void) ap_copy_method_list(method_list_t *dest,
+request.c:    ap_copy_method_list(rnew->allowed_methods, r->allowed_methods);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_clear_method_list *.c
+http_protocol.c:AP_DECLARE(void) ap_clear_method_list(method_list_t *l)
+http_request.c:        ap_clear_method_list(r->allowed_methods);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_rputc *.c
+protocol.c:int ap_rputc(int c, request_rec *r)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_rputs *.c
+http_protocol.c:			ap_rputs(custom_response + 1, r);
+protocol.c:int ap_rputs(const char *str, request_rec *r)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_rwrite *.c
+protocol.c:int ap_rwrite(const void *buf, int nbyte, request_rec *r)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_rprintf *.c
+protocol.c:int ap_rprintf(request_rec *r, const char *fmt, ...)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_rflush *.c
+protocol.c:int ap_rflush(request_rec *r)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_get_status_line *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_setup_client_block *.c
+http_protocol.c:    if ((rv = ap_setup_client_block(r, REQUEST_NO_BODY))) {
+http_protocol.c:int ap_setup_client_block(request_rec *r, int read_policy)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_should_client_block *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_get_client_block *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_note_auth_failure *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_note_basic_auth_failure *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_note_digest_auth_failure *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_get_basic_auth_pw *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_getline *.c
+http_protocol.c:        /* Make sure ap_getline() didn't leave any droppings. */
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_method_name_of *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_send_http_trace *.c
+http_protocol.c:int ap_send_http_trace(request_rec * r)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_send_http_options *.c
+core.c:            return ap_send_http_options(r);
+http_protocol.c:int ap_send_http_options(request_rec *r)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_bucket_error_make *.c
+http_protocol.c:AP_DECLARE(apr_bucket *) ap_bucket_error_make(apr_bucket *b, int error,
+http_protocol.c:    return ap_bucket_error_make(b, error, buf, p);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_internal_redirect *.c
+http_request.c:            ap_internal_redirect(custom_response, r);
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_internal_redirect_handler *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_internal_fast_redirect *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_allow_methods *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_allow_standard_methods *.c
+core.c:    ap_allow_standard_methods(r, MERGE_ALLOW, M_GET, M_OPTIONS, M_POST, -1);
+http_request.c:AP_DECLARE(void) ap_allow_standard_methods(request_rec *r, int reset, ...)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_field_noparam *.c
+http_util.c:AP_DECLARE(char *) ap_field_noparam(apr_pool_t *p, const char *intype)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_ht_time *.c
+http_util.c:AP_DECLARE(char *) ap_ht_time(apr_pool_t *p, apr_time_t t, const char *fmt, int gmt)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_getword_nc *.c
+http_util.c:AP_DECLARE(char *) ap_getword_nc(apr_pool_t *atrans, char **line, char stop)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_getword_white_nc *.c
+http_util.c:AP_DECLARE(char *) ap_getword_white_nc(apr_pool_t *atrans, char **line)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_getword_nulls_nc *.c
+http_util.c:AP_DECLARE(char *) ap_getword_nulls_nc(apr_pool_t *atrans, char **line, char stop)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_getword_conf_nc *.c
+http_util.c:AP_DECLARE(char *) ap_getword_conf_nc(apr_pool_t *p, char **line)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_pcfg_openfile *.c
+http_config.c:    if (ap_pcfg_openfile(&cfp, p, fname) != APR_SUCCESS) {
+http_util.c:AP_DECLARE(apr_status_t) ap_pcfg_openfile(ap_configfile_t **ret_cfg, apr_pool_t *p, const char *name)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_pcfg_open_custom *.c
+http_util.c:AP_DECLARE(ap_configfile_t *) ap_pcfg_open_custom(apr_pool_t *p, const char *descr,
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_cfg_getc *.c
+http_util.c:AP_DECLARE(int) ap_cfg_getc(ap_configfile_t *cfp)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_cfg_closefile *.c
+http_config.c:    ap_cfg_closefile(cfp);
+http_util.c:AP_DECLARE(int) ap_cfg_closefile(ap_configfile_t *cfp)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_size_list_item *.c
+http_util.c:AP_DECLARE(const char *) ap_size_list_item(const char **field, int *len)
+http_util.c:    if ((tok_start = ap_size_list_item(field, &tok_len)) == NULL) {
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_get_list_item *.c
+http_util.c:AP_DECLARE(char *) ap_get_list_item(apr_pool_t *p, const char **field)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_get_token *.c
+http_util.c:AP_DECLARE(char *) ap_get_token(apr_pool_t *p, const char **accept_line, int accept_white)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_find_last_token *.c
+http_protocol.c:            || ap_find_last_token(r->pool,
+http_util.c:AP_DECLARE(int) ap_find_last_token(apr_pool_t *p, const char *line, const char *tok)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_is_url *.c
+http_util.c:AP_DECLARE(int) ap_is_url(const char *u)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_no2slash *.c
+http_util.c:AP_DECLARE(void) ap_no2slash(char *name)
+request.c:        ap_no2slash(uri);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_escape_path_segment *.c
+http_util.c:AP_DECLARE(char *) ap_escape_path_segment(apr_pool_t *p, const char *segment)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_os_escape_path *.c
+http_util.c:AP_DECLARE(char *) ap_os_escape_path(apr_pool_t *p, const char *path, int partial)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_escape_html *.c
+http_util.c:AP_DECLARE(char *) ap_escape_html(apr_pool_t *p, const char *s)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_construct_server *.c
+http_util.c:AP_DECLARE(char *) ap_construct_server(apr_pool_t *p, const char *hostname,
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_escape_shell_cmd *.c
+http_util.c:AP_DECLARE(char *) ap_escape_shell_cmd(apr_pool_t *p, const char *str)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_count_dirs *.c
+http_util.c:AP_DECLARE(int) ap_count_dirs(const char *path)
+request.c:        startseg = seg = ap_count_dirs(r->filename);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_make_dirstr_prefix *.c
+http_util.c:AP_DECLARE(char *) ap_make_dirstr_prefix(char *d, const char *s, int n)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_os_is_path_absolute *.c
+http_util.c:AP_DECLARE(int) ap_os_is_path_absolute(apr_pool_t *p, const char *dir) 
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_is_matchexp *.c
+http_util.c:AP_DECLARE(int) ap_is_matchexp(const char *str)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_strcmp_match *.c
+http_util.c:AP_DECLARE(int) ap_strcmp_match(const char *str, const char *exp)
+http_util.c:		if ((ret = ap_strcmp_match(&str[x++], &exp[y])) != 1)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_strcasecmp_match *.c
+http_util.c:AP_DECLARE(int) ap_strcasecmp_match(const char *str, const char *exp)
+http_util.c:		if ((ret = ap_strcasecmp_match(&str[x++], &exp[y])) != 1)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_strcasestr *.c
+http_util.c:AP_DECLARE(char *) ap_strcasestr(const char *s1, const char *s2)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_stripprefix *.c
+http_util.c: * (eg: test if ap_stripprefix(a,b) == a)
+http_util.c:AP_DECLARE(const char *) ap_stripprefix(const char *bigstring,
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_pbase64decode *.c
+http_util.c:AP_DECLARE(char *) ap_pbase64decode(apr_pool_t *p, const char *bufcoded)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_pbase64encode *.c
+http_util.c:AP_DECLARE(char *) ap_pbase64encode(apr_pool_t *p, char *string) 
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_pregcomp *.c
+http_util.c:AP_DECLARE(regex_t *) ap_pregcomp(apr_pool_t *p, const char *pattern,
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_pregfree *.c
+http_util.c:AP_DECLARE(void) ap_pregfree(apr_pool_t *p, regex_t * reg)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_regerror *.c
+http_util.c:AP_DECLARE(size_t) ap_regerror(int errcode, const regex_t *preg, char *errbuf, size_t errbuf_size)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_pregsub *.c
+http_util.c:AP_DECLARE(char *) ap_pregsub(apr_pool_t *p, const char *input, const char *source,
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_content_type_tolower *.c
+http_util.c:AP_DECLARE(void) ap_content_type_tolower(char *str)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_str_tolower *.c
+core.c:            ap_str_tolower(conn->remote_host);
+http_util.c:AP_DECLARE(void) ap_str_tolower(char *str)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_rind *.c
+http_util.c:AP_DECLARE(int) ap_rind(const char *s, char c)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_escape_quotes *.c
+http_util.c:AP_DECLARE(char *) ap_escape_quotes (apr_pool_t *p, const char *instring)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_is_rdirectory *.c
+http_config.c:    if (ap_is_rdirectory(ptemp, fname)) {
+http_util.c:AP_DECLARE(int) ap_is_rdirectory(apr_pool_t *p, const char *path)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_is_directory *.c
+http_util.c:AP_DECLARE(int) ap_is_directory(apr_pool_t *p, const char *path)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_log_assert *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_psignature *.c
+http_protocol.c:		//ap_rvputs(rlast, ap_psignature("<hr />\n", r), NULL);
+http_protocol.c:	ap_rvputs_proto_in_ascii(rlast, ap_psignature("<hr />\n", r),
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_strrchr *.c
+http_util.c:    const char *last_slash = ap_strrchr_c(s, '/');
+http_util.c:    const char *p = ap_strrchr_c(s, c);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_strrchr_c *.c
+http_util.c:    const char *last_slash = ap_strrchr_c(s, '/');
+http_util.c:    const char *p = ap_strrchr_c(s, c);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_strstr *.c
+http_filter.c:                && ap_strstr_c(ua, "MSIE 3")));
+http_protocol.c:                else if (ap_strstr_c(if_nonematch, etag)) {
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_strstr_c *.c
+http_filter.c:                && ap_strstr_c(ua, "MSIE 3")));
+http_protocol.c:                else if (ap_strstr_c(if_nonematch, etag)) {
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_find_path_info *.c
+http_util.c:AP_DECLARE(int) ap_find_path_info(const char *uri, const char *path_info)
+request.c:        udir[ap_find_path_info(udir, r->path_info)] = '\0';
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_setup_make_content_type *.c
+core.c:    ap_setup_make_content_type(pconf);
+protocol.c:AP_DECLARE(void) ap_setup_make_content_type(apr_pool_t *pool)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_set_last_modified *.c
+core.c:        ap_set_last_modified(r);
+protocol.c:void ap_set_last_modified(request_rec *r)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_directory_walk *.c
+core.c:    if ((access_status = ap_directory_walk(r))) {
+request.c:AP_DECLARE(int) ap_directory_walk(request_rec *r)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_file_walk *.c
+core.c:    if ((access_status = ap_file_walk(r))) {
+request.c:AP_DECLARE(int) ap_file_walk(request_rec *r)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_sub_req_output_filter *.c
+core.c:	    ap_register_output_filter("SUBREQ_CORE", ap_sub_req_output_filter,
+request.c:apr_status_t ap_sub_req_output_filter(ap_filter_t *f, apr_bucket_brigade *bb)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_sub_req_method_uri *.c
+request.c:AP_DECLARE(request_rec *) ap_sub_req_method_uri(const char *method,
+request.c:    return ap_sub_req_method_uri("GET", new_file, r, next_filter);
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_sub_req_lookup_uri *.c
+request.c:AP_DECLARE(request_rec *) ap_sub_req_lookup_uri(const char *new_file,
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_sub_req_lookup_dirent *.c
+request.c:AP_DECLARE(request_rec *) ap_sub_req_lookup_dirent(const apr_finfo_t *dirent,
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_sub_req_lookup_file *.c
+request.c:AP_DECLARE(request_rec *) ap_sub_req_lookup_file(const char *new_file,
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_run_sub_req *.c
+
+lines: 0
+--------------------------------------------------------------------------------
+grep ap_destroy_sub_req *.c
+request.c:AP_DECLARE(void) ap_destroy_sub_req(request_rec *r)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_update_mtime *.c
+core.c:        ap_update_mtime(r, r->finfo.mtime);
+request.c:AP_DECLARE(void) ap_update_mtime(request_rec *r, apr_time_t dependency_mtime)
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_is_initial_req *.c
+request.c:AP_DECLARE(int) ap_is_initial_req(request_rec *r)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_get_input_filter_handle *.c
+util_filter.c:ap_filter_rec_t * ap_get_input_filter_handle(const char *name)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_get_output_filter_handle *.c
+util_filter.c:ap_filter_rec_t * ap_get_output_filter_handle(const char *name)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_remove_input_filter *.c
+util_filter.c:void ap_remove_input_filter(ap_filter_t * f)
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_fflush *.c
+http_filter.c:                rv = ap_fflush(f->next, split);
+util_filter.c:apr_status_t ap_fflush(ap_filter_t * f,
+
+lines: 2
+--------------------------------------------------------------------------------
+grep ap_fputstrs *.c
+util_filter.c:apr_status_t ap_fputstrs(ap_filter_t * f,
+
+lines: 1
+--------------------------------------------------------------------------------
+grep ap_fprintf *.c
+util_filter.c:apr_status_t ap_fprintf(ap_filter_t * f,
+
+lines: 1

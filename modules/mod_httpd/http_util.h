@@ -133,13 +133,14 @@ AP_DECLARE(apr_status_t) ap_pcfg_openfile(ap_configfile_t **ret_cfg,
  * @param gets_func The getstr function
  * @param close_func The close function
  */
+#if 0
 AP_DECLARE(ap_configfile_t *) ap_pcfg_open_custom(apr_pool_t *p, 
     const char *descr,
     void *param,
     int(*getc_func)(void*),
     void *(*gets_func) (void *buf, size_t bufsiz, void *param),
     int(*close_func)(void *param));
-
+#endif
 /**
  * Read one line from open ap_configfile_t, strip LF, increase line number
  * @param buf place to store the line read
@@ -546,6 +547,7 @@ extern int os_init_job_environment(server_rec *s, const char *user_name, int one
  */
 char *ap_get_local_host(apr_pool_t *p);
 
+#if 0
 /**
  * Log an assertion to the error log
  * @param szExp The assertion that failed
@@ -571,6 +573,8 @@ AP_DECLARE(void) ap_log_assert(const char *szExp, const char *szFile, int nLine)
 #else
 #define AP_DEBUG_ASSERT(exp) ((void)0)
 #endif
+
+#endif //0
 
 /**
  * @defgroup stopsignal flags which indicate places where the sever should stop for debugging.
@@ -607,7 +611,7 @@ extern int raise_sigstop_flags;
  * @param r The request_rec
  * @return HTML describing the server, allocated in @a r's pool.
  */
-AP_DECLARE(const char *) ap_psignature(const char *prefix, request_rec *r);
+//AP_DECLARE(const char *) ap_psignature(const char *prefix, request_rec *r);
 
 /** strtoul does not exist on sunos4. */
 #ifdef strtoul

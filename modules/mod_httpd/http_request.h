@@ -57,7 +57,7 @@ AP_DECLARE(int) ap_process_request_internal(request_rec *r);
  * @param r The current request
  * @deffunc void ap_internal_redirect(const char *new_uri, request_rec *r)
  */
-AP_DECLARE(void) ap_internal_redirect(const char *new_uri, request_rec *r);
+//AP_DECLARE(void) ap_internal_redirect(const char *new_uri, request_rec *r);
 
 /**
  * This function is designed for things like actions or CGI scripts, when
@@ -67,7 +67,7 @@ AP_DECLARE(void) ap_internal_redirect(const char *new_uri, request_rec *r);
  * @param r The current request
  * @deffunc void ap_internal_redirect_handler(const char *new_uri, request_rec *r)
  */
-AP_DECLARE(void) ap_internal_redirect_handler(const char *new_uri, request_rec *r);
+//AP_DECLARE(void) ap_internal_redirect_handler(const char *new_uri, request_rec *r);
 
 /**
  * Redirect the current request to a sub_req, merging the pools
@@ -77,7 +77,7 @@ AP_DECLARE(void) ap_internal_redirect_handler(const char *new_uri, request_rec *
  * @tip the sub_req's pool will be merged into r's pool, be very careful
  * not to destroy this subrequest, it will be destroyed with the main request!
  */
-AP_DECLARE(void) ap_internal_fast_redirect(request_rec *sub_req, request_rec *r);
+//AP_DECLARE(void) ap_internal_fast_redirect(request_rec *sub_req, request_rec *r);
 
  
 
@@ -97,7 +97,7 @@ AP_DECLARE(void) ap_internal_fast_redirect(request_rec *sub_req, request_rec *r)
  * @return  None.
  * @deffunc void ap_allow_methods(request_rec *r, int reset, ...)
  */
-AP_DECLARE(void) ap_allow_methods(request_rec *r, int reset, ...);
+//AP_DECLARE(void) ap_allow_methods(request_rec *r, int reset, ...);
 
 /**
  * Add one or more methods to the list permitted to access the resource.

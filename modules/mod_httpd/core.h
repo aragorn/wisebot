@@ -359,7 +359,7 @@ AP_DECLARE(int) ap_satisfies(request_rec *r);
  * @return The remote hostname
  * @deffunc const char *ap_get_remote_host(conn_rec *conn, void *dir_config, int type, int *str_is_ip)
  */
-AP_DECLARE(const char *) ap_get_remote_host(conn_rec *conn, void *dir_config, int type, int *str_is_ip);
+// AP_DECLARE(const char *) ap_get_remote_host(conn_rec *conn, void *dir_config, int type, int *str_is_ip);
 
 /**
  * Retrieve the login name of the remote user.  Undef if it could not be
@@ -368,7 +368,7 @@ AP_DECLARE(const char *) ap_get_remote_host(conn_rec *conn, void *dir_config, in
  * @return The user logged in to the client machine
  * @deffunc const char *ap_get_remote_logname(request_rec *r)
  */
-AP_DECLARE(const char *) ap_get_remote_logname(request_rec *r);
+// AP_DECLARE(const char *) ap_get_remote_logname(request_rec *r);
 
 /* Used for constructing self-referencing URLs, and things like SERVER_PORT,
  * and SERVER_NAME.
@@ -381,7 +381,7 @@ AP_DECLARE(const char *) ap_get_remote_logname(request_rec *r);
  * @return A fully qualified URL
  * @deffunc char *ap_construct_url(apr_pool_t *p, const char *uri, request_rec *r)
  */
-AP_DECLARE(char *) ap_construct_url(apr_pool_t *p, const char *uri, request_rec *r);
+// AP_DECLARE(char *) ap_construct_url(apr_pool_t *p, const char *uri, request_rec *r);
 
 /**
  * Get the current server name from the request
@@ -389,7 +389,7 @@ AP_DECLARE(char *) ap_construct_url(apr_pool_t *p, const char *uri, request_rec 
  * @return the server name
  * @deffunc const char *ap_get_server_name(request_rec *r)
  */
-AP_DECLARE(const char *) ap_get_server_name(request_rec *r);
+// AP_DECLARE(const char *) ap_get_server_name(request_rec *r);
 
 /**
  * Get the current server port
@@ -397,7 +397,7 @@ AP_DECLARE(const char *) ap_get_server_name(request_rec *r);
  * @return The server's port
  * @deffunc apr_port_t ap_get_server_port(const request_rec *r)
  */
-AP_DECLARE(apr_port_t) ap_get_server_port(const request_rec *r);
+// AP_DECLARE(apr_port_t) ap_get_server_port(const request_rec *r);
 
 /**
  * Return the limit on bytes in request msg body 
@@ -413,7 +413,7 @@ AP_DECLARE(apr_off_t) ap_get_limit_req_body(const request_rec *r);
  * @return the maximum number of bytes in XML request msg body
  * @deffunc size_t ap_get_limit_xml_body(const request_rec *r)
  */
-AP_DECLARE(size_t) ap_get_limit_xml_body(const request_rec *r);
+// AP_DECLARE(size_t) ap_get_limit_xml_body(const request_rec *r);
 
 /**
  * Reserve an element in the core_request_config->notes array

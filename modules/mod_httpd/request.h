@@ -105,7 +105,7 @@ AP_DECLARE(request_rec *) ap_sub_req_lookup_file(const char *new_file,
  * @return The return code for the sub request
  * @deffunc int ap_run_sub_req(request_rec *r)
  */
-AP_DECLARE(int) ap_run_sub_req(request_rec *r);
+//AP_DECLARE(int) ap_run_sub_req(request_rec *r);
 
 /**
  * Free the memory associated with a sub request

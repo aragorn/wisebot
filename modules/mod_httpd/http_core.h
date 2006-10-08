@@ -72,7 +72,7 @@ extern "C" {
  * @param string The custom response.  This can be a static string, a file
  *               or a URL
  */
-AP_DECLARE(void) ap_custom_response(request_rec *r, int status, const char *string);
+//AP_DECLARE(void) ap_custom_response(request_rec *r, int status, const char *string);
 
 /**
  * Check for a definition from the server command line
@@ -80,7 +80,7 @@ AP_DECLARE(void) ap_custom_response(request_rec *r, int status, const char *stri
  * @return 1 if defined, 0 otherwise
  * @deffunc int ap_exists_config_define(const char *name)
  */
-AP_DECLARE(int) ap_exists_config_define(const char *name);
+//AP_DECLARE(int) ap_exists_config_define(const char *name);
 /* FIXME! See STATUS about how */
 AP_DECLARE_NONSTD(int) ap_core_translate(request_rec *r);
 
