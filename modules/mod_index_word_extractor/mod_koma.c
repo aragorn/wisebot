@@ -1,5 +1,6 @@
 /* $Id$ */
 #include "common_core.h"
+#include "common_util.h"
 #include "memory.h"
 
 #include "mod_api/index_word_extractor.h"
@@ -113,7 +114,7 @@ static const char *find_newline(const char *start, const char* end)
 	while (start < end)
 	{
 		if (*start == '\0') return start;
-		if (*start == '\n') return start;
+		if (*start == '\n') return start+1;
 		++start;
 	}
 
@@ -125,9 +126,9 @@ static const char *find_sentence_end(const char *start, const char* end)
 	while (start < end)
 	{
 		++start;
-		if (IS_WHITE_CHAR(*start) && *(start -1) == '.') return start;
-		if (IS_WHITE_CHAR(*start) && *(start -1) == '?') return start;
-		if (IS_WHITE_CHAR(*start) && *(start -1) == '!') return start;
+		if (IS_WHITE_CHAR(*start) && *(start -1) == '.') return start+1;
+		if (IS_WHITE_CHAR(*start) && *(start -1) == '?') return start+1;
+		if (IS_WHITE_CHAR(*start) && *(start -1) == '!') return start+1;
 
 		if (*start == '\0') return start;
 	}
@@ -155,16 +156,50 @@ static const char *find_last_hangul(const char *start, const char *end)
 		else break;
 	}
 
-	if ( count % 2 ) return end;
-	else return end-1;
+	if ( count % 2 ) return end+1;
+	else return end;
+}
+
+#define VERY_SHORT (32)
+static char *dbg_str_begin(char *buf, const char *s)
+{
+	char *c;
+	strnhcpy(buf, s, VERY_SHORT);
+	for (c = buf; (c = strchr(c, '\n')); ) *c = ' ';
+	for (c = buf; (c = strchr(c, '\r')); ) *c = ' ';
+	
+	return buf;
+}
+
+static char *dbg_str_end(char *buf, const char *s)
+{
+	char *c;
+	int  len = strlen(s);
+	if (len < VERY_SHORT) {
+		strnhcpy(buf, s, VERY_SHORT);
+	} else {
+		char check_hangul[VERY_SHORT+1];
+		strnhcpy(check_hangul, s+len-VERY_SHORT, 5);
+		strnhcpy(buf, s+len-VERY_SHORT+strlen(check_hangul), VERY_SHORT);
+		/*
+		CRIT("s[%p]+len[%d]-VERY_SHORT[%d]+strlen(check_hangul)[%d:%s]+1",
+				buf, len, VERY_SHORT, strlen(check_hangul), check_hangul);
+		*/
+	}
+	for (c = buf; (c = strchr(c, '\n')); ) *c = ' ';
+	for (c = buf; (c = strchr(c, '\r')); ) *c = ' ';
+
+	return buf;
 }
 
 /* koma 에서 한번에 처리할 수 있는 문자열 길이로 분할한다. */
 static void move_text(koma_handle_t *h)
 {
+	char *c;
 	const char *start = h->next_text;
 	const char *end   = start + MAX_SENTENCE_LENGTH;
 	const char *test = NULL;
+	char b[SHORT_STRING_SIZE+1], e[SHORT_STRING_SIZE+1];
 
 	if (h->next_text == NULL || strlen(h->next_text) == 0)
 	{
@@ -178,17 +213,21 @@ static void move_text(koma_handle_t *h)
 	else if ((test = find_whitespace(start, end)) != NULL)   { end = test; debug("whitespace"); }
 	else if ((test = find_last_hangul(start, end)) != NULL)  { end = test; debug("last_hangul"); }
 
-	strncpy(h->text, start, end-start);
-	h->text[end-start] = '\0';
-	h->text_length = end-start;
+	strnhcpy(h->text, start, end-start);
+	h->text_length = strlen(h->text);
+	c = h->text + h->text_length;
+	if (*c == '\r') *c = ' ';
 	h->byte_position += h->text_length;
-	debug("text[%p:%s] next_text[%p:%s]", h->text, h->text, h->next_text, h->next_text);
 
-	h->next_text = end + 1;
+	h->next_text = start + h->text_length;
 	h->next_length = strlen(h->next_text);
 
 	h->result_index = 0;
 	h->result_count = 0;
+
+	debug("text[%p:(%s)~(%s)]", h->text, dbg_str_begin(b, h->text), dbg_str_end(e, h->text));
+	debug("next_text[%p:(%s)~(%s)]",
+			h->next_text, dbg_str_begin(b, h->next_text), dbg_str_end(e, h->next_text));
 	if (h->next_length == 0) h->next_text = NULL;
 }
 
@@ -263,8 +302,9 @@ AGAIN:
 */
 	/* 이전 DoKomaAndHanTag()의 결과를 모두 return한 경우 */
 	if ( h->koma_done == TRUE ) {
+		char b[SHORT_STRING_SIZE+1], e[SHORT_STRING_SIZE+1];
 		move_text(h);
-		debug("h->text: %s", h->text );
+		debug("h->text[%p] [%s]~[%s]", h->text, dbg_str_begin(b, h->text), dbg_str_end(e, h->text));
 		/*              핸들       태깅방식        텍스트, 어절목록, 바이트위치, 결과목록 */
 		h->result_count = DoKomaAndHanTag(h->HanTag, TAGGING_METHOD, h->text, h->Wrd, h->bPos, h->Result);
 		h->koma_done = FALSE; /* Result 배열의 값을 모두 index_word_t* out 으로 내보내면, 
@@ -628,17 +668,17 @@ int test_mod_koma(void)
 {
 	MAX_SENTENCE_LENGTH = 100;
 
-	char *t1 = "한글문자열을잘떼어내는지테스트합니다.\n"
-			"두번째 문장입니다. 색인어수 초과. 슬래시/테스트. 한글ABC입력.\n"
-			"안녕하세요. 반갑습니다.\n"
-			"마지막 문장.  끝에 줄바꿈 문제가 없음.\n";
-	char *t2 = "두번째 테스트.\n"
+	char *t1 = "한글문자열을잘떼어내는지테스트합니다.\r\n"
+			"두번째 문장입니다. 색인어수 초과. 슬래시/테스트. 한글ABC입력.\r\n"
+			"안녕하세요. 반갑습니다.\r\n"
+			"마지막 문장.  끝에 줄바꿈 문제가 없음.\r\n";
+	char *t2 = "두번째 테스트.\r\n"
 			"두번째 마지막 문장.  끝에 줄바꿈 문제가 없음.";
-	char *t3 = "세번째 테스트.\n"
+	char *t3 = "세번째 테스트.\r\n"
 			"세번째 마지막 문장.  끝에 줄바꿈 문제가 없음";
-	char *t4 = "네번째 테스트.\n"
+	char *t4 = "네번째 테스트.\r\n"
 			"네번째 마지막 문장.  끝에 줄바꿈 문제가 없음y";
-	char *t5 = "다섯째 테스트.\n"
+	char *t5 = "다섯째 테스트.\r\n"
 			"다섯째 마지막 문장.  끝에 줄바꿈 문제가 없y음";
 	
 	test_sentence(t1, MY_RAW_EXTRACTOR_ID);
