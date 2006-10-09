@@ -673,8 +673,6 @@ static void test_sentence(char *t, int morph_id)
 
 int test_mod_koma(void)
 {
-	MAX_SENTENCE_LENGTH = 100;
-
 	char *t1 = "한글문자열을잘떼어내는지테스트합니다.\r\n"
 			"두번째 문장입니다. 색인어수 초과. 슬래시/테스트. 한글ABC입력.\r\n"
 			"안녕하세요. 반갑습니다.\r\n"
@@ -687,6 +685,8 @@ int test_mod_koma(void)
 			"네번째 마지막 문장.  끝에 줄바꿈 문제가 없음y";
 	char *t5 = "다섯째 테스트.\r\n"
 			"다섯째 마지막 문장.  끝에 줄바꿈 문제가 없y음";
+
+	MAX_SENTENCE_LENGTH = 100;
 	
 	test_sentence(t1, MY_RAW_EXTRACTOR_ID);
 	test_sentence(t2, MY_RAW_EXTRACTOR_ID);

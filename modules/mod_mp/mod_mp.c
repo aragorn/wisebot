@@ -441,11 +441,12 @@ static int _monitor_processes(scoreboard_t *scoreboard, module *mod)
 		pid = waitpid(-1, &status, WNOHANG);
 		if ( pid != 0 ) debug("waitpid returned pid[%d]", (int) pid);
 		if ( pid == 0 ) {
+			int i;
 			/* 종료된 child process가 없다.
 			 * 종료 시그널을 받은 경우, 각 child process에서 종료시그널을 보내고,
 			 * 다음번 루프로 돌아간다. */
 			wait_when_no_child = WAIT_WHEN_NO_CHILD;
-			int i;
+
 			if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
 			{
 				int shutdown_signal = SIGNAL_GRACEFUL_SHUTDOWN;

@@ -117,12 +117,12 @@ int main(int argc, char* argv[], char* envp[])
 	char* defrag_mode_str[] = { "BUBBLE", "COPY" };
 	int pause = 0, show_state = 0, fix = 0;
     ifs_set_t local_ifs_set[MAX_INDEXDB_SET];
+	char libname[MAX_PATH_LEN];
 
 	init_setproctitle(argc, argv, envp);
 	log_setlevelstr("debug");
 
 	// load dynamic library
-	char libname[MAX_PATH_LEN];
 	DLOPEN(mod_sfs, "mod_sfs.so");
 	DLOPEN(mod_ifs, "mod_ifs.so");
 	DLOPEN(mod_ifs_defrag, "mod_ifs_defrag.so");

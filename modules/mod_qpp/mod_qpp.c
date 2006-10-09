@@ -156,9 +156,9 @@ static void qpp_print_tree(struct qpp_tree_node* node, char* buf)
 		qpp_print_tree(node->child[0], buf);
 	}
 	else if ( node->child_count > 1 ) { // operator
+		int i;
 		strcat(buf, "(");
 
-		int i;
 		for ( i = 0; i < node->child_count; i++ ) {
 			qpp_print_tree(node->child[i], buf);
 

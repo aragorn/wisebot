@@ -854,9 +854,6 @@ inline static int fast_square(int x)
 
 static void insert_one_to_result(index_list_t *dest, int idx, 
 					  index_list_t *l1, int idx1) {
-	int pos_weight=0;
-	//DEBUG("pos_weight[%d]",pos_weight);
-	
 	dest->doc_hits[idx] = l1->doc_hits[idx1];
 	dest->relevance[idx] = l1->relevance[idx1];
 
@@ -2177,7 +2174,7 @@ static int highlight(char* field_value, word_list_t* wl)
 
 static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, char* comment) 
 {
-	int i = 0, k = -1;
+	int i = 0, k = -1, len = 0;
 	//XXX: result_list->doc_hit index and other index differs.
 	DocObject *docBody = 0x00; 
 	cdm_doc_t* cdmdoc;
@@ -2421,7 +2418,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 		return FAIL;
 	}
 
-	int len = memfile_getSize(buffer);
+	len = memfile_getSize(buffer);
 	rv = memfile_read(buffer, comment, len);
 	if(rv != len) {
 		MSG_RECORD(&req->msg, error, "can not appendF memfile");

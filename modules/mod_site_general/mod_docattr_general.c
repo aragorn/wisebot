@@ -680,14 +680,14 @@ static int compare_function_for_qsort(const void* dest, const void* sour, void* 
 	docattr_value_t value1, value2;
 	general_sort_t *sort;
 	docattr_field_t* field;
-
+	enum sortarraytype type;
 
 	if ( general_sort == NULL ) return 0;
 
 	sort = &general_sort[((docattr_sort_t*) userdata)->index];
 	if ( !sort->set ) return 0;
 
-	enum sortarraytype type = ((docattr_sort_t*) userdata)->sort_base->type;
+	type = ((docattr_sort_t*) userdata)->sort_base->type;
 
 	if(type == INDEX_LIST) {
 		if ( sb_run_docattr_ptr_get(((doc_hit_t*) dest)->id, &attr1) != SUCCESS ) {

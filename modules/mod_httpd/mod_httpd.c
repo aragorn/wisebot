@@ -344,6 +344,7 @@ static int module_init ()
 	int argc = 1;
 	const char *argv[] = {"mod_httpd", NULL};
 	const char *envp[] = {NULL};
+	ipc_t lock;
 
     /* initialization for apr */
     apr_app_initialize(&argc,
@@ -361,7 +362,6 @@ static int module_init ()
 	 * which is gonna use apr_global_hook_pool?? */
 	apr_global_hook_pool = pool;
 
-	ipc_t lock;
 	lock.type = IPC_TYPE_SEM;
 	lock.pid = SYS5_ACCEPT;
 	lock.pathname = NULL;

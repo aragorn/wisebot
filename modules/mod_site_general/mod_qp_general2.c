@@ -1406,15 +1406,18 @@ static int qp_cb_orderby_document(const void* dest, const void* sour, void* user
 		    diff = dest_d->id - sour_d->id;
 		}
 		else { // ÀÏ¹Ý docattr field
+			void* dest_docattr;
+			void* sour_docattr;
+
 			return_docattr_field(order->rule.name, &field);
 			if(field == NULL) {
 				error("can not get docattr_field[%s]", order->rule.name);
 				return 0;
 			}
 
-			void* dest_docattr = ud->docattr_base_ptr + 
+			dest_docattr = ud->docattr_base_ptr + 
 				            ud->docattr_record_size*(dest_d->id-1);
-			void* sour_docattr = ud->docattr_base_ptr + 
+			sour_docattr = ud->docattr_base_ptr + 
 				            ud->docattr_record_size*(sour_d->id-1);
 
 			field->get_func( dest_docattr, field, &value1 );

@@ -41,6 +41,10 @@ static const char* operator_str(enum daum_op op)
 static int pop_stack(struct daum_tree_node** operand_stack, int* operand_stack_pos,
 		struct daum_tree_node** operator_stack, int* operator_stack_pos)
 {
+	struct daum_tree_node* operator;
+    struct daum_tree_node* operand1;
+    struct daum_tree_node* operand2;
+
 	if ( *operand_stack_pos < 1 ) {
 		error("invalid operand stack state [need more operand]");
 		return FAIL;
@@ -51,9 +55,9 @@ static int pop_stack(struct daum_tree_node** operand_stack, int* operand_stack_p
 		return FAIL;
 	}
 
-	struct daum_tree_node* operator = operator_stack[(*operator_stack_pos)--];
-	struct daum_tree_node* operand1 = operand_stack[(*operand_stack_pos)--];
-	struct daum_tree_node* operand2 = operand_stack[*operand_stack_pos];
+	operator = operator_stack[(*operator_stack_pos)--];
+	operand1 = operand_stack[(*operand_stack_pos)--];
+	operand2 = operand_stack[*operand_stack_pos];
 
 	operator->left = operand2;
 	operator->right = operand1;
@@ -108,6 +112,8 @@ struct daum_tree_node* parse_daum_query(index_word_t* indexwords, int count)
 		}
 		// pop till lparen
 		else if ( op == DAUM_OP_RPAREN ) {
+			struct daum_tree_node* lparen;
+
 			while ( operator_stack_pos >= 0
 					&& operator_stack[operator_stack_pos]->node.op != DAUM_OP_LPAREN ) {
 
@@ -121,11 +127,13 @@ struct daum_tree_node* parse_daum_query(index_word_t* indexwords, int count)
 			}
 
 			// pop lparen
-			struct daum_tree_node* lparen = operator_stack[operator_stack_pos--];
+			lparen = operator_stack[operator_stack_pos--];
 			destroy_daum_tree(lparen);
 		}
 		// operator
 		else {
+			struct daum_tree_node* node;
+
 			while ( operator_stack_pos >= 0
 					&& operator_stack[operator_stack_pos]->node.op != DAUM_OP_LPAREN ) {
 
@@ -137,7 +145,7 @@ struct daum_tree_node* parse_daum_query(index_word_t* indexwords, int count)
 			}
 
 			// push
-			struct daum_tree_node* node = make_daum_tree_node();
+			node = make_daum_tree_node();
 			node->node.op = op;
 			node->is_op = 1;
 

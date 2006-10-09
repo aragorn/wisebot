@@ -514,12 +514,13 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 /////////////////////////////////////////////////////////////////////////
 static void set_node_id(configValue v)
 {
+	char subprefix[SHORT_STRING_SIZE];
     this_node_id = atoi(v.argument[0]);
+
     if(this_node_id > 16) {
         error("node_id should be smaller than 16");
     }
 
-	char subprefix[SHORT_STRING_SIZE];
 	snprintf(subprefix, sizeof(subprefix), "n%d", this_node_id);
 	setproctitle_subprefix(subprefix);
 }
