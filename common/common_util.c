@@ -414,10 +414,9 @@ void sb_tstat_log(char *tag) {
 	clock_t c;
 	struct timeval tv;
 	struct tms t;
+	const float clock_per_millisecond = (float)sysconf(_SC_CLK_TCK) / 1000.;
 
 	if (fp_log == NULL) return;
-
-	const float clock_per_millisecond = (float)sysconf(_SC_CLK_TCK) / 1000.;
 
 	gettimeofday(&tv, NULL);
 	c = times(&t);
