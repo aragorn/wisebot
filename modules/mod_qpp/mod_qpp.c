@@ -649,7 +649,7 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 
 	if (pStObj->posWithinPhrase == TRUE) {
 	    /* 구문검색시 무조건 바이그램을 쓰지 않도록 수정 */
-		//morp_id = mMorpIdForPhrase;
+		morp_id = mMorpIdForPhrase;
 	}
 
 	if (pStObj->virtualfield != 0) {
