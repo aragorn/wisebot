@@ -12,7 +12,7 @@ SOFTBOTD_LOG_FILE=logs/error_log
 SOFTBOTD_QUERY_LOG_FILE=logs/query_log
 
 # set WITH_RMAS=1 when you use rmas daemon
-WITH_RMAS=1
+WITH_RMAS=0
 
 RMAS=bin/softbotd
 RMAS_CONF=etc/softbot.rmas.conf
@@ -24,7 +24,7 @@ SIGTERM=15
 SIGKILL=9
 SIGHUP=1
 
-export LD_LIBRARY_PATH="$SOFTBOT_ROOT/lib:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="$SOFTBOT_ROOT/lib:$SOFTBOT_ROOT/lib/softbot:$LD_LIBRARY_PATH"
 export LIBPATH="$SOFTBOT_ROOT/lib:$LIBPATH"
 ##############################################################################
 # uncomment next line when you debug this script
@@ -328,6 +328,8 @@ check_errors()
 		echo "SOFTBOT_ROOT is not set properly. Please edit this file."
 		exit 1
 	fi
+
+	cd $SOFTBOT_ROOT
 }
 
 ##############################################################################
