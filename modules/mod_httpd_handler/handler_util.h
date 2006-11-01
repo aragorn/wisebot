@@ -22,5 +22,6 @@ int def_atoi(const char *s, int def);
 int hex(unsigned char h);
 void decodencpy(unsigned char *dst, unsigned char *src, int n);
 int equals_content_type(request_rec *r, const char* ct);
+char* get_ipaddress(apr_pool_t* pool);
 
 #endif

@@ -137,3 +137,35 @@ int equals_content_type(request_rec *r, const char* ct)
 
     return SUCCESS;
 }
+
+char* get_ipaddress(apr_pool_t* pool)
+{
+	static char hostname[APRMAXHOSTLEN+1] = {0};
+	static char ipaddr[SHORT_STRING_SIZE+1] = {0};
+	static char* tmp_ipaddr = NULL;
+	apr_sockaddr_t *sa = NULL;
+
+	if(ipaddr[0] != '\0') return ipaddr;
+
+	if(apr_gethostname(hostname, APRMAXHOSTLEN, pool) != APR_SUCCESS) {
+        error("can not get gethostname info");
+        return NULL;
+	}
+
+	if(apr_sockaddr_info_get(&sa, hostname, APR_UNSPEC, 0, APR_IPV4_ADDR_OK, pool) != APR_SUCCESS) {
+        error("can not get sockaddr info");
+        return NULL;
+	}
+
+	if(apr_sockaddr_ip_get(&tmp_ipaddr, sa) != APR_SUCCESS) {
+        error("can not get ip info");
+        return NULL;
+	}
+
+	info("ip address[%s]", tmp_ipaddr);
+
+	strncpy(ipaddr, tmp_ipaddr, SHORT_STRING_SIZE);
+
+	return ipaddr;
+}
+

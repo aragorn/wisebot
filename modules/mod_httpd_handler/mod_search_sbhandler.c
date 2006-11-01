@@ -36,6 +36,9 @@ static softbot_handler_key_t search_handler_tbl[] = {
 
 
 /////////////////////////////////////////////////////////////////////
+// server_id
+static char server_id[SHORT_STRING_SIZE+1];
+
 // qp request/response
 static request_t qp_request;
 static response_t qp_response;
@@ -219,6 +222,12 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 			qp_request.query, 
 			qp_response.parsed_query,
             qp_response.search_result);
+
+	if(server_id[0] == '\0') {
+	    ap_rprintf(r, "<server_id><![CDATA[%s]]></server_id>\n", get_ipaddress(r->pool));
+	} else {
+	    ap_rprintf(r, "<server_id><![CDATA[%s]]></server_id>\n", server_id);
+	}
 
 	/* elapsed time */
 	if ( print_elapsed_time ) {
@@ -512,6 +521,11 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 }
 
 /////////////////////////////////////////////////////////////////////////
+static void set_server_id(configValue v)
+{
+    strncpy(server_id, v.argument[0], SHORT_STRING_SIZE);
+}
+
 static void set_node_id(configValue v)
 {
 	char subprefix[SHORT_STRING_SIZE];
@@ -581,6 +595,7 @@ static void set_elapsed_time(configValue v)
 }
 
 static config_t config[] = {
+    CONFIG_GET("ServerId", set_server_id, 1, "set server id : [string]"),
     CONFIG_GET("NodeId", set_node_id, 1, "set node id : NodeId [no]"),
     CONFIG_GET("Enum", set_enum, 2, "constant"),
 	CONFIG_GET("TimeOut", set_timeout, 1, "constant"),
