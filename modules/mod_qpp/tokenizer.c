@@ -24,7 +24,9 @@ char *mQppMorpAnalyzerId     = QppMorpAnalyzerId + 1;
 static char  m_aUselessChars[256];	// useless chars like ` ~ ! @ .., etc.
 static int   m_isUselessCharsSet = FALSE;
 
-static char  m_aStopChars[256]="&|!:\"()*";
+/*static char  m_aStopChars[256]="&|!:\"()*";*/
+/* M&A 등을 검색할 수 있도록 */
+static char  m_aStopChars[256]="|:\"()*";
 static int   m_isStopCharsSet = TRUE;
 static int16_t  m_numStopChars = 8;
 
