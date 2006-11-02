@@ -8,7 +8,7 @@ Field  2    exact_book_nm      yes       26              27                no   
 Field  3    isbn               yes        0               0                no            RETURN
 Field  4    author             yes        0               0                no            RETURN
 Field  5    pub_nm             yes        0               0                no            RETURN
-Field  6    translator         yes       16              16                no            RETURN
+Field  6    translator         yes        0               0                no            RETURN
 Field  7    barcode            yes        0               0                no            RETURN
 Field  8    pattern            yes        0               0                no            RETURN
 
