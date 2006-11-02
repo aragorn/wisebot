@@ -91,7 +91,7 @@ static char seps2[MAX_HIGHLIGHT_SEP_LEN] = "，」「·";
 ///////////////////////////////////////////////////////////
 // query에서 필드 추출시 삭제해야할 문자
 #define MAX_REMOVE_CHAR_QUERY 64
-static char remove_char_query[MAX_REMOVE_CHAR_QUERY] = {"()+&!k<>*\""};
+static char remove_char_query[MAX_REMOVE_CHAR_QUERY] = {"()+&!<>*\""};
 
 enum DbType {
 	TYPE_VRFI,
