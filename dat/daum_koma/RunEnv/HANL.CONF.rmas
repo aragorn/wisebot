@@ -28,7 +28,7 @@
 #																										#	
 #########################################################################################################
 PRE_DIC			0
-STOP_DIC		0
+STOP_DIC		1
 EJIDX			0
 COMB_NOUN		0
 INPUT_VERB		1
@@ -39,6 +39,6 @@ LEFT_ATTACH		1
 RIGHT_ATTACH	1
 HANUM			1
 INDEXING_LEVEL	1
-SYNONYM			3
+SYNONYM			0
 TAGGED_RESULT	0
 LOGLEVEL    	0
