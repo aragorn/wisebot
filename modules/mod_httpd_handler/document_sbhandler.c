@@ -170,6 +170,9 @@ static int document_insert(request_rec *r, softbot_handler_rec *s)
     return SUCCESS;
 }
 
+/*
+ * 문서 삭제는 실패하더라도 SUCCESS를 리턴하도록 한다. --정시욱
+ */
 static int document_delete(request_rec *r, softbot_handler_rec *s)
 {
     int rv = 0;
@@ -193,12 +196,12 @@ static int document_delete(request_rec *r, softbot_handler_rec *s)
 		rv = sb_run_get_docid(did_db, OID, &docid);
 		if ( rv < 0 ) {                                 
 			MSG_RECORD(&s->msg, error, "cannot get docid of OID[%s]", OID);
-			return FAIL;
+			return SUCCESS;
 		}  
 
 		if( rv == DOCID_NOT_REGISTERED ) {
 			MSG_RECORD(&s->msg, error, "not registerd OID[%s]", OID);
-			return FAIL;
+			return SUCCESS;
 		}
 	} else {
 		docid = atoi(DID);
@@ -207,13 +210,13 @@ static int document_delete(request_rec *r, softbot_handler_rec *s)
     rv = sb_run_docattr_ptr_get(docid, &docattr);
 	if ( rv < 0 ) {                                 
         MSG_RECORD(&s->msg, error, "cannot get docattr of OID[%s]", OID);
-        return FAIL;
+		return SUCCESS;
 	}  
 
     rv = sb_run_docattr_set_docattr_function(docattr, "Delete", "1");
 	if ( rv < 0 ) {                                 
         MSG_RECORD(&s->msg, error, "cannot delete OID[%s]", OID);
-        return FAIL;
+		return SUCCESS;
 	}  
 
     return SUCCESS;
