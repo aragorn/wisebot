@@ -2950,8 +2950,9 @@ static void set_search_words(request_t* req)
 {
     int i = 0;
     int j = 0;
-    char* s = NULL;
-    char* e = NULL;
+    char* s = NULL; /* start: 남은 질의식 문자열의 시작위치 */
+    char* e = NULL; /* end:   이번 어절 끝위치 */
+	/* q: SEARCH 절의 검색질의식. 예) Field1:단어 & Field2:단어 */
     char* q = sb_calloc(sizeof(char), strlen(req->search)+1);
 	int len = 0;
 	int remove_char_len = strlen(remove_char_query);
@@ -2983,7 +2984,7 @@ static void set_search_words(request_t* req)
 
 		s = sb_trim(remove_field(s));
 		if(strlen(s) > highlight_word_len) {
-            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
+            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN1);
 	    }
 
 		if(e == NULL) break;
