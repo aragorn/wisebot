@@ -2697,21 +2697,19 @@ static void set_select_clause(select_list_t* sl, char* clause)
 				&& left_paren < right_paren)
 				has_comment_length = 1;
 
-			if ( highlight == NULL && has_comment_length == 0 )
-			{ /* FieldName */
-                strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE);
-			} else if ( highlight != NULL )
+			if ( highlight != NULL )
 			{ /* FieldName:H or FieldName:H(200) */
 				*highlight = '\0';
 				sl->field[sl->cnt].is_highlight = 1;
-                strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE); 
-			} else //if ( has_comment_length == 1 )
-			{ /* FieldName(200) */
+
+			}
+			if ( has_comment_length == 1 )
+			{ /* FieldName(200) or FieldName:H(200) */
 				*left_paren = '\0';
 				*right_paren = '\0';
 				sl->field[sl->cnt].comment_length = atoi(left_paren+1);
-                strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE); 
 			}
+            strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE);
 
         }
 
