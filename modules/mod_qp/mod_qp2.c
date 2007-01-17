@@ -2687,14 +2687,15 @@ static void set_select_clause(select_list_t* sl, char* clause)
 			char* left_paren = NULL;
 			char* right_paren = NULL;
 
-			// name에 :H 의 존재유무만 확인한다. The strcasestr() function is a non-standard extension.
+			/* name에서 :H 의 존재유무만 확인한다. The strcasestr() function is a non-standard extension. */
 			if( ( highlight = strstr(name, ":H") ) == NULL) {
 			    highlight = strstr(name, ":h");
 			}
+
+			/* FieldName(100) 형식의 코멘트 길이값을 입력받는다. */
 			left_paren = strchr(name, '(');
 			right_paren = strchr(name, ')');
-			if (left_paren != NULL && right_paren != NULL
-				&& left_paren < right_paren)
+			if (left_paren != NULL && right_paren != NULL && left_paren < right_paren)
 				has_comment_length = 1;
 
 			if ( highlight != NULL )
