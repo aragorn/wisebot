@@ -79,7 +79,14 @@ static int b_use_cdm = 0;
 ///////////////////////////////////////////////////////////
 // 검색어 bold 처리
 #define MAX_HIGHTLIGHT_TAG 64
-
+enum highlight_type_t {
+	H_UNIT_EOJEOL = 0,
+	H_UNIT_WORD,
+	H_WORD_INPUT,
+	H_WORD_PARSED
+};
+static enum highlight_type_t highlight_unit = H_UNIT_EOJEOL;
+static enum highlight_type_t highlight_word = H_WORD_INPUT;
 static char highlight_pre_tag[MAX_HIGHTLIGHT_TAG] = {"<B>"};
 static char highlight_post_tag[MAX_HIGHTLIGHT_TAG] = {"</B>"};
 static char highlight_word_len = 0;
@@ -2077,6 +2084,51 @@ static int is_matched(char* word, word_list_t* wl)
 	return FALSE;
 }
 
+static void highlight_string_by_eojeol(char* str, word_list_t* wl)
+{
+	int i = 0;
+	char buf[STRING_SIZE] = "";
+
+    for(i = 0; i < wl->cnt; i++) {
+        char* p = strstr(str, wl->word[i]);
+		if (p == NULL) continue;
+
+		strcat(buf, highlight_pre_tag);
+		strcat(buf, str);
+		strcat(buf, highlight_post_tag);
+
+		sz_strncpy(str, buf, STRING_SIZE);
+		/* 어절단위로 강조표시하므로, 하나라도 일치하면, 강조표시 완료이다. */
+		return;
+	}
+}
+
+static void highlight_string_by_word(char* str, word_list_t* wl)
+{
+	int i = 0;
+	char buf[STRING_SIZE] = "";
+
+    for(i = 0; i < wl->cnt; i++)
+	{
+        char* pos = strstr(str, wl->word[i]);
+		if (pos == NULL) continue;
+
+		strncpy(buf, str, pos-str); buf[pos-str] = '\0';
+		//debug("strncpy(buf[%s],str[%s],pos[%p]-str[%p]=%d)", buf, str, pos, str, pos-str);
+		strcat(buf, highlight_pre_tag);
+		//debug("1. buf[%s] word[%s]", buf, wl->word[i]);
+		strcat(buf, wl->word[i]);
+		//debug("2. buf[%s] word[%s]", buf, wl->word[i]);
+		strcat(buf, highlight_post_tag);
+		//debug("3. buf[%s] word[%s]", buf, wl->word[i]);
+		strcat(buf, pos+strlen(wl->word[i]));
+		//debug("4. buf[%s] word[%s]", buf, wl->word[i]);
+		
+		sz_strncpy(str, buf, STRING_SIZE);
+		//debug("E. buf[%s] word[%s]", buf, wl->word[i]);
+	}
+}
+
 /* 
  * FIXME: field_value의 tag 추가로 인해 크기가 늘어나게 되는데
  *        buffer 경계를 체크하지 않는 문제가 있다. --정시욱
@@ -2086,6 +2138,7 @@ static int highlight(char* field_value, word_list_t* wl)
 	memfile *buffer = memfile_new();
 	char* p = field_value;
     char* s = field_value;
+	char eojeol[STRING_SIZE*2];
 	char sep[3] = {0,0,0};
 	int len = 0;
 	int rv = 0;
@@ -2101,39 +2154,23 @@ static int highlight(char* field_value, word_list_t* wl)
 			    sep[1] = *(p+1);
 			    sep[2] = '\0';
 			    *(p+1) = '\0';
-            } 
+            }
 
-			if( is_matched(s, wl) ) {
-                //debug("is matched[%s]", s);
-	            rv = memfile_append(buffer, highlight_pre_tag, strlen(highlight_pre_tag));             
-				if(rv < 0) {
-					error("can not append memfile");
-					memfile_free(buffer);
-					return FAIL;
-				}
+			sz_strncpy(eojeol, s, STRING_SIZE);
 
-	            rv = memfile_append(buffer, s, strlen(s));
-				if(rv < 0) {
-					error("can not append memfile");
-					memfile_free(buffer);
-					return FAIL;
-				}
+			if (highlight_unit == H_UNIT_WORD)
+			  highlight_string_by_word(eojeol, wl);
+			else
+			  highlight_string_by_eojeol(eojeol, wl);
 
-	            rv = memfile_append(buffer, highlight_post_tag, strlen(highlight_post_tag));             
-				if(rv < 0) {
-					error("can not append memfile");
-					memfile_free(buffer);
-					return FAIL;
-				}
-			} else {
-                //debug("miss matched[%s]", s);
-	            rv = memfile_append(buffer, s, strlen(s));
-				if(rv < 0) {
-					error("can not append memfile");
-					memfile_free(buffer);
-					return FAIL;
-				}
+			debug("[%s] -> [%s]", s, eojeol);
+	        rv = memfile_append(buffer, eojeol, strlen(eojeol));
+			if(rv < 0) {
+				error("can not append memfile");
+				memfile_free(buffer);
+				return FAIL;
 			}
+
 			/* 마지막 어절 체크 */
 			if(sep[0] == '\0') break;
 
@@ -2946,7 +2983,7 @@ static char* remove_field(char* word)
 	}
 }
 
-static void set_search_words(request_t* req)
+static void set_search_words_as_parsed(request_t* req)
 {
     int i = 0;
     int j = 0;
@@ -2984,7 +3021,7 @@ static void set_search_words(request_t* req)
 
 		s = sb_trim(remove_field(s));
 		if(strlen(s) > highlight_word_len) {
-            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN1);
+            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
 	    }
 
 		if(e == NULL) break;
@@ -2997,6 +3034,67 @@ static void set_search_words(request_t* req)
 	}
 
     sb_free(q);
+}
+
+static void set_search_words_as_input(request_t* req)
+{
+    int i = 0;
+    int j = 0;
+    char* s = NULL; /* start: 남은 질의식 문자열의 시작위치 */
+    char* e = NULL; /* end:   이번 어절 끝위치 */
+	/* q: SEARCH 절의 검색질의식. 예) Field1:단어 & Field2:단어 */
+    char* q = sb_calloc(sizeof(char), strlen(req->search)+1);
+	int len = 0;
+	int remove_char_len = strlen(remove_char_query);
+    word_list_t* wl = &req->word_list;
+
+    strncpy(q, req->search, strlen(req->search));
+    len = strlen(q);
+
+	for(i = 0; i < len; i++) {
+	    for(j = 0; j < remove_char_len; j++) {
+			if ( q[i] == remove_char_query[j]) {
+				 q[i] = ' ';
+				 break;
+			}
+		}
+	}
+
+    s = sb_trim(q);
+
+	while(1) {
+		e = strchr(s, ' ');
+		if(e == NULL && strlen(s) == 0) break;
+
+		if(e == NULL) {
+			// 마지막 clause도 처리하기 위해.
+		} else {
+			*e = '\0';
+		}
+
+		s = sb_trim(remove_field(s));
+		if(strlen(s) > highlight_word_len) {
+            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
+	    }
+
+		if(e == NULL) break;
+		if(wl->cnt >= MAX_QUERY_NODES) {
+			warn("over max word count[%d]", MAX_QUERY_NODES);
+			break;
+		}
+	
+		s = e+1;
+	}
+
+    sb_free(q);
+}
+
+static void set_search_words(request_t* req)
+{
+	if (highlight_word == H_WORD_PARSED)
+		set_search_words_as_parsed(req);
+	else
+		set_search_words_as_input(req);
 }
 
 static int init_request(request_t* req, char* query)
@@ -4643,6 +4741,22 @@ static void set_highlight_word_length(configValue v)
 	highlight_word_len = atoi( v.argument[0] );
 }
 
+static void set_highlight_unit(configValue v)
+{
+	if (strncasecmp(v.argument[0], "word", 4) == 0)
+	{
+		highlight_unit = H_UNIT_WORD;
+	}
+}
+
+static void set_highlight_word(configValue v)
+{
+	if (strncasecmp(v.argument[0], "parsed", 5) == 0)
+	{
+		highlight_word = H_WORD_PARSED;
+	}
+}
+
 static void set_remove_char_query(configValue v)
 {
 	strncpy(remove_char_query, v.argument[0], MAX_REMOVE_CHAR_QUERY);
@@ -4669,6 +4783,8 @@ static config_t config[] = {
 	CONFIG_GET("HighlightSeperator1Byte",set_highlight_seperator1byte, 1, "highliight seperator 1 byte"),
 	CONFIG_GET("HighlightSeperator2Byte",set_highlight_seperator2byte, 1, "highliight seperator 2 byte"),
 	CONFIG_GET("HighlightWordLength",set_highlight_word_length, 1, "highlight word len"),
+	CONFIG_GET("HighlightUnit",set_highlight_unit, 1, "highlight unit ex) word, eojeol"),
+	CONFIG_GET("HighlightWord",set_highlight_word, 1, "highlight type ex) input, parsed"),
 	CONFIG_GET("RemoveCharQuery",set_remove_char_query, 1, "remove char query"),
 	{NULL}
 };
