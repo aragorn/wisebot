@@ -179,6 +179,7 @@ struct operation_list_t {
 struct select_t {
     char name[SHORT_STRING_SIZE];
 	int is_highlight;
+	int comment_length;
 };
 
 struct select_list_t {

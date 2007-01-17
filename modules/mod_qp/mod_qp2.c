@@ -2683,21 +2683,38 @@ static void set_select_clause(select_list_t* sl, char* clause)
 			/* 다른건 확인할 필요가 없다. */
 			break;
 		} else {
+			int has_comment_length = 0;
 			char* name = sb_trim(s);
 			char* highlight = NULL;
+			char* left_paren = NULL;
+			char* right_paren = NULL;
 
 			// name에 :H 의 존재유무만 확인한다. The strcasestr() function is a non-standard extension.
 			if( ( highlight = strstr(name, ":H") ) == NULL) {
 			    highlight = strstr(name, ":h");
 			}
+			left_paren = strchr(name, '(');
+			right_paren = strchr(name, ')');
+			if (left_paren != NULL && right_paren != NULL
+				&& left_paren < right_paren)
+				has_comment_length = 1;
 
-			if( highlight == NULL) {
-                strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE); 
-			} else {
+			if ( highlight == NULL && has_comment_length == 0 )
+			{ /* FieldName */
+                strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE);
+			} else if ( highlight != NULL )
+			{ /* FieldName:H or FieldName:H(200) */
 				*highlight = '\0';
 				sl->field[sl->cnt].is_highlight = 1;
                 strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE); 
+			} else //if ( has_comment_length == 1 )
+			{ /* FieldName(200) */
+				*left_paren = '\0';
+				*right_paren = '\0';
+				sl->field[sl->cnt].comment_length = atoi(left_paren+1);
+                strncpy(sl->field[sl->cnt++].name, name, SHORT_STRING_SIZE); 
 			}
+
         }
 
 		if(e == NULL) break;
@@ -4197,8 +4214,10 @@ static void print_select(select_list_t* rule)
     int i = 0;
 
     for(i = 0; i < rule->cnt; i++) {
-        debug("select field[%s], is_highlight[%d]", 
-		      rule->field[i].name, rule->field[i].is_highlight);
+        debug("select field[%s], is_highlight[%d], comment_length[%d]", 
+		      rule->field[i].name,
+			  rule->field[i].is_highlight,
+			  rule->field[i].comment_length);
     } 
 }
 
