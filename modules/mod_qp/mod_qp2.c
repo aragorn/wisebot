@@ -2983,7 +2983,60 @@ static char* remove_field(char* word)
 	}
 }
 
-static void set_search_words_as_parsed(request_t* req)
+static void set_search_words_as_parsed(request_t* req, response_t *res)
+{
+    int i = 0;
+    int j = 0;
+    char* s = NULL; /* start: 남은 질의식 문자열의 시작위치 */
+    char* e = NULL; /* end:   이번 어절 끝위치 */
+	/* q: SEARCH 절의 검색질의식. 예) Field1:단어 & Field2:단어 */
+    char* q = sb_calloc(sizeof(char), strlen(res->parsed_query)+1);
+	int len = 0;
+	int remove_char_len = strlen(remove_char_query);
+    word_list_t* wl = &req->word_list;
+
+    strncpy(q, res->parsed_query, strlen(res->parsed_query));
+    len = strlen(q);
+
+	for(i = 0; i < len; i++) {
+	    for(j = 0; j < remove_char_len; j++) {
+			if ( q[i] == remove_char_query[j]) {
+				 q[i] = ' ';
+				 break;
+			}
+		}
+	}
+
+    s = sb_trim(q);
+
+	while(1) {
+		e = strchr(s, ' ');
+		if(e == NULL && strlen(s) == 0) break;
+
+		if(e == NULL) {
+			// 마지막 clause도 처리하기 위해.
+		} else {
+			*e = '\0';
+		}
+
+		s = sb_trim(remove_field(s));
+		if(strlen(s) > highlight_word_len) {
+            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
+	    }
+
+		if(e == NULL) break;
+		if(wl->cnt >= MAX_QUERY_NODES) {
+			warn("over max word count[%d]", MAX_QUERY_NODES);
+			break;
+		}
+	
+		s = e+1;
+	}
+
+    sb_free(q);
+}
+
+static void set_search_words_as_input(request_t* req, response_t *res)
 {
     int i = 0;
     int j = 0;
@@ -3036,65 +3089,12 @@ static void set_search_words_as_parsed(request_t* req)
     sb_free(q);
 }
 
-static void set_search_words_as_input(request_t* req)
-{
-    int i = 0;
-    int j = 0;
-    char* s = NULL; /* start: 남은 질의식 문자열의 시작위치 */
-    char* e = NULL; /* end:   이번 어절 끝위치 */
-	/* q: SEARCH 절의 검색질의식. 예) Field1:단어 & Field2:단어 */
-    char* q = sb_calloc(sizeof(char), strlen(req->search)+1);
-	int len = 0;
-	int remove_char_len = strlen(remove_char_query);
-    word_list_t* wl = &req->word_list;
-
-    strncpy(q, req->search, strlen(req->search));
-    len = strlen(q);
-
-	for(i = 0; i < len; i++) {
-	    for(j = 0; j < remove_char_len; j++) {
-			if ( q[i] == remove_char_query[j]) {
-				 q[i] = ' ';
-				 break;
-			}
-		}
-	}
-
-    s = sb_trim(q);
-
-	while(1) {
-		e = strchr(s, ' ');
-		if(e == NULL && strlen(s) == 0) break;
-
-		if(e == NULL) {
-			// 마지막 clause도 처리하기 위해.
-		} else {
-			*e = '\0';
-		}
-
-		s = sb_trim(remove_field(s));
-		if(strlen(s) > highlight_word_len) {
-            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
-	    }
-
-		if(e == NULL) break;
-		if(wl->cnt >= MAX_QUERY_NODES) {
-			warn("over max word count[%d]", MAX_QUERY_NODES);
-			break;
-		}
-	
-		s = e+1;
-	}
-
-    sb_free(q);
-}
-
-static void set_search_words(request_t* req)
+static void set_search_words(request_t* req, response_t *res)
 {
 	if (highlight_word == H_WORD_PARSED)
-		set_search_words_as_parsed(req);
+		set_search_words_as_parsed(req, res);
 	else
-		set_search_words_as_input(req);
+		set_search_words_as_input(req, res);
 }
 
 static int init_request(request_t* req, char* query)
@@ -3156,9 +3156,6 @@ static int init_request(request_t* req, char* query)
 					break;
 				case SEARCH:
 					strncpy(req->search, sb_trim(s+len), MAX_QUERY_STRING_SIZE-1);
-
-					//highlighting 을 위한 어절을 추출한다.
-					set_search_words(req);
 					break;
 				case VIRTUAL_ID:
 					set_virtual_id(&req->virtual_rule_list, s+len);
@@ -4411,6 +4408,7 @@ static int light_search (request_t *req, response_t *res)
 time_mark("preprocess");
 
 #ifdef DEBUG_SOFTBOTD
+	debug("res->parsed_query[%s]", res->parsed_query);
 	INFO("postfix query");
 	sb_run_print_querynode(qnodes,num_of_node);
 #endif
@@ -4495,6 +4493,9 @@ static int virtual_document_fill_comment(request_t* req, response_t* res)
     int i = 0;
     int j = 0;
 	int cmt_idx = 0;
+
+	/* highlight를 위한 단어 목록을 생성한다. */
+	set_search_words(req, res);
 
     for(i = 0; i < g_vdl->cnt; i++) {
 		if(cmt_idx >= COMMENT_LIST_SIZE) {
