@@ -2071,18 +2071,6 @@ static int is_seperator(char* c, int* sep_size)
 	return FALSE;
 }
 
-static int is_matched(char* word, word_list_t* wl)
-{
-	int i = 0;
-
-    for(i = 0; i < wl->cnt; i++) {
-        char* p = strstr(word, wl->word[i]);
-
-		if(p != NULL) return TRUE;
-	}
-
-	return FALSE;
-}
 
 static void highlight_string_by_eojeol(char* str, word_list_t* wl)
 {
@@ -2323,8 +2311,13 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 		switch(field_info[k].type) {
 			case RETURN:
 			{
+				int comment_length = max_comment_return_bytes;
+				if (sl->field[i].comment_length > 0
+					&& sl->field[i].comment_length < max_comment_return_bytes)
+				  comment_length = sl->field[i].comment_length;
+
 				// 길이가 너무 길면 좀 자른다. 한글 안다치게...
-				cut_string( field_value, max_comment_return_bytes-1 );
+				cut_string( field_value, comment_length-1 );
 
 	            if(output_style == STYLE_XML) {
 					if(all_highlight || sl->field[i].is_highlight) {
@@ -2358,7 +2351,12 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 				{
 					int exist_summary = 0;
 					int m = 0;
+					int comment_length = max_comment_bytes;
 					char* summary = sb_calloc(sizeof(char), max_comment_bytes*2);
+
+					if (sl->field[i].comment_length > 0
+						&& sl->field[i].comment_length < max_comment_bytes)
+					  comment_length = sl->field[i].comment_length;
 
 					for(m = 0; m < doc_hits->nhits; m++) {
 						if ( field_info[k].id == doc_hits->hits[m].std_hit.field ) {
@@ -2371,8 +2369,8 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
                             }
 
 //warn("field_value[%s], summary_pos[%d], position[%u]", field_value, summary_pos, doc_hits->hits[m].std_hit.position);
-							strncpy(summary, field_value + summary_pos, max_comment_bytes);
-							cut_string( summary, max_comment_bytes-1);
+							strncpy(summary, field_value + summary_pos, comment_length);
+							cut_string( summary, comment_length-1);
 							exist_summary = 1;
 							break;
 						}
@@ -2380,8 +2378,8 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 					
 					/* 본문에 단어가  없을경우 */
 					if(field_info[k].type == SUM_OR_FIRST && exist_summary == 0) {
-						strncpy(summary, field_value, max_comment_bytes);
-						cut_string( summary, max_comment_bytes-1);
+						strncpy(summary, field_value, comment_length);
+						cut_string( summary, comment_length-1);
 					}
 
 					// field_value size : 1M, highlight 시 충분한 버퍼가 필요하기 때문에 다시 옮김. 
