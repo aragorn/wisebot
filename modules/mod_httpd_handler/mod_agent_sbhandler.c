@@ -163,7 +163,7 @@ static comment_t* find_comment(comment_t* com_list, uint32_t did, uint32_t node_
         if(com_list[i].node_id == 0)
             break;
 
-debug("[%d] : cmt_did[%u], cmt_node_id[%0X]", i, com_list[i].did, com_list[i].node_id);
+		debug("[%d] : cmt_did[%u], cmt_node_id[%0X]", i, com_list[i].did, com_list[i].node_id);
 		if(did == com_list[i].did &&
 		   node_id == com_list[i].node_id) {
 			return &com_list[i];
@@ -204,28 +204,29 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
     limit_t limit_buffer;
 
     if(req->op_list_vid.cnt == 0) {
-		error("can not found limit operation, agent light search would be overflow data");
+		error("cannot find LIMIT operator. no vid operator found.");
 		strcpy(query, req->query);
 		return FAIL;
     }
 
     if(req->op_list_vid.cnt > 0) {
+		/* vid operator 목록의 마지막 값은 LIMIT 연산이어야만 한다. */
 		operation_t* op = &(req->op_list_vid.list[req->op_list_vid.cnt-1]);
 		if(op->type == LIMIT) {
 			limit = &op->rule.limit;
 			limit_buffer = *limit;
 
-			// agent는 하위노드에게 lc*(pg+1) 의 결과를 요청함.
+			// agent는 하위노드에게 LC*(PG+1) 의 결과를 요청함.
 			limit->cnt = op->rule.limit.start + op->rule.limit.cnt;
 			limit->start = 0;
 			sprintf(op->clause, "LIMIT %d, %d", limit->start, limit->cnt);
 
 			if(sb_run_qp_get_query_string(req, query) != SUCCESS) {
-				MSG_RECORD(&s->msg, error, "can not make request");
+				MSG_RECORD(&s->msg, error, "cannot make request");
 				return FAIL;
 			}
 		} else {
-			error("can not found limit operation, agent light search would be overflow data");
+			error("cannot find LIMIT operator. last vid op is not a LIMIT value.");
 			strcpy(query, req->query);
             return FAIL;
 		}
@@ -233,9 +234,10 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		strcpy(query, req->query);
 	}
 	
-	if ( snprintf(path, MAX_QUERY_STRING_SIZE, 
-                 "/search/light_search?q=%s", escape_operator(r->pool, ap_escape_uri(r->pool, query))) <= 0 ){
-		MSG_RECORD(&s->msg, error, "query to long, max[%d]", MAX_QUERY_STRING_SIZE);
+	if ( snprintf(path, MAX_QUERY_STRING_SIZE, "/search/light_search?q=%s",
+		          escape_operator(r->pool, ap_escape_uri(r->pool, query))
+		         ) <= 0 ){
+		MSG_RECORD(&s->msg, error, "query string is too long, max[%d]", MAX_QUERY_STRING_SIZE);
 		return FAIL;
 	}
     debug("light query[%s]", path);
@@ -862,7 +864,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
         for(j = 0; j < vd->comment_cnt; j++) {
             comment_t* cmt = find_comment(qp_response.comments, vd->dochits[j].id, pop_node_id(vd->node_id));
             if(cmt == NULL) {
-                error("can not find comment, node_id[%0X], docid[%u]", vd->node_id, vd->dochits[j].id);
+                error("cannot find comment, node_id[%0X], docid[%u]", vd->node_id, vd->dochits[j].id);
 				ap_rprintf(r, "<doc doc_id=\"0\">\n");
 				ap_rprintf(r, "<fields count=\"0\">\n");
 				ap_rprintf(r, "</fields>\n");
