@@ -2944,18 +2944,19 @@ static void print_request(request_t* req)
 	print_search_word(&req->word_list);
 	print_select(&req->select_list);
 	print_weight(&req->weight_list);
-	debug("======= did operation count[%d]========", req->op_list_did.cnt);
+	debug("req->op_list_did.cnt[%d]", req->op_list_did.cnt);
 	print_operations(&req->op_list_did);
-	debug("======= vid operation count[%d]========", req->op_list_vid.cnt);
+	debug("req->op_list_vid.cnt[%d]", req->op_list_vid.cnt);
 	print_operations(&req->op_list_vid);
 
+	debug("req->virtual_rule_list.cnt[%d]", req->virtual_rule_list.cnt);
 	for(i = 0; i < req->virtual_rule_list.cnt; i++) {
 		key_rule_t* rule = &req->virtual_rule_list.list[i];
 
 	    debug("virtual key[%s], type[%s]", rule->name, key_type_str[rule->type]);
 	}
 
-	debug("output style[%s]", output_style_str[req->output_style]);
+	debug("req->output_style[%s]", output_style_str[req->output_style]);
 }
 
 static void add_delete_where(operation_list_t* op_list)
@@ -3300,7 +3301,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 
 			rv = memfile_append(buffer, "(\n", 2);
 			if(rv < 0) {
-				MSG_RECORD(&req->msg, error, "can not appendF memfile");
+				MSG_RECORD(&req->msg, error, "cannot appendF memfile");
 				memfile_free(buffer);
 				return FAIL;
 			}
@@ -3309,7 +3310,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 				operation_t* op = &(op_list->list[i]);
 				rv = memfile_appendF(buffer, "%s\n", op->clause);
 				if(rv < 0) {
-					MSG_RECORD(&req->msg, error, "can not appendF memfile");
+					MSG_RECORD(&req->msg, error, "cannot appendF memfile");
 					memfile_free(buffer);
 					return FAIL;
 				}
@@ -3317,7 +3318,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 
 			rv = memfile_append(buffer, ")\n", 2);
 			if(rv < 0) {
-				MSG_RECORD(&req->msg, error, "can not appendF memfile");
+				MSG_RECORD(&req->msg, error, "cannot appendF memfile");
 				memfile_free(buffer);
 				return FAIL;
 			}
@@ -3329,7 +3330,7 @@ static int get_query_string(request_t* req, char query[MAX_QUERY_STRING_SIZE])
 		operation_t* op = &(op_list->list[i]);
 		rv = memfile_appendF(buffer, "%s\n", op->clause);
 		if(rv < 0) {
-            MSG_RECORD(&req->msg, error, "can not appendF memfile");
+            MSG_RECORD(&req->msg, error, "cannot appendF memfile");
 		    memfile_free(buffer);
 			return FAIL;
 		}
@@ -4352,12 +4353,12 @@ static int do_filter_operation(request_t* req, response_t* res, enum doc_type do
 		   case LIMIT:
 			   rv = operation_limit(&op->rule.limit, doc_type);
 			   if(rv != SUCCESS) {
-                   MSG_RECORD(&req->msg, error, "can not operate operation_limit");
+                   MSG_RECORD(&req->msg, error, "cannot operate operation_limit");
 				   return FAIL;
 			   }
 			   break;
            default:
-               MSG_RECORD(&req->msg, warn, "it is not operator : [%d][%s]", op->type, 
+               MSG_RECORD(&req->msg, warn, "it is not a valid operator: [%d][%s]", op->type, 
                                        get_clause_str(op->type));
                break;
 	    }
