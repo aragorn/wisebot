@@ -2130,6 +2130,17 @@ static int highlight(char* field_value, word_list_t* wl)
 	char sep[3] = {0,0,0};
 	int len = 0;
 	int rv = 0;
+	int i;
+
+	if (wl->cnt == 0)
+	{
+		debug("no word to highlight");
+		return SUCCESS;
+	}
+    for(i = 0; i < wl->cnt; i++)
+	{
+		debug("word[%d]=[%s]", i, wl->word[i]);
+	}
 
     while( 1 ) {
         int sep_size = 1;
@@ -3010,6 +3021,7 @@ static void set_search_words_as_parsed(request_t* req, response_t *res)
 	int remove_char_len = strlen(remove_char_query);
     word_list_t* wl = &req->word_list;
 
+	debug("res->parsed_query[%s]", res->parsed_query);
     strncpy(q, res->parsed_query, strlen(res->parsed_query));
     len = strlen(q);
 
@@ -3063,6 +3075,7 @@ static void set_search_words_as_input(request_t* req, response_t *res)
 	int remove_char_len = strlen(remove_char_query);
     word_list_t* wl = &req->word_list;
 
+	debug("req->search[%s]", req->search);
     strncpy(q, req->search, strlen(req->search));
     len = strlen(q);
 
@@ -4540,6 +4553,22 @@ static int virtual_document_fill_comment(request_t* req, response_t* res)
 
 static int abstract_search(request_t *req, response_t *res)
 {
+	if ( highlight_word == H_WORD_PARSED )
+	{ /* NOTE: abstract_search의 경우, SEARCH 질의식을 구문해석할 필요가
+	   *       없다. 그러나 highlight를 PARSED 단어 기준으로 하는 경우,
+	   *       구문해석을 할 수 밖에 없다.
+       */
+		int num_of_node;
+		QueryNode qnodes[MAX_QUERY_NODES];
+
+		num_of_node = 
+			sb_run_preprocess(word_db, req->search, MAX_QUERY_STRING_SIZE,
+									qnodes, MAX_QUERY_NODES);
+		if ( num_of_node > 0 ) {
+			sb_run_buffer_querynode(res->parsed_query, qnodes, num_of_node);
+		}
+	}
+
     return virtual_document_fill_comment(req, res);
 }
 
