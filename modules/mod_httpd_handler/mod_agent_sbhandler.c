@@ -469,7 +469,8 @@ RECV_FAIL:
 /*
  * req에는 send_first, send_cnt ali.agent_doc_hits(doc_hits, node_id) 만 유효하다.
  */
-static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_t* req, response_t* res)
+static int agent_abstractsearch
+    (request_rec *r, softbot_handler_rec *s, request_t* req, response_t* res)
 {
 	int i = 0, j = 0;
     int cmt_idx = 0;
@@ -479,12 +480,17 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 
 	// make request line
 	if ( snprintf(path, MAX_QUERY_STRING_SIZE, 
-                 "/search/abstract_search?q=%s", escape_operator(r->pool, ap_escape_uri(r->pool, req->query))) <= 0 ){
-		MSG_RECORD(&s->msg, error, "query to long, max[%d]", MAX_QUERY_STRING_SIZE);
+                  "/search/abstract_search?q=%s",
+		          escape_operator(r->pool, ap_escape_uri(r->pool, req->query))
+				 ) <= 0 )
+	{
+		MSG_RECORD(&s->msg, error, "query string is too long, max[%d]", MAX_QUERY_STRING_SIZE);
 		return FAIL;
 	}
+	debug("query[%s]", req->query);
+	debug("URI[%s]", path);
 
-    // client가 초기화 되지 않았다면 초기화 한다.
+    /* client가 초기화 되지 않았다면 초기화 한다. */
 	for (i=0; i<search_node_num; i++ ){
 	    http_client_t *client = search_nodes[i].client;
 
@@ -517,7 +523,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 	}
 
     // send buffer 초기화
-    for ( i=0; i<search_node_num; i++ ) {
+    for ( i = 0; i < search_node_num; i++ ) {
         memfile **buf = &(msg_body_list[i]);
         if ( *buf == NULL ) {
             *buf = memfile_new();
@@ -529,7 +535,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
         }
     }
 
-	for(i = 0; i < res->vdl->cnt; i++) {
+	for ( i = 0; i < res->vdl->cnt; i++) {
         virtual_document_t* vd = &(res->vdl->data[i]);
         memfile *buf = NULL;
 		int client_idx = 0;
@@ -544,7 +550,9 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
         client_idx = get_client_by_node_id(child_node_id);
 		
         if(client_idx < 0) {
-			MSG_RECORD(&s->msg, error, "cannot find client, client_idx[%d], node_id[0x%04X]", client_idx, child_node_id);
+			MSG_RECORD(&s->msg, error,
+			           "cannot find client, client_idx[%d], node_id[0x%04X]",
+					   client_idx, child_node_id);
             continue;
         }
 
@@ -558,16 +566,16 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
         }
 	} 
 
-	for (i=0; i<search_node_num; i++ ){
+	for ( i = 0; i < search_node_num; i++ ) {
 	    http_client_t *client = search_nodes[i].client;
 	    memfile *buf = msg_body_list[i];
 
         if(memfile_getSize(buf) == 0) {
             client->skip = 1;
             info("client[%d]->skip[%d]", i, search_nodes[i].client->skip);
-       } else {
+        } else {
             client->skip = 0;
-       }
+        }
     }
 
     // send...
@@ -589,7 +597,9 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 			continue;
 		}
 
-		if(http_setMessageBody(client->http, *buf, "x-softbotd/binary", memfile_getSize(*buf)) != SUCCESS) {
+		if ( http_setMessageBody(client->http,
+		                         *buf, "x-softbotd/binary", memfile_getSize(*buf)
+								) != SUCCESS) {
 			MSG_RECORD(&s->msg, error, 
 					"fail http set message body, ip[%s], port[%s]",
 				    search_nodes[i].ip,
@@ -615,7 +625,7 @@ static int agent_abstractsearch(request_rec *r, softbot_handler_rec *s, request_
 		MSG_RECORD(&s->msg, error, "sb_run_http_client_retrieve failed");
 	}
 	
-	for (i=0; i <search_node_num; i++ ) {
+	for ( i = 0; i < search_node_num; i++ ) {
         int j = 0;
 		int recv_data_size = 0;
 		int recv_cnt = 0;
