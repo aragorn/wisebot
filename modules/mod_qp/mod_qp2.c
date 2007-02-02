@@ -2098,8 +2098,14 @@ static void highlight_string_by_word(char* str, word_list_t* wl)
 
     for(i = 0; i < wl->cnt; i++)
 	{
-        char* pos = strstr(str, wl->word[i]);
+        char* pos = strcasestr(str, wl->word[i]);
 		if (pos == NULL) continue;
+
+        /* 알파벳 1글자인 경우, 단어 중 부분일치하는 것은 넘어간다.
+         * ex) i 로 검색한 경우, which 에서 i는 match하지 않아야 한다.
+               그러나 i포드 에서는 match한다. */
+        if ( strlen(wl->word[i]) == 1 
+             && (isalpha(*(pos-1)) || isalpha(*(pos+1))) ) continue;
 
 		strncpy(buf, str, pos-str); buf[pos-str] = '\0';
 		//debug("strncpy(buf[%s],str[%s],pos[%p]-str[%p]=%d)", buf, str, pos, str, pos-str);
@@ -3047,6 +3053,9 @@ static void set_search_words_as_parsed(request_t* req, response_t *res)
 		}
 
 		s = sb_trim(remove_field(s));
+		if ( strcmp(s, "&") == 0 ) {
+			; /* 어절이 "&" 인 경우는 제외한다. */
+		} else 
 		if(strlen(s) > highlight_word_len) {
             strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
 	    }
