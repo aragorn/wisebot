@@ -270,7 +270,7 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		client->http->path = path;
 		client->http->req_content_type = "x-softbotd/binary";
 		client->timeout = timeout;
-		http_print(client->http);
+		//http_print(client->http);
 
 		if ( sb_run_http_client_makeRequest(client, NULL)	!= SUCCESS ) {
 			MSG_RECORD(&s->msg, error, 
@@ -519,7 +519,7 @@ static int agent_abstractsearch
 		client->http->path = path;
 		client->http->req_content_type = "x-softbotd/binary";
 		client->timeout = timeout;
-		http_print(client->http);
+		//http_print(client->http);
 	}
 
     // send buffer √ ±‚»≠
