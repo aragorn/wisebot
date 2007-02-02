@@ -301,10 +301,10 @@ int lexicon_index_get   ( lexicon_t *word_db, char* string, uint32_t* wordid)
 
 	ret = new_vb_offset(word_db, &(offset));
 	if (ret != SUCCESS) return ret;
-printf("1ret:%d\n", ret);
+
     ret = block_write(word_db, &(offset), BLOCK_TYPE_VARIABLE, string, len+1);
     if (ret != len+1) return ret;
-printf("2ret:%d\n", ret);	
+
 	if (hash_search(word_db->hash, &(offset), (uint8_t*)(wordid)) == SUCCESS) {
 		CRIT("search wordid %u", *wordid);
 		return WORD_OLD_REGISTERED;
