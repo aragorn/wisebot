@@ -10,11 +10,12 @@ pkglib_LTLIBRARIES   = mod_bigram.la \
                        mod_dummy_ma.la \
                        mod_kor2chn_translator.la \
                        mod_daum_koma.la \
-                       mod_daum_koma_exact.la
+                       mod_daum_koma_exact.la \
+                       mod_pkoma.la
 
 lib_LTLIBRARIES      = liboldcodetrans.la
 
-check_PROGRAMS       = test_mod_koma
+check_PROGRAMS       = test_mod_koma test_mod_pkoma
 
 liboldcodetrans_la_SOURCES = \
                         lib/ma_chn.c lib/ma_chn.h \
@@ -81,6 +82,16 @@ mod_daum_koma_la_LDFLAGS = -module -avoid-version
 mod_daum_koma_exact_la_SOURCES = 
 mod_daum_koma_exact_la_LDFLAGS = -module -avoid-version
 endif
+
+mod_pkoma_la_SOURCES = mod_pkoma.c mod_pkoma.h 
+mod_pkoma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lpkoma
+
+test_mod_pkoma_SOURCES = test_mod_pkoma.c mod_pkoma.c
+test_mod_pkoma_CFLAGS  = -DTEST_PROGRAM
+test_mod_pkoma_LDFLAGS = -L$(libdir) -lpkoma
+test_mod_pkoma_LDADD   = $(libdir)/libcommon_core.la \
+						 $(libdir)/libcommon_util.la \
+						 $(pkglibdir)/mod_api2.la
 
 include ../install-pkglib.mk
 
