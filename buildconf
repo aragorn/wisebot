@@ -29,7 +29,8 @@ aclocal -I build
 
 #rm -f libtool
 #ln -s configure.ac configure.in
-libtoolize --automake --force --copy
+#libtoolize --automake --force --copy
+libtoolize --automake --force
 #rm -f configure.in
 
 autoheader

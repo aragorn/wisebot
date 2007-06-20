@@ -12,7 +12,7 @@ AC_REVISION([$Revision$])
 
 AC_CONFIG_AUX_DIR([build])
 
-AC_CANONICAL_HOST()
+AC_CANONICAL_SYSTEM
 
 AM_INIT_AUTOMAKE([foreign])
 #AM_INIT_AUTOMAKE([foreign no-dependencies])
