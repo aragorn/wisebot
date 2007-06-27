@@ -1242,7 +1242,7 @@ static int docattr_qpp_group(docattr_cond_t *cond, char* groupquery)
 			*group_count = '\0';
 			group_count++;
 
-			if ( isNumber( group_count, &group_field_limit[i] ) != SUCCESS ) {
+			if ( dt_isNumber( group_count, &group_field_limit[i] ) != SUCCESS ) {
 				error("invalid group_count[%s] of group_field[%s]", group_count, group_field);
 				return FAIL;
 			}

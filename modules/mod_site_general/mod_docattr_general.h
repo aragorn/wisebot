@@ -164,7 +164,7 @@ struct general_at_t {
 	int field_list_count;
 };
 
-extern int isNumber(const char* string, docattr_integer* number);
+extern int dt_isNumber(const char* string, docattr_integer* number);
 
 /**************************************************************
  * docattr sorting에 필요한 기능

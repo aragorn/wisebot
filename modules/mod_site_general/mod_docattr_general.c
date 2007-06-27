@@ -111,7 +111,7 @@ char* return_enum_name(docattr_integer value)
 //
 // 보통 00234 와 같이 앞에 0이 오면 8진수로 간주하지만
 // 여기서는 그냥 10진수로 한다.
-int isNumber(const char* string, docattr_integer* number)
+int dt_isNumber(const char* string, docattr_integer* number)
 {
 	char string_copy[SHORT_STRING_SIZE];
 	char* end_of_string;
@@ -200,7 +200,7 @@ static int integer_set_func(docattr_t* docattr, docattr_field_t* field, char *va
 {
 	docattr_integer number;
 
-	if ( isNumber( value, &number ) != SUCCESS ) {
+	if ( dt_isNumber( value, &number ) != SUCCESS ) {
 		error("invalid number(%s) when setting docattr field[%s]", value, field->name);
 		return FAIL;
 	}
@@ -233,7 +233,7 @@ static int integer4_set_func(docattr_t* docattr, docattr_field_t* field, char *v
 {
 	docattr_integer number;
 
-	if ( isNumber( value, &number ) != SUCCESS ) {
+	if ( dt_isNumber( value, &number ) != SUCCESS ) {
 		error("invalid number(%s) when setting docattr field[%s]", value, field->name);
 		return FAIL;
 	}
@@ -252,7 +252,7 @@ static int integer2_set_func(docattr_t* docattr, docattr_field_t* field, char *v
 {
 	docattr_integer number;
 
-	if ( isNumber( value, &number ) != SUCCESS ) {
+	if ( dt_isNumber( value, &number ) != SUCCESS ) {
 		error("invalid number(%s) when setting docattr field[%s]", value, field->name);
 		return FAIL;
 	}
@@ -276,7 +276,7 @@ static int integer1_set_func(docattr_t* docattr, docattr_field_t* field, char *v
 {
 	docattr_integer number;
 
-	if ( isNumber( value, &number ) != SUCCESS ) {
+	if ( dt_isNumber( value, &number ) != SUCCESS ) {
 		error("invalid number(%s) when setting docattr field[%s]", value, field->name);
 		return FAIL;
 	}
@@ -334,7 +334,7 @@ static int bit_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 	docattr_integer number, mask;
 	docattr_integer* attr_position = (docattr_integer*) DATA_POSITION;
 	
-	if ( isNumber( value, &number ) != SUCCESS ) {
+	if ( dt_isNumber( value, &number ) != SUCCESS ) {
 		error("invalid number(%s) when setting docattr field[%s]", value, field->name);
 		return FAIL;
 	}
@@ -781,7 +781,7 @@ static int parse_field_type(char* field_type, char* type, docattr_integer* size)
 		*lparen = '\0';
 		*rparen = '\0';
 
-		if ( isNumber( lparen+1, size ) != SUCCESS ) {
+		if ( dt_isNumber( lparen+1, size ) != SUCCESS ) {
 			error("invalid size: [%s]", field_type);
 			return FAIL;
 		}
@@ -1268,7 +1268,7 @@ static void get_enum(configValue v)
 		return;
 	}
 
-	if ( isNumber( v.argument[0], &enum_value ) == SUCCESS ) {
+	if ( dt_isNumber( v.argument[0], &enum_value ) == SUCCESS ) {
 		warn("%s is number or already registered enum value", v.argument[0]);
 		return;
 	}

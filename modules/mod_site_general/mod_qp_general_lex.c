@@ -1952,7 +1952,7 @@ static int prepare_value(docattr_operand_t* operand, const char* text, int len, 
 	else strcpy( operand->o.value.my_string, text );
 
 	// 숫자(or enum)라면 그걸로 OK
-	if ( maybeint && isNumber( text, &operand->o.value.v.integer ) == SUCCESS ) {
+	if ( maybeint && dt_isNumber( text, &operand->o.value.v.integer ) == SUCCESS ) {
 		operand->value_type = VALUE_INTEGER;
 		return SUCCESS;
 	}
