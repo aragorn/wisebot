@@ -2,8 +2,10 @@
 #ifndef MOD_PKOMA_H
 #define MOD_PKOMA_H 1
 
-#define MAX_NUM_OF_MORPHEMES	(MaxNumWrd)
-#define MAX_RESULT_NUM			(MaxNumAmb)
+#include "pkoma/KoMAApi.h"
+
+#define MAX_NUM_OF_MORPHEMES	(5120) /* MaxNumWrd */
+#define MAX_RESULT_NUM			(64)   /* MaxNumAmb */
 
 /* This is for move_text() function.
  * Assuming that avg. word len 3, 256 is max number of 어절 by mod_pkoma.
@@ -138,14 +140,14 @@
 								|| (TAG_IS_JUPSA(tag) && (! TAG_IS_XPN_XSN_XSD(tag))) )
 
 typedef	struct pkoma_handle_t {
-	char *Wrd[MAX_NUM_OF_MORPHEMES];
-	int  bPos[MAX_NUM_OF_MORPHEMES];
-	char *Result[MAX_NUM_OF_MORPHEMES][MAX_RESULT_NUM];
-	int  result_count; /* DoKomaAndHanTag()의 리턴값 = 어절 갯수 */
-	int	 result_index; /* 현재 Result 배열의 index */
-	void *HanTag;
-	int	 position;      /* 현재 어절 위치 */
-	int  byte_position; /* 현재 바이트 위치 */
+	path_ptr tag_result;   /* 태깅 결과 */
+	path_ptr current_path; /* 현재 처리 중인 어절 */
+	unsigned char option; /* API 옵션 */
+	int  eojeol_count; /* API_Tagger()의 리턴값 = 어절 갯수 */
+	int  eojeol_index; /* 태깅 결과에서 현재 처리 중인 어절 위치 */
+
+	int	 eojeol_position;  /* 본문에서 현재 어절 위치 */
+	int  byte_position;    /* 본문에서 현재 바이트 위치 */
 	int	 next_length;
 	const char *orig_text;	// 원래 text point
 	const char *next_text;	// 다음에 분석할 text start point
