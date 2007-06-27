@@ -20,6 +20,7 @@ KomaAPI.h
 HanTagAPI.h
 koma_global.h
 koma
+pkoma
 expat
 db
 ncurses
