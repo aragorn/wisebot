@@ -224,7 +224,7 @@ void pkoma_set_text(pkoma_handle_t* handle, const char* text)
 
 	// set handle
 	handle->orig_text = text;
-	handle->eojeol_position = 1;
+	handle->eojeol_position = 0;
 	handle->byte_position = 0;
 	handle->next_text = handle->orig_text;
 	handle->next_length = strlen(handle->next_text);
@@ -283,6 +283,10 @@ AGAIN:
 		debug("eojeol[%s]", path->word);
 		previous_idx_of_index_word = idx_of_index_word;
 		/* idx_of_index_word가 max를 초과할 경우, 이전값으로 되돌려야 한다. */
+
+		/* prev_cont의 값이 1인 경우, 앞의 어절과 이번 어절이 입력시 같은
+		 * 어절이었음을 의미한다. KoMAApi.h 의 path_node 구조체 참조. */
+		if (path->prev_cont == 0) h->eojeol_position++;
 
 		for (current_morpheme = path->select->morph_s,
 		         morpheme_count = 0, jupdusa_exist = FALSE;
@@ -533,7 +537,7 @@ static void register_hooks(void)
 												NULL, NULL, HOOK_MIDDLE);
 }
 
-module koma_module = {
+module pkoma_module = {
     STANDARD_MODULE_STUFF,
     config, 	            /* config */
     NULL,                   /* registry */
