@@ -23,56 +23,22 @@
 #define TAG_IS(a, b, c)			(!strncmp((a), (b), (c))) 
 
 /* NOTE: a = tag, b = token_len */
-#define TAG_IS_JUPDUSA(a,b) ( TAG_IS((a), "XPN",  3) ) 
-#define TAG_IS_JUPMISA(a,b) ( TAG_IS((a), "XSNN", 4) || \
-							  TAG_IS((a), "XSD",  3) )
+#define TAG_IS_JUPDUSA(a,b) ( TAG_IS((a), "fpp",  3) ) 
+#define TAG_IS_JUPMISA(a,b) ( TAG_IS((a), "fps",  3) )
 
-#define TAG_IS_JOSA(a)		   (TAG_IS((a), "PS", 2) || \
-								TAG_IS((a), "PC", 2) || \
-								TAG_IS((a), "PO", 2) || \
-								TAG_IS((a), "PD", 2) || \
-								TAG_IS((a), "PA", 2) || \
-								TAG_IS((a), "PV", 2) || \
-								TAG_IS((a), "PN", 2) || \
-								TAG_IS((a), "PX", 2)) 
+#define TAG_IS_JOSA(a)		   (TAG_IS((a), "fj", 2) )
 
-#define TAG_IS_MUNJANGBUHO(a)  (TAG_IS((a), "SS.", 3) || \
-								TAG_IS((a), "SS?", 3) || \
-								TAG_IS((a), "SS!", 3) || \
-								TAG_IS((a), "SS,", 3) || \
-								TAG_IS((a), "SS/", 3) || \
-								TAG_IS((a), "SS:", 3) || \
-								TAG_IS((a), "SS;", 3) || \
-								TAG_IS((a), "SS`", 3) || \
-								TAG_IS((a), "SS'", 3) || \
-								TAG_IS((a), "SS(", 3) || \
-								TAG_IS((a), "SS)", 3) || \
-								TAG_IS((a), "SS-", 3) || \
-								TAG_IS((a), "SSA", 3) || \
-								TAG_IS((a), "SSX", 3) )
+#define TAG_IS_MUNJANGBUHO(a)  (TAG_IS((a), "g", 1) )
 
-#define TAG_IS_GAMTAN(a)		TAG_IS((a), "C", 1)
+#define TAG_IS_GAMTAN(a)	   (TAG_IS((a), "K", 1) )
 
-#define TAG_IS_KYUKJOSA(a)		TAG_IS((a), "I", 1)
+#define TAG_IS_KYUKJOSA(a)	   ( 0 )
 
-#define	TAG_IS_SPACE(a)			TAG_IS((a), "SPAC", 4)
+#define	TAG_IS_SPACE(a)		   ( 0 )
 
-#define	TAG_IS_UMI(a)		   (TAG_IS((a), "EFF", 3) || \
-								TAG_IS((a), "EFC", 3) || \
-								TAG_IS((a), "EFN", 3) || \
-				 				TAG_IS((a), "EFD", 3) || \
-				 				TAG_IS((a), "EFA", 3) || \
-								TAG_IS((a), "EP", 2) )
+#define	TAG_IS_UMI(a)		   (TAG_IS((a), "fm", 2))
 
-#define TAG_IS_JUPSA(a)		   (TAG_IS((a), "XSNN", 4) || \
-								TAG_IS((a), "XSNP", 4) || \
-								TAG_IS((a), "XSNU", 4) || \
-								TAG_IS((a), "XPNN", 4) || \
-								TAG_IS((a), "XPNU", 4) || \
-								TAG_IS((a), "XSD", 3) || \
-								TAG_IS((a), "XSA", 3) || \
-								TAG_IS((a), "XSVV", 4) || \
-								TAG_IS((a), "XSVJ", 4) )
+#define TAG_IS_JUPSA(a)		   (TAG_IS((a), "fp", 2))
 
 /* 접사 가운데, 명사를 만드는 접미사, '-적'을 골라낸다.
  * 즉, XSA, XSVV, XSVJ 등 용언을 만드는 접사를 판별할 수
@@ -86,37 +52,20 @@
 								TAG_IS((a), "XPNU", 4) || \
 								TAG_IS((a), "XSD",  3) )
 
-#define TAG_IS_KWANHYUNGSA(a)  (TAG_IS((a), "DA", 2) || \
-								TAG_IS((a), "DI", 2) || \
-								TAG_IS((a), "DU", 2) )
+#define TAG_IS_KWANHYUNGSA(a)  (TAG_IS((a), "SG", 2) )
 
-#define TAG_IS_BUSA(a)			(TAG_IS((a), "AA", 2) || \
-								TAG_IS((a), "AP", 2) || \
-								TAG_IS((a), "AI", 2) || \
-								TAG_IS((a), "AC", 2) || \
-								TAG_IS((a), "AV", 2) || \
-								TAG_IS((a), "AJ", 2) )
+#define TAG_IS_BUSA(a)			(TAG_IS((a), "SB", 2) )
 
-#define TAG_IS_VERBAL(a)		(TAG_IS((a), "VV", 2) || \
-								TAG_IS((a), "VX", 2) || \
-								TAG_IS((a), "VJ", 2) || \
-								TAG_IS((a), "V?", 2) )
+#define TAG_IS_VERBAL(a)		(TAG_IS((a), "YB", 2) || \
+                                 TAG_IS((a), "YA", 2) )
 
-#define TAG_IS_NOUN(a)			(TAG_IS((a), "NNCG", 4) || \
-								 TAG_IS((a), "NNCV", 4) || \
-								 TAG_IS((a), "NNCJ", 4) || \
-								 TAG_IS((a), "NNB",  3) || \
-								 TAG_IS((a), "NNBU", 4) || \
-								 TAG_IS((a), "NNP",  3) || \
-								 TAG_IS((a), "NPP",  3) || \
-								 TAG_IS((a), "NPI",  3) || \
-								 TAG_IS((a), "NU",   2) || \
-								 TAG_IS((a), "UNK",  3) || \
-								 TAG_IS((a), "COMP", 4) )
+#define TAG_IS_NOUN(a)			(TAG_IS((a), "CMC", 3) || \
+								 TAG_IS((a), "CMP", 3) || \
+								 TAG_IS((a), "CSC", 3) || \
+								 TAG_IS((a), "UM", 2) || \
+								 TAG_IS((a), "UD",  2) )
 
-#define TAG_IS_ETC(a)			(TAG_IS((a), "SCF", 3) || \
-								 TAG_IS((a), "SCH", 3) || \
-								 TAG_IS((a), "SCD", 3) )
+#define TAG_IS_ETC(a)			(TAG_IS((a), "F", 1) )
 
 #define IS_WHITE_CHAR(c)	( (c)==' ' || (c)=='\n' || (c)=='\r' || (c)=='\t')
 
@@ -136,8 +85,9 @@
 					            || TAG_IS_MUNJANGBUHO(tag) \
 								|| TAG_IS_UMI(tag) \
 								|| TAG_IS_JOSA(tag) \
-								|| TAG_IS_KYUKJOSA(tag) \
-								|| (TAG_IS_JUPSA(tag) && (! TAG_IS_XPN_XSN_XSD(tag))) )
+								|| TAG_IS_KYUKJOSA(tag) )
+
+//								|| (TAG_IS_JUPSA(tag) && (! TAG_IS_XPN_XSN_XSD(tag))) )
 
 typedef	struct pkoma_handle_t {
 	path_ptr tag_result;   /* 태깅 결과 */
