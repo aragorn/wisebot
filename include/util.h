@@ -23,5 +23,6 @@ SB_DECLARE(char *) sb_left_trim(char* s);
 SB_DECLARE(char *) sb_right_trim(char* s);
 SB_DECLARE(char *) replace(char *str, char s, char d);
 SB_DECLARE(char *) get_time(const char *format);
+SB_DECLARE(char*) __strcasestr (const char* phaystack, const char* pneedle);
 
 #endif

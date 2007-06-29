@@ -4,6 +4,7 @@
 #include "util.h"
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 const char *sb_get_server_version(void)
 {
@@ -104,3 +105,92 @@ char* get_time(const char* format) {
 
     return strtime;
 }
+
+/*http://sourceware.org/ml/libc-alpha/2004-04/msg00106.html*/
+char* __strcasestr (const char* phaystack, const char* pneedle)
+{
+  register const unsigned char *haystack, *needle;
+  register char bl, bu, cl, cu;
+
+  haystack = (const unsigned char *) phaystack;
+  needle = (const unsigned char *) pneedle;
+
+  bl = tolower (*needle);
+  if (bl != '\0')
+    {
+      bu = toupper (bl);
+      haystack--;                               /* possible ANSI violation */
+      do
+        {
+          cl = *++haystack;
+          if (cl == '\0')
+            goto ret0;
+        }
+      while ((cl != bl) && (cl != bu));
+
+      cl = tolower (*++needle);
+      if (cl == '\0')
+        goto foundneedle;
+      cu = toupper (cl);
+      ++needle;
+      goto jin;
+
+      for (;;)
+        {
+          register char a;
+          register const unsigned char *rhaystack, *rneedle;
+
+          do
+            {
+              a = *++haystack;
+              if (a == '\0')
+                goto ret0;
+              if ((a == bl) || (a == bu))
+                break;
+              a = *++haystack;
+              if (a == '\0')
+                goto ret0;
+shloop:
+              ;
+            }
+          while ((a != bl) && (a != bu));
+
+jin:      a = *++haystack;
+          if (a == '\0')
+            goto ret0;
+
+          if ((a != cl) && (a != cu))
+            goto shloop;
+
+          rhaystack = haystack-- + 1;
+          rneedle = needle;
+          a = tolower (*rneedle);
+
+          if (tolower (*rhaystack) == (int) a)
+            do
+              {
+                if (a == '\0')
+                  goto foundneedle;
+                ++rhaystack;
+                a = tolower (*++needle);
+                if (tolower (*rhaystack) != (int) a)
+                  break;
+                if (a == '\0')
+                  goto foundneedle;
+                ++rhaystack;
+                a = tolower (*++needle);
+              }
+            while (tolower (*rhaystack) == (int) a);
+
+          needle = rneedle;             /* took the register-poor approach */
+
+          if (a == '\0')
+            break;
+        }
+    }
+foundneedle:
+  return (char*) haystack;
+ret0:
+  return 0;
+}
+
