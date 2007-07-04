@@ -18,6 +18,11 @@
 #include "apr_fnmatch.h"
 #include "apr_hash.h"
 #include "apr_lib.h"
+#include "apr_version.h"
+
+#ifndef FNM_PATHNAME
+#  define FNM_PATHNAME APR_FNM_PATHNAME
+#endif
 
 /*#include "apr_uri.h" |+ read_request_line() +|*/
 /*#include "apr_date.h"	|+ For apr_date_parse_http and APR_DATE_BAD +|*/
@@ -213,8 +218,12 @@ static int resolve_symlink(char *d, apr_finfo_t *lfi, int opts, apr_pool_t *p)
      * owner of the symlink, then get the info of the target.
      */
     if (!(lfi->valid & APR_FINFO_OWNER)) {
-        if ((res = apr_lstat(&fi, d, lfi->valid | APR_FINFO_OWNER, p))
-            != APR_SUCCESS) {
+#if APR_MAJOR_VERSION == 1
+        if ((res = apr_stat(&fi, d, lfi->valid | APR_FINFO_OWNER, p)) != APR_SUCCESS)
+#else
+        if ((res = apr_lstat(&fi, d, lfi->valid | APR_FINFO_OWNER, p)) != APR_SUCCESS)
+#endif
+		{
             return HTTP_FORBIDDEN;
         }
     }
@@ -224,7 +233,11 @@ static int resolve_symlink(char *d, apr_finfo_t *lfi, int opts, apr_pool_t *p)
         return HTTP_FORBIDDEN;
     }
 
+#if APR_MAJOR_VERSION == 1
+    if (apr_uid_compare(fi.user, lfi->user) != APR_SUCCESS) {
+#else
     if (apr_compare_users(fi.user, lfi->user) != APR_SUCCESS) {
+#endif
         return HTTP_FORBIDDEN;
     }
 
@@ -555,7 +568,7 @@ AP_DECLARE(int) ap_directory_walk(request_rec *r)
                     && ((entry_core->d_components < seg)
                      || (entry_core->d_is_fnmatch
                          ? (apr_fnmatch(entry_core->d, r->filename,
-                                        FNM_PATHNAME) != APR_SUCCESS)
+                                        APR_FNM_PATHNAME) != APR_SUCCESS)
                          : (strcmp(r->filename, entry_core->d) != 0)))) {
                     continue;
                 }
@@ -777,8 +790,13 @@ minimerge2:
              * want the name of this 'link' object, not the name of its
              * target, if we are fixing the filename case/resolving aliases.
              */
+#if APR_MAJOR_VERSION == 1
+            rv = apr_stat(&thisinfo, r->filename,
+                           APR_FINFO_MIN | APR_FINFO_NAME, r->pool);
+#else
             rv = apr_lstat(&thisinfo, r->filename,
                            APR_FINFO_MIN | APR_FINFO_NAME, r->pool);
+#endif
 
             if (APR_STATUS_IS_ENOENT(rv)) {
                 /* Nothing?  That could be nice.  But our directory
@@ -1075,7 +1093,7 @@ debug("here 2");
             if (entry_core->r
                 ? ap_regexec(entry_core->r, r->uri, 0, NULL, 0)
                 : (entry_core->d_is_fnmatch
-                   ? apr_fnmatch(entry_core->d, cache->cached, FNM_PATHNAME)
+                   ? apr_fnmatch(entry_core->d, cache->cached, APR_FNM_PATHNAME)
                    : (strncmp(entry_core->d, cache->cached, len)
                       || (entry_core->d[len - 1] != '/'
                           && cache->cached[len] != '/'
@@ -1233,7 +1251,7 @@ AP_DECLARE(int) ap_file_walk(request_rec *r)
             if (entry_core->r
                 ? ap_regexec(entry_core->r, cache->cached , 0, NULL, 0)
                 : (entry_core->d_is_fnmatch
-                   ? apr_fnmatch(entry_core->d, cache->cached, FNM_PATHNAME)
+                   ? apr_fnmatch(entry_core->d, cache->cached, APR_FNM_PATHNAME)
                    : strcmp(entry_core->d, cache->cached))) {
                 continue;
             }
@@ -1540,9 +1558,16 @@ AP_DECLARE(request_rec *) ap_sub_req_lookup_dirent(const apr_finfo_t *dirent,
             }
         }
         else {
+#if APR_MAJOR_VERSION == 1
+            if (((rv = apr_stat(&rnew->finfo, rnew->filename,
+                                 APR_FINFO_MIN, rnew->pool)) != APR_SUCCESS)
+                && (rv != APR_INCOMPLETE))
+#else
             if (((rv = apr_lstat(&rnew->finfo, rnew->filename,
                                  APR_FINFO_MIN, rnew->pool)) != APR_SUCCESS)
-                && (rv != APR_INCOMPLETE)) {
+                && (rv != APR_INCOMPLETE))
+#endif
+			{
                 rnew->finfo.filetype = 0;
             }
         }
@@ -1630,6 +1655,14 @@ AP_DECLARE(request_rec *) ap_sub_req_lookup_file(const char *new_file,
         && rnew->filename[fdirlen]
         && ap_strchr_c(rnew->filename + fdirlen, '/') == NULL) {
         apr_status_t rv;
+
+#if APR_MAJOR_VERSION == 1
+        if (((rv = apr_stat(&rnew->finfo, rnew->filename,
+                            APR_FINFO_MIN, rnew->pool)) != APR_SUCCESS)
+            && (rv != APR_INCOMPLETE)) {
+            rnew->finfo.filetype = 0;
+        }
+#else
         if (ap_allow_options(rnew) & OPT_SYM_LINKS) {
             if (((rv = apr_stat(&rnew->finfo, rnew->filename,
                                 APR_FINFO_MIN, rnew->pool)) != APR_SUCCESS)
@@ -1644,6 +1677,7 @@ AP_DECLARE(request_rec *) ap_sub_req_lookup_file(const char *new_file,
                 rnew->finfo.filetype = 0;
             }
         }
+#endif
 
         if (r->uri && *r->uri) {
             char *udir = ap_make_dirstr_parent(rnew->pool, r->uri);

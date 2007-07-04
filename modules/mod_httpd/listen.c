@@ -3,7 +3,14 @@
 #include "mod_httpd.h"
 #include "apr_portable.h" // apr_os_sock_get()
 #include "listen.h"
+#include "apr_version.h"
 
+#if APR_MAJOR_VERSION == 0
+# define apr_setsocketopt apr_socket_opt_set
+# define apr_bind         apr_socket_bind
+# define apr_listen       apr_socket_listen
+# define apr_accept       apr_socket_accept
+#endif
 listen_rec *listeners = NULL;
 
 #if APR_HAVE_IPV6
@@ -23,11 +30,19 @@ static void find_default_family(apr_pool_t *p)
 	if (default_family == APR_UNSPEC) {
 		apr_socket_t *tmp_sock;
 
+#  if APR_MAJOR_VERSION == 1
+		if (apr_socket_create(&tmp_sock, APR_INET6, SOCK_STREAM, APR_PROTO_TCP, p)
+				== APR_SUCCESS) {
+			apr_socket_close(tmp_sock);
+			default_family = APR_INET6;
+		}
+#  else
 		if (apr_socket_create(&tmp_sock, APR_INET6, SOCK_STREAM, p)
 				== APR_SUCCESS) {
 			apr_socket_close(tmp_sock);
 			default_family = APR_INET6;
 		}
+#  endif
 		else {
 			default_family = APR_INET;
 		}
@@ -66,10 +81,18 @@ static int alloc_listener(const char *addr,
 		crit("failed to set up sockaddr for %s", addr);
 		return FAIL;
 	}
+#if APR_MAJOR_VERSION == 1
+	if ((status = apr_socket_create(&new->sd,
+									new->bind_addr->family,
+									SOCK_STREAM, APR_PROTO_TCP, p))
+		!= APR_SUCCESS)
+#else
 	if ((status = apr_socket_create(&new->sd,
 									new->bind_addr->family,
 									SOCK_STREAM, p))
-		!= APR_SUCCESS) {
+		!= APR_SUCCESS)
+#endif
+	{
 		crit("failed to get a socket for %s", addr);
 		return FAIL;
 	}
@@ -118,7 +141,7 @@ static apr_status_t make_sock(listen_rec *listener, apr_pool_t *p)
 	apr_status_t stat;
 
 #ifndef WIN32
-	stat = apr_setsocketopt(s, APR_SO_REUSEADDR, one);
+	stat = apr_socket_opt_set(s, APR_SO_REUSEADDR, one);
 	if (stat != APR_SUCCESS && stat != APR_ENOTIMPL) {
 		crit("for address %pI, setsockopt: (SO_REUSEADDR)", listener->bind_addr);
 		apr_socket_close(s);
@@ -126,7 +149,7 @@ static apr_status_t make_sock(listen_rec *listener, apr_pool_t *p)
 	}
 #endif
 
-	stat = apr_setsocketopt(s, APR_SO_KEEPALIVE, one);
+	stat = apr_socket_opt_set(s, APR_SO_KEEPALIVE, one);
 	if (stat != APR_SUCCESS && stat != APR_ENOTIMPL) {
 		crit("for address %pI, setsockopt: (SO_KEEPALIVE)", listener->bind_addr);
 		apr_socket_close(s);
@@ -159,7 +182,7 @@ static apr_status_t make_sock(listen_rec *listener, apr_pool_t *p)
 	 * net/ipv4/tcp_mem = 195584   196096   196608
 	 */
 	if (send_buffer_size) {
-		stat = apr_setsocketopt(s, APR_SO_SNDBUF, send_buffer_size);
+		stat = apr_socket_opt_set(s, APR_SO_SNDBUF, send_buffer_size);
 		if (stat != APR_SUCCESS && stat != APR_ENOTIMPL) {
 			warn("failed to set SendBufferSize for "
 				 "address %pI, using default", listener->bind_addr);
@@ -170,13 +193,13 @@ static apr_status_t make_sock(listen_rec *listener, apr_pool_t *p)
 	//sock_disable_nagle(s);
 #endif
 
-	if ((stat = apr_bind(s, listener->bind_addr)) != APR_SUCCESS) {
+	if ((stat = apr_socket_bind(s, listener->bind_addr)) != APR_SUCCESS) {
 		crit("could not bind to address %pI", listener->bind_addr);
 		apr_socket_close(s);
 		return stat;
 	}
 
-	if ((stat = apr_listen(s, listener->backlog)) != APR_SUCCESS) {
+	if ((stat = apr_socket_listen(s, listener->backlog)) != APR_SUCCESS) {
 		crit("unable to listen for connections "
 			 "on address %pI", listener->bind_addr);
 		apr_socket_close(s);
@@ -196,7 +219,7 @@ static apr_status_t make_sock(listen_rec *listener, apr_pool_t *p)
      * So set reuseaddr, but do not attempt to do so until we have the
      * parent listeners successfully bound.
      */
-	stat = apr_setsocketopt(s, APR_SO_REUSEADDR, one);
+	stat = apr_socket_opt_set(s, APR_SO_REUSEADDR, one);
 	if (stat != APR_SUCCESS && stat != APR_ENOTIMPL) {
 		crit("for address %pI, setsockopt: (SO_REUSEADDR)", listener->bind_addr);
 		apr_socket_close(s);
@@ -255,7 +278,7 @@ apr_status_t unixd_accept(apr_socket_t **accepted, listen_rec *lr,
     int sockdes;
 
     *accepted = NULL;
-    status = apr_accept(&csd, lr->sd, ptrans);
+    status = apr_socket_accept(&csd, lr->sd, ptrans);
     if (status == APR_SUCCESS) { 
         *accepted = csd;
         apr_os_sock_get(&sockdes, csd);

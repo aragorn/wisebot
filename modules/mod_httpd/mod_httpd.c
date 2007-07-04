@@ -9,11 +9,15 @@
 #include "apr_hooks.h" /* for apr_global_hook_pool */
 #include "apr_poll.h"
 #include "apr_lib.h"
+#include "apr_version.h"
 
 #include <sys/types.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#if APR_MAJOR_VERSION == 1
+#  define USE_APR_POLLSET
+#endif
 /* XXX:should run process version for the time being. --jiwon */
 #undef THREAD_VER
 #define MAX_THREADS		(100)
@@ -153,11 +157,16 @@ static int thread_main (slot_t *slot)
 	apr_pool_t *ptrans; /* pool for per-transaction stuff */
 	apr_allocator_t *allocator;
 	apr_bucket_alloc_t *bucket_alloc;
-	listen_rec *lr, *last_lr = listeners;
+	listen_rec *lr;
+#ifdef USE_APR_POLLSET
+	apr_pollset_t *pollset;
+#else
+	listen_rec *last_lr = listeners;
 	apr_pollfd_t *pollset;
+#endif
 	apr_socket_t *csd = NULL;
 	apr_status_t rv;
-	int max_requests=0, i = 0;
+	int max_requests=0, i = 0, last_poll_idx = 0;
 	//FIXME : configuration must set this value 
 	apr_uint32_t ap_max_mem_free = 1024;
 
@@ -177,9 +186,26 @@ static int thread_main (slot_t *slot)
 	debug("slot[%d]: pool created", slot->id);
 
 /*	apr_poll_setup(&pollset, num_listensocks, ptrans);*/
+#ifdef USE_APR_POLLSET
+	(void) apr_pollset_create(&pollset, num_listensocks, tpool, 0);
+
+	for (lr = listeners; lr != NULL; lr = lr->next)
+	{
+		apr_pollfd_t pfd = { 0 };
+
+		pfd.desc_type = APR_POLL_SOCKET;
+		pfd.desc.s = lr->sd;
+		pfd.reqevents = APR_POLLIN;
+		pfd.client_data = lr;
+
+		(void) apr_pollset_add(pollset, &pfd);
+	}
+#else
 	apr_poll_setup(&pollset, num_listensocks, tpool);
+
 	for (lr = listeners; lr != NULL; lr = lr->next)
 		apr_poll_socket_add(pollset, lr->sd, APR_POLLIN);
+#endif
 
 	/* max_requests_per_child + slot->id * 2
 	 * prevents re-spawning all threads at a time */
@@ -217,6 +243,40 @@ static int thread_main (slot_t *slot)
 		set_proc_desc(slot, "softbotd: %s(select_accept,listen addr:%s)",
 						__FILE__,mListenAddr);
 #endif
+
+#ifdef USE_APR_POLLSET
+		/* code from mpm/prefork.c of apache 2.2.4 */
+		if (num_listensocks == 1) {
+			/* There is only one listener record, so refer to that one. */
+			lr = listeners;
+		}
+		else {
+			/* multiple listening sockets - need to poll */
+			for (;;) {
+				apr_status_t status;
+				apr_int32_t numdesc;
+				const apr_pollfd_t *pdesc;
+
+				/* timeout == -1 == wait forever */
+				status = apr_pollset_poll(pollset, -1, &numdesc, &pdesc);
+				if (status != APR_SUCCESS) {
+					if (APR_STATUS_IS_EINTR(status)) continue;
+
+					/* apr_poll() will only return errors in catastrophic
+				 	 * circumstances. let's try exiting gracefully, for now. */
+					error("apr_pollset_poll: (listen)");
+					kill(getpid(), SIGNAL_GRACEFUL_SHUTDOWN);
+				}
+
+				if (last_poll_idx >= numdesc)
+					last_poll_idx = 0;
+
+				lr = pdesc[last_poll_idx++].client_data;
+				goto got_fd;
+			}
+		} /* if (num_listensocks == 1) { */
+
+#else
 		while (1) {
 			apr_status_t ret;
 			apr_int16_t event;
@@ -226,12 +286,12 @@ static int thread_main (slot_t *slot)
 					|| scoreboard->graceful_shutdown ) break;
 
 			/* old apr interface */
-			// ret = apr_poll(pollset, &n, -1);
+			ret = apr_pollset_poll(pollset, 0, &n, -1);
 			ret = apr_poll(pollset, num_listensocks, &n, -1);
 			if (ret != APR_SUCCESS) {
 				if (APR_STATUS_IS_EINTR(ret)) continue;
 
-				/* apr_pool() will only return errors in catastrophic
+				/* apr_poll() will only return errors in catastrophic
 				 * circumstances. let's try exiting gracefully, for now. */
 				error("apr_poll: (listen)");
 				kill(getpid(), SIGNAL_GRACEFUL_SHUTDOWN);
@@ -255,7 +315,8 @@ static int thread_main (slot_t *slot)
 
 				if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) break;
 			} while (lr != last_lr);
-		}
+		} /* while (1) */
+#endif
 
 		if ( scoreboard->shutdown || scoreboard->graceful_shutdown ) {
 			info("slot[%d]: shutting down %s",slot->id,__FILE__);
@@ -334,7 +395,11 @@ static process_rec *create_process_rec(int argc, const char * const *argv)
 	apr_pool_tag(proc->pconf, "pconf");
 	proc->argc = argc;
 	proc->argv = argv;
+#if APR_MAJOR_VERSION == 1
+	proc->short_name = apr_filepath_name_get(argv[0]);
+#else
 	proc->short_name = apr_filename_of_pathname(argv[0]);
+#endif
 
 	return proc;
 }
@@ -360,7 +425,11 @@ static int module_init ()
 
 	/* FIXME we have to clean up this messy code of apr pool.
 	 * which is gonna use apr_global_hook_pool?? */
+#if APR_MAJOR_VERSION == 1
+	apr_hook_global_pool = pool;
+#else
 	apr_global_hook_pool = pool;
+#endif
 
 	lock.type = IPC_TYPE_SEM;
 	lock.pid = SYS5_ACCEPT;

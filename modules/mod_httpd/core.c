@@ -9,6 +9,7 @@
 #include "http_filter.h"
 #include "http_core.h" /* AP_MIN_BYTES_TO_WRITE */
 #include "apr_strings.h"
+#include "apr_version.h"
 #include "log.h" /* ap_log_rerror */
 #include "core.h"
 
@@ -793,27 +794,7 @@ static int default_handler(request_rec *r)
 */
 
         bb = apr_brigade_create(r->pool, c->bucket_alloc);
-#if APR_HAS_LARGE_FILES
-        if (r->finfo.size > AP_MAX_SENDFILE) {
-            /* APR_HAS_LARGE_FILES issue; must split into mutiple buckets,
-             * no greater than MAX(apr_size_t), and more granular than that
-             * in case the brigade code/filters attempt to read it directly.
-             */
-            apr_off_t fsize = r->finfo.size;
-            e = apr_bucket_file_create(fd, 0, AP_MAX_SENDFILE, r->pool,
-                                       c->bucket_alloc);
-            while (fsize > AP_MAX_SENDFILE) {
-                apr_bucket *ce;
-                apr_bucket_copy(e, &ce);
-                APR_BRIGADE_INSERT_TAIL(bb, ce);
-                e->start += AP_MAX_SENDFILE;
-                fsize -= AP_MAX_SENDFILE;
-            }
-            e->length = (apr_size_t)fsize; /* Resize just the last bucket */
-        }
-        else
-#endif
-            e = apr_bucket_file_create(fd, 0, (apr_size_t)r->finfo.size,
+        e = apr_bucket_file_create(fd, 0, (apr_size_t)r->finfo.size,
                                        r->pool, c->bucket_alloc);
 
 #if APR_HAS_MMAP
@@ -853,8 +834,13 @@ static apr_status_t reset_request_notes(void *dummy)
 
 AP_DECLARE(apr_size_t) ap_register_request_note(void)
 {
+#if APR_MAJOR_VERSION == 1
+    apr_pool_cleanup_register(apr_hook_global_pool, NULL, reset_request_notes,
+                              apr_pool_cleanup_null);
+#else
     apr_pool_cleanup_register(apr_global_hook_pool, NULL, reset_request_notes,
                               apr_pool_cleanup_null);
+#endif
     return num_request_notes++;
 }
 

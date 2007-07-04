@@ -19,6 +19,7 @@
 /*#include "apr_uri.h" |+ read_request_line() +|*/
 #include "apr_date.h"	/* For apr_date_parse_http and APR_DATE_BAD */
 /*#include "util_time.h"*/
+#include "apr_version.h"
 
 
 /*****************************************************************************/
@@ -814,7 +815,14 @@ int ap_discard_request_body(request_rec *r)
         }
         debug("6");
 		
-        APR_BRIGADE_FOREACH(bucket, bb) {
+#if APR_MAJOR_VERSION == 1
+		for (bucket = APR_BRIGADE_FIRST(bb);
+		     bucket != APR_BRIGADE_SENTINEL(bb);
+		     bucket = APR_BUCKET_NEXT(bucket))
+#else
+        APR_BRIGADE_FOREACH(bucket, bb)
+#endif
+		{
             const char *data;
             apr_size_t len;
             debug("7");

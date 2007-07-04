@@ -19,6 +19,7 @@
 #include "log.h" /* ap_log_rerror */
 #include "apr_lib.h"
 #include "apr_strings.h"
+#include "apr_version.h"
 
 /* Handles for http core filters */
 ap_filter_rec_t *ap_http_input_filter_handle;
@@ -704,7 +705,14 @@ AP_CORE_DECLARE_NONSTD(apr_status_t) ap_http_header_filter(ap_filter_t *f,
         }
     }
 
-    APR_BRIGADE_FOREACH(e, b) {
+#if APR_MAJOR_VERSION == 1
+	for (e = APR_BRIGADE_FIRST(b);
+	     e != APR_BRIGADE_SENTINEL(b);
+	     e = APR_BUCKET_NEXT(e))
+#else
+    APR_BRIGADE_FOREACH(e, b)
+#endif
+	{
         if (e->type == &ap_bucket_type_error) {
             ap_bucket_error *eb = e->data;
 
@@ -1235,7 +1243,14 @@ apr_status_t ap_content_length_filter(ap_filter_t *f, apr_bucket_brigade *bb)
         split = NULL;
         flush = 0;
 
-        APR_BRIGADE_FOREACH(e, bb) {
+#if APR_MAJOR_VERSION == 1
+		for (e = APR_BRIGADE_FIRST(bb);
+		     e != APR_BRIGADE_SENTINEL(bb);
+		     e = APR_BUCKET_NEXT(e))
+#else
+        APR_BRIGADE_FOREACH(e, bb)
+#endif
+		{
             const char *ignored;
             apr_size_t len;
             len = 0;

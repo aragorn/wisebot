@@ -20,6 +20,7 @@
 #include "apr.h"
 #include "apr_strings.h"
 #include "apr_lib.h"
+#include "apr_version.h"
 
 #define APR_WANT_STDIO
 #define APR_WANT_STRFUNC
@@ -1663,7 +1664,11 @@ AP_DECLARE(int) ap_is_rdirectory(apr_pool_t *p, const char *path)
 {
     apr_finfo_t finfo;
 
+#if APR_MAJOR_VERSION == 1
+    if (apr_stat(&finfo, path, APR_FINFO_TYPE, p) != APR_SUCCESS)
+#else
     if (apr_lstat(&finfo, path, APR_FINFO_TYPE, p) != APR_SUCCESS)
+#endif
 	return 0;		/* in error condition, just return no */
 
     return (finfo.filetype == APR_DIR);

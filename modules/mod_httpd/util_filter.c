@@ -7,14 +7,19 @@
 #include "apr_strings.h"
 
 #include "util_filter.h"
-//#include "util_string.h"
+#include "util_string.h"
 
 /* NOTE: Apache's current design doesn't allow a pool to be passed thru,
    so we depend on a global to hold the correct pool
 */
-#define FILTER_POOL     apr_global_hook_pool
 #include "apr_hooks.h"		/* for apr_global_hook_pool */
+#include "apr_version.h"
 
+#if APR_MAJOR_VERSION == 1
+# define FILTER_POOL     apr_hook_global_pool
+#else
+# define FILTER_POOL     apr_global_hook_pool
+#endif
 /*
 ** This macro returns true/false if a given filter should be inserted BEFORE
 ** another filter. This will happen when one of: 1) there isn't another
@@ -524,15 +529,21 @@ apr_status_t ap_save_brigade(ap_filter_t * f,
     if (!(*saveto)) {
 	*saveto = apr_brigade_create(p, f->c->bucket_alloc);
     }
-
-    APR_RING_FOREACH(e, &(*b)->list, apr_bucket, link) {
-	rv = apr_bucket_setaside(e, p);
-	if (rv != APR_SUCCESS
-	    /* ### this ENOTIMPL will go away once we implement setaside
-	       ### for all bucket types. */
-	    && rv != APR_ENOTIMPL) {
-	    return rv;
-	}
+#if APR_MAJOR_VERSION == 1
+	for (e = APR_BRIGADE_FIRST(*b);
+	     e != APR_BRIGADE_SENTINEL(*b);
+	     e = APR_BUCKET_NEXT(e))
+#else
+    APR_RING_FOREACH(e, &(*b)->list, apr_bucket, link)
+#endif
+	{
+		rv = apr_bucket_setaside(e, p);
+		if (rv != APR_SUCCESS
+			/* ### this ENOTIMPL will go away once we implement setaside
+			   ### for all bucket types. */
+			&& rv != APR_ENOTIMPL) {
+			return rv;
+		}
     }
     APR_BRIGADE_CONCAT(*saveto, *b);
     return APR_SUCCESS;

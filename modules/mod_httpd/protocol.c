@@ -20,6 +20,7 @@
 #include "apr_strings.h"
 #include "apr_lib.h"
 #include "apr_strmatch.h" /* apr_strmatch_pattern */
+#include "apr_version.h"
 #include "log.h" /* ap_log_rerror */
 
 #ifndef DEFAULT_LOCKFILE
@@ -99,7 +100,14 @@ apr_status_t ap_rgetline(char **s, apr_size_t n,
 		return APR_EGENERAL;
     }
 
-    APR_BRIGADE_FOREACH(e, b) {
+#if APR_MAJOR_VERSION == 1
+	for (e = APR_BRIGADE_FIRST(b);
+	     e != APR_BRIGADE_SENTINEL(b);
+	     e = APR_BUCKET_NEXT(e))
+#else
+    APR_BRIGADE_FOREACH(e, b)
+#endif
+	{
 		const char *str;
 		apr_size_t len;
 

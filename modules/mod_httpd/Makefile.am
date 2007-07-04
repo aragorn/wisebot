@@ -10,7 +10,8 @@ mod_httpd_la_LIBADD  = $(libdir)/libcommon_core.la \
                        $(libdir)/libcommon_util.la \
                        $(pkglibdir)/mod_api2.la \
                        $(APR_LIBS) $(APU_LIBS) 
-mod_httpd_la_CFLAGS  = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+mod_httpd_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \
+                       $(APR_INCLUDES) $(APU_INCLUDES)
 mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \
                        connection.c connection.h \
                        core.c core.h \
@@ -51,7 +52,8 @@ test_char.h: gen_test_char
 	./gen_test_char > test_char.h
 noinst_PROGRAMS = gen_test_char #test_main
 gen_test_char_SOURCES = gen_test_char.c
-gen_test_char_CFLAGS = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+gen_test_char_CFLAGS = $(APR_CPPFLAGS) $(APR_CFLAGS) \
+                       $(APR_INCLUDES) $(APU_INCLUDES)
 
 
 # 아래 exports.c, export_vars.h 관련 내용들은 httpd-2.0.54/server/Makefile.in 에서

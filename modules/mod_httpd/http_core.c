@@ -15,6 +15,7 @@
 #include "http_filter.h"
 #include "util_filter.h"
 #include "apr_strings.h"
+#include "apr_version.h"
 
 static const char *http_method(const request_rec *r)
     { return "http"; }
@@ -40,7 +41,14 @@ static apr_status_t chunk_filter(ap_filter_t *f, apr_bucket_brigade *b)
          */
         char chunk_hdr[20]; /* enough space for the snprintf below */
 
-        APR_BRIGADE_FOREACH(e, b) {
+#if APR_MAJOR_VERSION == 1
+		for (e = APR_BRIGADE_FIRST(b);
+		     e != APR_BRIGADE_SENTINEL(b);
+		     e = APR_BUCKET_NEXT(e))
+#else
+        APR_BRIGADE_FOREACH(e, b)
+#endif
+		{
             if (APR_BUCKET_IS_EOS(e)) {
                 /* there shouldn't be anything after the eos */
                 eos = e;

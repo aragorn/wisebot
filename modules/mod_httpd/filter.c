@@ -7,6 +7,7 @@
 #include "http_core.h"
 #include "http_config.h"
 #include "util_filter.h"
+#include "apr_version.h"
 
 #define AP_MIN_SENDFILE_BYTES		(256)
 
@@ -48,10 +49,7 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
     const char *str;
     apr_size_t len;
 
-//    debug("1");
-
     if (mode == AP_MODE_INIT) {
-//        debug("2");
         /*
          * this mode is for filters that might need to 'initialize'
          * a connection before reading request data from a client.
@@ -65,10 +63,8 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
         return APR_SUCCESS;
     }
 
-//    debug("3");
     if (!ctx)
     {
-//        debug("4");
         ctx = apr_pcalloc(f->c->pool, sizeof(*ctx));
         ctx->b = apr_brigade_create(f->c->pool, f->c->bucket_alloc);
 
@@ -76,15 +72,12 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
         e = apr_bucket_socket_create(net->client_socket, f->c->bucket_alloc);
         APR_BRIGADE_INSERT_TAIL(ctx->b, e);
         net->in_ctx = ctx;
-//        debug("5");
     }
     else if (APR_BRIGADE_EMPTY(ctx->b)) {
-//        debug("6");
         return APR_EOF;
     }
 
     /* ### This is bad. */
-//    debug("7");
     BRIGADE_NORMALIZE(ctx->b);
 
     /* check for empty brigade again *AFTER* BRIGADE_NORMALIZE()
@@ -93,21 +86,17 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
      * Ideally, this should be returning SUCCESS with EOS bucket, but
      * some higher-up APIs (spec. read_request_line via ap_rgetline)
      * want an error code. */
-//    debug("8");
     if (APR_BRIGADE_EMPTY(ctx->b)) {
-//        debug("9");
         return APR_EOF;
     }
 
     /* ### AP_MODE_PEEK is a horrific name for this mode because we also
      * eat any CRLFs that we see.  That's not the obvious intention of
      * this mode.  Determine whether anyone actually uses this or not. */
-//    debug("10");
     if (mode == AP_MODE_EATCRLF) {
         apr_bucket *e;
         const char *c;
 
-//        debug("11");
         /* The purpose of this loop is to ignore any CRLF (or LF) at the end
          * of a request.  Many browsers send extra lines at the end of POST
          * requests.  We use the PEEK method to determine if there is more
@@ -118,7 +107,6 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
          * mean that there is another request, just a blank line.
          */
         while (1) {
-//            debug("12");
             if (APR_BRIGADE_EMPTY(ctx->b))
                 return APR_EOF;
 
@@ -143,7 +131,6 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
              * just toss the bucket. */
             /* FIXME: Is this the right thing to do in the core? */
             apr_bucket_delete(e);
-//            debug("13");
         }
     }
 
@@ -161,7 +148,6 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
      */
     if (mode == AP_MODE_EXHAUSTIVE) {
         apr_bucket *e;
-//        debug("15");
 
         /* Tack on any buckets that were set aside. */
         APR_BRIGADE_CONCAT(b, ctx->b);
@@ -173,7 +159,6 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
          * must be EOS. */
         e = apr_bucket_eos_create(f->c->bucket_alloc);
         APR_BRIGADE_INSERT_TAIL(b, e);
-//        debug("16");
         return APR_SUCCESS;
     }
 
@@ -182,22 +167,16 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
         apr_off_t total;
         apr_bucket *e;
         apr_bucket_brigade *newbb;
-//        debug("17");
 
         SB_DEBUG_ASSERT(readbytes > 0);
 
-//        debug("17a");
         e = APR_BRIGADE_FIRST(ctx->b);
-//        debug("17b");
         rv = apr_bucket_read(e, &str, &len, block);
 
-//        debug("18");
         if (APR_STATUS_IS_EAGAIN(rv)) {
-//            debug("19");
             return APR_SUCCESS;
         }
         else if (rv != APR_SUCCESS) {
-//            debug("20:%d", rv);
             return rv;
         }
         else if (block == APR_BLOCK_READ && len == 0) {
@@ -209,81 +188,69 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
              * When we are in speculative mode, leave ctx->b empty, so
              * that the next call returns an EOS bucket.
              */
-//            debug("21");
             apr_bucket_delete(e);
 
-            //debug("22");
             if (mode == AP_MODE_READBYTES) {
-                //debug("23");
                 e = apr_bucket_eos_create(f->c->bucket_alloc);
                 APR_BRIGADE_INSERT_TAIL(b, e);
             }
-            //debug("24");
             return APR_SUCCESS;
         }
 
         /* We can only return at most what we read. */
         //debug("25");
         if (len < readbytes) {
-            //debug("26");
             readbytes = len;
         }
 
-        //debug("27");
         apr_brigade_partition(ctx->b, readbytes, &e);
 
-        //debug("28");
         /* Must do split before CONCAT */
         newbb = apr_brigade_split(ctx->b, e);
 
-        //debug("29");
         if (mode == AP_MODE_READBYTES) {
-            //debug("30");
             APR_BRIGADE_CONCAT(b, ctx->b);
-            //debug("31");
         }
         else if (mode == AP_MODE_SPECULATIVE) {
             apr_bucket *copy_bucket;
-            //debug("32");
-            APR_BRIGADE_FOREACH(e, ctx->b) {
-                //debug("33");
+
+#if APR_MAJOR_VERSION == 1
+			/* copied from core_filters.c of apache 2.2.4 */
+			for (e = APR_BRIGADE_FIRST(ctx->b);
+			     e != APR_BRIGADE_SENTINEL(ctx->b);
+			     e = APR_BUCKET_NEXT(e))
+#else
+            APR_BRIGADE_FOREACH(e, ctx->b)
+#endif
+			{
                 rv = apr_bucket_copy(e, &copy_bucket);
                 if (rv != APR_SUCCESS) {
-                    //debug("34");
                     return rv;
                 }
-                //debug("35");
                 APR_BRIGADE_INSERT_TAIL(b, copy_bucket);
             }
         }
 
         /* Take what was originally there and place it back on ctx->b */
-        //debug("36");
         APR_BRIGADE_CONCAT(ctx->b, newbb);
 
         /* XXX: Why is this here? We never use 'total'! */
-        //debug("38");
         apr_brigade_length(b, 1, &total);
 
-        //debug("39");
         return APR_SUCCESS;
     }
 
-    //debug("40");
     /* we are reading a single LF line, e.g. the HTTP headers */
     rv = apr_brigade_split_line(b, ctx->b, block, HUGE_STRING_LEN);
 
-    //debug("41");
     /* We should treat EAGAIN here the same as we do for EOF (brigade is
      * empty).  We do this by returning whatever we have read.  This may
      * or may not be bogus, but is consistent (for now) with EOF logic.
      */
     if (APR_STATUS_IS_EAGAIN(rv)) {
-        //debug("42");
         rv = APR_SUCCESS;
     }
 
-    //debug("43");
     return rv;
 }
 
@@ -302,12 +269,15 @@ static apr_status_t writev_it_all(apr_socket_t *s,
 
     /* XXX handle checking for non-blocking socket */
     while (bytes_written != len) {
+#if APR_MAJOR_VERSION == 1
+        rv = apr_socket_sendv(s, vec + i, nvec - i, &n);
+#else
         rv = apr_sendv(s, vec + i, nvec - i, &n);
+#endif
+        *nbytes += n;
         bytes_written += n;
         if (rv != APR_SUCCESS)
             return rv;
-
-        *nbytes += n;
 
         /* If the write did not complete, adjust the iovecs and issue
          * apr_sendv again
@@ -350,17 +320,31 @@ static apr_status_t sendfile_it_all(core_net_rec *c,
                                     apr_int32_t flags)
 {
     apr_status_t rv;
+
+#if APR_MAJOR_VERSION == 1
+    apr_interval_time_t timeout = 0;
+
+    SB_DEBUG_ASSERT((apr_socket_timeout_get(c->client_socket, &timeout)
+                         == APR_SUCCESS)
+                    && timeout > 0);  /* socket must be in timeout mode */
+#else
     apr_int32_t timeout = 0;
 
     SB_DEBUG_ASSERT((apr_getsocketopt(c->client_socket, APR_SO_TIMEOUT,
                                       &timeout) == APR_SUCCESS)
                     && timeout > 0);  /* socket must be in timeout mode */
+#endif
 
     do {
         apr_size_t tmplen = file_bytes_left;
 
+#if APR_MAJOR_VERSION == 1
+        rv = apr_socket_sendfile(c->client_socket, fd, hdtr, &file_offset, &tmplen,
+                          flags);
+#else
         rv = apr_sendfile(c->client_socket, fd, hdtr, &file_offset, &tmplen,
                           flags);
+#endif
         total_bytes_left -= tmplen;
         if (!total_bytes_left || rv != APR_SUCCESS) {
             return rv;        /* normal case & error exit */
@@ -469,7 +453,11 @@ static apr_status_t emulate_sendfile(core_net_rec *c, apr_file_t *fd,
         rv = apr_file_read(fd, buffer, &sendlen);
         while (rv == APR_SUCCESS && sendlen) {
             bytes_sent = sendlen;
+#if APR_MAJOR_VERSION == 1
+            rv = apr_socket_send(c->client_socket, &buffer[o], &bytes_sent);
+#else
             rv = apr_send(c->client_socket, &buffer[o], &bytes_sent);
+#endif
             if (rv == APR_SUCCESS) {
                 sendlen -= bytes_sent; /* sendlen != bytes_sent ==> partial write */
                 o += bytes_sent;       /* o is where we are in the buffer */
@@ -549,7 +537,14 @@ static apr_status_t core_output_filter(ap_filter_t *f, apr_bucket_brigade *b)
         apr_bucket *last_merged_bucket = NULL;
 
         /* Iterate over the brigade: collect iovecs and/or a file */
-        APR_BRIGADE_FOREACH(e, b) {
+#if APR_MAJOR_VERSION == 1
+		for (e = APR_BRIGADE_FIRST(b);
+		     e != APR_BRIGADE_SENTINEL(b);
+		     e = APR_BUCKET_NEXT(e))
+#else
+        APR_BRIGADE_FOREACH(e, b)
+#endif
+		{
             /* keep track of the last bucket processed */
             last_e = e;
             if (APR_BUCKET_IS_EOS(e) || APR_BUCKET_IS_FLUSH(e)) {
@@ -727,7 +722,14 @@ static apr_status_t core_output_filter(ap_filter_t *f, apr_bucket_brigade *b)
                                                 net->c->bucket_alloc);
                 }
 
-                APR_BRIGADE_FOREACH(bucket, b) {
+#if APR_MAJOR_VERSION == 1
+				for (bucket = APR_BRIGADE_FIRST(b);
+					 bucket != APR_BRIGADE_SENTINEL(b);
+					 bucket = APR_BUCKET_NEXT(bucket))
+#else
+                APR_BRIGADE_FOREACH(bucket, b)
+#endif
+				{
                     const char *str;
                     apr_size_t n;
 
@@ -844,41 +846,6 @@ static apr_status_t core_output_filter(ap_filter_t *f, apr_bucket_brigade *b)
 }
 
 /*****************************************************************************/
-/* FILTER : net_time */
-
-static int net_time_filter(ap_filter_t *f, apr_bucket_brigade *b,
-                           ap_input_mode_t mode, apr_read_type_e block,
-                           apr_off_t readbytes)
-{
-    int keptalive = f->c->keepalive == 1;
-    apr_socket_t *csd = ap_get_module_config(f->c->conn_config, CORE_HTTPD_MODULE);
-    int *first_line = f->ctx;
-
-    //debug("1");
-    if (!f->ctx) {
-        f->ctx = first_line = apr_palloc(f->r->pool, sizeof(*first_line));
-        *first_line = 1;
-    }
-
-    if (mode != AP_MODE_INIT && mode != AP_MODE_EATCRLF) {
-        if (*first_line) {
-            apr_setsocketopt(csd, APR_SO_TIMEOUT,
-                             (int)(keptalive ? f->c->base_server->keep_alive_timeout
-                      			     : f->c->base_server->timeout));
-            *first_line = 0;
-        }
-        else {
-            if (keptalive) {
-                apr_setsocketopt(csd, APR_SO_TIMEOUT,
-                                 (int)(f->c->base_server->timeout));
-            }
-        }
-    }
-    //debug("2");
-    return ap_get_brigade(f->next, b, mode, block, readbytes);
-}
-
-/*****************************************************************************/
 /* FILTER : old_write */
 
 apr_status_t ap_old_write_filter(ap_filter_t *f, apr_bucket_brigade *bb)
@@ -906,9 +873,6 @@ void register_core_filters(void)
     ap_core_input_filter_handle =
         ap_register_input_filter("CORE_IN", core_input_filter,
                                  AP_FTYPE_NETWORK);
-    ap_net_time_filter_handle =
-        ap_register_input_filter("NET_TIME", net_time_filter,
-                                 AP_FTYPE_PROTOCOL);
 
     ap_core_output_filter_handle =
         ap_register_output_filter("CORE", core_output_filter,
