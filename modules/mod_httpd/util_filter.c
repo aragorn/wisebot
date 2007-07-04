@@ -13,13 +13,8 @@
    so we depend on a global to hold the correct pool
 */
 #include "apr_hooks.h"		/* for apr_global_hook_pool */
-#include "apr_version.h"
 
-#if APR_MAJOR_VERSION == 1
-# define FILTER_POOL     apr_hook_global_pool
-#else
-# define FILTER_POOL     apr_global_hook_pool
-#endif
+#define FILTER_POOL     apr_hook_global_pool
 /*
 ** This macro returns true/false if a given filter should be inserted BEFORE
 ** another filter. This will happen when one of: 1) there isn't another
@@ -521,29 +516,42 @@ apr_status_t ap_save_brigade(ap_filter_t * f,
 					 apr_pool_t * p)
 {
     apr_bucket *e;
-    apr_status_t rv;
+    apr_status_t rv, srv = APR_SUCCESS;
 
     /* If have never stored any data in the filter, then we had better
      * create an empty bucket brigade so that we can concat.
      */
     if (!(*saveto)) {
-	*saveto = apr_brigade_create(p, f->c->bucket_alloc);
+		*saveto = apr_brigade_create(p, f->c->bucket_alloc);
     }
-#if APR_MAJOR_VERSION == 1
+
 	for (e = APR_BRIGADE_FIRST(*b);
 	     e != APR_BRIGADE_SENTINEL(*b);
 	     e = APR_BUCKET_NEXT(e))
-#else
-    APR_RING_FOREACH(e, &(*b)->list, apr_bucket, link)
-#endif
 	{
 		rv = apr_bucket_setaside(e, p);
-		if (rv != APR_SUCCESS
-			/* ### this ENOTIMPL will go away once we implement setaside
-			   ### for all bucket types. */
-			&& rv != APR_ENOTIMPL) {
-			return rv;
-		}
+
+        /* If the bucket type does not implement setaside, then
+         * (hopefully) morph it into a bucket type which does, and set
+         * *that* aside... */
+        if (rv == APR_ENOTIMPL) {
+            const char *s;
+            apr_size_t n;
+
+            rv = apr_bucket_read(e, &s, &n, APR_BLOCK_READ);
+            if (rv == APR_SUCCESS) {
+                rv = apr_bucket_setaside(e, p);
+            }
+        }
+
+        if (rv != APR_SUCCESS) {
+            srv = rv;
+            /* Return an error but still save the brigade if
+             * ->setaside() is really not implemented. */
+            if (rv != APR_ENOTIMPL) {
+                return rv;
+            }
+        }
     }
     APR_BRIGADE_CONCAT(*saveto, *b);
     return APR_SUCCESS;

@@ -5,12 +5,6 @@
 #include "listen.h"
 #include "apr_version.h"
 
-#if APR_MAJOR_VERSION == 0
-# define apr_setsocketopt apr_socket_opt_set
-# define apr_bind         apr_socket_bind
-# define apr_listen       apr_socket_listen
-# define apr_accept       apr_socket_accept
-#endif
 listen_rec *listeners = NULL;
 
 #if APR_HAVE_IPV6

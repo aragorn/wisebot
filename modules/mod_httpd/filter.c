@@ -7,7 +7,6 @@
 #include "http_core.h"
 #include "http_config.h"
 #include "util_filter.h"
-#include "apr_version.h"
 
 #define AP_MIN_SENDFILE_BYTES		(256)
 
@@ -214,14 +213,9 @@ static int core_input_filter(ap_filter_t *f, apr_bucket_brigade *b,
         else if (mode == AP_MODE_SPECULATIVE) {
             apr_bucket *copy_bucket;
 
-#if APR_MAJOR_VERSION == 1
-			/* copied from core_filters.c of apache 2.2.4 */
 			for (e = APR_BRIGADE_FIRST(ctx->b);
 			     e != APR_BRIGADE_SENTINEL(ctx->b);
 			     e = APR_BUCKET_NEXT(e))
-#else
-            APR_BRIGADE_FOREACH(e, ctx->b)
-#endif
 			{
                 rv = apr_bucket_copy(e, &copy_bucket);
                 if (rv != APR_SUCCESS) {
@@ -269,11 +263,7 @@ static apr_status_t writev_it_all(apr_socket_t *s,
 
     /* XXX handle checking for non-blocking socket */
     while (bytes_written != len) {
-#if APR_MAJOR_VERSION == 1
         rv = apr_socket_sendv(s, vec + i, nvec - i, &n);
-#else
-        rv = apr_sendv(s, vec + i, nvec - i, &n);
-#endif
         *nbytes += n;
         bytes_written += n;
         if (rv != APR_SUCCESS)
@@ -321,30 +311,17 @@ static apr_status_t sendfile_it_all(core_net_rec *c,
 {
     apr_status_t rv;
 
-#if APR_MAJOR_VERSION == 1
     apr_interval_time_t timeout = 0;
 
     SB_DEBUG_ASSERT((apr_socket_timeout_get(c->client_socket, &timeout)
                          == APR_SUCCESS)
                     && timeout > 0);  /* socket must be in timeout mode */
-#else
-    apr_int32_t timeout = 0;
-
-    SB_DEBUG_ASSERT((apr_getsocketopt(c->client_socket, APR_SO_TIMEOUT,
-                                      &timeout) == APR_SUCCESS)
-                    && timeout > 0);  /* socket must be in timeout mode */
-#endif
 
     do {
         apr_size_t tmplen = file_bytes_left;
 
-#if APR_MAJOR_VERSION == 1
         rv = apr_socket_sendfile(c->client_socket, fd, hdtr, &file_offset, &tmplen,
                           flags);
-#else
-        rv = apr_sendfile(c->client_socket, fd, hdtr, &file_offset, &tmplen,
-                          flags);
-#endif
         total_bytes_left -= tmplen;
         if (!total_bytes_left || rv != APR_SUCCESS) {
             return rv;        /* normal case & error exit */
@@ -453,11 +430,7 @@ static apr_status_t emulate_sendfile(core_net_rec *c, apr_file_t *fd,
         rv = apr_file_read(fd, buffer, &sendlen);
         while (rv == APR_SUCCESS && sendlen) {
             bytes_sent = sendlen;
-#if APR_MAJOR_VERSION == 1
             rv = apr_socket_send(c->client_socket, &buffer[o], &bytes_sent);
-#else
-            rv = apr_send(c->client_socket, &buffer[o], &bytes_sent);
-#endif
             if (rv == APR_SUCCESS) {
                 sendlen -= bytes_sent; /* sendlen != bytes_sent ==> partial write */
                 o += bytes_sent;       /* o is where we are in the buffer */
@@ -537,13 +510,9 @@ static apr_status_t core_output_filter(ap_filter_t *f, apr_bucket_brigade *b)
         apr_bucket *last_merged_bucket = NULL;
 
         /* Iterate over the brigade: collect iovecs and/or a file */
-#if APR_MAJOR_VERSION == 1
 		for (e = APR_BRIGADE_FIRST(b);
 		     e != APR_BRIGADE_SENTINEL(b);
 		     e = APR_BUCKET_NEXT(e))
-#else
-        APR_BRIGADE_FOREACH(e, b)
-#endif
 		{
             /* keep track of the last bucket processed */
             last_e = e;
@@ -722,13 +691,9 @@ static apr_status_t core_output_filter(ap_filter_t *f, apr_bucket_brigade *b)
                                                 net->c->bucket_alloc);
                 }
 
-#if APR_MAJOR_VERSION == 1
 				for (bucket = APR_BRIGADE_FIRST(b);
 					 bucket != APR_BRIGADE_SENTINEL(b);
 					 bucket = APR_BUCKET_NEXT(bucket))
-#else
-                APR_BRIGADE_FOREACH(bucket, b)
-#endif
 				{
                     const char *str;
                     apr_size_t n;
