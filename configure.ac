@@ -122,6 +122,9 @@ AH_VERBATIM([1_NEAR_TOP__],[
 /* whether to use daum_koma or not */
 #define USE_DAUM_KOMA 0
 
+/* whether to use pkoma or not */
+#define USE_POSTECH_KOMA 0
+
 /* If you don't have setproctitle, SB_ARGV_TYPE needs to be set to either
 * SB_ARGV_NEW (replace argv[] arguments), SB_ARGV_WRITEABLE (overwrite
 * argv[]), SB_ARGV_PSTAT (use the pstat function), or SB_ARGV_PSSTRINGS
@@ -190,6 +193,18 @@ then
 	AC_DEFINE(USE_DAUM_KOMA,1)
 else
 	AC_DEFINE(USE_DAUM_KOMA,0)
+fi
+])
+
+AM_CONDITIONAL(USE_POSTECH_KOMA,test 0 -eq 1)
+AC_ARG_WITH(postech-koma,
+[  --with-postech-koma     build with Postech's koma        [default=no]], [
+if test "$withval" = yes
+then
+    AM_CONDITIONAL(USE_POSTECH_KOMA,test 1 -eq 1)
+	AC_DEFINE(USE_POSTECH_KOMA,1)
+else
+	AC_DEFINE(USE_POSTECH_KOMA,0)
 fi
 ])
 

@@ -77,12 +77,12 @@ mod_daum_koma_exact_la_SOURCES = mod_daum_exact.c
 mod_daum_koma_exact_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
 else
 mod_daum_koma_la_SOURCES = 
-mod_daum_koma_la_LDFLAGS = -module -avoid-version 
-
+mod_daum_koma_la_LDFLAGS = -module -avoid-version
 mod_daum_koma_exact_la_SOURCES = 
 mod_daum_koma_exact_la_LDFLAGS = -module -avoid-version
 endif
 
+if USE_POSTECH_KOMA
 mod_pkoma_la_SOURCES = mod_pkoma.c mod_pkoma.h 
 mod_pkoma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lpkoma
 
@@ -92,6 +92,11 @@ test_mod_pkoma_LDFLAGS = -L$(libdir) -lpkoma
 test_mod_pkoma_LDADD   = $(libdir)/libcommon_core.la \
 						 $(libdir)/libcommon_util.la \
 						 $(pkglibdir)/mod_api2.la
+else
+mod_pkoma_la_SOURCES = 
+mod_pkoma_la_LDFLAGS = -module -avoid-version
+test_mod_pkoma_SOURCES = 
+endif
 
 include ../install-pkglib.mk
 
