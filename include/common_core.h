@@ -3,7 +3,9 @@
 #define COMMON_CORE_H 1
 
 /* pthread_rwlock을 사용하기 위해 선언한다. <features.h>를 참조할 것. */
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include "auto_config.h"
 #include "constants.h"

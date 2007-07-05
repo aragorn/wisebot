@@ -40,6 +40,7 @@ fi
 APR_LIBS=`apr-config --link-libtool --libs`
 APR_INCLUDES=`apr-config --includes`
 APR_CFLAGS=`apr-config --cflags`
+APR_CPPFLAGS=`apr-config --cppflags`
 APR_LDFLAGS=`apr-config --ldflags`
 dnl APR_BINDIR=`apr-config --bindir`
 dnl SHLIBPATH_VAR=`apr-config --shlib-path-var`
@@ -467,6 +468,7 @@ AC_SUBST(am_aux_dir)
 AC_SUBST(APR_LIBS)
 AC_SUBST(APR_INCLUDES)
 AC_SUBST(APR_CFLAGS)
+AC_SUBST(APR_CPPFLAGS)
 AC_SUBST(APR_LDFLAGS)
 AC_SUBST(APU_LIBS)
 AC_SUBST(APU_INCLUDES)

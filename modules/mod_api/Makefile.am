@@ -27,7 +27,8 @@ libapi_common_la_SOURCES = \
 				http_client.c http_client.h \
 				httpd.c httpd.h \
 				sbhandler.c sbhandler.h
-libapi_common_la_CFLAGS  = $(APR_CFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+libapi_common_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \
+                           $(APR_INCLUDES) $(APU_INCLUDES)
 libapi_common_la_LDFLAGS = -shared -avoid-version -no-undefined
 libapi_common_la_LIBADD  = $(libdir)/libcommon_core.la $(APR_LIBS) $(APU_LIBS)
 
