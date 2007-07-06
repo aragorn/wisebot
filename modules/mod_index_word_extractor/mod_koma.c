@@ -598,9 +598,9 @@ static void setJupmisa(configValue v) {
 
 static void setTaggingMethod(configValue v) {
 	if ( strncasecmp(v.argument[0], "PATH_BASED", SHORT_STRING_SIZE) == 0 )
-		DO_TREAT_JUPMISA = PATH_BASED_TAGGING;
+		TAGGING_METHOD = PATH_BASED_TAGGING;
 	else if ( strncasecmp(v.argument[0], "STATE_BASED", SHORT_STRING_SIZE) == 0 )
-		DO_TREAT_JUPMISA = STATE_BASED_TAGGING;
+		TAGGING_METHOD = STATE_BASED_TAGGING;
 }
 
 /** config stuff **/
