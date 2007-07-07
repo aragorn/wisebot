@@ -230,7 +230,8 @@ module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, 
 #endif
 
 	sb_server_root_relative(modulefile, modulename);
-	modhandle = dlopen(modulefile, RTLD_NOW|RTLD_GLOBAL|RTLD_DEEPBIND);
+	//modhandle = dlopen(modulefile, RTLD_NOW|RTLD_GLOBAL|RTLD_DEEPBIND);
+	modhandle = dlopen(modulefile, RTLD_NOW|RTLD_GLOBAL);
 
 	if (modhandle == NULL) {
 		error("cannot load(dlopen) %s into server: %s", modulename, dlerror());
