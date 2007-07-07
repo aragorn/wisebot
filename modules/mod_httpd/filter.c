@@ -811,6 +811,38 @@ static apr_status_t core_output_filter(ap_filter_t *f, apr_bucket_brigade *b)
 }
 
 /*****************************************************************************/
+/* FILTER : net_time */
+
+static int net_time_filter(ap_filter_t *f, apr_bucket_brigade *b,
+                           ap_input_mode_t mode, apr_read_type_e block,
+                           apr_off_t readbytes)
+{
+    int keptalive = f->c->keepalive == 1;
+    apr_socket_t *csd = ap_get_module_config(f->c->conn_config, CORE_HTTPD_MODULE);
+    int *first_line = f->ctx;
+
+    if (!f->ctx) {
+        f->ctx = first_line = apr_palloc(f->r->pool, sizeof(*first_line));
+        *first_line = 1;
+    }
+
+    if (mode != AP_MODE_INIT && mode != AP_MODE_EATCRLF) {
+        if (*first_line) {
+            apr_socket_timeout_set(csd, 
+                   (int)(keptalive ? f->c->base_server->keep_alive_timeout
+                      			   : f->c->base_server->timeout));
+            *first_line = 0;
+        }
+        else {
+            if (keptalive) {
+                apr_socket_timeout_set(csd, (int)(f->c->base_server->timeout));
+            }
+        }
+    }
+    return ap_get_brigade(f->next, b, mode, block, readbytes);
+}
+
+/*****************************************************************************/
 /* FILTER : old_write */
 
 apr_status_t ap_old_write_filter(ap_filter_t *f, apr_bucket_brigade *bb)
@@ -838,6 +870,9 @@ void register_core_filters(void)
     ap_core_input_filter_handle =
         ap_register_input_filter("CORE_IN", core_input_filter,
                                  AP_FTYPE_NETWORK);
+    ap_net_time_filter_handle =
+        ap_register_input_filter("NET_TIME", net_time_filter,
+                                 AP_FTYPE_PROTOCOL);
 
     ap_core_output_filter_handle =
         ap_register_output_filter("CORE", core_output_filter,
