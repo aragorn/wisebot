@@ -202,7 +202,7 @@ static int process_main (slot_t *slot)
 	char *err_str = NULL;
 
 	// rmas가 없으면 할 일도 없다.
-	if ( num_of_rmas == 0 ) {
+	if ( rma_protocol != PROT_LOCAL &&  num_of_rmas == 0 ) {
 		slot->state = SLOT_FINISH;
 		return 0;
 	}
@@ -838,7 +838,7 @@ static int morphological_analyze_http(uint32_t docid, void *pCdmData, long cdmLe
 	return FAIL;
 }
 
-// pCdmData의 문서를 rmas에서 분석해 pRmasData에 저장한다.
+/* rmac process가 곧바로 색인어추출한다. */
 static int morphological_analyze_local(uint32_t docid, void *pCdmData, long cdmLength,
 										void **pRmasData, long *rmasLength)
 {
