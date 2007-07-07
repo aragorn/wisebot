@@ -1,0 +1,120 @@
+#!/usr/bin/perl -w
+# $Id$
+
+use strict;
+use Getopt::Std;
+
+require "lib_http_client.pl";
+
+sub BEGIN {
+	$Getopt::Std::STANDARD_HELP_VERSION = 1;
+	our $VERSION = "1.0";
+}
+
+sub HELP_MESSAGE {
+	print <<END;
+Usage: $0 [-r] <host> <port> <file> [<confirm>]
+    host
+    port
+    file     - thesaurus csv file
+    confirm  - set 1 if you want to confirm every document by key input
+
+Options:
+    -r       - prints koma's raw output instead of rmas output
+END
+	exit;
+}
+
+
+my $host  = shift;
+my $port  = shift;
+my $file  = shift;
+my $confirm = shift || 0;
+my $stop = 0;
+my $max_size = 10_000_000;
+
+HELP_MESSAGE() unless( getopts( "r" ) );
+our ( $opt_r );
+my $USE_RAW_KOMA = $opt_r;
+
+HELP_MESSAGE() unless ($host and $port and $file);
+
+open(FILE, $file) or die "cannot open file: $!";
+
+my $count = 0;
+while (<FILE>) {
+	last if $stop;
+	chomp;
+	my ($seq, $word, $orig) = split(/,/);
+	$word =~ s/"//g;
+	$orig =~ s/"//g;
+
+	my $header = "Word#1:10^";
+	$header = "Word#1:100^" if $USE_RAW_KOMA;
+	my $word_cdm = make_cdm($word);
+	my $orig_cdm = make_cdm($orig);
+
+	my $word_output = lib_morph_analyze($host, $port, $header, $word_cdm);
+	my $orig_output = lib_morph_analyze($host, $port, $header, $orig_cdm);
+
+	my $parsed_word = parse_output($word_output);
+	my $parsed_orig = parse_output($orig_output);
+
+	print $word, "(", $orig, ") -> ", $parsed_word->{WORD_TAG}, "(", $parsed_orig->{WORD_TAG}, ")";
+
+#	print "\n";
+#	print "ALL_NOUN " if $parsed_word->{ALL_NOUN};
+#	print $word, "(", $parsed_word->{CONCAT}, ") --> ";
+#	print "ALL_NOUN " if $parsed_orig->{ALL_NOUN};
+#	print $orig, "(", $parsed_orig->{CONCAT}, ") ";
+
+	print " PERFECT" if ( $parsed_word->{ALL_NOUN} and 
+						  $parsed_orig->{ALL_NOUN} and
+						  $parsed_word->{CONCAT} eq $orig);
+	print "\n";
+
+	my $tmp = <STDIN> if $confirm;
+	$count++;
+}
+close(FILE);
+print "\nTested $count words.\n";
+
+sub make_cdm {
+	my $word = shift;
+	return <<END;
+<Document>
+<Word>$word</Word>
+</Document>
+END
+}
+
+sub parse_output {
+	my $input = shift;
+
+	my %out = (
+		ALL_NOUN    => 1,
+		HAS_UNK     => 0,
+	);
+	my $word_tag = "";
+	my ( @w, @t, @word_tag );
+	my @input = split(/\n/, $input);
+	my $size  = $input[0];
+	foreach my $n ( 1..$size ) {
+		chomp $input[$n];
+		my ($w, $pos, $tag) = split(/ /, $input[$n]);
+		$out{ALL_NOUN} = 0 unless $tag =~ m/^NN/;
+		$out{HAS_UNK}  = 1 if     $tag =~ m/^UNK/;
+		$out{HAS_UNK}  = 1 if     $tag =~ m/\?/;
+		push @w, $w;
+		push @t, $tag;
+		push @word_tag, "$w/$tag";
+	}
+
+	$out{WORD_TAG} = join(" ", @word_tag);
+	$out{CONCAT} = join(" ", @w);
+	$out{WORDS} = \@w;
+	$out{TAGS}  = \@t;
+
+	return \%out;
+}
+
