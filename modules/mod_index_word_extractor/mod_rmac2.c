@@ -203,6 +203,7 @@ static int process_main (slot_t *slot)
 
 	// rmas가 없으면 할 일도 없다.
 	if ( rma_protocol != PROT_LOCAL &&  num_of_rmas == 0 ) {
+		error("No rma server address. At least one is required.");
 		slot->state = SLOT_FINISH;
 		return 0;
 	}
