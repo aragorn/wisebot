@@ -1,7 +1,7 @@
 #!/bin/sh
 # $Id$ 
 
-distdir=wisebot
+distdir=wisebot-dist
 subdirs="bin dat dat/koma dat/cdm dat/dic dat/did dat/indexer dat/lexicon dat/vrf dat/forward_index etc include lib lib/softbot lib/perl logs scripts"
 
 ## if dist is not defined, all the files and directories of 'subdirs' are insert to package
@@ -60,4 +60,4 @@ if [ -f "$distdir".tar.gz ]; then
 fi
 
 tar chof - "$distdir" | GZIP=--fast gzip -c > "$distdir".tar.gz
-rm -rf "$distdir"
+#rm -rf "$distdir"

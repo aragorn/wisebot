@@ -17,3 +17,5 @@ tags
 .history
 docs
 *.ncb *.opt
+wisebot-dist
+wisebot-dist.tar.gz
