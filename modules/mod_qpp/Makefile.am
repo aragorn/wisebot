@@ -8,8 +8,7 @@ mod_qpp_la_SOURCES = mod_qpp.c daum_qpp.c tokenizer.c stack.c  relatedTerm.c \
 					mod_qpp.h daum_qpp.h qpp_test.h relatedTerm.h \
 					stack.h synonym.h tokenizer.h 
 mod_qpp_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_qpp_la_LIBADD  = $(libdir)/libcommon_core.la \
-                     $(pkglibdir)/mod_api.la
+mod_qpp_la_LIBADD  = $(libdir)/libcommon_core.la
 
 
 check_PROGRAMS = daum_qpp

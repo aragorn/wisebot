@@ -7,14 +7,12 @@ pkglib_LTLIBRARIES = mod_qp.la mod_qp2.la
 
 mod_qp_la_SOURCES = mod_qp.c mod_qp.h
 mod_qp_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_qp_la_LIBADD  = $(libdir)/libcommon_core.la \
-                    $(pkglibdir)/mod_api.la \
+mod_qp_la_LIBADD  = $(libdir)/libcommon_core.la 
                     -lm
 
 mod_qp2_la_SOURCES = mod_qp2.c
 mod_qp2_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_qp2_la_LIBADD  = $(libdir)/libcommon_core.la \
-                     $(pkglibdir)/mod_api.la \
+mod_qp2_la_LIBADD  = $(libdir)/libcommon_core.la
                      -lm
 
 #mod_qp_cdmi_la_SOURCES = mod_qp_cdmi.c mod_qp.h

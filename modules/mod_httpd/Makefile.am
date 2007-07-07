@@ -7,8 +7,7 @@ pkglib_LTLIBRARIES = mod_httpd.la
 mod_httpd_la_LDFLAGS = -module -avoid-version -no-undefined \
                        $(APR_LDFLAGS) $(APU_LDFLAGS)
 mod_httpd_la_LIBADD  = $(libdir)/libcommon_core.la \
-                       $(libdir)/libcommon_util.la \
-                       $(pkglibdir)/mod_api2.la \
+                       $(libdir)/libcommon_util.la
                        $(APR_LIBS) $(APU_LIBS) 
 mod_httpd_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \
                        $(APR_INCLUDES) $(APU_INCLUDES)

@@ -9,8 +9,7 @@ pkglib_LTLIBRARIES = mod_docapi.la #mod_docapi_cdmi.la mod_docapi_test.la
 mod_docapi_la_SOURCES = mod_docapi_expat_local_temp.c \
 						mod_docapi.h
 mod_docapi_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_docapi_la_LIBADD  = $(libdir)/libcommon_core.la \
-                        $(pkglibdir)/mod_api.la
+mod_docapi_la_LIBADD  = $(libdir)/libcommon_core.la
 
 #mod_docapi_cdmi_la_SOURCES = mod_docapi_cdmi.c mod_docapi.h
 #mod_docapi_cdmi_la_LDFLAGS = -module -avoid-version 

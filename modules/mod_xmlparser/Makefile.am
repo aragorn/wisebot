@@ -24,7 +24,6 @@ mod_xmlparser_la_SOURCES = mod_xmlparser.c parser.c \
 						   dh.c stack.c checksum.c \
 						   checksum.h dh.h parser.h stack.h
 mod_xmlparser_la_LIBADD  = $(libdir)/libcommon_core.la \
-                           $(pkglibdir)/mod_api.la \
                            $(LIBEXPAT_LA) $(LIBICONV_LA)
 mod_xmlparser_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_xmlparser_la_CFLAGS  = -fno-strict-aliasing

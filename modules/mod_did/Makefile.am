@@ -15,15 +15,13 @@ pkglib_LTLIBRARIES = mod_did.la mod_did2.la
 mod_did_la_SOURCES = mod_did.c mod_did.h
 mod_did_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_did_la_LIBADD  = $(libdir)/libcommon_core.la \
-                     $(libdir)/libcommon_util.la \
-                     $(pkglibdir)/mod_api.la
+                     $(libdir)/libcommon_util.la
 
 
 mod_did2_la_SOURCES = mod_did2.c
 mod_did2_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_did2_la_LIBADD  = $(libdir)/libcommon_core.la \
-                      $(libdir)/libcommon_util.la \
-                      $(pkglibdir)/mod_api.la
+                      $(libdir)/libcommon_util.la
 
 #mod_did_daemon_la_SOURCES = mod_did_daemon.c \
 #							mod_did_client.h mod_did_daemon.h \
