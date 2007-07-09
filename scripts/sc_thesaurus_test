@@ -70,6 +70,12 @@ while (<FILE>) {
 	print " PERFECT" if ( $parsed_word->{ALL_NOUN} and 
 						  $parsed_orig->{ALL_NOUN} and
 						  $parsed_word->{CONCAT} eq $orig);
+	my $no_space_concat = $parsed_word->{CONCAT};
+	$no_space_concat =~ s/ //g;
+	print " GOOD"    if ( $parsed_word->{ALL_NOUN_XSNN_XPNN} and 
+						  $parsed_orig->{ALL_NOUN_XSNN_XPNN} and
+						  $no_space_concat eq $word);
+
 	print "\n";
 
 	my $tmp = <STDIN> if $confirm;
@@ -92,6 +98,7 @@ sub parse_output {
 
 	my %out = (
 		ALL_NOUN    => 1,
+		ALL_NOUN_XSNN_XPNN => 1,
 		HAS_UNK     => 0,
 	);
 	my $word_tag = "";
@@ -102,6 +109,7 @@ sub parse_output {
 		chomp $input[$n];
 		my ($w, $pos, $tag) = split(/ /, $input[$n]);
 		$out{ALL_NOUN} = 0 unless $tag =~ m/^NN/;
+		$out{ALL_NOUN_XSNN_XPNN} = 0 unless $tag =~ m/^NN|XSNN|XPNN/;
 		$out{HAS_UNK}  = 1 if     $tag =~ m/^UNK/;
 		$out{HAS_UNK}  = 1 if     $tag =~ m/\?/;
 		push @w, $w;
