@@ -25,6 +25,9 @@ END
 	exit;
 }
 
+HELP_MESSAGE() unless( getopts( "r" ) );
+our ( $opt_r );
+my $USE_RAW_KOMA = $opt_r;
 
 my $host  = shift;
 my $port  = shift;
@@ -33,13 +36,9 @@ my $confirm = shift || 0;
 my $stop = 0;
 my $max_size = 10_000_000;
 
-HELP_MESSAGE() unless( getopts( "r" ) );
-our ( $opt_r );
-my $USE_RAW_KOMA = $opt_r;
-
 HELP_MESSAGE() unless ($host and $port and $file);
 
-open(FILE, $file) or die "cannot open file: $!";
+open(FILE, $file) or die "cannot open file[$file]: $!";
 
 my $count = 0;
 while (<FILE>) {

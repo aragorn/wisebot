@@ -655,7 +655,7 @@ static void test_sentence(char *t, int morph_id)
 	_koma_set_text(extractor, t);
 	index_word_array = (index_word_t*)sb_calloc(10, sizeof(index_word_t));
 
-	while ( ( n = _koma_analyze(extractor, index_word_array, 10) ) > 0 )
+	while ( ( n = _koma_analyze(extractor, index_word_array, 50) ) > 0 )
 	{
 		int i;
 
@@ -679,10 +679,11 @@ int test_mod_koma(void)
 			"마지막 문장.  끝에 줄바꿈 문제가 없음.\r\n";
 	char *t2 = "두번째 테스트.\r\n"
 			"두번째 마지막 문장.  끝에 줄바꿈 문제가 없음.";
-	char *t3 = "세번째 테스트.\r\n"
-			"세번째 마지막 문장.  끝에 줄바꿈 문제가 없음";
-	char *t4 = "네번째 테스트.\r\n"
-			"네번째 마지막 문장.  끝에 줄바꿈 문제가 없음y";
+	char *t3 = "특례법 시행규칙(2002. 12. 31. 건설교통부령 제344호로 폐지되기 "
+	           "전의 것, 이하 ‘공특법 시행규칙’이라 한다)의 관련 규정에 따라 ";
+	char *t4 = "콤마,마침표.중점·어절끝 "
+	           "왼쪽괄호(오른쪽괄호)대괄호[대괄호]어절끝 "
+			   "중괄호{중괄호}슬래시/별표*AND&OR|샵#골뱅이@느낌표!";
 	char *t5 = "다섯째 테스트.\r\n"
 			"다섯째 마지막 문장.  끝에 줄바꿈 문제가 없y음";
 

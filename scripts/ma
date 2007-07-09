@@ -20,6 +20,8 @@ Usage: $0 [-r] <host> <port> <header> <file> [<confirm>]
     file     - text data file or cdm data file to register
     confirm  - set 1 if you want to confirm every document by key input
 
+    ex) "Abstract#0:11^JudgementNote#2:11^Body#4:11^"
+
 Options:
     -r       - prints koma's raw output instead of rmas output
 END
@@ -43,6 +45,8 @@ my $stop = 0;
 my $max_size = 10_000_000;
 
 HELP_MESSAGE() unless ($host and $port and $header and $file);
+
+if ($USE_RAW_KOMA) { $header =~ s/:\d*/:100/g; print "Using RAW KOMA Option...\n"; }
 
 process_data_file($host, $port, $header, $file, $confirm);
 exit;
