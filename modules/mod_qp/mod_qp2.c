@@ -3639,6 +3639,11 @@ static int make_limit_rule(char* clause, limit_t* rule)
         *split = '\0';
 
         rule->start = atoi(clause);
+	    if(rule->start < 0) {
+		    warn("limit start position is negative value[%d], set 0", rule->start);
+		    rule->start = 0;
+	    }
+
         rule->cnt = atoi(split+1);
     }
 
