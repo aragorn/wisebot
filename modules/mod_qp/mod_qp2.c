@@ -3565,6 +3565,10 @@ static int make_groupby_rule(char* clause, groupby_rule_t* rule)
                     *split = '\0';
 
                     rule->limit.start = atoi(token);
+					if(rule->limit.start < 0) {
+                        warn("limit start position is negative value[%d], set 0", rule->limit.start);
+						rule->limit.start = 0;
+					}
                     rule->limit.cnt = atoi(split+1);
                 }
             } else {
