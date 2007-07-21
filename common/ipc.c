@@ -188,7 +188,7 @@ int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
         		        crit("error getting key[%s:%s()]: %s[%d]",
         								file,caller,strerror(errno), errno);
                         return FAIL;
-                   }
+                	}
 				} else {
         			crit("error while getting key[%s:%s()]: %s[%d]",
         										file,caller,strerror(errno), errno);
@@ -196,6 +196,10 @@ int _get_nsem(ipc_t *ipc,int num,const char* file, const char* caller)
         			crit(" pid:  %d", ipc->pid);
         			return FAIL;
                 }
+			} else {
+				error("unknown ftok(3) error with %s:%s(): %s[%d]",
+												file, caller, strerror(errno), errno);
+				return FAIL;
 			}
 		} /* if (ipc->key == -1) */
 	} /* if (ipc->pathname == NULL) */

@@ -103,10 +103,10 @@ SB_DECLARE(int) free_ipcs(void);
 #ifdef CORE_PRIVATE
 # ifdef CYGWIN
 #  define OFF_T_FORMAT "0x%llX"
-#  define KEY_T_FORMAT "%lld"
+#  define KEY_T_FORMAT "0x%llX"
 # else
 #  define OFF_T_FORMAT "0x%lX"
-#  define KEY_T_FORMAT "%d"
+#  define KEY_T_FORMAT "0x%X"
 # endif
 
 /* Refer to man page of semctl(2) for followings ******************************/
