@@ -49,7 +49,7 @@
 #endif
 
 #define TAG_IS_JOSA(a)		   (TAG_IS((a), "PS", 2) || \
-								TAG_IS((a), "PC",2) || \
+								TAG_IS((a), "PC", 2) || \
 								TAG_IS((a), "PO", 2) || \
 								TAG_IS((a), "PD", 2) || \
 								TAG_IS((a), "PA", 2) || \
@@ -132,6 +132,7 @@
 								 TAG_IS((a), "NPP",  3) || \
 								 TAG_IS((a), "NPI",  3) || \
 								 TAG_IS((a), "NU",   2) || \
+								 TAG_IS((a), "NN?",  3) || \
 								 TAG_IS((a), "UNK",  3) || \
 								 TAG_IS((a), "COMP", 4) )
 
