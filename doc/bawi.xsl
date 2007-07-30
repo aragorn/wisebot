@@ -12,8 +12,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title><xsl:value-of select="parsed_query"/> [<xsl:value-of select="number(result_count)"/>]</title>
-<!--
-<link href="skin/default/default.css" rel="stylesheet" type="text/css"/>
+<link href="/x/skin/default/default.css" rel="stylesheet" type="text/css"/>
 <script language="JavaScript" type="text/javascript"><xsl:comment>
 function note(id)
 {
@@ -53,7 +52,6 @@ urchinTracker();
 */
 
 </xsl:comment></style>
--->
 </head>
 <body>
 
@@ -73,27 +71,27 @@ urchinTracker();
 <xsl:template match="vdocs">
 <div id="bx">
 <table border="0" cellpadding="0" cellspacig="0" width="100%">
-<!--
+<tr>
+  <td class="thead" style="white-space:nowrap"><a href="/x/bookmark.cgi">즐겨찾기</a></td>
+  <td class="thead" style="white-space:nowrap">--</td>
+  <td class="thead" style="white-space:nowrap">--</td>
+  <td class="thead" width="98%">&nbsp;</td>
+  <td class="thead" style="white-space:nowrap">--</td>
+</tr>
+</table>
+<table border="0" cellpadding="0" cellspacig="0" width="100%">
 <tr valign="bottom">
   <td class="tshead">no</td>
   <td class="tshead" width="99%">title</td>
   <td class="tshead" width="125">name</td>
   <td class="tshead" width="40">date</td>
 </tr>
-<tr>
-    <td width="30">번호</td><td>검색결과</td>
-</tr>
--->
   <xsl:for-each select="vdoc">
-  <tr class="result">
-    <td class="result_header"> <xsl:value-of select="position()"/> </td>
-    <td class="result_body">
-       <xsl:call-template name="list_docs">
-         <xsl:with-param name="docid" select="@vid"/>
-         <xsl:with-param name="relevance" select="@relevance"/>
-       </xsl:call-template>
-    </td>
-  </tr>
+    <xsl:call-template name="list_docs">
+      <xsl:with-param name="docid" select="@vid"/>
+      <xsl:with-param name="relevance" select="@relevance"/>
+      <xsl:with-param name="no" select="position()"/>
+    </xsl:call-template>
   </xsl:for-each>
 </table>
 </div>
@@ -102,33 +100,45 @@ urchinTracker();
 <xsl:template name="list_docs">
   <xsl:param name="docid" select="$docid"/>
   <xsl:param name="relevance" select="$relevance"/>
-
+  <xsl:param name="no" select="$no"/>
   <xsl:for-each select="docs/doc">
-    <!-- 게시물 제목 링크 -->
+<tr valign="top">
+    <td width="1%">
+    <!-- 게시물 번호 링크 -->
     <xsl:element name="a">
-      <xsl:attribute name="target">_blank</xsl:attribute>
       <xsl:attribute name="href">/x/read.cgi?bid=<xsl:value-of select="fields/field[@name='board_id']"/>&amp;aid=<xsl:value-of select="fields/field[@name='article_id']"/></xsl:attribute>
-	  <xsl:value-of select="fields/field[@name='title']"/> &nbsp;
+	  <xsl:value-of select="$no"/>
     </xsl:element>
-	-
+	</td>
+    <!-- 게시물 제목 링크 -->
+	<td width="99%">
+    <xsl:element name="a">
+      <xsl:attribute name="href">/x/read.cgi?bid=<xsl:value-of select="fields/field[@name='board_id']"/>&amp;aid=<xsl:value-of select="fields/field[@name='article_id']"/></xsl:attribute>
+	  <xsl:value-of select="fields/field[@name='title']"/>
+    </xsl:element>
+	</td>
+	<td style="white-space:nowrap">
 	<!-- 작성자 이름 링크 - 개인정보 조회 -->
-	<!--
     <xsl:element name="a">
       <xsl:attribute name="href">javascript:view_id('<xsl:value-of select="fields/field[@name='userid']"/>')</xsl:attribute>
 	  <xsl:value-of select="fields/field[@name='author']"/>
-    </xsl:element>
-	-->
-	<!-- 작성자 아이디 링크 - 쪽지 보내기 -->
-	<!--
-    <xsl:element name="a">
+    </xsl:element><!-- 작성자 아이디 링크 - 쪽지 보내기 -->(<xsl:element name="a">
       <xsl:attribute name="href">javascript:note('<xsl:value-of select="fields/field[@name='userid']"/>')</xsl:attribute>
 	  <xsl:value-of select="fields/field[@name='userid']"/>
-    </xsl:element>
-	-->
-	<!--
-	<br/>
-    ... <xsl:value-of disable-output-escaping="no" select="fields/field[@name='body']"/> ...<br/>
-	-
+    </xsl:element>)
+	</td>
+	<td style="white-space:nowrap">
+	<xsl:value-of select="substring(fields/field[@name='date'],3,2)"/>/<xsl:value-of select="substring(fields/field[@name='date'],5,2)"/>/<xsl:value-of select="substring(fields/field[@name='date'],7,2)"/>
+	</td>
+</tr>
+<tr>
+	<td> </td>
+	<td colspan="3">
+    ... <xsl:value-of disable-output-escaping="no" select="fields/field[@name='body']"/> ...
+	</td>
+</tr>
+<tr>
+	<td class="itemr" colspan="4">
     <xsl:element name="a">
       <xsl:attribute name="href">/x/read.cgi?bid=<xsl:value-of select="fields/field[@name='board_id']"/></xsl:attribute>
 	  <xsl:value-of select="fields/field[@name='board']"/>
@@ -138,17 +148,20 @@ urchinTracker();
       <xsl:attribute name="href">/x/boards.cgi?gid=<xsl:value-of select="fields/field[@name='group_id']"/></xsl:attribute>
 	  <xsl:value-of select="fields/field[@name='group']"/>
     </xsl:element>
-    DocID:<xsl:value-of select="$docid"/> Hit:<xsl:value-of select="$relevance"/>
-    <br/>
+	&nbsp; &nbsp;
+    <font color="gray">DocID:<xsl:value-of select="$docid"/> Hit:<xsl:value-of select="$relevance"/></font>
     <xsl:apply-templates/>
-	-->
+	</td>
+</tr>
   </xsl:for-each>
 </xsl:template>
 
 <xsl:template match="fields">
+<!--
   <xsl:for-each select="field">
     <xsl:value-of select="@name"/> - <xsl:value-of disable-output-escaping="no" select="."/><br/>
   </xsl:for-each>
+  -->
 </xsl:template>
 
 <!--
