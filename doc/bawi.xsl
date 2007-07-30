@@ -94,6 +94,15 @@ urchinTracker();
     </xsl:call-template>
   </xsl:for-each>
 </table>
+<table border="0" cellpadding="0" cellspacig="0" width="100%">
+<tr>
+  <td class="thead" style="white-space:nowrap"><a href="/x/bookmark.cgi">¡Ò∞‹√£±‚</a></td>
+  <td class="thead" style="white-space:nowrap">--</td>
+  <td class="thead" style="white-space:nowrap">--</td>
+  <td class="thead" width="98%">&nbsp;</td>
+  <td class="thead" style="white-space:nowrap">--</td>
+</tr>
+</table>
 </div>
 </xsl:template><!--match="vdocs"-->
 
