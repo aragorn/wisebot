@@ -66,6 +66,7 @@ urchinTracker();
 
 <xsl:apply-templates select="vdocs"/>
 
+
 <div id="bxmenu">
 <a href="bookmark.cgi">즐겨찾기</a> |
 <a href="boards.cgi">게시판</a> |
@@ -102,6 +103,13 @@ urchinTracker();
   </xsl:for-each>
 </table>
 <xsl:call-template name="list_header"/>
+
+<xsl:call-template name="page_link">
+  <xsl:with-param name="query" select="test"/>
+  <xsl:with-param name="page_no" select="1"/>
+  <xsl:with-param name="last_page" select="10"/>
+  <xsl:with-param name="this_page" select="3"/>
+</xsl:call-template>
 </xsl:template><!--match="vdocs"-->
 
 <xsl:template name="list_docs">
@@ -190,26 +198,25 @@ urchinTracker();
   <xsl:param name="this_page" select="$this_page"/>
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
 <tr>
-<!--
+
   <xsl:call-template name="page_link">
     <xsl:with-param name="query" select="test"/>
     <xsl:with-param name="page_no" select="1"/>
     <xsl:with-param name="last_page" select="10"/>
     <xsl:with-param name="this_page" select="3"/>
   </xsl:call-template>
-  -->
+
 </tr>
 </table>
 </xsl:template>
 
-<!--
 <xsl:template name="page_link">
   <xsl:param name="query" select="$query"/>
   <xsl:param name="page_no" select="$page_no"/>
   <xsl:param name="last_page" select="$last_page"/>
   <xsl:param name="this_page" select="$this_page"/>
 
-  <xsl:if test="$page_no == $this_page">
+  <xsl:if test="$page_no = $this_page">
 	<strong><xsl:value-of select="$page_no"/></strong>
   </xsl:if>
   <xsl:if test="$page_no != $this_page">
@@ -219,7 +226,7 @@ urchinTracker();
     </xsl:element>
   </xsl:if>
 
-  <xsl:if test="$page_no == $last_page">
+  <xsl:if test="$page_no &lt; $last_page">
     <xsl:call-template name="page_link">
       <xsl:with-param name="query" select="$query"/>
       <xsl:with-param name="page_no" select="$page_no+1"/>
@@ -229,7 +236,6 @@ urchinTracker();
   </xsl:if>
 
 </xsl:template>
--->
 
 <xsl:template match="b">
   <italic><xsl:apply-templates/></italic>
