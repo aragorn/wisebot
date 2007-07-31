@@ -54,6 +54,7 @@ urchinTracker();
 </xsl:comment></style>
 </head>
 <body>
+<div id="bx">
 
 <table class="summary">
 <tr><th width="100">소요시간</th><td><xsl:value-of select="loading_time"/></td></tr>
@@ -64,22 +65,28 @@ urchinTracker();
 </table>
 
 <xsl:apply-templates select="vdocs"/>
+
+<div id="bxmenu">
+<a href="bookmark.cgi">즐겨찾기</a> |
+<a href="boards.cgi">게시판</a> |
+<a href="online.cgi">접속자</a> |
+<a href="userlist.cgi">회원</a> |
+
+<a href="adduser.cgi">회원 추가</a> |
+<a href="passwd.cgi">비밀번호</a> |
+<a href="edsig.cgi">시그너쳐</a> |
+<a href="logout.cgi">나가기</a> |
+<a href="http://x.bawi.org/bx/" target="_blank">BawiX</a>
+</div>
+
+</div>
 </body>
 </html>
 </xsl:template>
 
 <xsl:template match="vdocs">
-<div id="bx">
-<table border="0" cellpadding="0" cellspacig="0" width="100%">
-<tr>
-  <td class="thead" style="white-space:nowrap"><a href="/x/bookmark.cgi">즐겨찾기</a></td>
-  <td class="thead" style="white-space:nowrap">--</td>
-  <td class="thead" style="white-space:nowrap">--</td>
-  <td class="thead" width="98%">&nbsp;</td>
-  <td class="thead" style="white-space:nowrap">--</td>
-</tr>
-</table>
-<table border="0" cellpadding="0" cellspacig="0" width="100%">
+<xsl:call-template name="list_header"/>
+<table border="0" cellpadding="0" cellspacing="0" width="100%">
 <tr valign="bottom">
   <td class="tshead">no</td>
   <td class="tshead" width="99%">title</td>
@@ -94,16 +101,7 @@ urchinTracker();
     </xsl:call-template>
   </xsl:for-each>
 </table>
-<table border="0" cellpadding="0" cellspacig="0" width="100%">
-<tr>
-  <td class="thead" style="white-space:nowrap"><a href="/x/bookmark.cgi">즐겨찾기</a></td>
-  <td class="thead" style="white-space:nowrap">--</td>
-  <td class="thead" style="white-space:nowrap">--</td>
-  <td class="thead" width="98%">&nbsp;</td>
-  <td class="thead" style="white-space:nowrap">--</td>
-</tr>
-</table>
-</div>
+<xsl:call-template name="list_header"/>
 </xsl:template><!--match="vdocs"-->
 
 <xsl:template name="list_docs">
@@ -123,6 +121,7 @@ urchinTracker();
 	<td width="99%">
     <xsl:element name="a">
       <xsl:attribute name="href">/x/read.cgi?bid=<xsl:value-of select="fields/field[@name='board_id']"/>&amp;aid=<xsl:value-of select="fields/field[@name='article_id']"/></xsl:attribute>
+	  <xsl:value-of select="fields/field[@name='article_no']"/> -
 	  <xsl:value-of select="fields/field[@name='title']"/>
     </xsl:element>
 	</td>
@@ -173,20 +172,62 @@ urchinTracker();
   -->
 </xsl:template>
 
-<!--
-<xsl:template match="docs">
-  <table>
-  <xsl:for-each select="doc">
-    <tr><th>doc id</th><td><a href="/document/select?did="><xsl:value-of select="@doc_id"/></a></td></tr>
-    <xsl:apply-templates/>
-  </xsl:for-each>
-  </table>
+<xsl:template name="list_header">
+<table border="0" cellpadding="0" cellspacing="0" width="100%">
+<tr>
+  <td class="thead" style="white-space:nowrap"><a href="/x/bookmark.cgi">즐겨찾기</a></td>
+  <td class="thead" style="white-space:nowrap">--</td>
+  <td class="thead" style="white-space:nowrap">--</td>
+  <td class="thead" width="98%">&nbsp;</td>
+  <td class="thead" style="white-space:nowrap">--</td>
+</tr>
+</table>
 </xsl:template>
 
-<xsl:template match="field">
-    <tr><th><xsl:value-of select="@name"/></th>
-        <td><xsl:value-of disable-output-escaping="yes" select="text()"/></td>
-    </tr>
+<xsl:template name="page_navi">
+  <xsl:param name="query" select="$query"/>
+  <xsl:param name="last_page" select="$last_page"/>
+  <xsl:param name="this_page" select="$this_page"/>
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<!--
+  <xsl:call-template name="page_link">
+    <xsl:with-param name="query" select="test"/>
+    <xsl:with-param name="page_no" select="1"/>
+    <xsl:with-param name="last_page" select="10"/>
+    <xsl:with-param name="this_page" select="3"/>
+  </xsl:call-template>
+  -->
+</tr>
+</table>
+</xsl:template>
+
+<!--
+<xsl:template name="page_link">
+  <xsl:param name="query" select="$query"/>
+  <xsl:param name="page_no" select="$page_no"/>
+  <xsl:param name="last_page" select="$last_page"/>
+  <xsl:param name="this_page" select="$this_page"/>
+
+  <xsl:if test="$page_no == $this_page">
+	<strong><xsl:value-of select="$page_no"/></strong>
+  </xsl:if>
+  <xsl:if test="$page_no != $this_page">
+    <xsl:element name="a">
+	<xsl:attribute name="href">?q=<xsl:value-of select="$query"/>&amp;p=<xsl:value-of select="$page_no"/></xsl:attribute>
+	<xsl:value-of select="$page_no"/>
+    </xsl:element>
+  </xsl:if>
+
+  <xsl:if test="$page_no == $last_page">
+    <xsl:call-template name="page_link">
+      <xsl:with-param name="query" select="$query"/>
+      <xsl:with-param name="page_no" select="$page_no+1"/>
+      <xsl:with-param name="last_page" select="$last_page"/>
+      <xsl:with-param name="this_page" select="$this_page"/>
+    </xsl:call-template>
+  </xsl:if>
+
 </xsl:template>
 -->
 
