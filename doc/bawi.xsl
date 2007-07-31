@@ -104,9 +104,8 @@ urchinTracker();
 </table>
 <xsl:call-template name="list_header"/>
 
-<xsl:call-template name="page_link">
+<xsl:call-template name="page_navi">
   <xsl:with-param name="query" select="test"/>
-  <xsl:with-param name="page_no" select="1"/>
   <xsl:with-param name="last_page" select="10"/>
   <xsl:with-param name="this_page" select="3"/>
 </xsl:call-template>
@@ -198,40 +197,49 @@ urchinTracker();
   <xsl:param name="this_page" select="$this_page"/>
 <table width="100%" border="0" cellpadding="0" cellspacing="0">
 <tr>
-
+<td align="center">
+  <xsl:variable name="start" select="1"/>
+  <xsl:if test="$this_page &gt; 5">
+    <xsl:call-template name="page_link">
+      <xsl:with-param name="query" select="$query"/>
+      <xsl:with-param name="start" select="1"/>
+      <xsl:with-param name="end"   select="1"/>
+      <xsl:with-param name="this"  select="0"/>
+    </xsl:call-template>
+	...
+	<xsl:variable name="start" select="6"/>
+  </xsl:if>
   <xsl:call-template name="page_link">
-    <xsl:with-param name="query" select="test"/>
-    <xsl:with-param name="page_no" select="1"/>
-    <xsl:with-param name="last_page" select="10"/>
-    <xsl:with-param name="this_page" select="3"/>
+    <xsl:with-param name="query" select="$query"/>
+    <xsl:with-param name="start" select="$start"/>
+    <xsl:with-param name="end"   select="$last_page"/>
+    <xsl:with-param name="this"  select="$this_page"/>
   </xsl:call-template>
-
+</td>
 </tr>
 </table>
 </xsl:template>
 
 <xsl:template name="page_link">
   <xsl:param name="query" select="$query"/>
-  <xsl:param name="page_no" select="$page_no"/>
-  <xsl:param name="last_page" select="$last_page"/>
-  <xsl:param name="this_page" select="$this_page"/>
+  <xsl:param name="start" select="$start"/>
+  <xsl:param name="end"   select="$end"/>
+  <xsl:param name="this"  select="$this"/>
 
-  <xsl:if test="$page_no = $this_page">
-	<strong><xsl:value-of select="$page_no"/></strong>
+  <xsl:if test="$start = $this">
+	&nbsp;<strong>[<xsl:value-of select="$start"/>]</strong>
   </xsl:if>
-  <xsl:if test="$page_no != $this_page">
-    <xsl:element name="a">
-	<xsl:attribute name="href">?q=<xsl:value-of select="$query"/>&amp;p=<xsl:value-of select="$page_no"/></xsl:attribute>
-	<xsl:value-of select="$page_no"/>
-    </xsl:element>
+  <xsl:if test="$start != $this">
+    &nbsp;<xsl:element name="a">
+	<xsl:attribute name="href">?q=<xsl:value-of select="$query"/>&amp;p=<xsl:value-of select="$start"/></xsl:attribute>[<xsl:value-of select="$start"/>]</xsl:element>
   </xsl:if>
 
-  <xsl:if test="$page_no &lt; $last_page">
+  <xsl:if test="$start &lt; $end">
     <xsl:call-template name="page_link">
       <xsl:with-param name="query" select="$query"/>
-      <xsl:with-param name="page_no" select="$page_no+1"/>
-      <xsl:with-param name="last_page" select="$last_page"/>
-      <xsl:with-param name="this_page" select="$this_page"/>
+      <xsl:with-param name="start" select="$start+1"/>
+      <xsl:with-param name="end"   select="$end"/>
+      <xsl:with-param name="this"  select="$this"/>
     </xsl:call-template>
   </xsl:if>
 
