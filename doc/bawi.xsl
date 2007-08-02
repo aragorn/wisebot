@@ -6,7 +6,9 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
 <xsl:output method="html" version="4.0" encoding="euc-kr" indent="yes"/>
-<xsl:param name="target"/>
+<!--xsl:param name="target"/-->
+<xsl:param name="q"/><!-- 질의식 -->
+<xsl:param name="p">1</xsl:param><!-- 페이지 -->
 
 <xsl:template match="xml">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -62,10 +64,14 @@ urchinTracker();
 <tr><th>검색질의</th><td><xsl:value-of select="query"/></td></tr>
 <tr><th>분석단어</th><td><xsl:value-of select="parsed_query"/></td></tr>
 <tr><th>문서수</th><td>총 <xsl:value-of select="number(result_count)"/> 건</td></tr>
+<tr><th>파라메터</th><td>q=<xsl:value-of select="$q"/>,p=<xsl:value-of select="$p"/></td></tr>
 </table>
 
 <xsl:apply-templates select="vdocs"/>
-
+<br/>
+<xsl:call-template name="query_form">
+  <xsl:with-param name="q"><xsl:value-of select="q"/></xsl:with-param>
+</xsl:call-template>
 
 <div id="bxmenu">
 <a href="bookmark.cgi">즐겨찾기</a> |
@@ -103,12 +109,12 @@ urchinTracker();
   </xsl:for-each>
 </table>
 <xsl:call-template name="list_header"/>
-
+<br/>
 <!-- 페이지 네비게이션 링크 -->
 <xsl:call-template name="page_navi">
-  <xsl:with-param name="qu">hello</xsl:with-param>
+  <xsl:with-param name="qu"><xsl:value-of select="$q"/></xsl:with-param>
   <xsl:with-param name="last_page" select="20"/>
-  <xsl:with-param name="this_page" select="7"/>
+  <xsl:with-param name="this_page"><xsl:value-of select="p"/></xsl:with-param>
 </xsl:call-template>
 
 </xsl:template><!--match="vdocs"-->
@@ -211,6 +217,7 @@ urchinTracker();
 </table>
 </xsl:template>
 
+<!-- 페이지 네비게이션 링크 생성 -->
 <xsl:template name="page_link">
   <xsl:param name="qu"    select="$qu"/>
   <xsl:param name="start" select="$start"/>
@@ -247,6 +254,48 @@ urchinTracker();
     </xsl:call-template>
   </xsl:if>
 
+</xsl:template>
+
+<xsl:template name="query_form">
+  <xsl:param name="q"    select="$q"/>
+<!--input type="hidden" name="bid" value="2078"-->
+<!--
+-->
+<form name="search" method="get" enctype="application/x-www-form-urlencoded">
+<table border="0" cellpadding="0" cellspacing="0" align="center">
+<tr>
+<td class="itemf" valign="top">
+  <input type="text" name="q" value="" class="text" size="60" maxlength="100" onFocus="select()"/>
+</td>
+<td class="itemf">
+  <input type="submit" class="button" name="submit" value="Search" style="width:60px"/>
+</td>
+</tr>
+</table>
+</form>
+<table border="0" cellpadding="0" cellspacing="0" align="center">
+<tr><td class="itemf" colspan="2">
+   본문에서만 검색 <br/>
+   제목에서만 검색 <br/>
+   이름에서 검색 <br/>
+   ID에서 검색 <br/>
+   연산자 AND <br/>
+   연산자 OR <br/>
+   연산자 NOT <br/>
+   인접연산자 <br/>
+    </td>
+    <td>
+   body:(검색 단어) <br/>
+   title:(검색 단어) <br/>
+   author:(검색 단어) <br/>
+   userid:(검색 단어) <br/>
+   &amp; <br/>
+   + <br/>
+   ! <br/>
+   /n/ - n = 0,1,2,3,..<br/>
+    </td>
+</tr>
+</table>
 </xsl:template>
 
 <xsl:template match="b">
