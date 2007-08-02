@@ -8,6 +8,7 @@
 <xsl:output method="html" version="4.0" encoding="euc-kr" indent="yes"/>
 <!--xsl:param name="target"/-->
 <xsl:param name="q"/><!-- 질의식 -->
+<xsl:param name="eq"/><!-- URL Encoded 질의식 -->
 <xsl:param name="p">1</xsl:param><!-- 페이지 -->
 
 <xsl:template match="xml">
@@ -64,13 +65,13 @@ urchinTracker();
 <tr><th>검색질의</th><td><xsl:value-of select="query"/></td></tr>
 <tr><th>분석단어</th><td><xsl:value-of select="parsed_query"/></td></tr>
 <tr><th>문서수</th><td>총 <xsl:value-of select="number(result_count)"/> 건</td></tr>
-<tr><th>파라메터</th><td>q=<xsl:value-of select="$q"/>,p=<xsl:value-of select="$p"/></td></tr>
+<tr><th>파라메터</th><td>q=<xsl:value-of select="$q"/>,eq=<xsl:value-of select="$eq"/>,p=<xsl:value-of select="$p"/></td></tr>
 </table>
 
 <xsl:apply-templates select="vdocs"/>
 <br/>
 <xsl:call-template name="query_form">
-  <xsl:with-param name="q"><xsl:value-of select="q"/></xsl:with-param>
+  <xsl:with-param name="q"><xsl:value-of select="$q"/></xsl:with-param>
 </xsl:call-template>
 
 <div id="bxmenu">
@@ -114,7 +115,7 @@ urchinTracker();
 <xsl:call-template name="page_navi">
   <xsl:with-param name="qu"><xsl:value-of select="$q"/></xsl:with-param>
   <xsl:with-param name="last_page" select="20"/>
-  <xsl:with-param name="this_page"><xsl:value-of select="p"/></xsl:with-param>
+  <xsl:with-param name="this_page"><xsl:value-of select="$p"/></xsl:with-param>
 </xsl:call-template>
 
 </xsl:template><!--match="vdocs"-->
@@ -238,7 +239,7 @@ urchinTracker();
     </xsl:if>
     <xsl:if test="($start != $this)">
       &nbsp;<xsl:element name="a">
-      <xsl:attribute name="href">?q=<xsl:value-of select="$qu"/>&amp;p=<xsl:value-of select="$start"/></xsl:attribute>[<xsl:value-of select="$start"/>]</xsl:element>
+      <xsl:attribute name="href">?q=<xsl:value-of select="$eq"/>&amp;p=<xsl:value-of select="$start"/></xsl:attribute>[<xsl:value-of select="$start"/>]</xsl:element>
     </xsl:if>
   </xsl:if>
   <xsl:if test="($start &lt; $end) and ($start - $this = $range)">
@@ -265,7 +266,7 @@ urchinTracker();
 <table border="0" cellpadding="0" cellspacing="0" align="center">
 <tr>
 <td class="itemf" valign="top">
-  <input type="text" name="q" value="" class="text" size="60" maxlength="100" onFocus="select()"/>
+  <input type="text" name="q" value="{$q}" class="text" size="60" maxlength="100" onFocus="select()"/>
 </td>
 <td class="itemf">
   <input type="submit" class="button" name="submit" value="Search" style="width:60px"/>
