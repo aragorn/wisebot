@@ -877,7 +877,9 @@ http_prepareAnotherRequest(http_t *http){
 	http->path = NULL;
 	http->host = NULL;
 	if(http->req_message_body){
-		memfile_free(http->req_message_body);
+		/* XXX req_message_body는 caller가 assign하게 된다. 따라서 http.c에서
+		 * memfile_free()하면 이중으로 free하게 된다. */
+		/* memfile_free(http->req_message_body); */
 		http->req_message_body = NULL;
 	}
 	if(http->custom_request_header){
