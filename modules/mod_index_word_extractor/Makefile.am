@@ -5,7 +5,7 @@ include $(top_builddir)/Make.defs
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
 pkglib_LTLIBRARIES   = mod_bigram.la \
-                       mod_rmas.la mod_rmac2.la mod_http_rmac.la \
+                       mod_rmas.la mod_rmac2.la \
                        mod_koma.la \
                        mod_dummy_ma.la \
                        mod_kor2chn_translator.la \
