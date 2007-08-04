@@ -632,7 +632,9 @@ static memfile *http_makeRequestHeader(http_t *http)
 			return NULL;
 		}
 	}
-	
+
+	/* NOTE: req_buffer는 http.c 내부에서 memfile_new(), memfile_free()를
+	 * 호출하게 된다. */	
 	req_buffer = memfile_new();		/* 버퍼를 초기화하는 함수 */
 	if (!req_buffer) {
 		error("memfile new failed : req_buffer");
@@ -742,7 +744,9 @@ http_freeRequest(http_t *http){
 	http->path = NULL;
 
 	if(http->req_message_body){
-		memfile_free(http->req_message_body);
+		/* XXX req_message_body는 caller가 assign하게 된다. 따라서 http.c에서
+		 * memfile_free()하면 이중으로 free하게 된다. */
+		/* memfile_free(http->req_message_body); */
 		http->req_message_body = NULL;
 	}
 
