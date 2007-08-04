@@ -845,6 +845,8 @@ static int morphological_analyze_local(uint32_t docid, void *pCdmData, long cdmL
 {
 	void *parser = NULL;
 	sb4_merge_buffer_t merge_buffer;
+	char *buffer = NULL;
+	int buffer_size = 0;
 	int i;
 
 	/* NOTE: This code is copied from sb4s_remote_morphological_analyze_doc()
@@ -873,17 +875,31 @@ static int morphological_analyze_local(uint32_t docid, void *pCdmData, long cdmL
 		field_id = field_info[i].id;
 		strncat(xpath, field_info[i].name, SHORT_STRING_SIZE);
 		morpid = field_info[i].indexer_morpid;
-
+		debug("path[%s] fieldname[%s] id[%d] morpid[%d]",
+		      xpath, field_info[i].name, field_info[i].id, field_info[i].indexer_morpid);
 		r = sb_run_xmlparser_retrieve_field(parser, xpath, &field_value, &field_length);
 		if (r != SUCCESS) {
 			warn("cannot retrieve field[%s]", xpath);
 			continue;
 		}
 
-		if (field_length == 0) { continue; }
+		if (field_length == 0) {
+			continue;
+		} else if (field_length >= buffer_size) {
+			sb_free(buffer);
+			buffer = sb_calloc(sizeof(char), field_length+1);
+			if (buffer == NULL) {
+				error("cannot allocate buffer of %d bytes", field_length+1);
+				sb_run_xmlparser_free_parser(parser);
+				return FAIL;
+			}
+			buffer_size = field_length + 1;
+		}
+		memcpy(buffer, field_value, field_length);
+		buffer[field_length] = '\0';
 
 		output_buffer = NULL;
-		r = sb_run_rmas_morphological_analyzer(field_id, field_value, &output_buffer, 
+		r = sb_run_rmas_morphological_analyzer(field_id, buffer, &output_buffer, 
 				&output_size, morpid);
 		if (r != SUCCESS) {
 			warn("failed to rmas_morphological_analyzer() for field[%s] with morpid[%d]",
