@@ -400,7 +400,7 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
 
         sprintf(path, "/Document/%s", field_name);
         path[STRING_SIZE-1] = '\0';
-        rv = sb_run_xmlparser_retrieve_field(parser , path, &field_value, &field_length);
+        rv = sb_run_xmlparser_retrieve_field(parser, path, &field_value, &field_length);
 
         if (field_id_is_given) {
             if (rv != SUCCESS) {
@@ -438,7 +438,7 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
         rv = sb_run_rmas_morphological_analyzer(field_id, buffer, &tmp_data,
                 &data_size, ma_id);
         if (rv == FAIL || rv == DECLINE) {
-            MSG_RECORD(&s->msg, warn, "failed to do morp.. analysis for doc(while analyzing)");
+            MSG_RECORD(&s->msg, warn, "failed to do morphological analysis - rmas_morphological_analyzer()");
             sb_run_xmlparser_free_parser(parser);
             return FAIL;
         }
@@ -446,7 +446,7 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
 
         rv = sb_run_rmas_merge_index_word_array( &merge_buffer , tmp_data , data_size);
         if (rv == FAIL) {
-            MSG_RECORD(&s->msg, warn, "failed to do morp.. analysis for doc(while merging)");
+            MSG_RECORD(&s->msg, warn, "failed to do morphological analysis - rmas_merge_index_word_array()");
             sb_free(tmp_data);
             sb_run_xmlparser_free_parser(parser);
             return FAIL;
