@@ -739,7 +739,7 @@ static int morphological_analyze_http(uint32_t docid, void *pCdmData, long cdmLe
 	int svrID, i;
     char escaped_metadata[LONG_STRING_SIZE];
 	char request_uri[LONG_STRING_SIZE];
-    http_client_t* client = NULL;
+    http_client_t *client = NULL, *client_list[1] = { NULL };
     memfile* mem_body = NULL;
 
 	if ( snprintf(request_uri, LONG_STRING_SIZE,
@@ -793,13 +793,12 @@ static int morphological_analyze_http(uint32_t docid, void *pCdmData, long cdmLe
         memfile_append(mem_body, pCdmData, cdmLength); 
         http_setMessageBody(client->http, mem_body, "x-softbotd/binary", memfile_getSize(mem_body));
 
-        http_print(client->http);
+		/* Do not print http header. */
+        /* http_print(client->http); */
         sb_run_http_client_makeRequest(client, NULL);
-
-        if ( sb_run_http_client_connect(client) == SUCCESS && 
-             sb_run_http_client_sendRequest(client) == SUCCESS && 
-             sb_run_http_client_recvResponse(client) == SUCCESS &&
-		     sb_run_http_client_parseResponse(client) == SUCCESS ) {
+		client_list[0] = client;
+		if ( sb_run_http_client_retrieve(1, client_list) == SUCCESS
+		    && client->parsing_status.state == PARSING_COMPLETE ) {
             ; /* SUCCESS. do nothing. */
         	memfile_free(mem_body);
 		} else { /* error */
@@ -808,7 +807,8 @@ static int morphological_analyze_http(uint32_t docid, void *pCdmData, long cdmLe
 			error("http rma request to server(%d)[%s:%s] failed, docid[%u]: %s(%d)",
 					svrID, rmas_addr[svrID].address, rmas_addr[svrID].port,
 					docid, strerror(errno), errno);
-            sb_run_http_client_conn_close(client);
+			if (client->parsing_status.state != PARSING_COMPLETE)
+				error("failed to parse reponse from server");
 
 			if ( scoreboard->shutdown || scoreboard->graceful_shutdown )
 				return FAIL;
