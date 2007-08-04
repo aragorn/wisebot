@@ -53,12 +53,6 @@ mod_rmac2_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \
 mod_rmac2_la_LDFLAGS = -module -avoid-version -no-undefined \
 						$(APR_LDFLAGS) $(APU_LDFLAGS)
 
-mod_http_rmac_la_SOURCES = mod_http_rmac.c
-mod_http_rmac_la_LIBADD  = $(APR_LIBS) $(APU_LIBS)
-mod_http_rmac_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \
-                           $(APR_INCLUDES) $(APU_INCLUDES)
-mod_http_rmac_la_LDFLAGS = -module -avoid-version
-
 mod_koma_la_SOURCES = mod_koma.c mod_koma.h \
                       mod_koma_complex_noun_support.c \
                       mod_koma_complex_noun_support.h
