@@ -189,7 +189,7 @@ struct select_list_t {
 };
 
 struct comment_t {
-    char s[LONG_LONG_STRING_SIZE];
+    char s[LONG_LONG_STRING_SIZE*2];
 	uint32_t did;
 	uint32_t node_id;
 };

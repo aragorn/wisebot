@@ -2464,8 +2464,8 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	}
 
 	memfile_setOffset(buffer, 0);
-	if(memfile_getSize(buffer) > LONG_LONG_STRING_SIZE-1) {
-		MSG_RECORD(&req->msg, error, "over comment size, max[%d]", LONG_LONG_STRING_SIZE);
+	if(memfile_getSize(buffer) > LONG_LONG_STRING_SIZE*2-1) {
+		MSG_RECORD(&req->msg, error, "too long comment length, max[%d]", LONG_LONG_STRING_SIZE*2);
 		memfile_free(buffer);
 		return FAIL;
 	}
