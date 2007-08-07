@@ -1,5 +1,7 @@
-
-#include "softbot.h"
+/* $Id$ */
+#include "common_core.h"
+#include <string.h>
+#include <errno.h>
 
 char gSoftBotRoot[MAX_PATH_LEN] = SERVER_ROOT;
 module *static_modules[1];
