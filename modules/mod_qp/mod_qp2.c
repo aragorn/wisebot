@@ -2267,7 +2267,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	if(output_style == STYLE_XML) {
 		rv = memfile_appendF(buffer, "<fields count=\"%d\">", sl->cnt);
 		if(rv < 0) {
-			MSG_RECORD(&req->msg, error, "can not appendF memfile");
+			MSG_RECORD(&req->msg, error, "cannot memfile_appendF(): <fields count=");
 			memfile_free(buffer);
 			return FAIL;
 		}
@@ -2311,14 +2311,14 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 	    if(output_style == STYLE_XML) {
 			rv = memfile_appendF(buffer, "<field name=\"%s\">", field_info[k].name);
 			if(rv < 0) {
-				MSG_RECORD(&req->msg, error, "can not appendF memfile");
+				MSG_RECORD(&req->msg, error, "cannot memfile_appendF(): <field name=");
 				memfile_free(buffer);
 				return FAIL;
 			}
 		} else {
 			rv = memfile_appendF(buffer, "%s:", field_info[k].name);
 			if(rv < 0) {
-				MSG_RECORD(&req->msg, error, "can not appendF memfile");
+				MSG_RECORD(&req->msg, error, "cannot memfile_appendF(): field's name");
 				memfile_free(buffer);
 				return FAIL;
 			}
@@ -2343,7 +2343,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 				    rv = memfile_appendF(buffer, "<![CDATA[%s]]>", field_value);
 
 					if(rv < 0) {
-						MSG_RECORD(&req->msg, error, "can not appendF memfile");
+						MSG_RECORD(&req->msg, error, "cannot memfile_appendF(): field value");
 						memfile_free(buffer);
 						return FAIL;
 					}
@@ -2355,7 +2355,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						rv = memfile_appendF(buffer, "%s", field_value);
 
 						if(rv < 0) {
-							MSG_RECORD(&req->msg, error, "can not appendF memfile");
+							MSG_RECORD(&req->msg, error, "cannot memfile_appendF(): field value");
 							memfile_free(buffer);
 							return FAIL;
 						}
