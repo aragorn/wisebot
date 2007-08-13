@@ -4,6 +4,7 @@
 use strict;
 use Benchmark;
 use LWP::UserAgent;
+use CGI qw(escape unescape);
 
 local $| = 1;
 my $host = shift;
@@ -151,7 +152,7 @@ END
 			my $req = HTTP::Request->new(POST => $url);
 			#$req->content_type('application/x-www-form-urlencoded');
 			$req->content_type('application/x-www-form-urlencoded');
-			$req->content("body=$body");
+			$req->content(escape("body=$body"));
 			$res = $UA->request($req);
 		}
 
