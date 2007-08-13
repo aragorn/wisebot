@@ -13,7 +13,6 @@
 #include "memfile.h"
 #include "mod_api/qpp.h"
 #include "mod_api/indexdb.h"
-#include "mod_api/vrfi.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/cdm.h"
 #include "mod_api/cdm2.h"
@@ -101,20 +100,11 @@ static char seps2[MAX_HIGHLIGHT_SEP_LEN] = "£¬¡¹¡¸¡¤";
 #define MAX_REMOVE_CHAR_QUERY 64
 static char remove_char_query[MAX_REMOVE_CHAR_QUERY] = {"()+&!<>*\""};
 
-enum DbType {
-	TYPE_VRFI,
-	TYPE_INDEXDB
-};
-
-static enum DbType        mDbType = TYPE_VRFI;
-
-static VariableRecordFile *mVRFI = NULL;
 static index_db_t         *mIfs  = NULL;
 
 static int                mCdmSet = -1;
 static cdm_db_t           *mCdm    = NULL;
 
-static char mIdxFilePath[MAX_PATH_LEN]= "dat/indexer/index"; // used by vrfi
 static int mIdxDbSet = -1;
 
 #define MAX_DOCATTR_SORTING_CONF		32
@@ -656,83 +646,47 @@ static int read_from_db(uint32_t wordid, char* word, doc_hit_t* doc_hits)
 	int offset, length;
 	int ndochits, ret;
 
-	if ( mDbType == TYPE_INDEXDB ) {
 //time_mark("read db start");
-		length = sb_run_indexdb_getsize( mIfs, wordid );
-		if ( length == INDEXDB_FILE_NOT_EXISTS ) {
-			warn("length is 0 of word[%d]: %s. something is wrong", wordid, word);
-			return 0;
-		}
-		else if ( length == FAIL ) {
-			crit("indexdb_getsize failed. word[%d]: %s", wordid, word);
-			return FAIL;
-		}
-
-		info("word[%s] - length: %d, count: %d", word, length, length/(int)sizeof(doc_hit_t));
-
-		if ( length % sizeof(doc_hit_t) != 0 ) {
-			warn( "word[%d] length[%d] is not multiple of sizeof(doc_hit_t), but it may be temporary state",
-				wordid, length );
-		}
-		ndochits = length / sizeof(doc_hit_t);
-
-		if ( ndochits > MAX_DOC_HITS_SIZE ) {
-			warn("ndochits[%u] > MAX_DOC_HITS_SIZE[%u]", ndochits, MAX_DOC_HITS_SIZE);
-			offset = (ndochits - MAX_DOC_HITS_SIZE)*sizeof(doc_hit_t);
-			length -= offset;
-			ndochits = MAX_DOC_HITS_SIZE;
-		}
-		else offset = 0;
-		
-		ret = sb_run_indexdb_read( mIfs, wordid, offset, length, (void*)doc_hits );
-		if ( ret < 0 ) {
-			crit("indexdb_read failed. word[%d]: %s, ret: %d", wordid, word, ret);
-			return FAIL;
-		}
-
-		DEBUG("ret[%d] of indexdb_read with %s(id:%u)",ret, word, wordid);
-		if ( ret < length ) {
-			ndochits = ret / sizeof(doc_hit_t);
-			warn( "ret[%d] is less than length[%d]. reassign ndochits[%d]", ret, length, ndochits );
-		}
-
-//time_mark("read db end");
-		return ndochits;
+	length = sb_run_indexdb_getsize( mIfs, wordid );
+	if ( length == INDEXDB_FILE_NOT_EXISTS ) {
+		warn("length is 0 of word[%d]: %s. something is wrong", wordid, word);
+		return 0;
 	}
-	else if ( mDbType == TYPE_VRFI ) {
-		ret=sb_run_vrfi_get_num_of_data(mVRFI, (uint32_t)wordid, &ndochits);
-		if (ret < 0) {
-			crit("error vrfi get num of data");
-			return FAIL;
-		}
-		DEBUG("%s ndochits:%u", word, ndochits);
-
-		if (ndochits > MAX_DOC_HITS_SIZE) {
-			error("ndochits[%u] > MAX_DOC_HITS_SIZE[%u]", ndochits, MAX_DOC_HITS_SIZE);
-		}
-		else if (ndochits == 0) {
-			warn("ndochits is 0 of word[%d]: %s", wordid, word);
-		}
-
-		ret=sb_run_vrfi_get_variable(mVRFI, (uint32_t)wordid, 0L,
-							MAX_DOC_HITS_SIZE,(void *)doc_hits);
-		if (ret < 0) {
-			crit("error vrf get variable wordid:%u",wordid);
-			return FAIL;
-		}
-		DEBUG("ret[%d] of vrfi_get_variable with %s(id:%u)",ret, word, wordid);
-
-		return ret;
-	}
-	else {
-		warn("unknown DbType:%d", mDbType);
+	else if ( length == FAIL ) {
+		crit("indexdb_getsize failed. word[%d]: %s", wordid, word);
 		return FAIL;
 	}
 
-	// never reach here
-	crit("it's impossible to reach here");
-	sb_assert(0);
-	return 0;
+	info("word[%s] - length: %d, count: %d", word, length, length/(int)sizeof(doc_hit_t));
+
+	if ( length % sizeof(doc_hit_t) != 0 ) {
+		warn( "word[%d] length[%d] is not multiple of sizeof(doc_hit_t), but it may be temporary state",
+			wordid, length );
+	}
+	ndochits = length / sizeof(doc_hit_t);
+
+	if ( ndochits > MAX_DOC_HITS_SIZE ) {
+		warn("ndochits[%u] > MAX_DOC_HITS_SIZE[%u]", ndochits, MAX_DOC_HITS_SIZE);
+		offset = (ndochits - MAX_DOC_HITS_SIZE)*sizeof(doc_hit_t);
+		length -= offset;
+		ndochits = MAX_DOC_HITS_SIZE;
+	}
+	else offset = 0;
+	
+	ret = sb_run_indexdb_read( mIfs, wordid, offset, length, (void*)doc_hits );
+	if ( ret < 0 ) {
+		crit("indexdb_read failed. word[%d]: %s, ret: %d", wordid, word, ret);
+		return FAIL;
+	}
+
+	DEBUG("ret[%d] of indexdb_read with %s(id:%u)",ret, word, wordid);
+	if ( ret < length ) {
+		ndochits = ret / sizeof(doc_hit_t);
+		warn( "ret[%d] is less than length[%d]. reassign ndochits[%d]", ret, length, ndochits );
+	}
+
+//time_mark("read db end");
+	return ndochits;
 }
 
 static index_list_t *read_index_list(index_list_t *list)
@@ -4614,34 +4568,11 @@ static int private_init(void)
 
 	init_free_list();
 
-	if ( mDbType == TYPE_INDEXDB ) {
-		ret = sb_run_indexdb_open( &mIfs, mIdxDbSet );
-		if (ret == FAIL) { 
-			crit("indexdb_open failed."); 
-			return FAIL; 
-		} 
-	}
-	else if ( mDbType == TYPE_VRFI ) {
-		ret = sb_run_vrfi_alloc(&mVRFI);
-		if (ret == FAIL) {
-			error("failed to allocate vrfi");
-			return FAIL;
-		}
-
-		if (mVRFI == NULL)
-			warn("vrf object is null.");
-
-		ret = sb_run_vrfi_open(mVRFI,
-				mIdxFilePath,sizeof(inv_idx_header_t), sizeof(doc_hit_t), O_RDONLY);
-		if (ret == FAIL) {
-			crit("vrf_reopen failed.");
-			return FAIL;
-		}
-	}
-	else {
-		warn("unknown DbType: %d", mDbType);
-		return FAIL;
-	}
+	ret = sb_run_indexdb_open( &mIfs, mIdxDbSet );
+	if (ret == FAIL) { 
+		crit("indexdb_open failed."); 
+		return FAIL; 
+	} 
 
 	// word db open
 	ret = sb_run_open_word_db( &word_db, word_db_set );
@@ -4680,22 +4611,6 @@ static int private_init(void)
 	}
 
 	return SUCCESS;
-}
-
-static void setDbType(configValue v)
-{
-	if ( strcasecmp( v.argument[0], "vrfi" ) == 0 ) mDbType = TYPE_VRFI;
-	else if ( strcasecmp( v.argument[0], "indexdb" ) == 0 ) mDbType = TYPE_INDEXDB;
-	else {
-		warn("unknown DbType:%s, ignored", v.argument[0]);
-	}
-}
-
-static void setIndexDbPath(configValue v)
-{
-	strncpy(mIdxFilePath,v.argument[0],MAX_PATH_LEN);
-	mIdxFilePath[MAX_PATH_LEN-1] = '\0';
-	DEBUG("indexer db path: %s",mIdxFilePath);
 }
 
 static void setIndexDbSet(configValue v)
@@ -4796,7 +4711,7 @@ static void set_highlight_seperator1byte(configValue v)
 	strncpy(seps1, v.argument[0], MAX_HIGHLIGHT_SEP_LEN);
 	seps1[MAX_HIGHLIGHT_SEP_LEN-1] = '\0';
 
-	debug("a byte seperator[%s]", seps1);
+	debug("one byte seperator[%s]", seps1);
 }
 
 static void set_highlight_seperator2byte(configValue v)
@@ -4804,7 +4719,7 @@ static void set_highlight_seperator2byte(configValue v)
 	strncpy(seps2, v.argument[0], MAX_HIGHLIGHT_SEP_LEN);
 	seps2[MAX_HIGHLIGHT_SEP_LEN-2] = '\0';
 
-	debug("two byte seperator[%s]", seps2);
+	debug("two bytes seperator[%s]", seps2);
 }
 
 static void set_highlight_word_length(configValue v)
@@ -4838,9 +4753,6 @@ static void set_remove_char_query(configValue v)
 
 static config_t config[] = {
 	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDbSet {number}"),
-	CONFIG_GET("DbType",setDbType,1, "vrfi or indexdb"),
-	CONFIG_GET("IndexDbPath",setIndexDbPath,1,
-			"inv indexer db path (only vrfi) (e.g: IndexDbPath /home/)"),
 	CONFIG_GET("IndexDbSet",setIndexDbSet,1,
 			"index db set (type is indexdb) (e.g: IndexDbSet 1)"),
 	CONFIG_GET("CdmSet",setCdmSet,1, "cdm db set (e.g: CdmSet 1)"),
