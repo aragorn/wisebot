@@ -1,17 +1,17 @@
-<?xml version="1.0" encoding="euc-kr"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE xsl:stylesheet [
 	<!ENTITY nbsp "&#160;">
 ]> 
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
-<xsl:output method="html" version="4.0" encoding="euc-kr" indent="yes"/>
+<xsl:output method="html" version="4.0" encoding="utf-8" indent="yes"/>
 <!--xsl:param name="target"/-->
-<xsl:param name="q"/><!-- ÁúÀÇ½Ä -->
-<xsl:param name="eq"/><!-- URL Encoded ÁúÀÇ½Ä -->
-<xsl:param name="p">1</xsl:param><!-- ÆäÀÌÁö -->
-<xsl:param name="c">10</xsl:param><!-- °á°ú¼ö -->
-<xsl:param name="sort">date_desc</xsl:param><!-- Á¤·Ä -->
+<xsl:param name="q"/><!-- ì§ˆì˜ì‹ -->
+<xsl:param name="eq"/><!-- URL Encoded ì§ˆì˜ì‹ -->
+<xsl:param name="p">1</xsl:param><!-- í˜ì´ì§€ -->
+<xsl:param name="c">10</xsl:param><!-- ê²°ê³¼ìˆ˜ -->
+<xsl:param name="sort">date_desc</xsl:param><!-- ì •ë ¬ -->
 
 <xsl:template match="xml">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -62,12 +62,12 @@ urchinTracker();
 <div id="bx">
 
 <table class="summary">
-<!--tr><th width="100">¼Ò¿ä½Ã°£</th><td><xsl:value-of select="loading_time"/></td></tr-->
-<tr><th width="100">¿£Áø½Ã°£</th><td><xsl:value-of select="elapsed_time"/> ms</td></tr>
-<tr><th>°Ë»öÁúÀÇ</th><td><xsl:value-of select="query"/></td></tr>
-<tr><th>ºĞ¼®´Ü¾î</th><td><xsl:value-of select="parsed_query"/></td></tr>
-<tr><th>¹®¼­¼ö</th><td>ÃÑ <xsl:value-of select="number(result_count)"/> °Ç</td></tr>
-<!--tr><th>ÆÄ¶ó¸ŞÅÍ</th><td>
+<!--tr><th width="100">ì†Œìš”ì‹œê°„</th><td><xsl:value-of select="loading_time"/></td></tr-->
+<tr><th width="100">ì—”ì§„ì‹œê°„</th><td><xsl:value-of select="elapsed_time"/> ms</td></tr>
+<tr><th>ê²€ìƒ‰ì§ˆì˜</th><td><xsl:value-of select="query"/></td></tr>
+<tr><th>ë¶„ì„ë‹¨ì–´</th><td><xsl:value-of select="parsed_query"/></td></tr>
+<tr><th>ë¬¸ì„œìˆ˜</th><td>ì´ <xsl:value-of select="number(result_count)"/> ê±´</td></tr>
+<!--tr><th>íŒŒë¼ë©”í„°</th><td>
    q=<xsl:value-of select="$q"/>,
    eq=<xsl:value-of select="$eq"/>,
    p=<xsl:value-of select="$p"/></td></tr-->
@@ -85,15 +85,15 @@ urchinTracker();
 </xsl:call-template>
 
 <div id="bxmenu">
-<a href="bookmark.cgi">Áñ°ÜÃ£±â</a> |
-<a href="boards.cgi">°Ô½ÃÆÇ</a> |
-<a href="online.cgi">Á¢¼ÓÀÚ</a> |
-<a href="userlist.cgi">È¸¿ø</a> |
+<a href="bookmark.cgi">ì¦ê²¨ì°¾ê¸°</a> |
+<a href="boards.cgi">ê²Œì‹œíŒ</a> |
+<a href="online.cgi">ì ‘ì†ì</a> |
+<a href="userlist.cgi">íšŒì›</a> |
 
-<a href="adduser.cgi">È¸¿ø Ãß°¡</a> |
-<a href="passwd.cgi">ºñ¹Ğ¹øÈ£</a> |
-<a href="edsig.cgi">½Ã±×³ÊÃÄ</a> |
-<a href="logout.cgi">³ª°¡±â</a> |
+<a href="adduser.cgi">íšŒì› ì¶”ê°€</a> |
+<a href="passwd.cgi">ë¹„ë°€ë²ˆí˜¸</a> |
+<a href="edsig.cgi">ì‹œê·¸ë„ˆì³</a> |
+<a href="logout.cgi">ë‚˜ê°€ê¸°</a> |
 <a href="http://x.bawi.org/bx/" target="_blank">BawiX</a>
 </div>
 
@@ -127,7 +127,7 @@ start = <xsl:value-of select="$start"/>
 </table>
 <xsl:call-template name="list_header"/>
 <br/>
-<!-- ÆäÀÌÁö ³×ºñ°ÔÀÌ¼Ç ¸µÅ© -->
+<!-- í˜ì´ì§€ ë„¤ë¹„ê²Œì´ì…˜ ë§í¬ -->
 <xsl:call-template name="page_navi">
   <xsl:with-param name="last_page" select="ceiling(../result_count div $c)"/>
   <xsl:with-param name="this_page"><xsl:value-of select="$p"/></xsl:with-param>
@@ -142,13 +142,13 @@ start = <xsl:value-of select="$start"/>
   <xsl:for-each select="docs/doc">
 <tr valign="top">
     <td width="1%">
-    <!-- °Ô½Ã¹° ¹øÈ£ ¸µÅ© -->
+    <!-- ê²Œì‹œë¬¼ ë²ˆí˜¸ ë§í¬ -->
     <xsl:element name="a">
       <xsl:attribute name="href">/x/read.cgi?bid=<xsl:value-of select="fields/field[@name='board_id']"/>&amp;aid=<xsl:value-of select="fields/field[@name='article_id']"/></xsl:attribute>
 	  <xsl:value-of select="$no"/>
     </xsl:element>
 	</td>
-    <!-- °Ô½Ã¹° Á¦¸ñ ¸µÅ© -->
+    <!-- ê²Œì‹œë¬¼ ì œëª© ë§í¬ -->
 	<td width="99%">
     <xsl:element name="a">
       <xsl:attribute name="href">/x/read.cgi?bid=<xsl:value-of select="fields/field[@name='board_id']"/>&amp;aid=<xsl:value-of select="fields/field[@name='article_id']"/></xsl:attribute>
@@ -157,11 +157,11 @@ start = <xsl:value-of select="$start"/>
     </xsl:element>
 	</td>
 	<td style="white-space:nowrap">
-	<!-- ÀÛ¼ºÀÚ ÀÌ¸§ ¸µÅ© - °³ÀÎÁ¤º¸ Á¶È¸ -->
+	<!-- ì‘ì„±ì ì´ë¦„ ë§í¬ - ê°œì¸ì •ë³´ ì¡°íšŒ -->
     <xsl:element name="a">
       <xsl:attribute name="href">javascript:view_id('<xsl:value-of select="fields/field[@name='userid']"/>')</xsl:attribute>
 	  <xsl:value-of select="fields/field[@name='author']"/>
-    </xsl:element><!-- ÀÛ¼ºÀÚ ¾ÆÀÌµğ ¸µÅ© - ÂÊÁö º¸³»±â -->(<xsl:element name="a">
+    </xsl:element><!-- ì‘ì„±ì ì•„ì´ë”” ë§í¬ - ìª½ì§€ ë³´ë‚´ê¸° -->(<xsl:element name="a">
       <xsl:attribute name="href">javascript:note('<xsl:value-of select="fields/field[@name='userid']"/>')</xsl:attribute>
 	  <xsl:value-of select="fields/field[@name='userid']"/>
     </xsl:element>)
@@ -206,7 +206,7 @@ start = <xsl:value-of select="$start"/>
 <xsl:template name="list_header">
 <table border="0" cellpadding="0" cellspacing="0" width="100%">
 <tr>
-  <td class="thead" style="white-space:nowrap"><a href="/x/bookmark.cgi">Áñ°ÜÃ£±â</a></td>
+  <td class="thead" style="white-space:nowrap"><a href="/x/bookmark.cgi">ì¦ê²¨ì°¾ê¸°</a></td>
   <td class="thead" style="white-space:nowrap">--</td>
   <td class="thead" style="white-space:nowrap">--</td>
   <td class="thead" width="98%">&nbsp;</td>
@@ -241,7 +241,7 @@ start = <xsl:value-of select="$start"/>
 </table>
 </xsl:template>
 
-<!-- ÆäÀÌÁö ³×ºñ°ÔÀÌ¼Ç ¸µÅ© »ı¼º -->
+<!-- í˜ì´ì§€ ë„¤ë¹„ê²Œì´ì…˜ ë§í¬ ìƒì„± -->
 <xsl:template name="page_link">
   <xsl:param name="start" select="$start"/>
   <xsl:param name="end"   select="$end"/>
@@ -296,7 +296,7 @@ start = <xsl:value-of select="$start"/>
 &nbsp; &nbsp; &nbsp;
 </td>
 <td class="itemf">
-  °Ç¼ö
+  ê±´ìˆ˜
   <!--c=<xsl:value-of select="$c"/-->
   <select name="c">
     <xsl:element name="option">
@@ -319,28 +319,28 @@ start = <xsl:value-of select="$start"/>
   <xsl:if test="$help = 'yes'">
 <table border="0" cellpadding="0" cellspacing="0" align="center">
 <tr><td class="itemf" colspan="2">
-   º»¹®¿¡¼­¸¸ °Ë»ö <br/>
-   Á¦¸ñ¿¡¼­¸¸ °Ë»ö <br/>
-   ÀÌ¸§¿¡¼­ °Ë»ö <br/>
-   ID¿¡¼­ °Ë»ö <br/>
-   ¿¬»êÀÚ AND <br/>
-   ¿¬»êÀÚ OR <br/>
-   ¿¬»êÀÚ NOT <br/>
-   ÀÎÁ¢¿¬»êÀÚ <br/>
-   ±¸¹®°Ë»ö <br/>
-   ¿¬»êÀÚ º¹ÇÕ<br/>
+   ë³¸ë¬¸ì—ì„œë§Œ ê²€ìƒ‰ <br/>
+   ì œëª©ì—ì„œë§Œ ê²€ìƒ‰ <br/>
+   ì´ë¦„ì—ì„œ ê²€ìƒ‰ <br/>
+   IDì—ì„œ ê²€ìƒ‰ <br/>
+   ì—°ì‚°ì AND <br/>
+   ì—°ì‚°ì OR <br/>
+   ì—°ì‚°ì NOT <br/>
+   ì¸ì ‘ì—°ì‚°ì <br/>
+   êµ¬ë¬¸ê²€ìƒ‰ <br/>
+   ì—°ì‚°ì ë³µí•©<br/>
     </td>
     <td>
-   body:(°Ë»ö ´Ü¾î) <br/>
-   title:(°Ë»ö ´Ü¾î) <br/>
-   author:(°Ë»ö ´Ü¾î) <br/>
-   userid:(°Ë»ö ´Ü¾î) <br/>
+   body:(ê²€ìƒ‰ ë‹¨ì–´) <br/>
+   title:(ê²€ìƒ‰ ë‹¨ì–´) <br/>
+   author:(ê²€ìƒ‰ ë‹¨ì–´) <br/>
+   userid:(ê²€ìƒ‰ ë‹¨ì–´) <br/>
    &amp; <br/>
    + <br/>
    ! <br/>
    /n/ - n = 0,1,2,3,..<br/>
-   "°Ë»ö ´Ü¾î"<br/>
-   title:("°Ë»ö ´Ü¾î") + body:(°Ë»ö /3/ ´Ü¾î)<br/>
+   "ê²€ìƒ‰ ë‹¨ì–´"<br/>
+   title:("ê²€ìƒ‰ ë‹¨ì–´") + body:(ê²€ìƒ‰ /3/ ë‹¨ì–´)<br/>
     </td>
 </tr>
 </table>
