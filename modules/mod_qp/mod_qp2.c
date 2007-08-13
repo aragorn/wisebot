@@ -7,6 +7,7 @@
 #include "common_core.h"
 #include "memory.h"
 #include "util.h"
+#include "hangul.h"
 #include "common_util.h"
 #include "mod_api/qp2.h"
 #include "memfile.h"
@@ -2098,7 +2099,7 @@ static void highlight_string_by_word(char* str, word_list_t* wl)
 
     for(i = 0; i < wl->cnt; i++)
 	{
-        char* pos = __strcasestr(str, wl->word[i]);
+        char* pos = strcasestrh(str, wl->word[i]);
 		if (pos == NULL) continue;
 
         /* 알파벳 1글자인 경우, 단어 중 부분일치하는 것은 넘어간다.
