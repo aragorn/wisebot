@@ -2305,6 +2305,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 				error("cannot get field[%s] from doc[%"PRIu32"]", field_info[k].name, docid);
 				continue;
 			}
+			debug("cdmdoc_get_field([%s],[%s])", field_info[k].name, field_value);
 		}
 
 		// 구성 : FIELD_NAME:
@@ -2341,6 +2342,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						highlight(field_value, &req->word_list);
 					}
 				    rv = memfile_appendF(buffer, "<![CDATA[%s]]>", field_value);
+					debug("%s RETURN [%s]", field_info[k].name, field_value);
 
 					if(rv < 0) {
 						MSG_RECORD(&req->msg, error, "cannot memfile_appendF(): field value");
@@ -2355,7 +2357,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						rv = memfile_appendF(buffer, "%s", field_value);
 
 						if(rv < 0) {
-							MSG_RECORD(&req->msg, error, "cannot memfile_appendF(): field value");
+							MSG_RECORD(&req->msg, error, "cannot memfile_appendF(): field_value");
 							memfile_free(buffer);
 							return FAIL;
 						}
@@ -2385,7 +2387,9 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 							    summary_pos = get_start_comment(field_value, doc_hits->hits[m].std_hit.position-4);
                             }
 
-//warn("field_value[%s], summary_pos[%d], position[%u]", field_value, summary_pos, doc_hits->hits[m].std_hit.position);
+							debug("%s SUM summary_pos[%d], position[%u], [%s]",
+									field_info[k].name, summary_pos, doc_hits->hits[m].std_hit.position,
+									field_value);
 							strncpy(summary, field_value + summary_pos, comment_length+1);
 							cut_string( summary, comment_length);
 							exist_summary = 1;
@@ -2397,6 +2401,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 					if(field_info[k].type == SUM_OR_FIRST && exist_summary == 0) {
 						strncpy(summary, field_value, comment_length+1);
 						cut_string( summary, comment_length);
+						debug("%s SUM_OR_FIRST [%s]", field_info[k].name, field_value);
 					}
 
 					// field_value size : 1M, highlight 시 충분한 버퍼가 필요하기 때문에 다시 옮김. 
