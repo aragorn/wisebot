@@ -671,6 +671,7 @@ static void test_sentence(char *t, int morph_id)
 	info("test is done.");
 }
 
+
 int test_mod_koma(void)
 {
 	char *t1 = "한글문자열을잘떼어내는지테스트합니다.\r\n"
@@ -702,3 +703,5 @@ int test_mod_koma(void)
 	
 	return 0;
 }
+
+const void *hack_test_mod_koma = (const void *)test_mod_koma;

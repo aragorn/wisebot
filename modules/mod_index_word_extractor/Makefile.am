@@ -15,7 +15,7 @@ pkglib_LTLIBRARIES   = mod_bigram.la \
 
 lib_LTLIBRARIES      = liboldcodetrans.la
 
-check_PROGRAMS       = test_mod_koma test_mod_pkoma
+check_PROGRAMS       = test_mod_koma test_mod_koma_complex_noun test_mod_pkoma
 
 liboldcodetrans_la_SOURCES = \
                         lib/ma_chn.c lib/ma_chn.h \
@@ -58,12 +58,20 @@ mod_koma_la_SOURCES = mod_koma.c mod_koma.h \
                       mod_koma_complex_noun_support.h
 mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 
-test_mod_koma_SOURCES = test_mod_koma.c mod_koma.c
-test_mod_koma_CFLAGS  = -DTEST_PROGRAM
+test_mod_koma_SOURCES = test_mod_koma.c
+test_mod_koma_CFLAGS  = -DMOD_KOMA_ENABLED
 test_mod_koma_LDFLAGS = -L$(libdir) -lkoma -lkomatagger
 test_mod_koma_LDADD   = $(libdir)/libcommon_core.la \
 						$(libdir)/libcommon_util.la \
-						$(pkglibdir)/mod_api2.la
+						$(pkglibdir)/mod_api2.la \
+                        mod_koma.la
+
+test_mod_koma_complex_noun_SOURCES = test_mod_koma_complex_noun.c
+test_mod_koma_complex_noun_LDFLAGS = -L$(libdir) -lkoma -lkomatagger
+test_mod_koma_complex_noun_LDADD   = $(libdir)/libcommon_core.la \
+			                         $(libdir)/libcommon_util.la \
+						             $(pkglibdir)/mod_api2.la \
+                                     mod_koma.la
 
 if USE_DAUM_KOMA
 mod_daum_koma_la_SOURCES = mod_daum_koma.c
@@ -82,15 +90,17 @@ if USE_POSTECH_KOMA
 mod_pkoma_la_SOURCES = mod_pkoma.c mod_pkoma.h 
 mod_pkoma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lpkoma
 
-test_mod_pkoma_SOURCES = test_mod_pkoma.c mod_pkoma.c
-test_mod_pkoma_CFLAGS  = -DTEST_PROGRAM
+test_mod_pkoma_SOURCES = test_mod_pkoma.c
+test_mod_pkoma_CFLAGS  = -DMOD_PKOMA_ENABLED
 test_mod_pkoma_LDFLAGS = -L$(libdir) -lpkoma
 test_mod_pkoma_LDADD   = $(libdir)/libcommon_core.la \
-						 $(libdir)/libcommon_util.la
+						 $(libdir)/libcommon_util.la \
+						 mod_pkoma.la
 else
 mod_pkoma_la_SOURCES = 
 mod_pkoma_la_LDFLAGS = -module -avoid-version
-test_mod_pkoma_SOURCES = 
+test_mod_pkoma_SOURCES = test_mod_pkoma.c
+test_mod_pkoma_CFLAGS  = 
 endif
 
 include ../install-pkglib.mk
