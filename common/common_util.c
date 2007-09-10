@@ -157,8 +157,9 @@ char* strnhcpy(char* dest, char const* src, int len)
  * less than, equal to, or greater than the second.  If two members compare
  * as equal,  their order in the sorted array is undefined.
  */
-#define _IS_KOREAN(c)	((c >= 0xb0) && (c <= 0xc8))
-int hangul_strncmp(unsigned char *str1, unsigned char *str2, int size)
+//#define _IS_KOREAN(c)	((0xb0 <= c) && (c <= 0xfe))
+#define _IS_KOREAN(c)	((0xa1 <= (unsigned char)c) && ((unsigned char)c <= 0xfe))
+int hangul_strncmp(char *str1, char *str2, int size)
 {
 	int i, diff;
 	int len1, len2;

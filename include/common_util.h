@@ -53,7 +53,7 @@ SB_DECLARE(char*) strnhcpy(char* dest, char const* src, int len);
  * less than, equal to, or greater than the second.  If two members compare
  * as equal,  their order in the sorted array is undefined.
  */
-SB_DECLARE(int) hangul_strncmp(unsigned char *str1, unsigned char *str2, int size);
+SB_DECLARE(int) hangul_strncmp(char *str1, char *str2, int size);
 /*****************************************************************************/
 SB_DECLARE(int) sb_lockfile(const char *path);
 SB_DECLARE(int) sb_unlockfile(int fd);
