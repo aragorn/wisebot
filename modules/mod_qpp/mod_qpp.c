@@ -751,6 +751,9 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 	 * 형태소분석 : 10 <= morp_id < 20
 	 * 바이그램   : 20 <= morp_id < 30
      */
+	/* 형태소분석 결과의 버그를 피해가는 코드는 사용하지 않는다.
+	 * 2007-09-18 김정겸 */
+#if 0
 	/*
 	if (nMorpheme == 0 && (morp_id >= 10 && morp_id < 20)) {
 		// 형태소 분석 결과가 없으면 원래 단어로 검색
@@ -805,6 +808,7 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 			return nRet;
 		}
 	}
+#endif
 
 	pStObj->nextTurn = TURN_BINARY_OPERATOR;
 
