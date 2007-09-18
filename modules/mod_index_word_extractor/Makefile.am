@@ -56,6 +56,7 @@ mod_rmac2_la_LDFLAGS = -module -avoid-version -no-undefined \
 mod_koma_la_SOURCES = mod_koma.c mod_koma.h \
                       mod_koma_complex_noun_support.c \
                       mod_koma_complex_noun_support.h
+#mod_koma_la_CFLAGS = -g3 -O0
 mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 
 test_mod_koma_SOURCES = test_mod_koma.c
@@ -67,6 +68,7 @@ test_mod_koma_LDADD   = $(libdir)/libcommon_core.la \
                         mod_koma.la
 
 test_mod_koma_complex_noun_SOURCES = test_mod_koma_complex_noun.c
+#test_mod_koma_complex_noun_CFLAGS = -g3 -O0
 test_mod_koma_complex_noun_LDFLAGS = -L$(libdir) -lkoma -lkomatagger
 test_mod_koma_complex_noun_LDADD   = $(libdir)/libcommon_core.la \
 			                         $(libdir)/libcommon_util.la \

@@ -134,6 +134,7 @@
 								 TAG_IS((a), "NU",   2) || \
 								 TAG_IS((a), "NN?",  3) || \
 								 TAG_IS((a), "UNK",  3) || \
+								 TAG_IS((a), "NNCC", 4) || \
 								 TAG_IS((a), "COMP", 4) )
 
 #define TAG_IS_ETC(a)			(TAG_IS((a), "SCF", 3) || \
