@@ -76,6 +76,7 @@ static int      meta_data_size = 0; // buffer length
 static int      needed_processes=1;
 static int		rma_protocol = PROT_SOFTBOT4;
 static int      rmas_retry=10; // 0이면 무조건 계속 시도
+static int      max_requests = 10000;
 
 static field_info_t field_info[MAX_EXT_FIELD];
 
@@ -110,7 +111,7 @@ static void     set_docid(slot_t *slot, uint32_t docid);
 static int      set_nodoc(slot_t *slot);
 static int      set_state(slot_t *slot, int state);
 static void     set_title(char *msg, uint32_t docid);
-static int      get_docid_to_index(slot_t *slot, uint32_t *docid);
+static int      get_docid_to_index(slot_t *slot, int *docid);
 static void     init_scoreboard();
 
 static slot_t*  get_minimum_docid_slot();
@@ -194,12 +195,13 @@ static void _graceful_shutdown(int sig)
 // 하지만 전체 shutdown일 경우는 괜찮다. 엔진이 다시 시작되면 index 성공한 이후부터 할 것이므로...
 static int process_main (slot_t *slot)
 {
-	int ret;
+	int i, ret;
 	int docid_to_index;
 	int is_normal_doc;
 	void *pCdmData = NULL, *pRmasData = NULL;
 	long cdmLength = 0, rmasLength = 0;
 	char *err_str = NULL;
+	int my_max_requests;
 
 	// rmas가 없으면 할 일도 없다.
 	if ( rma_protocol != PROT_LOCAL &&  num_of_rmas == 0 ) {
@@ -236,7 +238,8 @@ static int process_main (slot_t *slot)
 
 	pCdmData = sb_malloc(DOCUMENT_SIZE);
 
-	while (1) {
+    my_max_requests = max_requests + (slot->id * 1021);
+	for (i = 0; i < my_max_requests; i++) {
 		CHECK_SHUTDOWN()
 
 		// NODOCUMENT가 아니면 전에 남긴 찌꺼기
@@ -554,7 +557,7 @@ static void set_title(char *msg, uint32_t docid)
 
 // index 작업할 document가 있는지 조사하고, 있으면 그 docid를 준다.
 // 없으면 NODOCUMENT
-static int get_docid_to_index(slot_t *slot, uint32_t *docid)
+static int get_docid_to_index(slot_t *slot, int *docid)
 {
 	uint32_t last_registered_id;
 	int ret;
@@ -1137,6 +1140,11 @@ static void set_cdm_set(configValue v)
 	cdm_set = atoi(v.argument[0]);
 }
 
+static void set_max_requests_per_child(configValue v)
+{
+	max_requests = atoi(v.argument[0]);
+}
+
 static registry_t registry[] = {
 	RUNTIME_REGISTRY("LAST_FETCHED_DOCID","last fetched document id",
 					 sizeof(uint32_t), init_last_fetched_docid, NULL, NULL),
@@ -1156,6 +1164,7 @@ static config_t config[] = {
 	CONFIG_GET("Protocol",	set_protocol,	1, "softbot4, http or local"),
 	CONFIG_GET("RmasRetry",	set_rmas_retry, 1, "retry count to rmas-analyze. 0 for infinite."),
 	CONFIG_GET("CdmSet",	set_cdm_set, 1, "select CDM set"),
+	CONFIG_GET("MaxRequests", set_max_requests_per_child, 1, "max requests for child's lifetime"),
 	{NULL}
 };
 
