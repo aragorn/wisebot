@@ -99,7 +99,7 @@ REGISTRY int          *last_used_rmas;
 #define RMAS_STATE_LOCK   1
 
 static int rmac_semid;
-static int b_use_cdm; // 1이면 mod_cdm사용. 아니면 cdm2 api사용
+static int b_use_old_cdm; // 1이면 mod_cdm사용. 아니면 cdm2 api사용
 // for cdm2 api
 static int cdm_set = -1;
 static cdm_db_t* cdm_db;
@@ -176,7 +176,8 @@ static void _graceful_shutdown(int sig)
 	if (scoreboard->shutdown || scoreboard->graceful_shutdown) { \
 		info("shutting down slot[%d]", slot->id); \
 		slot->state = SLOT_FINISH; \
-		goto success; \
+		exit_status = EXIT_SUCCESS; \
+		goto END_LOOP; \
 	} 
 
 #define CHECK_SHUTDOWN_AND_RET(msg) \
@@ -184,7 +185,8 @@ static void _graceful_shutdown(int sig)
 	if ( ret != SUCCESS ) { \
 		error( "slot[%d], docid[%u]: %s [%d]", slot->id, docid_to_index, msg, ret ); \
 		slot->state = SLOT_RESTART; /* restart하지 않으면 slot->docid 관리가 안된다. */ \
-		goto fail; \
+		exit_status = EXIT_FAILURE; \
+		goto END_LOOP; \
 	}
 
 // 현재 process가 kill signal을 받으면 현재 작업중인 문서는 잃어버리게 되어 있다.
@@ -202,17 +204,18 @@ static int process_main (slot_t *slot)
 	long cdmLength = 0, rmasLength = 0;
 	char *err_str = NULL;
 	int my_max_requests;
+	int exit_status = EXIT_SUCCESS;
 
-	// rmas가 없으면 할 일도 없다.
+	/* rmas가 없으면 할 일도 없다. */
 	if ( rma_protocol != PROT_LOCAL &&  num_of_rmas == 0 ) {
 		error("No rma server address. At least one is required.");
 		slot->state = SLOT_FINISH;
 		return 0;
 	}
 
-	b_use_cdm = ( find_module("mod_cdm.c") != NULL );
+	b_use_old_cdm = ( find_module("mod_cdm.c") != NULL );
 
-	if ( b_use_cdm ) {
+	if ( b_use_old_cdm ) {
 		ret = sb_run_server_canneddoc_init();
 		if ( ret != SUCCESS ) {
 			error( "cdm module init failed" );
@@ -269,7 +272,7 @@ static int process_main (slot_t *slot)
 		if ( is_normal_doc == TRUE ) {
 			set_title( "get document from cdm", docid_to_index );
 
-			if ( b_use_cdm ) {
+			if ( b_use_old_cdm ) {
 				cdmLength = sb_run_server_canneddoc_get_as_pointer( docid_to_index, pCdmData, DOCUMENT_SIZE );
 				if ( cdmLength <= 0 ) {
 					if ( cdmLength == CDM_NOT_EXIST ) err_str = "CDM_NOT_EXIST";
@@ -355,10 +358,23 @@ static int process_main (slot_t *slot)
 			pRmasData = NULL;
 			rmasLength = 0;
 		}
-	} // while (1)
+	} // for (i = 0; i < my_max_requests; i++) {
+	
+	/* process_main()이 종료되는 경우는 크게 3가지이다.
+	 *
+	 * 1) my_max_requests를 채워서 for loop를 빠져나온 경우에는 
+	 *    slot->state = SLOT_RESTART가 된 후 EXIT_SUCCESS를 return해야 한다.
+	 * 2) CHECK_SHUTDOWN() 에서 signal을 감지한 경우에는
+	 *    slot->state = SLOT_FINISH 가 된 후 EXIT_SUCCESS를 return해야 한다.
+	 * 3) CHECK_SHUTDOWN_AND_RET() 에서 오류가 발생한 경우에는
+	 *    slot->state = SLOT_RESTART가 된 후 EXIT_FAILURE를 return해야 한다.
+	 */
 
-success:
-	if ( !b_use_cdm ) {
+	slot->state = SLOT_RESTART; /* 위의 1) 경우이다. */
+
+END_LOOP:
+
+	if ( !b_use_old_cdm ) {
 		ret = sb_run_cdm_close( cdm_db );
 		if ( ret != SUCCESS )
 			error("cdm db close failed");
@@ -367,20 +383,9 @@ success:
 	if ( pCdmData != NULL ) sb_free( pCdmData );
 	if ( pRmasData != NULL ) sb_free( pRmasData );
 
-	return EXIT_SUCCESS;
+	return exit_status;
 
-fail:
-	if ( !b_use_cdm ) {
-		ret = sb_run_cdm_close( cdm_db );
-		if ( ret != SUCCESS )
-			error("cdm db close failed");
-	}
-
-	if ( pCdmData != NULL ) sb_free( pCdmData );
-	if ( pRmasData != NULL ) sb_free( pRmasData );
-
-	return 1;
-} // main()
+} // process_main()
 
 #define RMAS_ERROR_WAIT 10
 // 숫자가 중요하지 않으므로 (대강만 맞아도 된다?) lock이 실패해도 무시...
@@ -563,7 +568,7 @@ static int get_docid_to_index(slot_t *slot, int *docid)
 	int ret;
 	*docid = NODOCUMENT;
 
-	if ( b_use_cdm ) {
+	if ( b_use_old_cdm ) {
 		last_registered_id = sb_run_server_canneddoc_last_registered_id();
 	}
 	else {
@@ -882,7 +887,7 @@ static int morphological_analyze_local(uint32_t docid, void *pCdmData, long cdmL
 		      xpath, field_info[i].name, field_info[i].id, field_info[i].indexer_morpid);
 		r = sb_run_xmlparser_retrieve_field(parser, xpath, &field_value, &field_length);
 		if (r != SUCCESS) {
-			warn("cannot retrieve field[%s]", xpath);
+			notice("cannot retrieve field[%s]", xpath);
 			continue;
 		}
 
@@ -922,7 +927,7 @@ static int morphological_analyze_local(uint32_t docid, void *pCdmData, long cdmL
 		}
 		sb_free(output_buffer);
 
-	} // for ( i )
+	} // for( i = 0; i < MAX_EXT_FIELD; i++ ) {
 
 	sb_run_xmlparser_free_parser(parser); parser = NULL;
 
