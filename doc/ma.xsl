@@ -72,6 +72,7 @@ table tr td.part {
   <xsl:when test="$tag = 'NNCG'">:체언(N):명사(N):보통(C):일반(G)</xsl:when>
   <xsl:when test="$tag = 'NNCV'">:체언(N):명사(N):보통(C):동사(V)</xsl:when>
   <xsl:when test="$tag = 'NNCJ'">:체언(N):명사(N):보통(C):형용사(J)</xsl:when>
+  <xsl:when test="$tag = 'NNCC'">:체언(N):명사(N):보통(C):복합명사(C)</xsl:when>
   <xsl:when test="$tag = 'NNB'">:체언(N):명사(N):의존(B)</xsl:when>
   <xsl:when test="$tag = 'NNBU'">:체언(N):명사(N):의존(B):단위(U)</xsl:when>
   <xsl:when test="$tag = 'NNP'">:체언(N):명사(N):고유(P)</xsl:when>
