@@ -29,7 +29,15 @@ static index_word_extractor_t *new_cn_analyzer(int id)
 		return (index_word_extractor_t*)MINUS_DECLINE; //XXX: just DECLINE??
 
 
-	if ( KomaComplexNounAnalyzer != NULL ) return KomaComplexNounAnalyzer;
+	if ( KomaComplexNounAnalyzer != NULL ) 
+	{
+		handle = KomaComplexNounAnalyzer->handle;
+		KomaComplexNounAnalyzer->id = id;
+		handle->id = id;
+		handle->tmp_words_size = 0;
+		handle->koma_words_size = 0;
+		return KomaComplexNounAnalyzer;
+	}
 
 	this = sb_calloc(1, sizeof(index_word_extractor_t));
 	if (this == NULL) {
@@ -111,12 +119,15 @@ static int delete_cn_analyzer(index_word_extractor_t* extractor)
 		return DECLINE;
 
 	handle = extractor->handle;
+	/* singleon이 아닌 경우 */
+	/*
 	sb_free(handle->tmp_words); handle->tmp_words_size = 0;
 	sb_free(handle->koma_words); handle->koma_words_size = 0;
 	delete_koma(handle->koma);
 
 	sb_free(handle);
 	sb_free(extractor);
+	*/
 
 	return SUCCESS;
 }
