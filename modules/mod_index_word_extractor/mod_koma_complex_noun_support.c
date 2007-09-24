@@ -14,7 +14,7 @@
 #define KOMA_INDEX_WORD_SIZE  (1024)
 #define  TMP_INDEX_WORD_SIZE  (100)
 
-#define SINGLE_WORD 				// koma_wrapper_analyzer2 , single word handle
+static index_word_extractor_t *KomaComplexNounAnalyzer = NULL;
 
 static index_word_extractor_t *new_cn_analyzer(int id)
 {
@@ -27,6 +27,9 @@ static index_word_extractor_t *new_cn_analyzer(int id)
 	if (id != MY_EXTRACTOR_ID1 &&
 			id != MY_EXTRACTOR_ID2) 
 		return (index_word_extractor_t*)MINUS_DECLINE; //XXX: just DECLINE??
+
+
+	if ( KomaComplexNounAnalyzer != NULL ) return KomaComplexNounAnalyzer;
 
 	this = sb_calloc(1, sizeof(index_word_extractor_t));
 	if (this == NULL) {
@@ -71,6 +74,7 @@ static index_word_extractor_t *new_cn_analyzer(int id)
 		crit("extractor pointer is %d (same as the decline value for this api)", MINUS_DECLINE);
 	}
 
+	KomaComplexNounAnalyzer = this;
 	return this;
 
 FAILURE:
@@ -100,16 +104,18 @@ static int cn_set_text(index_word_extractor_t* extractor, const char* text)
 
 static int delete_cn_analyzer(index_word_extractor_t* extractor)
 {
-	koma_complex_noun_support_t *wrapper=NULL;
+	koma_complex_noun_support_t *handle=NULL;
 
 	if (extractor->id != MY_EXTRACTOR_ID1 &&
 			extractor->id != MY_EXTRACTOR_ID2) 
 		return DECLINE;
 
-	wrapper = extractor->handle;
-	delete_koma(wrapper->koma);
+	handle = extractor->handle;
+	sb_free(handle->tmp_words); handle->tmp_words_size = 0;
+	sb_free(handle->koma_words); handle->koma_words_size = 0;
+	delete_koma(handle->koma);
 
-	sb_free(wrapper);
+	sb_free(handle);
 	sb_free(extractor);
 
 	return SUCCESS;
