@@ -235,7 +235,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 	}
 
     /* group result */
-    ap_rprintf(r, "<groups>\n");
+    ap_rprintf(r, "<groups count=\"%d\">\n", qp_response.groupby_result_vid.rules.cnt);
 	print_group(r, &qp_response.groupby_result_vid);
     ap_rprintf(r, "</groups>\n");
 
