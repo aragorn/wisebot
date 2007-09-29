@@ -165,7 +165,7 @@ sub process_data_file {
 		}
 
 		if ($state == 3) {
-			/^-{78,82}$/ and $body =~ /<\/Document>/ and do {
+			/^-{78,82}$/ or $body =~ /<\/Document>/ and do {
 				$state = 1;
 				print "." if (($count % 50) == 0);
 				if ($confirm > 1 and $count < $confirm) {
