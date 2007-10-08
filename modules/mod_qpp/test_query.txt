@@ -1,0 +1,6 @@
+SELECT abc
+SEARCH hello world
+WHERE date > 20070910
+ORDER_BY title DESC
+LIMIT 0, 10
+
