@@ -8,14 +8,16 @@
 %token PHRASE NOOP
 %token LPAREN RPAREN
 %token STRING NAME INTNUM
-%token FUNCTION_NAME
+%token FUNCTION_NAME NON_EMPTY
 %left '+' '-'
-%left '*' '/' '&'
+%left '*' '/' '&' '(' ')'
 %left AND OR
 %nonassoc UMINUS
-%nonassoc NOT '!'
+%nonassoc NOT '!' '@'
 
 %{
+#define YYDEBUG 1
+#include "common_core.h"
 #include <stdio.h>
 extern int yylex(void);
 extern int yylineno;
@@ -23,21 +25,29 @@ int num_lines = 0;
 int num_chars = 0;
 %}
 %%
+
+sql_list:
+		sql ';' sql_list
+	|	sql
+	;
+
 sql:
-        search_statement
-	|	search_exp_list
+	 	SEARCH search_exp      { debug("SEARCH search_exp"); }
+	|	search_statement
+	|	error { debug("here. 2."); }
 	;
 
 search_statement:
         SELECT selection
-		SEARCH search_exp_list
+		SEARCH opt_search_exp
 		opt_where_clause
 		opt_order_by_clause
 		opt_limit_clause
 	;
 
 selection:
-        scalar_exp_commalist
+		field_commalist
+	/* 	scalar_exp_commalist */
     |   '*'
 	;
 
@@ -91,6 +101,7 @@ predicate:
 		comparison_predicate
 	|	between_predicate
 	|	test_for_null
+	|	in_predicate
 	;
 
 comparison_predicate:
@@ -117,30 +128,31 @@ atom_commalist:
 	|	atom_commalist ',' atom
 	;
 
-search_exp_list:
-		search_exp
-	|	search_exp     search_exp
-	|	search_exp '&' search_exp
-	|	search_exp '+' search_exp
-	|	'!' search_exp %prec UMINUS
-	|	'(' search_exp ')'
+opt_search_exp:
+		/* empty */
+	|	search_exp
 	;
 
 search_exp:
 		search_term
+	|	'(' search_exp ')'
+	|	search_exp '&' search_exp
+	|	search_exp '/' INTNUM '/' search_exp
+	|	search_exp '+' search_exp
+	|	search_term search_term
+	|	search_term '(' search_exp ')'
+	|	'(' search_exp ')' search_term
+	|	'(' search_exp ')' '(' search_exp ')'
+	|	'!' search_exp %prec UMINUS
+	|	'@' search_exp %prec UMINUS
 	|	field_ref ':' search_term
+	|	field_ref ':' '(' search_exp ')'
+	|   error { error("here."); }
 	;
 
 search_term:
-		search_term     search_term
-	|	search_term '&' search_term
-	|	search_term '+' search_term
-	|	search_term '/' INTNUM '/' search_term
-	|	'!' search_term %prec UMINUS
-	|	'@' search_term %prec UMINUS
-	|	NAME
+		TERM                  { debug("hello"); }
 	|	STRING
-	|	'(' search_term ')'
 	;
 
 scalar_exp:
@@ -156,10 +168,12 @@ scalar_exp:
 	|	'(' scalar_exp ')'
 	;
 
+	/*
 scalar_exp_commalist:
 		scalar_exp
 	|	scalar_exp_commalist ',' scalar_exp
 	;
+	*/
 
 function_ref:
 		FUNCTION_NAME '(' '*' ')' /* COUNT(*) */
@@ -179,15 +193,12 @@ field_ref:
 		NAME
 	;
 
-field:
-		NAME
-	;
-	
 %%
 
 
 int main(void)
 {
+		yydebug = 1;
         yyparse();
 		printf("lines[%d] chars[%d]\n", yylineno, num_chars);
 		

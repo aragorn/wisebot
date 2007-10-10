@@ -6,6 +6,7 @@ extern int yylineno;
 int  tokenpos = 0;
 char linebuf[501];
 void yyerror(const char* msg);
+void save_token(const char* token);
 
 #define SET_OPERAND \
     yylval = new_operand(); \
@@ -18,9 +19,20 @@ void yyerror(const char* msg);
     yylval->operand_type = OPERAND_EXPR; \
     yylval->result = &yylval->o.expr.result; \
     strncpy( yylval->o.expr.operator_string, yytext, sizeof(yylval->o.expr.operator_string) );
+
+#define TOKEN(name)  { save_token(yytext); return NAME; }
+
+/* About %option
+ * 8bit - allow 8bit(hangul) input
+ * caseless - case-insensitive match
+ * yylineno - enables yylineno variable
+ *
+ * %array - defines yytext as a char array instead of char pointer.
+ *          this enables unput() and other traditional lex functions.
+ */
 %}
 
-%option caseless yylineno
+%option 8bit caseless yylineno
 %array
 %%
 
@@ -32,27 +44,27 @@ void yyerror(const char* msg);
 }
 
 
-SELECT             { return SELECT; }
-SEARCH             { return SEARCH; }
-WHERE              { return WHERE;  }
-LIMIT              { return LIMIT;  }
-BY                 { return BY;     }
-GROUP              { return GROUP;  }
-COUNT              { return COUNT;  }
-GROUP_BY           { return GROUP_BY;  }
-COUNT_BY           { return COUNT_BY;  }
-VIRTUAL_ID         { return VIRTUAL_ID;  }
-ORDER              { return ORDER;  }
-ORDER_BY           { return ORDER_BY;  }
-ASC                { return ASC;    }
-DESC               { return DESC;   }
-IN                 { return IN;     }
-IS                 { return IS;     }
-NULL               { return NULLX;  }
-BETWEEN            { return BETWEEN;  }
-AND                { return AND;    }
-OR                 { return OR;     }
-NOT                { return NOT;    }
+SELECT             TOKEN( SELECT )
+SEARCH             TOKEN( SEARCH )
+WHERE              TOKEN( WHERE )
+LIMIT              TOKEN( LIMIT )
+BY                 TOKEN( BY )
+GROUP              TOKEN( GROUP )
+COUNT              TOKEN( COUNT )
+GROUP_BY           TOKEN( GROUP_BY )
+COUNT_BY           TOKEN( COUNT_BY )
+VIRTUAL_ID         TOKEN( VIRTUAL_ID )
+ORDER              TOKEN( ORDER )
+ORDER_BY           TOKEN( ORDER_BY )
+ASC                TOKEN( ASC )
+DESC               TOKEN( DESC )
+IN                 TOKEN( IN )
+IS                 TOKEN( IS )
+NULL               TOKEN( NULLX )
+BETWEEN            TOKEN( BETWEEN )
+AND                TOKEN( AND )
+OR                 TOKEN( OR )
+NOT                TOKEN( NOT )
 
 "="  |
 "!=" |
@@ -60,16 +72,16 @@ NOT                { return NOT;    }
 "<"  |
 ">"  |
 "<=" |
-">="               { return COMPARISON; }
-[-+*/:(),.;]       { return yytext[0]; }
+">="               TOKEN( COMPARISON )
+[-+*/:(),.;]       TOKEN( yytext[0] )
 
   /* 이름 */
-[A-Za-z][A-Za-z0-9_]*    { return NAME; }
+[A-Za-z][A-Za-z0-9_]*    TOKEN( NAME )
 
   /* 숫자 */
 [0-9]+             |
 [0-9]+"."[0-9]*    |
-"."[0-9]*          { return INTNUM; }
+"."[0-9]*          TOKEN( INTNUM )
 
   /* 문자열 */
 '[^'\n]*'          {
@@ -79,9 +91,16 @@ NOT                { return NOT;    }
 	else yymore();
 }
 
+\"[^\"\n]*\"          {
+	int c = input();
+	unput(c); /* just peeking */
+	if (c != '\"') return STRING;
+	else yymore();
+}
+
 '[^'\n]*$          { yyerror("Unterminated string"); }
 
-[ \t\r\n]+         ; /* 공백 */
+[ \t\r]+           ; /* 공백 */
 "--".*             ; /* 주석 */
 
 .                  { yyerror("Invalid character"); }
@@ -92,7 +111,13 @@ NOT                { return NOT;    }
 
 void yyerror(const char *s)
 {
-	fprintf(stderr, "line %d, char %d: %s\n%s\n",
-            yylineno, tokenpos, s, linebuf);
+	fprintf(stderr, "line %d, char %d: %s at %s\n%s\n",
+            yylineno, tokenpos, s, yytext, linebuf);
     fprintf(stderr, "%*s\n", 1+tokenpos, "^");
 }
+
+void save_token(const char *token)
+{
+	tokenpos += yyleng;
+}
+

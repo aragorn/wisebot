@@ -73,7 +73,8 @@
      NAME = 289,
      INTNUM = 290,
      FUNCTION_NAME = 291,
-     UMINUS = 292
+     NON_EMPTY = 292,
+     UMINUS = 293
    };
 #endif
 /* Tokens.  */
@@ -111,7 +112,8 @@
 #define NAME 289
 #define INTNUM 290
 #define FUNCTION_NAME 291
-#define UMINUS 292
+#define NON_EMPTY 292
+#define UMINUS 293
 
 
 

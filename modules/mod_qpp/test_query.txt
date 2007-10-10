@@ -1,6 +1,13 @@
+SEARCH test words;
+SEARCH 'second test words';
+
+SEARCH title:("ÇÑ±ÛÀÔ´Ï´Ù.");
+
+SEARCH author:("±èÁ¤°â") & subject:(A & ( B + C));
+
 SELECT abc
 SEARCH hello world
 WHERE date > 20070910
 ORDER_BY title DESC
-LIMIT 0, 10
+LIMIT 0, 10;
 
