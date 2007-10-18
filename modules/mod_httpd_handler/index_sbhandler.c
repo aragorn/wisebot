@@ -12,12 +12,12 @@
 #include <stdlib.h>
 
 // function prototype
-static int indexed_document_count(request_rec *r, softbot_handler_rec *s);
+static int indexed_hit_count(request_rec *r, softbot_handler_rec *s);
 static int last_word_id(request_rec *r, softbot_handler_rec *s);
 
 static softbot_handler_key_t index_handler_tbl[] =
 {	
-	{"document_count", indexed_document_count},
+	{"hit_count", indexed_hit_count},
 	{"last_word_id", last_word_id},
 	{NULL, NULL}
 };
@@ -46,7 +46,7 @@ static int last_word_id(request_rec *r, softbot_handler_rec *s)
 
 /////////////////////////////////////////////////////////////////////////
 // 단어ID에 대한 문서수
-static int indexed_document_count(request_rec *r, softbot_handler_rec *s)
+static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
 {
     int length;
     int ndochits;
@@ -86,7 +86,7 @@ static int indexed_document_count(request_rec *r, softbot_handler_rec *s)
 			"<xml>\n"
 			    "<word_id>%d</word_id>\n" 
 			    "<word><![CDATA[%s]]></word>\n"
-			    "<document_count>%d</document_count>\n"
+			    "<hit_count>%d</hit_count>\n"
 			"</xml>\n",
 			word.id, 
 			word.string, 
