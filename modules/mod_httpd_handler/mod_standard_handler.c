@@ -72,7 +72,7 @@ static int init_db()
     }
 
     // INDEX_DB open
-    rv = sb_run_open_word_db( &index_db, index_db_set );
+    rv = sb_run_indexdb_open( &index_db, index_db_set );
     if ( rv != SUCCESS && rv != DECLINE ) {
         error("index db open failed: index_db_set[%d]", index_db_set);
         return FAIL;
