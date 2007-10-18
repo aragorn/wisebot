@@ -18,6 +18,8 @@
 int sbhandler_common_get_table(char *name_space, void **tab);
 //implemented in document_handler.c
 int sbhandler_document_get_table(char *name_space, void **tab);
+//implemented in index_handler.c
+int sbhandler_index_get_table(char *name_space, void **tab);
 
 static int initialized = 0;
 static int did_set = 1;
@@ -26,6 +28,8 @@ static int cdm_set = 1;
 cdm_db_t* cdm_db = NULL;
 static int word_db_set = 1;
 word_db_t* word_db = NULL;
+static int index_db_set = 1;
+index_db_t *index_db = NULL;
 
 // query log
 enum qlogtype{ CUSTOM, XML };
@@ -60,9 +64,17 @@ static int init_db()
 		return FAIL;
     }
 
+    // WORD_DB open
     rv = sb_run_open_word_db( &word_db, word_db_set );
     if ( rv != SUCCESS && rv != DECLINE ) {
         error("word db open failed: word_db_set[%d]", word_db_set);
+        return FAIL;
+    }
+
+    // INDEX_DB open
+    rv = sb_run_open_word_db( &index_db, index_db_set );
+    if ( rv != SUCCESS && rv != DECLINE ) {
+        error("index db open failed: index_db_set[%d]", index_db_set);
         return FAIL;
     }
 
@@ -472,6 +484,7 @@ static void register_hooks(void)
 	sb_hook_handler(standard_handler,NULL,NULL,HOOK_REALLY_FIRST);
 	sb_hook_sbhandler_get_table(sbhandler_common_get_table,NULL,NULL,HOOK_REALLY_LAST);
 	sb_hook_sbhandler_get_table(sbhandler_document_get_table,NULL,NULL,HOOK_REALLY_LAST);
+	sb_hook_sbhandler_get_table(sbhandler_index_get_table,NULL,NULL,HOOK_REALLY_LAST);
     sb_hook_sbhandler_append_file(append_file, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sbhandler_make_memfile(make_memfile_from_postdata, NULL, NULL, HOOK_MIDDLE);
 	return;
@@ -490,6 +503,11 @@ static void get_did_set(configValue v)
 static void get_word_db_set(configValue v)
 {
     word_db_set = atoi( v.argument[0] );
+}
+
+static void get_index_db_set(configValue v)
+{
+    index_db_set = atoi( v.argument[0] );
 }
 
 static void get_query_log_path(configValue v)
@@ -512,6 +530,8 @@ static void get_query_log_type(configValue v)
 static config_t config[] = {
     CONFIG_GET("CdmSet", get_cdm_set, 1, "Cdm Set 0~..."),
     CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
+    CONFIG_GET("IndexDbSet",get_index_db_set, 1,
+            "index db set (type is indexdb) (e.g: IndexDbSet 1)"),
     CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDb Set 0~..."),
     CONFIG_GET("QueryLogPath", get_query_log_path, 1, "QueryLogPath log/query_log"),
     CONFIG_GET("QueryLogUsed", get_query_log_used, 1, "QueryLogUsed 1"),
