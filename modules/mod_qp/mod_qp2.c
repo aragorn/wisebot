@@ -143,7 +143,7 @@ typedef struct {
 /////////////////////////////////////////////////////////
 virtual_document_list_t* g_vdl;
 index_list_t* g_result_list;
-comment_t* g_comments;
+comment_t* g_comments = NULL;
 void* g_docattr_base_ptr = NULL;
 int g_docattr_record_size = 0;
 
@@ -2604,6 +2604,7 @@ static int init_response(response_t* res)
     memset(res, 0x00, sizeof(response_t));
 	res->vdl = g_vdl;
 
+    memset(g_comments, 0x00, sizeof(comment_t)*comment_list_size);
     res->comments = g_comments;
 
     return SUCCESS;
@@ -4623,6 +4624,8 @@ static int private_init(void)
 
     if( g_comments == NULL) {
         g_comments = (comment_t*)sb_malloc(sizeof(comment_t)*comment_list_size);
+
+		debug("comment list data size[%d]", sizeof(comment_t)*comment_list_size);
     }
 
 	return SUCCESS;
