@@ -17,6 +17,8 @@ HOOK_STRUCT(
 	HOOK_LINK(qp_cb_orderby_document)
 	HOOK_LINK(qp_cb_where)
 	HOOK_LINK(qp_set_where_expression)
+
+	HOOK_LINK(qp_get_max_doc_hits_size)
 )
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_init, (void), (), DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_init_request, (request_t * req, char* query), (req, query), DECLINE)
@@ -40,3 +42,5 @@ SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_cb_where, \
 	(const void *dest), (dest), MINUS_DECLINE)
 SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_set_where_expression, \
 	(char *clause), (clause), DECLINE)
+
+SB_IMPLEMENT_HOOK_RUN_FIRST(int, qp_get_max_doc_hits_size, (int *size), (size), DECLINE)

@@ -42,6 +42,11 @@ typedef struct word_list_t word_list_t;
 #define MAX_INDEX_LIST_POOL	(3)
 #define MAX_INCOMPLETE_INDEX_LIST_POOL	(30) 
 /* MAX_DOC_HITS_SIZE: size of the document set retrieved from VRF */
+/*
+ * 2007/11/09 blueend
+ * mod_qp2.c 설정파일로 이동.
+ * 호환성을 위해 남겨둠.
+ */
 #define MAX_DOC_HITS_SIZE (1200000)
 
 
@@ -260,5 +265,7 @@ SB_DECLARE_HOOK(int, qp_cb_orderby_virtual_document, (const void *dest, const vo
 SB_DECLARE_HOOK(int, qp_cb_orderby_document, (const void *dest, const void *sour, void *userdata))
 SB_DECLARE_HOOK(int, qp_cb_where, (const void *data))
 SB_DECLARE_HOOK(int, qp_set_where_expression, (char *clause))
+
+SB_DECLARE_HOOK(int, qp_get_max_doc_hits_size, (int *size))
 
 #endif

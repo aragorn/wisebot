@@ -388,6 +388,9 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 	int recv_pos = 0;
     memfile *buf = NULL;
 	virtual_document_t* vd = NULL;
+    int max_doc_hits_size = 0;
+
+    sb_run_qp_get_max_doc_hits_size( &max_doc_hits_size );
 
     init_server(r, s);
 
@@ -428,7 +431,7 @@ static int abstract_search_handler(request_rec *r, softbot_handler_rec *s)
 	vd = &(qp_response.vdl->data[0]);
 
 	if(g_dochits_buffer == NULL) {
-		g_dochits_buffer = (doc_hit_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(doc_hit_t));
+		g_dochits_buffer = (doc_hit_t*)sb_calloc(max_doc_hits_size, sizeof(doc_hit_t));
 	}
 
     vd->dochits = g_dochits_buffer; 

@@ -137,6 +137,9 @@ static void free_mfile_list(memfile **mfile_list){
 
 static void init_agent(request_rec *r, softbot_handler_rec *s)
 {
+    int max_doc_hits_size = 0;
+
+    sb_run_qp_get_max_doc_hits_size( &max_doc_hits_size );
     s->req = &qp_request;
     s->res = &qp_response;
 
@@ -148,8 +151,8 @@ static void init_agent(request_rec *r, softbot_handler_rec *s)
 
     g_docattr_cnt = 0;
     if(g_docattr_buffer == NULL) {
-        g_docattr_buffer = (docattr_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(docattr_t));
-		info("docattr count[%d], memory size[%d]", MAX_DOC_HITS_SIZE, MAX_DOC_HITS_SIZE*sizeof(docattr_t));
+        g_docattr_buffer = (docattr_t*)sb_calloc(max_doc_hits_size, sizeof(docattr_t));
+		info("docattr count[%d], memory size[%d]", max_doc_hits_size, max_doc_hits_size*sizeof(docattr_t));
     }
 }
 
@@ -202,6 +205,9 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
     http_client_t* clients[MAX_SEARCH_NODE];
     limit_t* limit = NULL;
     limit_t limit_buffer;
+    int max_doc_hits_size = 0;
+
+    sb_run_qp_get_max_doc_hits_size( &max_doc_hits_size );
 
     if(req->op_list_vid.cnt == 0) {
 		error("cannot find LIMIT operator. no vid operator found.");
@@ -362,7 +368,7 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 		for( i = 0; i < recv_cnt; i++) {
             virtual_document_t* vd = &(res->vdl->data[res->vdl->cnt+i]);
 
-			if(res->vdl->cnt + i > MAX_DOC_HITS_SIZE) {
+			if(res->vdl->cnt + i > max_doc_hits_size) {
 				real_recv_cnt = i;
 
 				MSG_RECORD(&s->msg, error, "not enought virtual_document count[%d], recv count[%d]", 
@@ -423,8 +429,8 @@ static int agent_lightsearch(request_rec *r, softbot_handler_rec *s, request_t* 
 			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 
-			if(g_docattr_cnt + 1 > MAX_DOC_HITS_SIZE) {
-				MSG_RECORD(&s->msg, error, "over max docattr count[%u]", MAX_DOC_HITS_SIZE);
+			if(g_docattr_cnt + 1 > max_doc_hits_size) {
+				MSG_RECORD(&s->msg, error, "over max docattr count[%u]", max_doc_hits_size);
 			    goto RECV_FAIL; // 이후 데이타 무시
 			}
 

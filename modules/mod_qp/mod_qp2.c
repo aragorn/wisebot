@@ -75,6 +75,10 @@ static int max_comment_return_bytes = 200;
 static int b_use_cdm = 0;
 ///////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////
+// max doc hits size
+static int max_doc_hits_size = 1200000;
+
 #define MAX_FIELD_SIZE (1024*1024)
 ///////////////////////////////////////////////////////////
 // 검색어 bold 처리
@@ -330,12 +334,12 @@ static index_list_t *alloc_complete_index_list(index_list_t *prev, index_list_t 
 	this->prev = prev;
 	this->next = next;
 
-	this->doc_hits = (doc_hit_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(doc_hit_t));
+	this->doc_hits = (doc_hit_t*)sb_calloc(max_doc_hits_size, sizeof(doc_hit_t));
 	if (this->doc_hits == NULL) {
 		error("fail calling calloc: %s", strerror(errno));
 		return NULL;
 	}
-	this->relevance = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
+	this->relevance = (uint32_t*)sb_calloc(max_doc_hits_size, sizeof(uint32_t));
 	if (this->relevance == NULL) {
 		error("fail calling calloc: %s", strerror(errno));
 		return NULL;
@@ -386,10 +390,10 @@ static index_list_t *get_complete_list(void)
 
 	this->doc_hits = doc_hits;
 	this->relevance = relevance;
-	this->list_size = MAX_DOC_HITS_SIZE; /* XXX: to where?? */
+	this->list_size = max_doc_hits_size; /* XXX: to where?? */
 
-//	memset(this->doc_hits, 0, sizeof(doc_hit_t) * MAX_DOC_HITS_SIZE);
-//	memset(this->relevance, 0, sizeof(uint32_t) * MAX_DOC_HITS_SIZE);
+//	memset(this->doc_hits, 0, sizeof(doc_hit_t) * max_doc_hits_size);
+//	memset(this->relevance, 0, sizeof(uint32_t) * max_doc_hits_size);
 
 //	CRIT("get complete list: %p", this);
 
@@ -433,16 +437,16 @@ static void init_complete_free_list()
         if ( i == MAX_INDEX_LIST_POOL - 1 ) this->next = NULL;
         else this->next = &(complete_index_list_pool[i+1]);
 
-		this->doc_hits = (doc_hit_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(doc_hit_t));
+		this->doc_hits = (doc_hit_t*)sb_calloc(max_doc_hits_size, sizeof(doc_hit_t));
 		if (this->doc_hits == NULL) {
 			error("calloc(%d bytes) failed: %s",
-					MAX_DOC_HITS_SIZE * (int)sizeof(doc_hit_t), strerror(errno));
+					max_doc_hits_size * (int)sizeof(doc_hit_t), strerror(errno));
 			return;
 		}
-		this->relevance = (uint32_t*)sb_calloc(MAX_DOC_HITS_SIZE, sizeof(uint32_t));
+		this->relevance = (uint32_t*)sb_calloc(max_doc_hits_size, sizeof(uint32_t));
 		if (this->relevance == NULL) {
 			error("relevance calloc(%d bytes) failed: %s",
-					MAX_DOC_HITS_SIZE * (int)sizeof(uint32_t), strerror(errno));
+					max_doc_hits_size * (int)sizeof(uint32_t), strerror(errno));
 			return;
 		}
 	}
@@ -665,11 +669,11 @@ static int read_from_db(uint32_t wordid, char* word, doc_hit_t* doc_hits)
 	}
 	ndochits = length / sizeof(doc_hit_t);
 
-	if ( ndochits > MAX_DOC_HITS_SIZE ) {
-		warn("ndochits[%u] > MAX_DOC_HITS_SIZE[%u]", ndochits, MAX_DOC_HITS_SIZE);
-		offset = (ndochits - MAX_DOC_HITS_SIZE)*sizeof(doc_hit_t);
+	if ( ndochits > max_doc_hits_size ) {
+		warn("ndochits[%u] > max_doc_hits_size[%u]", ndochits, max_doc_hits_size);
+		offset = (ndochits - max_doc_hits_size)*sizeof(doc_hit_t);
 		length -= offset;
-		ndochits = MAX_DOC_HITS_SIZE;
+		ndochits = max_doc_hits_size;
 	}
 	else offset = 0;
 	
@@ -4604,10 +4608,10 @@ static int private_init(void)
 
 	if(g_vdl == NULL) {
 		g_vdl = (virtual_document_list_t*)sb_malloc(sizeof(virtual_document_list_t));
-		g_vdl->data = (virtual_document_t*)sb_malloc(sizeof(virtual_document_t)*MAX_DOC_HITS_SIZE);
+		g_vdl->data = (virtual_document_t*)sb_malloc(sizeof(virtual_document_t)*max_doc_hits_size);
 		g_vdl->cnt = 0;
 
-		debug("virtual_document data size[%d]", sizeof(virtual_document_t)*MAX_DOC_HITS_SIZE);
+		debug("virtual_document data size[%d]", sizeof(virtual_document_t)*max_doc_hits_size);
 	}
 
 	return SUCCESS;
@@ -4751,6 +4755,20 @@ static void set_remove_char_query(configValue v)
 	debug("remove char query[%s]", remove_char_query);
 }
 
+static void set_max_doc_hits_size(configValue v)
+{
+	max_doc_hits_size = atoi( v.argument[0] );
+
+	debug("max_doc_hits_size[%d]", max_doc_hits_size);
+}
+
+static int get_max_doc_hits_size(int* size)
+{
+    *size = max_doc_hits_size;
+
+    return SUCCESS;
+}
+
 static config_t config[] = {
 	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDbSet {number}"),
 	CONFIG_GET("IndexDbSet",setIndexDbSet,1,
@@ -4769,6 +4787,7 @@ static config_t config[] = {
 	CONFIG_GET("HighlightUnit",set_highlight_unit, 1, "highlight unit ex) word, eojeol"),
 	CONFIG_GET("HighlightWord",set_highlight_word, 1, "highlight type ex) input, parsed"),
 	CONFIG_GET("RemoveCharQuery",set_remove_char_query, 1, "remove char query"),
+	CONFIG_GET("MaxDocHitsSize",set_max_doc_hits_size, 1, "max doc hits size(document list size)"),
 	{NULL}
 };
 
@@ -4784,6 +4803,7 @@ static void register_hooks(void)
 	sb_hook_qp_do_filter_operation(do_filter_operation,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_get_query_string(get_query_string,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_finalize_search(finalize_search,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_get_max_doc_hits_size(get_max_doc_hits_size,NULL,NULL,HOOK_MIDDLE);
 }
 
 module qp2_module = {
