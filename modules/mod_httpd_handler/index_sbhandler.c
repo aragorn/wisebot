@@ -37,7 +37,7 @@ static int last_word_id(request_rec *r, softbot_handler_rec *s)
 			"<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
 	ap_rprintf(r, 
 			"<xml>\n"
-			    "<item name=\"last_word_id\">%d</last_word_id>\n" 
+			    "<item name=\"last_word_id\">%d</item>\n" 
 			"</xml>\n",
             last_word_id);
 
@@ -84,9 +84,9 @@ static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
 			"<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
 	ap_rprintf(r, 
 			"<xml>\n"
-			    "<item name=\"word_id\">%d</word_id>\n" 
-			    "<item name=\"word\"><![CDATA[%s]]></word>\n"
-			    "<item name=\"hit_count\">%d</hit_count>\n"
+			    "<item name=\"word_id\">%d</item>\n" 
+			    "<item name=\"word\"><![CDATA[%s]]></item>\n"
+			    "<item name=\"hit_count\">%d</item>\n"
 			"</xml>\n",
 			word.id, 
 			word.string, 
