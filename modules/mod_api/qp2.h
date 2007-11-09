@@ -229,7 +229,7 @@ struct response_t {
     groupby_result_list_t groupby_result_did;
 	virtual_document_list_t* vdl;
 	char parsed_query[LONG_STRING_SIZE];
-    comment_t comments[COMMENT_LIST_SIZE];
+    comment_t* comments;
     uint32_t node_id;
     limit_t limit;
     int search_result;
@@ -267,5 +267,6 @@ SB_DECLARE_HOOK(int, qp_cb_where, (const void *data))
 SB_DECLARE_HOOK(int, qp_set_where_expression, (char *clause))
 
 SB_DECLARE_HOOK(int, qp_get_max_doc_hits_size, (int *size))
+SB_DECLARE_HOOK(int, qp_get_comment_list_size, (int *size))
 
 #endif

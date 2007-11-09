@@ -79,6 +79,10 @@ static int b_use_cdm = 0;
 // max doc hits size
 static int max_doc_hits_size = 1200000;
 
+///////////////////////////////////////////////////////////
+// comment list size
+static int comment_list_size = 130;
+
 #define MAX_FIELD_SIZE (1024*1024)
 ///////////////////////////////////////////////////////////
 // 검색어 bold 처리
@@ -139,6 +143,7 @@ typedef struct {
 /////////////////////////////////////////////////////////
 virtual_document_list_t* g_vdl;
 index_list_t* g_result_list;
+comment_t* g_comments;
 void* g_docattr_base_ptr = NULL;
 int g_docattr_record_size = 0;
 
@@ -2599,6 +2604,8 @@ static int init_response(response_t* res)
     memset(res, 0x00, sizeof(response_t));
 	res->vdl = g_vdl;
 
+    res->comments = g_comments;
+
     return SUCCESS;
 }
 
@@ -4510,18 +4517,18 @@ static int virtual_document_fill_comment(request_t* req, response_t* res)
 	set_search_words(req, res);
 
     for(i = 0; i < g_vdl->cnt; i++) {
-		if(cmt_idx >= COMMENT_LIST_SIZE) {
+		if(cmt_idx >= comment_list_size) {
 			g_vdl->data[i].comment_cnt = 0;
-            MSG_RECORD(&req->msg, error, "over comment max count[%d]", COMMENT_LIST_SIZE);
+            MSG_RECORD(&req->msg, error, "over comment max count[%d]", comment_list_size);
 			return FAIL;
 		} else {
-			for(j = 0; j < g_vdl->data[i].dochit_cnt && cmt_idx < COMMENT_LIST_SIZE; j++) {
+			for(j = 0; j < g_vdl->data[i].dochit_cnt && cmt_idx < comment_list_size; j++) {
 				debug("cmt_idx[%d]", cmt_idx);
 
 				res->comments[cmt_idx].did = g_vdl->data[i].dochits[j].id;
 				get_comment(req, &g_vdl->data[i].dochits[j], &req->select_list, res->comments[cmt_idx].s);
-		        if(cmt_idx >= COMMENT_LIST_SIZE) {
-                    MSG_RECORD(&req->msg, error, "over comment max count[%d]", COMMENT_LIST_SIZE);
+		        if(cmt_idx >= comment_list_size) {
+                    MSG_RECORD(&req->msg, error, "over comment max count[%d]", comment_list_size);
 					break;
 				}
                 cmt_idx++;
@@ -4613,6 +4620,10 @@ static int private_init(void)
 
 		debug("virtual_document data size[%d]", sizeof(virtual_document_t)*max_doc_hits_size);
 	}
+
+    if( g_comments == NULL) {
+        g_comments = (comment_t*)sb_malloc(sizeof(comment_t)*comment_list_size);
+    }
 
 	return SUCCESS;
 }
@@ -4769,6 +4780,20 @@ static int get_max_doc_hits_size(int* size)
     return SUCCESS;
 }
 
+static void set_comment_list_size(configValue v)
+{
+	comment_list_size = atoi( v.argument[0] );
+
+	debug("comment_list_size[%d]", comment_list_size);
+}
+
+static int get_comment_list_size(int* size)
+{
+    *size = comment_list_size;
+
+    return SUCCESS;
+}
+
 static config_t config[] = {
 	CONFIG_GET("WordDbSet", get_word_db_set, 1, "WordDbSet {number}"),
 	CONFIG_GET("IndexDbSet",setIndexDbSet,1,
@@ -4788,6 +4813,7 @@ static config_t config[] = {
 	CONFIG_GET("HighlightWord",set_highlight_word, 1, "highlight type ex) input, parsed"),
 	CONFIG_GET("RemoveCharQuery",set_remove_char_query, 1, "remove char query"),
 	CONFIG_GET("MaxDocHitsSize",set_max_doc_hits_size, 1, "max doc hits size(document list size)"),
+	CONFIG_GET("CommentListSize",set_comment_list_size, 1, "ouput comment list size"),
 	{NULL}
 };
 
@@ -4804,6 +4830,7 @@ static void register_hooks(void)
 	sb_hook_qp_get_query_string(get_query_string,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_finalize_search(finalize_search,NULL,NULL,HOOK_MIDDLE);
 	sb_hook_qp_get_max_doc_hits_size(get_max_doc_hits_size,NULL,NULL,HOOK_MIDDLE);
+	sb_hook_qp_get_comment_list_size(get_comment_list_size,NULL,NULL,HOOK_MIDDLE);
 }
 
 module qp2_module = {

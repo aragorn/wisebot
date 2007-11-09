@@ -159,10 +159,13 @@ static void init_agent(request_rec *r, softbot_handler_rec *s)
 static comment_t* find_comment(comment_t* com_list, uint32_t did, uint32_t node_id)
 {
     int i = 0;
+    int comment_list_size = 0;
+
+    sb_run_qp_get_comment_list_size( &comment_list_size );
 
     debug("did[%u], node_id[%0X]", did, node_id);
 
-	for(; i < COMMENT_LIST_SIZE; i++) {
+	for(; i < comment_list_size; i++) {
         if(com_list[i].node_id == 0)
             break;
 
@@ -483,6 +486,10 @@ static int agent_abstractsearch
 	memfile *msg_body_list[MAX_SEARCH_NODE];
     http_client_t* clients[MAX_SEARCH_NODE];
 	char path[MAX_QUERY_STRING_SIZE];
+    int comment_list_size = 0;
+
+    sb_run_qp_get_comment_list_size( &comment_list_size );
+
 
 	// make request line
 	if ( snprintf(path, MAX_QUERY_STRING_SIZE, 
@@ -674,9 +681,9 @@ static int agent_abstractsearch
 		for(j = 0; j < recv_cnt; j++) {
             comment_t* cmt = &res->comments[cmt_idx];
 
-            if(cmt_idx > COMMENT_LIST_SIZE) {
+            if(cmt_idx > comment_list_size) {
 				MSG_RECORD(&s->msg, error, "over max comment count[%d], query[%s]", 
-                                            COMMENT_LIST_SIZE, req->query);
+                                            comment_list_size, req->query);
 			    goto RECV_FAIL; // 이후 데이타 무시
             }
 
