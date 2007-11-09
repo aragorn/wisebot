@@ -3617,6 +3617,10 @@ static int make_limit_rule(char* clause, limit_t* rule)
 	    }
 
         rule->cnt = atoi(split+1);
+
+        if(rule->cnt > comment_list_size) {
+            rule->cnt = comment_list_size;
+        }
     }
 
 	return SUCCESS;
