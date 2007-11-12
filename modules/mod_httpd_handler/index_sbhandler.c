@@ -105,18 +105,17 @@ static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
     }
 
 	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
+	ap_rprintf(r, "<xml>\n");
 
     for( i = 0; i < count; i++ ) {
 		if( get_word_info(&word, &hit_count) == FAIL) break;
 
 		ap_rprintf(r, 
-				"<xml>\n"
-					"<item>\n" 
-						"<column name=\"word_id\">%d</column>\n" 
-						"<column name=\"word\"><![CDATA[%s]]></column>\n"
-						"<column name=\"hit_count\">%d</column>\n"
-					"</item>\n" 
-				"</xml>\n",
+				"<item>\n" 
+					"<column name=\"word_id\">%d</column>\n" 
+					"<column name=\"word\"><![CDATA[%s]]></column>\n"
+					"<column name=\"hit_count\">%d</column>\n"
+				"</item>\n",
 				word.id, 
 				word.string, 
 				hit_count);
@@ -124,6 +123,7 @@ static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
         word.id += 1;
     }
 
+	ap_rprintf(r, "</xml>\n");
     return SUCCESS;
 }
 
