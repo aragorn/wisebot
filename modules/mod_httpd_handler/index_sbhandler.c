@@ -37,9 +37,42 @@ static int last_word_id(request_rec *r, softbot_handler_rec *s)
 			"<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
 	ap_rprintf(r, 
 			"<xml>\n"
-			    "<item name=\"last_word_id\">%d</item>\n" 
+			    "<item>\n" 
+			        "<column name=\"last_word_id\">%d</column>\n" 
+			    "</item>\n" 
 			"</xml>\n",
             last_word_id);
+
+    return SUCCESS;
+}
+
+/* word.id를 setting 한 후 사용하여야 한다. */
+static int get_word_info(word_t* word, int* hit_count) {
+    int length = 0;
+
+    if( word == NULL || word->id <= 0 ) {
+        warn("word info invalide");
+        return FAIL;
+    }
+
+	if ( sb_run_get_word_by_wordid( word_db, word ) != SUCCESS ) {
+		warn("lexicon failed to get word");
+		return FAIL;
+	}
+
+    length = sb_run_indexdb_getsize( index_db, word->id );
+    if ( length == INDEXDB_FILE_NOT_EXISTS ) {
+        warn("length is 0 of word[%d]: %s. something is wrong", word->id, word->string);
+        return 0;
+    }   
+    else if ( length == FAIL ) {
+        warn("indexdb_getsize failed. word[%d]: %s", word->id, word->string);
+        return FAIL;
+    }
+
+    info("word[%s] - length: %d, count: %d", word->string, length, length/(int)sizeof(doc_hit_t));
+        
+    *hit_count = length / sizeof(doc_hit_t);
 
     return SUCCESS;
 }
@@ -48,49 +81,48 @@ static int last_word_id(request_rec *r, softbot_handler_rec *s)
 // 단어ID에 대한 문서수
 static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
 {
-    int length;
-    int ndochits;
+    int hit_count;
     word_t word;
-    char* word_id = 0;
+    char* str_word_id = 0;
+    char* str_count = 0;
+    int count = 0;
+    int i = 0;
 
-    word_id = apr_pstrdup(r->pool, apr_table_get(s->parameters_in, "word_id"));
+    str_word_id = apr_pstrdup(r->pool, apr_table_get(s->parameters_in, "word_id"));
 
-    if(word_id == NULL || strlen(word_id) == 0) {
+    if(str_word_id == NULL || strlen(str_word_id) == 0) {
         MSG_RECORD(&s->msg, error, "word_id is null, get parameter exist with word_id.");
         return FAIL;
     }
-    word.id = atoi(word_id);
+    word.id = atoi(str_word_id);
     
-	if ( sb_run_get_word_by_wordid( word_db, &word ) != SUCCESS ) {
-		warn("lexicon failed to get word");
-		return FAIL;
-	}
+    str_count = apr_pstrdup(r->pool, apr_table_get(s->parameters_in, "count"));
 
-    length = sb_run_indexdb_getsize( index_db, word.id );
-    if ( length == INDEXDB_FILE_NOT_EXISTS ) {
-        warn("length is 0 of word[%d]: %s. something is wrong", word.id, word.string);
-        return 0;
-    }   
-    else if ( length == FAIL ) {
-        warn("indexdb_getsize failed. word[%d]: %s", word.id, word.string);
-        return FAIL;
+    if(str_count == NULL || strlen(str_count) == 0) {
+        count = 1;
+    } else {
+        count = atoi(str_count);
     }
-        
-    info("word[%s] - length: %d, count: %d", word.string, length, length/(int)sizeof(doc_hit_t));
-        
-    ndochits = length / sizeof(doc_hit_t);
 
-	ap_rprintf(r,
-			"<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
-	ap_rprintf(r, 
-			"<xml>\n"
-			    "<item name=\"word_id\">%d</item>\n" 
-			    "<item name=\"word\"><![CDATA[%s]]></item>\n"
-			    "<item name=\"hit_count\">%d</item>\n"
-			"</xml>\n",
-			word.id, 
-			word.string, 
-            ndochits);
+	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
+
+    for( i = 0; i < count; i++ ) {
+		if( get_word_info(&word, &hit_count) == FAIL) break;
+
+		ap_rprintf(r, 
+				"<xml>\n"
+					"<item>\n" 
+						"<column name=\"word_id\">%d</item>\n" 
+						"<column name=\"word\"><![CDATA[%s]]></item>\n"
+						"<column name=\"hit_count\">%d</item>\n"
+					"</item>\n" 
+				"</xml>\n",
+				word.id, 
+				word.string, 
+				hit_count);
+
+        word.id += 1;
+    }
 
     return SUCCESS;
 }
