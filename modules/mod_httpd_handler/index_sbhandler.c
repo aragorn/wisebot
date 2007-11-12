@@ -112,9 +112,9 @@ static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
 		ap_rprintf(r, 
 				"<xml>\n"
 					"<item>\n" 
-						"<column name=\"word_id\">%d</item>\n" 
-						"<column name=\"word\"><![CDATA[%s]]></item>\n"
-						"<column name=\"hit_count\">%d</item>\n"
+						"<column name=\"word_id\">%d</column>\n" 
+						"<column name=\"word\"><![CDATA[%s]]></column>\n"
+						"<column name=\"hit_count\">%d</column>\n"
 					"</item>\n" 
 				"</xml>\n",
 				word.id, 
