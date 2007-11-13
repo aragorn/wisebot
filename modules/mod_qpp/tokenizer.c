@@ -176,7 +176,7 @@ void tk_setString(TokenObj *pTkObj,char* theString){
 int tk_getNextToken(TokenObj *pTkObj,QueryNode *pQueryNode,int maxLen){
 	int16_t length = 0;
 	int16_t retVal = 0;
-	char tmpStr[MAX_TMP_STR];
+	char tmpStr[MAX_TMP_STR], unescapedStr[MAX_TMP_STR];
 
 	skipUselessChars(pTkObj);
 	
@@ -212,7 +212,7 @@ int tk_getNextToken(TokenObj *pTkObj,QueryNode *pQueryNode,int maxLen){
 	
 	if (length >= maxLen) {
 		warn("token length(%d) is larger than maxLen(%d)",length,maxLen);
-		copyToken(pTkObj,tmpStr,pTkObj->idx,maxLen-1);
+		copyToken(pTkObj,tmpStr,pTkObj->idx,MAX_TMP_STR);
 		pTkObj->idx = pTkObj->idx + length;
 	} else if (length == 0) {
 		info("length zero occur! ignore [%c]",pTkObj->inputStr[pTkObj->idx]);
@@ -220,15 +220,19 @@ int tk_getNextToken(TokenObj *pTkObj,QueryNode *pQueryNode,int maxLen){
 		return 0;
 	}
 	else { // normal case
-		copyToken(pTkObj,tmpStr,pTkObj->idx,length);
+		copyToken(pTkObj,tmpStr,pTkObj->idx,MAX_TMP_STR);
 		pTkObj->idx = pTkObj->idx + length;
 	}
 
-//	retVal = copyTranslateEscChar(pQueryNode->word_st.string, tmpStr);
-	retVal = copyTranslateEscChar(pQueryNode->original_word, tmpStr);
-	pTkObj->lastOperator = QPP_OP_OPERAND;
+	memset(unescapedStr, 0x00, MAX_TMP_STR);
+	copyTranslateEscChar(unescapedStr, tmpStr);
+	strncpy(pQueryNode->original_word, unescapedStr, maxLen-1);
+	pQueryNode->original_word[maxLen-1] = '\0';
 
-	debug("retVal [%d]",retVal);
+	pTkObj->lastOperator = QPP_OP_OPERAND;
+	retVal = strlen(pQueryNode->original_word);
+
+	debug("token[%s], length[%d]", pQueryNode->original_word, retVal);
 	return retVal;
 }
 
@@ -627,7 +631,7 @@ static int isOpSTAR(TokenObj *pTkObj){
 			pTkObj->currentNumOperand = 1;
 			length = getNextTokenLength(pTkObj,opLen);
 	
-			copyToken(pTkObj,pTkObj->starStrBuffer,pTkObj->idx+opLen,length);
+			copyToken(pTkObj,pTkObj->starStrBuffer,pTkObj->idx+opLen,MAX_INPUTSTR_LEN);
 			pTkObj->currentOpLen = length + opLen;
 			pTkObj->currentOpParam = STAR_BEGIN;
 			pTkObj->starStrBufferLen = length;
@@ -647,7 +651,7 @@ static int isOpSTAR(TokenObj *pTkObj){
 				pTkObj->currentNumOperand = 1;
 				length = getNextTokenLength(pTkObj,0);
 		
-				copyToken(pTkObj,pTkObj->starStrBuffer,pTkObj->idx,length);
+				copyToken(pTkObj,pTkObj->starStrBuffer,pTkObj->idx,MAX_INPUTSTR_LEN);
 				pTkObj->currentOpLen = opLen + length;
 				pTkObj->currentOpParam = STAR_END;
 				pTkObj->starStrBufferLen = length;
@@ -836,6 +840,7 @@ int16_t copyTranslateEscChar(char strTo[],char strFrom[]){
 	int32_t tmpNum = 0;
 	
 	while (1){
+
 		// %로 encoding된 문자들을 decode
 		if (isEscapeChar(strFrom[fromIdx]) == TRUE){
 			specialCharLen  = getParameter(strFrom+fromIdx,&tmpNum);
@@ -884,7 +889,7 @@ int16_t getNextTokenLength(TokenObj *pTkObj,int16_t offset){
 
 void copyToken(TokenObj *pTkObj,char dest[],int16_t startIdx,int16_t length){
 	strncpy(dest,&(pTkObj->inputStr[startIdx]),length-1);
-	dest[length] = '\0';
+	dest[length-1] = '\0';
 }
 
 // phrase("), parenthesis(괄호)의 짝이 맞는지 체크하고, 맞지 않으면
