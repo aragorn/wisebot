@@ -146,7 +146,7 @@ static OpFuncs m_eachOperator[] = {
 };
 
 
-#define isEndOfString(par) 	( ((par) == (char)NULL) ? TRUE:FALSE )
+#define isEndOfString(par) 	( ((par) == '\0') ? TRUE:FALSE )
 
 int tk_init(){ 
 	
@@ -159,7 +159,7 @@ int tk_init(){
 }
 
 void tk_setString(TokenObj *pTkObj,char* theString){
-	strncpy(pTkObj->inputStr,theString,MAX_INPUTSTR_LEN);
+	strncpy(pTkObj->inputStr,theString,MAX_INPUTSTR_LEN-1);
 	pTkObj->inputStr[MAX_INPUTSTR_LEN-1] = '\0';
 	pTkObj->idx = 0;
 	
@@ -281,10 +281,10 @@ static int  isAlphaNumericOperator(char *opStr){
 static int16_t prefixCmp(char* src, char* cmpStr){
 	int i = 0;
 	while (1) {
-		if (cmpStr[i] == (char)NULL)
+		if (cmpStr[i] == '\0')
 			break;
 
-		if (src[i] == (char)NULL)
+		if (src[i] == '\0')
 			return 0;
 				
 		if (src[i] != cmpStr[i]){
@@ -421,7 +421,7 @@ static int16_t getParameter(char *theString, int32_t *pNumber){
 	endIdx = idx;
 
 	len = endIdx - startIdx;
-	strncpy(strNum,theString+startIdx,len);
+	strncpy(strNum,theString+startIdx,len-1);
 	strNum[len] = '\0';
 	resultNum = atoi(strNum);
 
@@ -883,7 +883,7 @@ int16_t getNextTokenLength(TokenObj *pTkObj,int16_t offset){
 }
 
 void copyToken(TokenObj *pTkObj,char dest[],int16_t startIdx,int16_t length){
-	strncpy(dest,&(pTkObj->inputStr[startIdx]),length);
+	strncpy(dest,&(pTkObj->inputStr[startIdx]),length-1);
 	dest[length] = '\0';
 }
 
@@ -987,7 +987,7 @@ void set_op_and(configValue v)
 	}
 
 	for (i=0; i<m_numAND; i++) {
-		strncpy(m_opAND[i],v.argument[i],MAX_QPP_OP_STR);
+		strncpy(m_opAND[i],v.argument[i],MAX_QPP_OP_STR-1);
 		m_opAND[i][MAX_QPP_OP_STR-1] = '\0';
 
 		addStopCharFromOperator(m_opAND[i]);
@@ -1007,7 +1007,7 @@ void set_op_or(configValue v)
 	}
 
 	for (i=0; i<m_numOR; i++) {
-		strncpy(m_opOR[i],v.argument[i],MAX_QPP_OP_STR);
+		strncpy(m_opOR[i],v.argument[i],MAX_QPP_OP_STR-1);
 		m_opOR[i][MAX_QPP_OP_STR-1] = '\0';
 
 		addStopCharFromOperator(m_opOR[i]);
@@ -1027,7 +1027,7 @@ void set_op_not(configValue v)
 	}
 
 	for (i=0; i<m_numNOT; i++) {
-		strncpy(m_opNOT[i],v.argument[i],MAX_QPP_OP_STR);
+		strncpy(m_opNOT[i],v.argument[i],MAX_QPP_OP_STR-1);
 		m_opNOT[i][MAX_QPP_OP_STR-1] = '\0';
 
 		addStopCharFromOperator(m_opNOT[i]);
@@ -1047,7 +1047,7 @@ void set_op_paragraph(configValue v)
 	}
 
 	for (i=0; i<mParaNum; i++) {
-		strncpy(m_opPARA[i],v.argument[i],MAX_QPP_OP_STR);
+		strncpy(m_opPARA[i],v.argument[i],MAX_QPP_OP_STR-1);
 		m_opPARA[i][MAX_QPP_OP_STR-1] = '\0';
 
 		addStopCharFromOperator(m_opPARA[i]);
@@ -1067,7 +1067,7 @@ void set_op_within(configValue v)
 	}
 
 	for (i=0; i<m_numWITHIN; i++) {
-		strncpy(m_opWITHIN[i],v.argument[i],MAX_QPP_OP_STR);
+		strncpy(m_opWITHIN[i],v.argument[i],MAX_QPP_OP_STR-1);
 		m_opWITHIN[i][MAX_QPP_OP_STR-1] = '\0';
 
 		addStopCharFromOperator(m_opWITHIN[i]);
@@ -1087,7 +1087,7 @@ void set_op_fuzzy(configValue v)
 	}
 
 	for (i=0; i<m_numFUZZY; i++) {
-		strncpy(m_opFUZZY[i],v.argument[i],MAX_QPP_OP_STR);
+		strncpy(m_opFUZZY[i],v.argument[i],MAX_QPP_OP_STR-1);
 		m_opFUZZY[i][MAX_QPP_OP_STR-1] = '\0';
 
 		addStopCharFromOperator(m_opFUZZY[i]);
@@ -1107,7 +1107,7 @@ void set_op_field(configValue v)
 	}
 
 	for (i=0; i<m_numFIELD; i++) {
-		strncpy(m_opFIELD[i],v.argument[i],MAX_QPP_OP_STR);
+		strncpy(m_opFIELD[i],v.argument[i],MAX_QPP_OP_STR-1);
 		m_opFIELD[i][MAX_QPP_OP_STR-1] = '\0';
 
 		addStopCharFromOperator(m_opFIELD[i]);
@@ -1119,7 +1119,7 @@ void set_virtual_fieldname(configValue v)
 {
 	int i=0, id=0;
 
-	strncpy(mVirtualFieldName[mVirtualFieldNum], v.argument[0], SHORT_STRING_SIZE);
+	strncpy(mVirtualFieldName[mVirtualFieldNum], v.argument[0], SHORT_STRING_SIZE-1);
 	mVirtualFieldName[mVirtualFieldNum][SHORT_STRING_SIZE-1] = '\0';
 	
 	mVirtualFieldIds[mVirtualFieldNum] = 0;
@@ -1154,7 +1154,7 @@ void set_fieldname(configValue v)
 		return ;
 	}
 
-	strncpy(mFieldName[fieldid],v.argument[1],MAX_FIELD_STRING);
+	strncpy(mFieldName[fieldid],v.argument[1],MAX_FIELD_STRING-1);
 	mFieldName[fieldid][MAX_FIELD_STRING-1] = '\0';
 	warn("mFieldName[%d] = %s", fieldid, mFieldName[fieldid]);
 	
@@ -1182,7 +1182,7 @@ void set_op_star(configValue v)
 	}
 
 	for (i=0; i<m_numSTAR; i++) {
-		strncpy(m_opSTAR[i],v.argument[i],MAX_QPP_OP_STR);
+		strncpy(m_opSTAR[i],v.argument[i],MAX_QPP_OP_STR-1);
 		m_opSTAR[i][MAX_QPP_OP_STR-1] = '\0';
 
 		addStopCharFromOperator(m_opSTAR[i]);

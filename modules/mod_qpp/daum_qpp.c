@@ -246,7 +246,7 @@ int push_daum_tree(void* word_db, StateObj* pStObj, struct daum_tree_node* tree)
 		}
 	}
 	else { // operand
-		strncpy(qnode.word_st.string, tree->node.word, MAX_WORD_LEN);
+		strncpy(qnode.word_st.string, tree->node.word, MAX_WORD_LEN-1);
 		qnode.word_st.string[MAX_WORD_LEN-1] = '\0';
 		ret = pushOperand(word_db, pStObj, &qnode);
 		if ( ret < 0 ) {

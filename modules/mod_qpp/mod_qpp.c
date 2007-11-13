@@ -313,7 +313,7 @@ QPP_parse(void* word_db, char infix[],int max_infix_size, QueryNode postfix[], i
 
 	DEBUG("infix query: [%s]",infix);
 
-	strncpy(tmpQueryStr,infix,STRING_SIZE);
+	strncpy(tmpQueryStr,infix,STRING_SIZE-1);
 	tmpQueryStr[STRING_SIZE-1] = '\0';
 
 	DEBUG("before tokenizer set string");
@@ -664,7 +664,8 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 
 	//sb_run_index_word_extractor_set_text(extractor, pQuNode->word_st.string);
 	DEBUG("original_word:%s", pQuNode->original_word);
-	strncpy(pQuNode->word_st.string, pQuNode->original_word, MAX_WORD_LEN);
+	strncpy(pQuNode->word_st.string, pQuNode->original_word, MAX_WORD_LEN-1);
+	pQuNode->word_st.string[MAX_WORD_LEN-1] = '\0';
 	sb_run_index_word_extractor_set_text(extractor, pQuNode->original_word);
 
 	//XXX: get_index_words should be called in a loop
@@ -716,7 +717,7 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 	}
 	else if (nMorpheme > 0) {
 		for (i=0; i<nMorpheme; i++) {
-			strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN);
+			strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN-1);
 			qnode.word_st.string[MAX_WORD_LEN-1] = '\0';
 			INFO("qnode[%d] word:%s", i, qnode.word_st.string);
 
@@ -936,7 +937,7 @@ static int pushStarHackedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuN
 		pQuNode->opParam = -10;
 	}
 
-	strncpy(pQuNode->word_st.string, original_word, MAX_WORD_LEN);
+	strncpy(pQuNode->word_st.string, original_word, MAX_WORD_LEN-1);
 	pQuNode->word_st.string[MAX_WORD_LEN-1]='\0';
 	
 	return stk_push(&pStObj->postfixStack,pQuNode);
@@ -1072,7 +1073,7 @@ static void bigram_word_copy(char *dest, char *src, int max, int pos)
 		dest[2]='\0';
 	}
 	else	
-		strncpy(dest, src, max);
+		strncpy(dest, src, max-1);
 
 	dest[max-1]='\0';
 }
@@ -1085,7 +1086,8 @@ static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_q
 	QueryNode within, qnode;
 	char tmp_string[MAX_WORD_LEN];
 
-	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN);
+	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN-1);
+	input_qnode->word_st.string[MAX_WORD_LEN-1] = '\0';
 	extractor = sb_run_new_index_word_extractor(20);
 	if (extractor == NULL || extractor == (index_word_extractor_t*)MINUS_DECLINE) {
 		crit("error while allocating index word extractor: %p", extractor);
@@ -1109,9 +1111,9 @@ static int pushRightEndBigram(void* word_db, StateObj *state, QueryNode *input_q
 	indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
 
 	for (i=0; i<num_of_words+1; i++) {
-		strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN);
-
+		strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN-1);
 		qnode.word_st.string[MAX_WORD_LEN-1] = '\0';
+
 		state->truncated = 1; // truncated is unset within pushOperand
 
 		if (i==0)
@@ -1147,7 +1149,8 @@ static int pushLeftEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 	int num_of_words=0, i=0, rv=0;
 	char tmp_string[MAX_WORD_LEN];
 
-	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN);
+	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN-1);
+	input_qnode->word_st.string[MAX_WORD_LEN-1] = '\0';
 
 	extractor = sb_run_new_index_word_extractor(20);
 	if (extractor == NULL || extractor == (index_word_extractor_t*)MINUS_DECLINE) {
@@ -1171,7 +1174,7 @@ static int pushLeftEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 	indexwords[num_of_words].len = strlen(indexwords[num_of_words].word);
 
 	for (i=0; i<num_of_words+1; i++) {
-		strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN);
+		strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN-1);
 		qnode.word_st.string[MAX_WORD_LEN-1] = '\0';
 
 		state->truncated = 1; // truncated is unset within pushOperand
@@ -1209,7 +1212,8 @@ static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 	int num_of_words=0, i=0, rv=0;
 	char tmp_string[MAX_WORD_LEN];
 
-	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN);
+	strncpy(input_qnode->word_st.string, input_qnode->original_word, MAX_WORD_LEN-1);
+	input_qnode->word_st.string[MAX_WORD_LEN-1] = '\0';
 	DEBUG("original_word:%s, MAX_QPP_INDEXED_WORDS:%d",
 			input_qnode->original_word, MAX_QPP_INDEXED_WORDS);
 
@@ -1242,7 +1246,7 @@ static int pushBothEndBigram(void* word_db, StateObj *state, QueryNode *input_qn
 	indexwords[num_of_words+1].len = strlen(indexwords[num_of_words+1].word);
 
 	for (i=0; i<num_of_words+2; i++) {
-		strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN);
+		strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN-1);
 		qnode.word_st.string[MAX_WORD_LEN-1] = '\0';
 
 		state->truncated = 1; // truncated is unset within pushOperand
@@ -1379,11 +1383,11 @@ static config_t config[] = {
 
 int dummy_suffix_word(char *word, int pass, int nelm, word_t words[])
 {
-	strncpy(words[0].string, "suffix_word0", MAX_WORD_LEN);
+	strncpy(words[0].string, "suffix_word0", MAX_WORD_LEN-1);
 	words[0].string[MAX_WORD_LEN-1]='\0';
 	words[0].id = 10;
 
-	strncpy(words[1].string, "suffix_word1", MAX_WORD_LEN);
+	strncpy(words[1].string, "suffix_word1", MAX_WORD_LEN-1);
 	words[1].string[MAX_WORD_LEN-1]='\0';
 	words[1].id = 11;
 
@@ -1392,11 +1396,11 @@ int dummy_suffix_word(char *word, int pass, int nelm, word_t words[])
 
 int dummy_prefix_word(char *word, int pass, int nelm, word_t words[])
 {
-	strncpy(words[0].string, "prefix_word0", MAX_WORD_LEN);
+	strncpy(words[0].string, "prefix_word0", MAX_WORD_LEN-1);
 	words[0].string[MAX_WORD_LEN-1]='\0';
 	words[0].id = 10;
 
-	strncpy(words[1].string, "prefix_word1", MAX_WORD_LEN);
+	strncpy(words[1].string, "prefix_word1", MAX_WORD_LEN-1);
 	words[1].string[MAX_WORD_LEN-1]='\0';
 	words[1].id = 11;
 
