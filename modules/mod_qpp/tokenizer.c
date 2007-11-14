@@ -220,7 +220,7 @@ int tk_getNextToken(TokenObj *pTkObj,QueryNode *pQueryNode,int maxLen){
 		return 0;
 	}
 	else { // normal case
-		copyToken(pTkObj,tmpStr,pTkObj->idx,MAX_TMP_STR);
+		copyToken(pTkObj,tmpStr,pTkObj->idx,length+1);
 		pTkObj->idx = pTkObj->idx + length;
 	}
 
