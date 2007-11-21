@@ -887,9 +887,38 @@ int16_t getNextTokenLength(TokenObj *pTkObj,int16_t offset){
 	return length;
 }
 
+// 마지막 NULL 은 빼고 길이를 maxLen 으로 맞춘다. 그러니까 text는 최소한 maxLen+1
+// 한글을 고려해서 자른다.
+//
+// maxLen이 '\0'을 가리키고 있으면 한글이 깨지더라도 정상 리턴해버리므로
+// '\0'으로 끝난 string을 자르려면 length-1을 maxLen에 줘야 한다.
+static void cut_string(char* text, int maxLen)
+{
+    int korCnt = 0, engIdx;
+    int textLen = strlen( text );
+
+    if ( textLen <= maxLen ) return;
+    else textLen = maxLen;
+
+    for ( engIdx = textLen; engIdx >= 0; engIdx-- ) {
+        if ( (signed char)text[engIdx] >= 0 ) break; // 0~127
+
+        korCnt++;
+        continue;
+    }
+
+    if ( korCnt == 0 || korCnt % 2 == 1 )
+        text[textLen] = '\0';
+    else text[textLen-1] = '\0';
+
+    return;
+}
+
 void copyToken(TokenObj *pTkObj,char dest[],int16_t startIdx,int16_t length){
 	strncpy(dest,&(pTkObj->inputStr[startIdx]),length-1);
 	dest[length-1] = '\0';
+
+    cut_string(dest, length-2);
 }
 
 // phrase("), parenthesis(괄호)의 짝이 맞는지 체크하고, 맞지 않으면
