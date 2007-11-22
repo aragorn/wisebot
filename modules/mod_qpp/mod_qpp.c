@@ -607,6 +607,35 @@ static int reduce_index_words(index_word_t indexwords[], int nelm)
 	return FIRST_HALF + LAST_HALF;
 }
 
+// 마지막 NULL 은 빼고 길이를 maxLen 으로 맞춘다. 그러니까 text는 최소한 maxLen+1
+// 한글을 고려해서 자른다.
+//
+// maxLen이 '\0'을 가리키고 있으면 한글이 깨지더라도 정상 리턴해버리므로
+// '\0'으로 끝난 string을 자르려면 length-1을 maxLen에 줘야 한다.
+static void cut_string(char* text, int maxLen)
+{
+    int korCnt = 0, engIdx;
+    int textLen = strlen( text );
+
+    if ( textLen <= maxLen ) return;
+    else textLen = maxLen;
+
+    for ( engIdx = textLen; engIdx >= 0; engIdx-- ) {
+        if ( (signed char)text[engIdx] >= 0 ) break; // 0~127
+
+        korCnt++;
+        continue;
+    }
+
+info("text[%s]", text);
+    if ( korCnt == 0 || korCnt % 2 == 1 )
+        text[textLen] = '\0';
+    else text[textLen-1] = '\0';
+info("text[%s]", text);
+
+    return;
+}
+
 #define ENOUGH_INDEXWORD_NUM (MAX_QPP_INDEXED_WORDS * 2)
 static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode) {
 	QueryNode qnode;
@@ -663,9 +692,11 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 	}
 
 	//sb_run_index_word_extractor_set_text(extractor, pQuNode->word_st.string);
-	DEBUG("original_word:%s", pQuNode->original_word);
+	info("original_word:%s", pQuNode->original_word);
 	strncpy(pQuNode->word_st.string, pQuNode->original_word, MAX_WORD_LEN-1);
 	pQuNode->word_st.string[MAX_WORD_LEN-1] = '\0';
+    cut_string(pQuNode->word_st.string, MAX_WORD_LEN-2);
+
 	sb_run_index_word_extractor_set_text(extractor, pQuNode->original_word);
 
 	//XXX: get_index_words should be called in a loop
@@ -719,6 +750,8 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 		for (i=0; i<nMorpheme; i++) {
 			strncpy(qnode.word_st.string, indexwords[i].word, MAX_WORD_LEN-1);
 			qnode.word_st.string[MAX_WORD_LEN-1] = '\0';
+
+            cut_string(qnode.word_st.string, MAX_WORD_LEN-2);
 			INFO("qnode[%d] word:%s", i, qnode.word_st.string);
 
 			nRet = pushOperand(word_db, pStObj, &qnode);
