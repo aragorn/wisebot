@@ -1,0 +1,116 @@
+#!/bin/bash
+
+ERROR_LOG=~/autotest.log
+
+error() {
+  echo
+  echo "********************************************************************************"
+  echo "*******  Error:" $1
+  echo "********************************************************************************"
+  caller
+  echo 
+  tail -10 $ERROR_LOG
+  exit
+}
+
+cvs_checkout() {
+  echo "Started at `date`" >> $ERROR_LOG
+  printf "Checking out CVS project: "
+  cd ~
+  ( cvs checkout wisebot >>$ERROR_LOG 2>&1 ) || error "cannot checkout cvs project"
+  echo "OK"
+  echo "Ended at `date`" >> $ERROR_LOG
+}
+
+build_wisebot() {
+  echo "Started at `date`" >> $ERROR_LOG
+  printf "Building wisebot: "
+  cd ~
+  cd wisebot/srclib
+  ( make koma2c-install >>$ERROR_LOG 2>&1 ) || error "cannot build koma2c-install"
+  echo -n "koma2c"
+
+  cd ~/wisebot
+  ( ./buildconf >>$ERROR_LOG 2>&1 ) || error "cannot ./buildconf"
+
+  ( ./configure >>$ERROR_LOG 2>&1 ) || error "cannot ./configure"
+
+  ( make install >>$ERROR_LOG 2>&1 ) || error "cannot make install"
+
+  echo "Ended at `date`" >> $ERROR_LOG
+}
+
+edit_softbot() {
+  echo "Started at `date`" >> $ERROR_LOG
+  printf "Editing the script, softbot: "
+  cd ~/wisebot
+  mv softbot softbot.old
+  sed 's|SOFTBOT_ROOT=.*|SOFTBOT_ROOT=/home/wisebot/wisebot|' < softbot.old > softbot
+  rm -f softbot.old
+  chmod 755 softbot
+  echo "OK"
+
+  echo "Ended at `date`" >> $ERROR_LOG
+}
+
+create_conf() {
+  echo "Started at `date`" >> $ERROR_LOG
+  printf "Creating conf: "
+  cd ~/wisebot
+  test -e etc/softbot.conf && rm -f etc/softbot.conf
+  ln -s softbot.sup.dev.prec.conf etc/softbot.conf
+  echo "OK"
+  echo "Ended at `date`" >> $ERROR_LOG
+}
+
+delete_data() {
+  echo "Started at `date`" >> $ERROR_LOG
+  printf "Deleting data: "
+  cd ~/wisebot
+  (cd dat && ./clean.sh) >>$ERROR_LOG 2>&1
+  echo "OK"
+  echo "Ended at `date`" >> $ERROR_LOG
+}
+
+
+start_softbot() {
+  echo "Started at `date`" >> $ERROR_LOG
+  printf "Starting softbot: "
+  cd ~/wisebot
+  ./softbot restart >>$ERROR_LOG 2>&1
+  sleep 5
+  STATUS=`./softbot status | wc -l`
+  test $STATUS > 10 || error "Invalid process count: $STATUS"
+  echo "OK"
+  echo "Ended at `date`" >> $ERROR_LOG
+}
+
+stop_softbot() {
+  echo "Started at `date`" >> $ERROR_LOG
+  printf "Stopping softbot: "
+  cd ~/wisebot
+  ./softbot stop >>$ERROR_LOG 2>&1
+  sleep 3
+  STATUS=`./softbot status | grep "is not running"`
+  [ "$STATUS" == "[ERROR: is not running] " ] || error "Invalid process count: $STATUS"
+  echo "OK"
+  echo "Ended at `date`" >> $ERROR_LOG
+}
+
+echo -n > $ERROR_LOG
+#cvs_checkout
+#build_wisebot
+edit_softbot && create_conf
+delete_data && start_softbot
+
+stop_softbot
+
+error "no error" 
+
+function() {
+  echo "Started at `date`" >> $ERROR_LOG
+  printf "Echo a message: "
+  cd ~/wisebot
+
+  echo "Ended at `date`" >> $ERROR_LOG
+}
