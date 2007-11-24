@@ -627,11 +627,9 @@ static void cut_string(char* text, int maxLen)
         continue;
     }
 
-info("text[%s]", text);
     if ( korCnt == 0 || korCnt % 2 == 1 )
         text[textLen] = '\0';
     else text[textLen-1] = '\0';
-info("text[%s]", text);
 
     return;
 }
