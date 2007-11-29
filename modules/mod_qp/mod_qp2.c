@@ -2269,7 +2269,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 				error("cannot get field[%s] from doc[%"PRIu32"]", field_info[k].name, docid);
 				continue;
 			}
-			debug("cdmdoc_get_field([%s],[%s])", field_info[k].name, field_value);
+			//debug("cdmdoc_get_field([%s],[%s])", field_info[k].name, field_value);
 		}
 
 		// 구성 : FIELD_NAME:
@@ -2365,7 +2365,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 					if(field_info[k].type == SUM_OR_FIRST && exist_summary == 0) {
 						strncpy(summary, field_value, comment_length+1);
 						cut_string( summary, comment_length);
-						debug("%s SUM_OR_FIRST [%s]", field_info[k].name, field_value);
+						//debug("%s SUM_OR_FIRST [%s]", field_info[k].name, field_value);
 					}
 
 					// field_value size : 1M, highlight 시 충분한 버퍼가 필요하기 때문에 다시 옮김. 
@@ -2987,6 +2987,20 @@ static char* remove_field(char* word)
 	}
 }
 
+static int is_duplicated(word_list_t* wl, char* word) {
+    int i = 0;
+
+    for( i = 0; i < wl->cnt; i++ ) {
+        if( strncmp( wl->word[i], word, MAX_WORD_LEN-1 ) == 0 ) {
+            debug("hlightwords duplicated, skip[%s]", word);
+            return TRUE;
+        }
+    }
+
+    debug("hlightwords add[%s]", word);
+    return FALSE;
+}
+
 static void set_search_words_as_parsed(request_t* req, response_t *res)
 {
     int i = 0;
@@ -3029,7 +3043,9 @@ static void set_search_words_as_parsed(request_t* req, response_t *res)
 			; /* 어절이 "&" 인 경우는 제외한다. */
 		} else 
 		if(strlen(s) > highlight_word_len) {
-            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
+            if( is_duplicated( wl, s ) == FALSE ) {
+                strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
+            }
 	    }
 
 		if(e == NULL) break;
@@ -3083,7 +3099,9 @@ static void set_search_words_as_input(request_t* req, response_t *res)
 
 		s = sb_trim(remove_field(s));
 		if(strlen(s) > highlight_word_len) {
-            strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
+            if( is_duplicated( wl, s ) == FALSE ) {
+                strncpy(wl->word[wl->cnt++], s, MAX_WORD_LEN-1);
+            }
 	    }
 
 		if(e == NULL) break;
