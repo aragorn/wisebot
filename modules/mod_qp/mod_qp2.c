@@ -53,6 +53,8 @@ static void show_dochitlist(doc_hit_t dochits[], uint32_t start, uint32_t nelm,
 }
 #endif
 
+#define IS_WHITE_CHAR(c)    ( (c)==' ' || (c)=='\n' || (c)=='\r' || (c)=='\t')
+
 ///////////////////////////////////////////////////////////
 // qp init À¯¹«
 static int qp_initialized = 0;
@@ -176,6 +178,7 @@ static char* output_style_str[] = { "XML", "SOFTBOT4", };
 
 // function protoype
 static int	get_start_comment(char *pszStr, int lPosition);
+static int	get_start_comment_koma(char *pszStr, int lPosition);
 static int	get_start_comment_dha(char *txt, int start_word_pos);
 
 static int init_response(response_t* res);
@@ -2345,8 +2348,13 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 						if ( field_info[k].id == doc_hits->hits[m].std_hit.field ) {
 							int summary_pos = 0;
 
+                            warn("position[%d]", doc_hits->hits[m].std_hit.position-4);
+
                             if(field_info[k].qpp_morpid == 16) {
 							    summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
+                            } else if(field_info[k].qpp_morpid >= 10 && field_info[k].qpp_morpid < 16) {
+							    summary_pos = get_start_comment_koma(field_value, doc_hits->hits[m].std_hit.position-4);
+                                warn("position[%d], summary_pos[%d]", doc_hits->hits[m].std_hit.position-4, summary_pos);
                             } else {
 							    summary_pos = get_start_comment(field_value, doc_hits->hits[m].std_hit.position-4);
                             }
@@ -2499,6 +2507,47 @@ static int	get_start_comment_dha(char *txt, int start_word_pos)
 	*/
 
     return byte_pos;
+}
+
+static int	get_start_comment_koma(char *pszStr, int lPosition)
+{
+	int iStr = 0, lPos=0, nCheck=0;
+	
+	if (pszStr == NULL || lPosition == 0) return 0;
+
+START:	
+	while( 1 ) {
+		if ( !IS_WHITE_CHAR(pszStr[iStr]) )
+			break;
+
+		iStr++;
+	}
+
+	if ( pszStr[iStr] == 0x00 )
+		return 0;
+		
+	while( 1 ) {
+		if ( pszStr[iStr] == 0x00 )
+			break;
+
+		if ( IS_WHITE_CHAR(pszStr[iStr]) ) {
+			lPos++;
+			
+			if ( lPosition == lPos) {
+				nCheck=1;
+			}
+			goto START;
+			
+		}
+
+		if (nCheck==1) {
+			return iStr;
+		}
+
+		iStr++;
+	}
+
+	return 0;
 }
 
 static int	get_start_comment(char *pszStr, int lPosition)
