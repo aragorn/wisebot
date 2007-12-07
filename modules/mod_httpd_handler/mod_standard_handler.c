@@ -409,7 +409,7 @@ static int standard_handler(request_rec *r)
                 else s.remain_uri = unparsed_uri + sb_uri_len;
         }else   return DECLINE;
 
-        ap_unescape_url(r->unparsed_uri);
+        decodencpy((unsigned char*)r->unparsed_uri, (unsigned char*)r->unparsed_uri, strlen(r->unparsed_uri));
 
         INFO("unparsed_uri : [%s]", r->unparsed_uri);
         INFO("name_space[%s] request_name[%s] remain_uri[%s]",
@@ -432,8 +432,8 @@ static int standard_handler(request_rec *r)
                         val = strchr(key, '=');
                         if (val) { /* have a value */
                                 *val++ = '\0';
-                                decodencpy(key, key, strlen(key));
-                                decodencpy(val, val, strlen(val));
+                                decodencpy((unsigned char*)key, (unsigned char*)key, strlen(key));
+                                decodencpy((unsigned char*)val, (unsigned char*)val, strlen(val));
                                 apr_table_setn(s.parameters_in, key, val);
                         }
                         key = apr_strtok(NULL, "&", &strtok_buf);
