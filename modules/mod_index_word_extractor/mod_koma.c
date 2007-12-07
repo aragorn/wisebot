@@ -317,6 +317,7 @@ AGAIN:
 								 h->koma_done = TRUE 가 된다. */
 	}
 
+    debug("is_raw_koma_text[%d]", h->is_raw_koma_text);
 	/* 형태소 분석 결과의 각 어절단위로 루프를 돈다. */
 	for (idx = h->result_index; idx < h->result_count; idx++, h->position++) {
 		int morpheme_count;
@@ -494,7 +495,9 @@ static int _koma_analyze(index_word_extractor_t *extractor, index_word_t *indexw
 
     if(extractor->id == MY_RAW_EXTRACTOR_ID) {
         ((koma_handle_t*)extractor->handle)->is_raw_koma_text = 1;
-    }
+    } else {
+        ((koma_handle_t*)extractor->handle)->is_raw_koma_text = 0;
+	}
 
     return koma_analyze(extractor->handle, indexwords, max);
 }

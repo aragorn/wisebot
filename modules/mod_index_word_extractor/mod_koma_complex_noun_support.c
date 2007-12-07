@@ -36,6 +36,7 @@ static index_word_extractor_t *new_cn_analyzer(int id)
 		handle->id = id;
 		handle->tmp_words_size = 0;
 		handle->koma_words_size = 0;
+		handle->koma->is_raw_koma_text = 0;
 		return KomaComplexNounAnalyzer;
 	}
 
@@ -60,6 +61,7 @@ static index_word_extractor_t *new_cn_analyzer(int id)
 		goto FAILURE;
 	}
 	handle->koma = koma;
+	handle->koma->is_raw_koma_text = 0;
 
 	koma_words = sb_calloc(KOMA_INDEX_WORD_SIZE, sizeof(index_word_t));
 	if (koma_words == NULL) {
