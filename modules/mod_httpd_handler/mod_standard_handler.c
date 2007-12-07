@@ -409,6 +409,8 @@ static int standard_handler(request_rec *r)
                 else s.remain_uri = unparsed_uri + sb_uri_len;
         }else   return DECLINE;
 
+        ap_unescape_url(r->unparsed_uri);
+
         INFO("unparsed_uri : [%s]", r->unparsed_uri);
         INFO("name_space[%s] request_name[%s] remain_uri[%s]",
                         s.name_space, s.request_name, (s.remain_uri) ? s.remain_uri : "null" );
