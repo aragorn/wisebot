@@ -11,7 +11,7 @@ mod_qpp_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_qpp_la_LIBADD  = $(libdir)/libcommon_core.la
 
 
-check_PROGRAMS = daum_qpp mod_qpp2
+check_PROGRAMS = daum_qpp mod_qpp2 test_ly
 
 daum_qpp_SOURCES = daum_qpp.c daum_qpp.h
 daum_qpp_CFLAGS = -DTEST_PROGRAM
@@ -19,6 +19,9 @@ daum_qpp_CFLAGS = -DTEST_PROGRAM
 AM_YFLAGS = -d -v
 mod_qpp2_SOURCES = qpp_yacc.y qpp_lex.l
 mod_qpp2_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la
+
+test_ly_SOURCES = test_yacc.y test_lex.l
+test_ly_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la
 
 # check_PROGRAMS = qpp_test tokenizer_test stack_test
 # 

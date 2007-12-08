@@ -30,14 +30,20 @@ int num_chars = 0;
 %%
 
 sql_list:
-		sql ';' sql_list       { NOTICE("sql ; sql_list"); }
-	|	sql ';'                { NOTICE("single sql"); }
-	|	';'                    { NOTICE("semi-colon"); }
+		sql ';'                { NOTICE("single sql"); }
+		sql_list sql ';'       { NOTICE("sql_list sql ;"); }
 	;
 
 sql:
-	 	SEARCH search_exp      { debug("SEARCH search_exp"); }
-	|	search_statement       { debug("search_statement"); }
+	 	simple_statement       { debug("SEARCH search_exp"); }
+	;
+
+simple_statement:
+		SEARCH search_exp      { debug("SEARCH search_exp"); }
+	;
+
+sql:
+		search_statement       { debug("search_statement"); }
 	;
 
 search_statement:
@@ -194,6 +200,14 @@ literal:
 
 field_ref:
 		NAME
+	;
+
+sql:
+		test_statement         { debug("test_statement"); }
+	;
+
+test_statement:
+		TEST NAME              { debug("TEST NAME"); }
 	;
 
 %%
