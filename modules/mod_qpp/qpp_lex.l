@@ -1,3 +1,4 @@
+/* $Id$ */
 %{
 #include "common_core.h"
 #include "mod_qpp2.h"
@@ -10,19 +11,7 @@ char linebuf[LINEBUF_LENGTH+1];
 void yyerror(const char* msg);
 void save_token(const char* token);
 
-#define SET_OPERAND \
-    yylval = new_operand(); \
-    if ( yylval == NULL ) { \
-        error("error while processing [%s]", yytext); \
-        return OPERAND_ERROR; \
-    }
-
-#define SET_EXPR \
-    yylval->operand_type = OPERAND_EXPR; \
-    yylval->result = &yylval->o.expr.result; \
-    strncpy( yylval->o.expr.operator_string, yytext, sizeof(yylval->o.expr.operator_string) );
-
-#define TOKEN(name)  { save_token(yytext); return NAME; }
+#define TOKEN(name)  { save_token(yytext); return name; }
 
 /* About %option
  * 8bit - allow 8bit(hangul) input
@@ -34,9 +23,18 @@ void save_token(const char* token);
  */
 %}
 
-%x FULLLINE
 %option 8bit caseless yylineno
 %array
+
+%x FULLLINE
+%x CLAUSE_SEARCH
+%x CLAUSE_SELECT
+
+digit     [0-9]
+hangul    [\xb0-\xc8][\xa1-\xfe]
+alpha     [A-Za-z]
+word      [A-Za-z0-9_]
+
 %%
 
 %{ /* NO RULES BEFORE THIS LINE */
@@ -47,13 +45,17 @@ void save_token(const char* token);
 	 first_line = 0;
 	 BEGIN(FULLLINE);
    }
-   /* update token pos by the length of the last token */
-   debug("token_pos[%d] += yyleng[%d]", token_pos, yyleng);
-   token_pos += yyleng;
 %}
 
-<FULLLINE>\n |
-<FULLLINE>[^\n]*   {
+<FULLLINE>\n       {
+  /* empty line */
+  strncpy(linebuf, yytext, LINEBUF_LENGTH);
+  linebuf[LINEBUF_LENGTH] = '\0';
+  BEGIN(INITIAL);
+  yyless(0);
+}
+
+<FULLLINE>[^\n]*\n   {
   /* record the current line, truncating if necessary */
   if (strlen(yytext) > LINEBUF_LENGTH)
   {
@@ -62,15 +64,17 @@ void save_token(const char* token);
   }
   strncpy(linebuf, yytext, LINEBUF_LENGTH);
   linebuf[LINEBUF_LENGTH] = '\0';
-  debug("linebuf=[%s]", linebuf);
-  token_pos = 1;
+  debug("linebuf2[%d]=[%s]", yylineno, linebuf);
+  token_pos = 0;
   BEGIN(INITIAL);
   yyless(0);
 }
 
+"\n"               { BEGIN(FULLLINE); }
 
-SELECT             TOKEN( SELECT )
-SEARCH             TOKEN( SEARCH )
+
+SELECT             { BEGIN(CLAUSE_SELECT); TOKEN( SELECT ); };
+SEARCH             { BEGIN(CLAUSE_SEARCH); TOKEN( SEARCH ); };
 WHERE              TOKEN( WHERE )
 LIMIT              TOKEN( LIMIT )
 BY                 TOKEN( BY )
@@ -90,6 +94,11 @@ BETWEEN            TOKEN( BETWEEN )
 AND                TOKEN( AND )
 OR                 TOKEN( OR )
 NOT                TOKEN( NOT )
+TEST               TOKEN( TEST )
+
+<CLAUSE_SEARCH>";"        { BEGIN(INITIAL); TOKEN( yytext[0] ); }
+<CLAUSE_SEARCH>"\n"       { BEGIN(FULLLINE); }
+<CLAUSE_SEARCH>[-+*/:()]  TOKEN( yytext[0] )
 
 "="  |
 "!=" |
@@ -98,35 +107,42 @@ NOT                TOKEN( NOT )
 ">"  |
 "<=" |
 ">="               TOKEN( COMPARISON )
-[-+*/:(),.;]       TOKEN( yytext[0] )
 
-  /* 이름 */
-[A-Za-z][A-Za-z0-9_]*    TOKEN( NAME )
+[`~!@#$%\^&*\(\)_\-+={}|:;"'<>,\./\?]        TOKEN( yytext[0] )
+
+  /* ([^ \t\r`~!@#$%\^&*\(\)_\-+={}|:;"'<>,\./\?]|[^0-9])+  TOKEN( STRING ) */
+
+
+  /* 기본 한글 (2350자) */
+  /* [\xb0-\xc8][\xa1-\xfe]+  TOKEN( HANGUL1 ) */
+
+  /* 문자열 - 필드명,검색어 */
+({hangul}|{word})+       TOKEN( STRING )
 
   /* 숫자 */
-[0-9]+             |
-[0-9]+"."[0-9]*    |
-"."[0-9]*          TOKEN( INTNUM )
+{digit}+           |
+{digit}+"."{digit}* |
+"."{digit}*          TOKEN( INTNUM )
 
   /* 문자열 */
 '[^'\n]*'          {
 	int c = input();
 	unput(c); /* just peeking */
-	if (c != '\'') return STRING;
+	if (c != '\'') return QSTRING;
 	else yymore();
 }
 
 \"[^\"\n]*\"          {
 	int c = input();
 	unput(c); /* just peeking */
-	if (c != '\"') return STRING;
+	if (c != '\"') return QSTRING;
 	else yymore();
 }
 
 '[^'\n]*$          { yyerror("Unterminated string"); }
 
-[ \t\r]+           ; /* 공백 */
-"--".*             ; /* 주석 */
+[ \t\r]+           { /* ignore whitespaces */ save_token(yytext); }
+"--".*             { /* ignore comments */ save_token(yytext); }
 
 .                  { yyerror("Invalid character"); }
 
@@ -143,6 +159,7 @@ void yyerror(const char *s)
 
 void save_token(const char *token)
 {
+	debug("token_pos[%d] += yyleng[%d] with [%s]", token_pos, yyleng, token);
 	token_pos += yyleng;
 }
 

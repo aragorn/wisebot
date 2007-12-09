@@ -69,12 +69,14 @@
      NOOP = 285,
      LPAREN = 286,
      RPAREN = 287,
-     STRING = 288,
-     NAME = 289,
-     INTNUM = 290,
-     FUNCTION_NAME = 291,
-     NON_EMPTY = 292,
-     UMINUS = 293
+     QSTRING = 288,
+     STRING = 289,
+     NAME = 290,
+     INTNUM = 291,
+     FUNCTION_NAME = 292,
+     NON_EMPTY = 293,
+     TEST = 294,
+     UMINUS = 295
    };
 #endif
 /* Tokens.  */
@@ -108,12 +110,14 @@
 #define NOOP 285
 #define LPAREN 286
 #define RPAREN 287
-#define STRING 288
-#define NAME 289
-#define INTNUM 290
-#define FUNCTION_NAME 291
-#define NON_EMPTY 292
-#define UMINUS 293
+#define QSTRING 288
+#define STRING 289
+#define NAME 290
+#define INTNUM 291
+#define FUNCTION_NAME 292
+#define NON_EMPTY 293
+#define TEST 294
+#define UMINUS 295
 
 
 

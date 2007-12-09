@@ -1,13 +1,11 @@
-%{
 /* $Id$ */
+%{
 #define YYDEBUG 1
 #include "common_core.h"
 #include <stdio.h>
 extern int yylex(void);
 extern void yyerror(const char* msg);
 extern int yylineno;
-int num_lines = 0;
-int num_chars = 0;
 %}
 
 %token SELECT SEARCH WHERE LIMIT BY
@@ -19,8 +17,9 @@ int num_chars = 0;
 %token WITHIN
 %token PHRASE NOOP
 %token LPAREN RPAREN
-%token STRING NAME INTNUM
+%token QSTRING STRING NAME INTNUM
 %token FUNCTION_NAME NON_EMPTY
+%token TEST
 %left '+' '-'
 %left '*' '/' '&' '(' ')'
 %left AND OR
@@ -30,14 +29,14 @@ int num_chars = 0;
 %%
 
 sql_list:
-		sql ';' sql_list       { NOTICE("sql ; sql_list"); }
+		sql_list sql ';'       { NOTICE("sql ; sql_list"); }
 	|	sql ';'                { NOTICE("single sql"); }
-	|	';'                    { NOTICE("semi-colon"); }
 	;
 
 sql:
 	 	SEARCH search_exp      { debug("SEARCH search_exp"); }
 	|	search_statement       { debug("search_statement"); }
+	|	/* empty sql */        { debug("empty sql"); }
 	;
 
 search_statement:
@@ -153,9 +152,8 @@ search_exp:
 	;
 
 search_term:
-		TERM                  { debug("this is a term"); }
-	|	STRING                { debug("this is a string"); }
-	|	NAME                  { debug("this is a name"); }
+		STRING                { debug("this is a string"); }
+	|	QSTRING               { debug("this is a qstring"); }
 	;
 
 scalar_exp:
@@ -188,12 +186,17 @@ atom:
 	;
 
 literal:
-		STRING
+		QSTRING
 	|	INTNUM
 	;
 
 field_ref:
-		NAME
+		STRING
+	;
+
+sql:
+		TEST                  { debug("simple test"); }
+	|	TEST STRING           { debug("test with string - %d", $2); }
 	;
 
 %%
@@ -203,7 +206,7 @@ int main(int argc, char *argv[])
 {
 	if (argc > 1) yydebug = 1;
     yyparse();
-	printf("lines[%d] chars[%d]\n", yylineno, num_chars);
+	printf("lines[%d] chars[%d]\n", yylineno, -1);
 	
     return 0;
 }
