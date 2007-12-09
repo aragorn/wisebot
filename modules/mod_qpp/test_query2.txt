@@ -1,0 +1,3 @@
+
+SEARCH test1 words;
+SEARCH test2 words;

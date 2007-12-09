@@ -4,3 +4,5 @@ tokenizer_test
 daum_qpp
 mod_qpp2
 qpp_yacc.output
+test_ly
+test_yacc.output

@@ -1,28 +1,15 @@
 %{
+/* $Id$ */
 #include "common_core.h"
 #include "mod_qpp2.h"
-#include "qpp_yacc.h"
+#include "test_yacc.h"
 extern int yylineno;
 int  token_pos  = 0;
 int  first_line = 1;
-#define LINEBUF_LENGTH (500)
-char linebuf[LINEBUF_LENGTH+1];
 void yyerror(const char* msg);
 void save_token(const char* token);
 
-#define SET_OPERAND \
-    yylval = new_operand(); \
-    if ( yylval == NULL ) { \
-        error("error while processing [%s]", yytext); \
-        return OPERAND_ERROR; \
-    }
-
-#define SET_EXPR \
-    yylval->operand_type = OPERAND_EXPR; \
-    yylval->result = &yylval->o.expr.result; \
-    strncpy( yylval->o.expr.operator_string, yytext, sizeof(yylval->o.expr.operator_string) );
-
-#define TOKEN(name)  { save_token(yytext); return NAME; }
+#define TOKEN(name)  { save_token(yytext); return name; }
 
 /* About %option
  * 8bit - allow 8bit(hangul) input
@@ -34,62 +21,12 @@ void save_token(const char* token);
  */
 %}
 
-%x FULLLINE
 %option 8bit caseless yylineno
 %array
 %%
 
-%{ /* NO RULES BEFORE THIS LINE */
-   /* makes sure the first line of the file gets recorded */
-   if (first_line == 1)
-   {
-     /* setup to read the first line of the file */
-	 first_line = 0;
-	 BEGIN(FULLLINE);
-   }
-   /* update token pos by the length of the last token */
-   debug("token_pos[%d] += yyleng[%d]", token_pos, yyleng);
-   token_pos += yyleng;
-%}
-
-<FULLLINE>\n |
-<FULLLINE>[^\n]*   {
-  /* record the current line, truncating if necessary */
-  if (strlen(yytext) > LINEBUF_LENGTH)
-  {
-    yyerror("Current line is too long.");
-	yyerror(yytext);
-  }
-  strncpy(linebuf, yytext, LINEBUF_LENGTH);
-  linebuf[LINEBUF_LENGTH] = '\0';
-  debug("linebuf=[%s]", linebuf);
-  token_pos = 1;
-  BEGIN(INITIAL);
-  yyless(0);
-}
-
-
-SELECT             TOKEN( SELECT )
 SEARCH             TOKEN( SEARCH )
-WHERE              TOKEN( WHERE )
-LIMIT              TOKEN( LIMIT )
-BY                 TOKEN( BY )
-GROUP              TOKEN( GROUP )
-COUNT              TOKEN( COUNT )
-GROUP_BY           TOKEN( GROUP_BY )
-COUNT_BY           TOKEN( COUNT_BY )
-VIRTUAL_ID         TOKEN( VIRTUAL_ID )
-ORDER              TOKEN( ORDER )
-ORDER_BY           TOKEN( ORDER_BY )
-ASC                TOKEN( ASC )
-DESC               TOKEN( DESC )
-IN                 TOKEN( IN )
-IS                 TOKEN( IS )
-NULL               TOKEN( NULLX )
-BETWEEN            TOKEN( BETWEEN )
-AND                TOKEN( AND )
-OR                 TOKEN( OR )
-NOT                TOKEN( NOT )
+TEST               TOKEN( TEST )
 
 "="  |
 "!=" |
@@ -106,24 +43,11 @@ NOT                TOKEN( NOT )
   /* 숫자 */
 [0-9]+             |
 [0-9]+"."[0-9]*    |
-"."[0-9]*          TOKEN( INTNUM )
-
-  /* 문자열 */
-'[^'\n]*'          {
-	int c = input();
-	unput(c); /* just peeking */
-	if (c != '\'') return STRING;
-	else yymore();
+"."[0-9]*          {
+  debug("INTNUM = %d", atoi(yytext));
+  yylval = atoi(yytext);
+  TOKEN( INTNUM )
 }
-
-\"[^\"\n]*\"          {
-	int c = input();
-	unput(c); /* just peeking */
-	if (c != '\"') return STRING;
-	else yymore();
-}
-
-'[^'\n]*$          { yyerror("Unterminated string"); }
 
 [ \t\r]+           ; /* 공백 */
 "--".*             ; /* 주석 */
@@ -136,9 +60,8 @@ NOT                TOKEN( NOT )
 
 void yyerror(const char *s)
 {
-	fprintf(stderr, "line %d, char %d: %s at %s\n%s\n",
-            yylineno, token_pos, s, yytext, linebuf);
-    fprintf(stderr, "%*s\n", 1+token_pos, "^");
+	fprintf(stderr, "line %d, char %d: %s at %s\n",
+            yylineno, token_pos, s, yytext);
 }
 
 void save_token(const char *token)
