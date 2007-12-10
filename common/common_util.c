@@ -157,49 +157,33 @@ char* strnhcpy(char* dest, char const* src, int len)
  * less than, equal to, or greater than the second.  If two members compare
  * as equal,  their order in the sorted array is undefined.
  */
-//#define _IS_KOREAN(c)	((0xb0 <= c) && (c <= 0xfe))
-#define _IS_KOREAN(c)	((0xa1 <= (unsigned char)c) && ((unsigned char)c <= 0xfe))
+//#define _IS_HANGUL(c)	((0xb0 <= c) && (c <= 0xfe))
+#define _IS_HANGUL(c)    ((0xb0 <= (unsigned char)c) && ((unsigned char)c <= 0xfe))
 int hangul_strncmp(char *str1, char *str2, int size)
 {
 	int i, diff;
-	int len1, len2;
-	len1 = strlen(str1);
-	len2 = strlen(str2);
-	if (len1 == 0 && len2 != 0) {
-		return 1;
-	}
-	else if (len1 != 0 && len2 == 0) {
-		return -1;
-	}
-	else if (len1 == 0 && len2 == 0) {
-		return 0;
-	}
 
-	for (i=0; i<size; ) {
-		if (str1[i] && !str2[i])
-			return 1;
-		if (!str1[i] && str2[i])
-			return -1;
-		if (!str1[i] && !str2[i])
-			return 0;
+	for ( i = 0; i < size; ) {
+		if ( str1[i] && !str2[i]) return  1;
+		if (!str1[i] &&  str2[i]) return -1;
+		if (!str1[i] && !str2[i]) return  0;
 
-		if (_IS_KOREAN(str1[i]) && _IS_KOREAN(str2[i])) {
-			if (i + 1 == size) {
-				return str1[i] - str2[i];
-			}
+		if (_IS_HANGUL(str1[i]) && _IS_HANGUL(str2[i])) {
+			if (i + 1 == size) { return str1[i] - str2[i]; }
+
 			diff = strncmp(str1 + i, str2 + i, 2);
-			if (diff) return diff;
+			if (diff != 0) return diff;
 			i += 2;
 		}
-		else if (_IS_KOREAN(str1[i])) {
+		else if (_IS_HANGUL(str1[i])) {
 			return -1;
 		}
-		else if (_IS_KOREAN(str2[i])) {
+		else if (_IS_HANGUL(str2[i])) {
 			return 1;
 		}
 		else {
 			diff = str1[i] - str2[i];
-			if (diff) return diff;
+			if (diff != 0) return diff;
 			i += 1;
 		}
 	}
