@@ -20,13 +20,12 @@ sql_list:
 sql:
 	 	simple_statement       { debug("SEARCH search_exp"); }
 	|	expression             { NOTICE("= %d", $1); }
+	|	error                  { warn("sql parse error"); }
 	;
 
 simple_statement:
-		SEARCH                 { debug("SEARCH search_exp"); }
+		SEARCH                 { debug("SEARCH"); }
 	|	TEST                   { debug("TEST input"); }
-	|	error ';'              { warn("parse error"); }
-	|	error '}'              { warn("parse error"); }
 	;
 
 expression:
@@ -35,7 +34,6 @@ expression:
 	|	INTNUM                 { debug("INTNUM = %d", $1); }
 
 %%
-
 
 int main(int argc, char *argv[])
 {
