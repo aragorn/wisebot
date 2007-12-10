@@ -1091,7 +1091,7 @@ YY_RULE_SETUP
 {
 	int c = input();
 	unput(c); /* just peeking */
-	if (c != '\'') return QSTRING;
+	if (c != '\'') TOKEN( QSTRING )
 	else yymore();
 }
 	YY_BREAK
@@ -1101,7 +1101,7 @@ YY_RULE_SETUP
 {
 	int c = input();
 	unput(c); /* just peeking */
-	if (c != '\"') return QSTRING;
+	if (c != '\"') TOKEN( QSTRING )
 	else yymore();
 }
 	YY_BREAK
