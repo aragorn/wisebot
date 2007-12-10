@@ -34,9 +34,13 @@ sql_list:
 	;
 
 sql:
-	 	SEARCH search_exp      { debug("SEARCH search_exp"); }
+	 	simple_statement       { debug("simple_statement"); }
 	|	search_statement       { debug("search_statement"); }
 	|	/* empty sql */        { debug("empty sql"); }
+	;
+
+simple_statement:
+		SEARCH search_exp      { debug("SEARCH search_exp"); }
 	;
 
 search_statement:
@@ -136,25 +140,36 @@ opt_search_exp:
 	;
 
 search_exp:
-		search_term
-	|	'(' search_exp ')'
-	|	search_exp '&' search_exp
-	|	search_exp '/' INTNUM '/' search_exp
-	|	search_exp '+' search_exp
-	|	search_term search_term
-	|	search_term '(' search_exp ')'
-	|	'(' search_exp ')' search_term
-	|	'(' search_exp ')' '(' search_exp ')'
-	|	'!' search_exp %prec UMINUS
-	|	'@' search_exp %prec UMINUS
-	|	field_ref ':' search_term
-	|	field_ref ':' '(' search_exp ')'
+		search_exp '+' search_exp2 { debug("search_exp + search_exp2"); }
+	|	search_exp2                { debug("single search_exp2"); }
+	;
+
+search_exp2:
+		search_exp2 '&' search_term { debug("search_exp2 & search_term"); }
+	|	search_exp2     search_term { debug("search_exp2 search_term"); }
+	|	search_term
 	;
 
 search_term:
-		STRING                { debug("this is a string"); }
-	|	QSTRING               { debug("this is a qstring"); }
+		'(' search_exp ')'    { debug("( search_exp )"); }
+	|	field_ref ':' STRING  { debug("field_ref : STRING"); }
+	|	field_ref ':' QSTRING { debug("field_ref : QSTRING"); }
+	|	STRING                { debug("got STRING"); }
+	|	QSTRING               { debug("got QSTRING"); }
 	;
+
+  /*
+	|	search_exp2 '/' INTNUM '/' search_term
+
+search_term:
+		'(' search_exp ')'
+	|	'!' search_exp %prec UMINUS
+	|	'@' search_exp %prec UMINUS
+	|	field_ref ':' STRING  { debug("field_ref : STRING"); }
+	|	field_ref ':' QSTRING { debug("field_ref : QSTRING"); }
+	|	field_ref ':' '(' search_exp ')'
+	;
+  */
 
 scalar_exp:
 		scalar_exp '+' scalar_exp

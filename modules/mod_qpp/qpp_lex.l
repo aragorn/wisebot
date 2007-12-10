@@ -31,7 +31,7 @@ void save_token(const char* token);
 %x CLAUSE_SELECT
 
 digit     [0-9]
-hangul    [\xb0-\xc8][\xa1-\xfe]
+hangul    [\xa1-\xc8][\xa1-\xfe]
 alpha     [A-Za-z]
 word      [A-Za-z0-9_]
 
@@ -99,6 +99,20 @@ TEST               TOKEN( TEST )
 <CLAUSE_SEARCH>";"        { BEGIN(INITIAL); TOKEN( yytext[0] ); }
 <CLAUSE_SEARCH>"\n"       { BEGIN(FULLLINE); }
 <CLAUSE_SEARCH>[-+*/:()]  TOKEN( yytext[0] )
+<CLAUSE_SEARCH>[^ \t\r\n-+*/;:()]+    TOKEN( STRING )
+<CLAUSE_SEARCH>'[^'\n]*'  {
+	int c = input();
+	unput(c); /* just peeking */
+	if (c != '\'') return QSTRING;
+	else yymore();
+}
+
+<CLAUSE_SEARCH>\"[^\"\n]*\"  {
+	int c = input();
+	unput(c); /* just peeking */
+	if (c != '\"') return QSTRING;
+	else yymore();
+}
 
 "="  |
 "!=" |
@@ -112,9 +126,6 @@ TEST               TOKEN( TEST )
 
   /* ([^ \t\r`~!@#$%\^&*\(\)_\-+={}|:;"'<>,\./\?]|[^0-9])+  TOKEN( STRING ) */
 
-
-  /* 기본 한글 (2350자) */
-  /* [\xb0-\xc8][\xa1-\xfe]+  TOKEN( HANGUL1 ) */
 
   /* 문자열 - 필드명,검색어 */
 ({hangul}|{word})+       TOKEN( STRING )
