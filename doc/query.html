@@ -1,0 +1,67 @@
+<html>
+<head>
+<script>
+<!--
+var g_query;
+
+function search()
+{
+    g_query = query = document.all.query.value;
+    document.all.theform.action=document.all.url.value;
+
+        /* 연산자 encoding */
+        query = query.replace("&", "%26");
+        query = query.replace("+", "%2B");
+
+        document.all.query.value = query;
+        document.all.theform.submit();
+
+        document.all.query.value = g_query;
+}
+-->
+</script>
+</head>
+<body>
+<table>
+<tr>
+<td>
+    <form id=theform action="http://211.172.252.38:3000/search/search" target=result>
+        <input type="text" id=url size="50" value="http://211.172.252.38:3000/search/search">
+        <br>
+    <textarea id=query name=q rows=10 cols=50></textarea>
+    <input type="button" value="ok" onClick="javascript:search()">
+    </form>
+</td>
+<td width=30>
+<td>
+<td>
+예제)
+<br>
+<PRE>
+----------------------------------------------
+example
+----------------------------------------------
+SELECT title, author, catename, price, dscntprice
+SEARCH pattern:softwisezzz
+WHERE CATEID=450713
+GROUP_BY SUBCATEID INT 
+ORDER_BY RELEVANCY DESC
+LIMIT 0, 10
+
+------------------------------
+field names
+------------------------------
+
+------------------------------
+output style
+------------------------------
+
+OUTPUT_STYLE SOFTBOT4
+</PRE>
+</td>
+</tr>
+</table>
+</PRE>
+<iframe name=result WIDTH="100%" HEIGHT="100%"> 
+</body>    
+</html>
