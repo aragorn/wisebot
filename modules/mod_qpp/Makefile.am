@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-pkglib_LTLIBRARIES = mod_qpp.la mod_qpp2.la
+pkglib_LTLIBRARIES = mod_qpp.la
 mod_qpp_la_SOURCES = mod_qpp.c daum_qpp.c tokenizer.c stack.c  relatedTerm.c \
 					mod_qpp.h daum_qpp.h qpp_test.h relatedTerm.h \
 					stack.h synonym.h tokenizer.h 
