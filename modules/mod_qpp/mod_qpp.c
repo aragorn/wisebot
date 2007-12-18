@@ -968,8 +968,8 @@ static int pushStarHackedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuN
 		pQuNode->opParam = -10;
 	}
 
-	strncpy(pQuNode->word_st.string, original_word, MAX_WORD_LEN-1);
-	pQuNode->word_st.string[MAX_WORD_LEN-1]='\0';
+	// strncpy(pQuNode->word_st.string, original_word, MAX_WORD_LEN-1);
+	// pQuNode->word_st.string[MAX_WORD_LEN-1]='\0';
 	
 	return stk_push(&pStObj->postfixStack,pQuNode);
 }
@@ -1028,7 +1028,7 @@ static int pushOperandEmptyWord(void* word_db, StateObj *pStObj,QueryNode *pQuNo
 		pQuNode->opParam = -10;
 	}
 
-	pQuNode->word_st.string[0] = '\0';
+	// pQuNode->word_st.string[0] = '\0';
 
 	return stk_push(&pStObj->postfixStack,pQuNode);
 }
