@@ -73,67 +73,23 @@ word      [A-Za-z0-9_]
 "\n"               { BEGIN(FULLLINE); }
 
 
-SELECT             { BEGIN(CLAUSE_SELECT); TOKEN( SELECT ); };
-SEARCH             { BEGIN(CLAUSE_SEARCH); TOKEN( SEARCH ); };
-WHERE              TOKEN( WHERE )
-LIMIT              TOKEN( LIMIT )
-BY                 TOKEN( BY )
-GROUP              TOKEN( GROUP )
-COUNT              TOKEN( COUNT )
-GROUP_BY           TOKEN( GROUP_BY )
-COUNT_BY           TOKEN( COUNT_BY )
-VIRTUAL_ID         TOKEN( VIRTUAL_ID )
-ORDER              TOKEN( ORDER )
-ORDER_BY           TOKEN( ORDER_BY )
-ASC                TOKEN( ASC )
-DESC               TOKEN( DESC )
-IN                 TOKEN( IN )
-IS                 TOKEN( IS )
-NULL               TOKEN( NULLX )
-BETWEEN            TOKEN( BETWEEN )
-AND                TOKEN( AND )
-OR                 TOKEN( OR )
-NOT                TOKEN( NOT )
-TEST               TOKEN( TEST )
+[-+*/:()]                 TOKEN( yytext[0] )
+[^ \t\r\n-+*/;:()\"']+    TOKEN( STRING )
 
-<CLAUSE_SEARCH>";"        { BEGIN(INITIAL); TOKEN( yytext[0] ); }
-<CLAUSE_SEARCH>"\n"       { BEGIN(FULLLINE); }
-<CLAUSE_SEARCH>[-+*/:()]  TOKEN( yytext[0] )
-<CLAUSE_SEARCH>[^ \t\r\n-+*/;:()\"']+    TOKEN( STRING )
-<CLAUSE_SEARCH>'[^'\n]*'  {
+'[^'\n]*'  {
 	int c = input();
 	unput(c); /* just peeking */
 	if (c != '\'') TOKEN( QSTRING )
 	else yymore();
 }
 
-<CLAUSE_SEARCH>\"[^\"\n]*\"  {
+\"[^\"\n]*\"  {
 	int c = input();
 	unput(c); /* just peeking */
 	if (c != '\"') TOKEN( QSTRING )
 	else yymore();
 }
 
-"="  |
-"!=" |
-"<>" |
-"<"  |
-">"  |
-"<=" |
-">="               TOKEN( COMPARISON )
-
-[`~!@#$%\^&*\(\)_\-+={}|:;"'<>,\./\?]        TOKEN( yytext[0] )
-
-  /* ([^ \t\r`~!@#$%\^&*\(\)_\-+={}|:;"'<>,\./\?]|[^0-9])+  TOKEN( STRING ) */
-
-
-  /* 문자열 - 필드명,검색어 */
-({hangul}|{word})+       TOKEN( STRING )
-
-  /* 숫자 */
-{digit}+           |
-{digit}+"."{digit}* |
-"."{digit}*          TOKEN( INTNUM )
 
   /* 문자열 */
 '[^'\n]*'          {
@@ -153,7 +109,6 @@ TEST               TOKEN( TEST )
 '[^'\n]*$          { yyerror("Unterminated string"); }
 
 [ \t\r]+           { /* ignore whitespaces */ save_token(yytext); }
-"--".*             { /* ignore comments */ save_token(yytext); }
 
 .                  { yyerror("Invalid character"); }
 

@@ -4,25 +4,27 @@ include $(top_builddir)/Make.defs
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
 pkglib_LTLIBRARIES = mod_qpp.la
+
 mod_qpp_la_SOURCES = mod_qpp.c daum_qpp.c tokenizer.c stack.c  relatedTerm.c \
 					mod_qpp.h daum_qpp.h qpp_test.h relatedTerm.h \
 					stack.h synonym.h tokenizer.h 
 mod_qpp_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_qpp_la_LIBADD  = $(libdir)/libcommon_core.la
 
-mod_qpp1_SOURCES = qpp_yacc.y qpp_lex.l
-mod_qpp1_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la
+#mod_qpp1_la_SOURCES = mod_qpp1.c qpp_yacc.y qpp_lex.l
+#mod_qpp1_la_LDFLAGS = -module -avoid-version -no-undefined
+#mod_qpp1_la_LIBADD   = $(LEXLIB) $(libdir)/libcommon_core.la
 
 check_PROGRAMS = daum_qpp qpp1_test mod_qpp2 test_ly
 
 qpp1_test_SOURCES = qpp1_test.c
-qpp1_test_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la
+qpp1_test_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la mod_qpp1.la
 
 daum_qpp_SOURCES = daum_qpp.c daum_qpp.h
 daum_qpp_CFLAGS = -DTEST_PROGRAM
 
 AM_YFLAGS = -d -v
-mod_qpp2_SOURCES = qpp_yacc2.y qpp_lex2.l
+mod_qpp2_SOURCES = qpp2_yacc.y qpp2_lex.l
 mod_qpp2_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la
 
 test_ly_SOURCES = test_yacc.y test_lex.l

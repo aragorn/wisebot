@@ -425,7 +425,7 @@ static int16_t getParameter(char *theString, int32_t *pNumber){
 	endIdx = idx;
 
 	len = endIdx - startIdx;
-	strncpy(strNum,theString+startIdx,len-1);
+	strncpy(strNum,theString+startIdx,len);
 	strNum[len] = '\0';
 	resultNum = atoi(strNum);
 
@@ -532,14 +532,14 @@ static int isOpWITHIN(TokenObj *pTkObj){
 	int16_t paramLen = 0;
 	int32_t opParam = 0;
 	
-	debug("is op within operator check section");
-	
+	debug("begin");
 	for (i=0; i<m_numWITHIN; i++) {
 		opLen = operatornCmp(pTkObj,pTkObj->inputStr+pTkObj->idx,m_opWITHIN[i],TRUE);
-		debug("opLen(%d)",opLen);
 		
 		if (opLen > 0){
+			debug("found WITHIN(%d)",opLen);
 			paramLen = getParameter(pTkObj->inputStr+pTkObj->idx+opLen,&opParam);
+			debug("paramLen[%d] opParam[%d]", paramLen, opParam);
 			
 /*			opLen = operatornCmp(pTkObj, pTkObj->inputStr+ (pTkObj->idx + paramLen)
 								 , m_opWITHIN[i],TRUE);
