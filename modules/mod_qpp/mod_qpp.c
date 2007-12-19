@@ -873,13 +873,14 @@ int pushOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode) {
 	if ( (pStObj->posWithinPhrase == TRUE)
 		&& (mDefaultSearchField & (1L << pStObj->searchField)) )
 	{
-		pQuNode->field = (1L << (pStObj->searchField+1));
-		if ((pQuNode->field & mDefaultPhraseField) == 0)
+		int f = pStObj->searchField;
+
+		if (strncmp(mFieldName[f],mFieldName[f+1]+2,strlen(mFieldName[f]))==0)
 		{
-			warn("PHRASE operator in an invalid field[%d]. Cannot find matching BIGRAM field.",
-					pStObj->searchField);
+			debug("Found matching BIGRAM field[%d] for PHRASE search in this field[%d].",f+1,f);
+			pQuNode->field = (1L << (pStObj->searchField+1));
+		} else
 			pQuNode->field = (1L << (pStObj->searchField));
-		}
 	}
 	else {
 		pQuNode->field = (1L << pStObj->searchField);
