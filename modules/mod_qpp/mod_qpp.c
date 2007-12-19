@@ -879,7 +879,8 @@ int pushOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNode) {
 		pQuNode->field = (1L << (pStObj->searchField));
 		for (i = 0; i < mNumOfField; i++) {
 			if (i == f) continue;
-			if (strncmp(mFieldName[f],mFieldName[i]+2,strlen(mFieldName[f]))==0)
+			if ( (strncmp("B_", mFieldName[i], 2) == 0)
+				&& (strncmp(mFieldName[f],mFieldName[i]+2,strlen(mFieldName[f]))==0) )
 			{
 				debug("Found matching BIGRAM field[%s][%d] for PHRASE search "
 					  "in this field[%s][%d].", mFieldName[i], i, mFieldName[f], f);
