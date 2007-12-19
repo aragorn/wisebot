@@ -54,7 +54,7 @@ typedef struct word_list_t word_list_t;
 // 4bit로 표현할수 있는 수.
 #define MAX_SEARCH_NODE             (1 << 4) // 2^4 = 16(0은 사용 않함)
 
-#define MAX_QUERY_NODES 60
+#define MAX_QUERY_NODES 120 
 
 enum index_list_type {
 	EXCLUDE,
