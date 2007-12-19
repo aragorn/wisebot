@@ -57,4 +57,11 @@ void set_begin_op_phrase(configValue v);
 void set_end_op_phrase(configValue v);
 
 const char* qpp_op_to_string(int op, int param);
+
+extern int mNumOfField;
+extern char mFieldName[MAX_EXT_FIELD][SHORT_STRING_SIZE];
+
+extern int mVirtualFieldNum;
+extern char mVirtualFieldName[MAX_EXT_FIELD][SHORT_STRING_SIZE];
+extern uint32_t mVirtualFieldIds[MAX_EXT_FIELD];
 #endif

@@ -53,12 +53,12 @@ static int  m_numFUZZY = 1;
 static int  m_numFIELD = 1;
 static char m_opFIELD [MAX_QPP_OP_NUM][MAX_QPP_OP_STR]={":"};
 
-static int mNumOfField = 0;
-static char mFieldName[MAX_EXT_FIELD][SHORT_STRING_SIZE] = { "" };
+int mNumOfField = 0;
+char mFieldName[MAX_EXT_FIELD][SHORT_STRING_SIZE] = { "" };
 
-static int mVirtualFieldNum = 0;
-static char mVirtualFieldName[MAX_EXT_FIELD][SHORT_STRING_SIZE]={"ALL"};
-static uint32_t mVirtualFieldIds[MAX_EXT_FIELD] = {0x0E00}; /* 10 11 12 field set*/
+int mVirtualFieldNum = 0;
+char mVirtualFieldName[MAX_EXT_FIELD][SHORT_STRING_SIZE]={"ALL"};
+uint32_t mVirtualFieldIds[MAX_EXT_FIELD] = {0x0E00}; /* 10 11 12 field set*/
 
 static char m_opSTAR[MAX_QPP_OP_NUM][MAX_QPP_OP_STR]={"*"};
 static int  m_numSTAR = 1;
