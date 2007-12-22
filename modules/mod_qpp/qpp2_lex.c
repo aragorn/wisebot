@@ -633,7 +633,7 @@ char *yytext_ptr;
 #line 3 "qpp2_lex.l"
 #include "common_core.h"
 #include "mod_qpp2.h"
-#include "qpp_yacc.h"
+#include "qpp2_yacc.h"
 extern int yylineno;
 int  token_pos  = 0;
 int  first_line = 1;

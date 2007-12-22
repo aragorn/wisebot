@@ -24,6 +24,10 @@ extern int yylineno;
 
 %%
 
+statement:
+		search_exp             { INFO("search_exp"); }
+	|	/* empty statement */  { debug("empty input"); }
+	;
 
  /*
 search_exp:
@@ -42,18 +46,32 @@ search_exp2:
 search_exp:
 		FIELD ':' STRING      { debug("FIELD: STRING"); }
 	|	FIELD ':' QSTRING     { debug("FIELD: QSTRING"); }
+	|	FIELD ':' '(' search_exp ')' { debug("FIELD: infield_exp"); }
+	|	search_exp '&' search_exp  { debug("another search_term"); }
+	|	'(' search_exp ')'     { debug("( search_exp )"); }
+	|	search_term            { debug("search_term"); }
+	;
+	/*
 	|	STRING                 { debug("got STRING"); }
 	|	QSTRING                { debug("got QSTRING"); }
+	|	'*'                    { debug("got *"); }
 	;
+	*/
 
   /*
-	|	FIELD ':' infield_exp { debug("FIELD: infield_exp"); }
 infield_exp:
-		'(' infield_exp ')'    { debug("( infield_exp )"); }
-	|	STRING                 { debug("got STRING"); }
-	|	QSTRING                { debug("got QSTRING"); }
+		infield_exp search_term { debug(" another search_term"); }
+	|	search_term            { debug("search_term"); }
+	;
+  */
+
+search_term:
+		STRING                 { debug("infield STRING"); }
+	|	QSTRING                { debug("infield QSTRING"); }
+	|	'*'                    { debug("got *"); }
 	;
 
+ /*
 	|	search_exp2 '/' INTNUM '/' search_term
 
 search_term:

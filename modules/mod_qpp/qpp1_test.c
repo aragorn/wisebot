@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
 	char buffer[STRING_SIZE+1];
 	char *input;
-	int debug;
+	int debug = 0;
 
 	if (argc > 1) debug = 1;
 

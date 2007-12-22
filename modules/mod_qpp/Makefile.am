@@ -11,11 +11,11 @@ mod_qpp_la_SOURCES = mod_qpp.c daum_qpp.c tokenizer.c stack.c  relatedTerm.c \
 mod_qpp_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_qpp_la_LIBADD  = $(libdir)/libcommon_core.la
 
+check_PROGRAMS = daum_qpp qpp1_test mod_qpp2 test_ly
+
 mod_qpp1_la_SOURCES = qpp1_yacc.y qpp1_lex.l
 mod_qpp1_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_qpp1_la_LIBADD   = $(LEXLIB) $(libdir)/libcommon_core.la
-
-check_PROGRAMS = daum_qpp qpp1_test mod_qpp2 test_ly
+mod_qpp1_la_LIBADD  = $(LEXLIB) $(libdir)/libcommon_core.la
 
 qpp1_test_SOURCES = qpp1_test.c
 qpp1_test_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la mod_qpp1.la
