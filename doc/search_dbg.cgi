@@ -1,9 +1,13 @@
 #!/usr/bin/perl -w
 use strict;
+
+print "Content-type: text/plain\n\n";
+
 use CGI;
 use CGI::Util qw(unescape escape);
 
-use Benchmark qw(:hireswallclock);
+#use Benchmark qw(:hireswallclock);
+use Benchmark;
 use LWP::UserAgent;
 use HTTP::Request::Common;
 use XML::LibXSLT;
@@ -30,7 +34,7 @@ if ($submit eq "ok")
   my $escaped_param_value = escape($param_value);
   my $t1 = new Benchmark;
   my $r;
-  if ( $target =~ m/search\/search/ )
+  if ( $target =~ m/^\/search\// )
   {
     $r = $ua->request(GET $target . "?q=" . $escaped_query);
   } else {
