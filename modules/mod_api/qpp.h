@@ -21,11 +21,7 @@
 
 #define QPP_OP_VIRTUAL_FIELD (13)
 
-char gOperatorNames[][21] = {
- "","QPP_OP_AND","QPP_OP_OR","QPP_OP_NOT","QPP_OP_PARA",
- "QPP_OP_WITHIN","QPP_OP_FUZZY","QPP_OP_FIELD","QPP_OP_MORP","QPP_OP_SYN",
- "QPP_OP_FILTER","QPP_OP_PHRASE","QPP_OP_NUMERIC","QPP_OP_VIRTUAL_FIELD"
-};
+extern char gOperatorNames[][21];
 
 enum node_type {
 	OPERAND,
