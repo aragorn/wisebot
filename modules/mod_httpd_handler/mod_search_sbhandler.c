@@ -7,6 +7,7 @@
 #include "memory.h"
 #include "setproctitle.h"
 #include "mod_api/qp2.h"
+#include "mod_api/qpp.h"
 #include "mod_api/sbhandler.h"
 #include "mod_api/docattr2.h"
 #include "mod_api/indexer.h"
@@ -26,11 +27,13 @@ extern void ap_set_content_type(request_rec * r, const char *ct);
 static int search_handler(request_rec *r, softbot_handler_rec *s);
 static int light_search_handler(request_rec *r, softbot_handler_rec *s);
 static int abstract_search_handler(request_rec *r, softbot_handler_rec *s);
+static int preprocess_handler(request_rec *r, softbot_handler_rec *s);
 
 static softbot_handler_key_t search_handler_tbl[] = {
 	{"light_search", light_search_handler},
 	{"abstract_search", abstract_search_handler},
 	{"search", search_handler},
+    {"preprocess", preprocess_handler},
 	{NULL, NULL}
 };
 
@@ -145,6 +148,68 @@ static int print_group(request_rec *r, groupby_result_list_t* groupby_result)
     }
 
 	return SUCCESS;
+}
+
+static int preprocess_handler(request_rec *r, softbot_handler_rec *s)
+{
+    int i = 0;
+    int num_of_node = 0;
+    QueryNode qnodes[MAX_QUERY_NODES];
+
+	if(apr_table_get(s->parameters_in, "q") == NULL ||
+			strlen(apr_table_get(s->parameters_in, "q")) == 0) {
+	    MSG_RECORD(&s->msg, error, "Parameter 'q' is null or has zero length. query is null."
+									" You have to input a valid query or use GET method instead of POST.");
+        return FAIL;
+	}
+
+	ap_unescape_url((char *)apr_table_get(s->parameters_in, "q"));
+
+    num_of_node = sb_run_preprocess(word_db, (char *)apr_table_get(s->parameters_in, "q"), 
+                                    MAX_QUERY_STRING_SIZE, qnodes, MAX_QUERY_NODES);
+        
+	ap_set_content_type(r, "text/xml; charset=euc-kr");
+	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
+	ap_rprintf(r, "<xml>\n");
+
+    for ( i=0; i<num_of_node; i++) {
+        if (qnodes[i].type == OPERAND) {
+			ap_rprintf(r, 
+                    "<node type=\"OPERAND\">\n"
+					  "<word>\n" 
+						"<string>%s</string>\n"
+						"<id>%u</id>\n" 
+					  "</word>\n"
+					  "<field>%s</field>\n"
+					  "<opParam>%d</opParam>\n" 
+					  "<weight>%f</weight>\n" 
+					  "<original_word>%s</original_word>\n"
+                    "</node>\n",
+                    qnodes[i].word_st.string,
+                    qnodes[i].word_st.id,
+                    sb_strbin(qnodes[i].field, sizeof(qnodes[i].field)),
+                    qnodes[i].opParam,
+					qnodes[i].weight,
+					qnodes[i].original_word);
+        }
+        else {
+			ap_rprintf(r, 
+                    "<node type=\"OPERATOR\">\n"
+					  "<operator>%s</operator>\n"
+					  "<num_of_operands>%d</num_of_operands>\n"
+					  "<opParam>%d</opParam>\n" 
+					  "<weight>%f</weight>\n" 
+					  "<original_word>%s</original_word>\n"
+                    "</node>\n",
+                    gOperatorNames[qnodes[i].operator],
+                    qnodes[i].num_of_operands,
+                    qnodes[i].opParam,
+					qnodes[i].weight,
+					qnodes[i].original_word);
+        }
+    }
+	ap_rprintf(r, "</xml>\n");
+    return SUCCESS;
 }
 
 static int search_handler(request_rec *r, softbot_handler_rec *s)
