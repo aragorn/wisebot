@@ -3,6 +3,10 @@ qpp_test
 tokenizer_test
 daum_qpp
 mod_qpp2
-qpp_yacc.output
+qpp2_test
+qpp2_yacc.output
+mod_qpp1
+qpp1_test
+qpp1_yacc.output
 test_ly
 test_yacc.output

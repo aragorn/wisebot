@@ -2,7 +2,7 @@
 %{
 #include "common_core.h"
 #include "mod_qpp2.h"
-#include "qpp_yacc.h"
+#include "qpp1_yacc.h"
 extern int yylineno;
 int  token_pos  = 0;
 int  first_line = 1;
@@ -72,6 +72,11 @@ word      [A-Za-z0-9_]
 
 "\n"               { BEGIN(FULLLINE); }
 
+ABSTRACT                  TOKEN( FIELD )
+TITLE                     TOKEN( FIELD )
+BODY                      TOKEN( FIELD )
+FIELD                     TOKEN( FIELD )
+TEST                      TOKEN( TEST )
 
 [-+*/:()]                 TOKEN( yytext[0] )
 [^ \t\r\n-+*/;:()\"']+    TOKEN( STRING )
@@ -118,7 +123,7 @@ word      [A-Za-z0-9_]
 
 void yyerror(const char *s)
 {
-	fprintf(stderr, "line %d, char %d: %s at %s\n%s\n",
+	fprintf(stderr, "line %d, char %d: %s at %s\n[%s]\n",
             yylineno, token_pos, s, yytext, linebuf);
     fprintf(stderr, "%*s\n", 1+token_pos, "^");
 }

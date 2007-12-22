@@ -1,7 +1,6 @@
 %{
 /* $Id$ */
 #include "common_core.h"
-#include "mod_qpp2.h"
 #include "test_yacc.h"
 extern int yylineno;
 int  token_pos  = 0;
