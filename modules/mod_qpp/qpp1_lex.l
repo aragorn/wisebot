@@ -30,14 +30,14 @@ word      [A-Za-z0-9_]
 
 %%
 
-ABSTRACT                  TOKEN( FIELD )
-TITLE                     TOKEN( FIELD )
-BODY                      TOKEN( FIELD )
-FIELD                     TOKEN( FIELD )
+ABSTRACT:                 TOKEN( FIELD )
+TITLE:                    TOKEN( FIELD )
+BODY:                     TOKEN( FIELD )
+FIELD:                    TOKEN( FIELD )
 TEST                      TOKEN( TEST )
 
-[&-+*/:();]                 TOKEN( yytext[0] )
-[^ \t\r\n-+*/:();\"']+     TOKEN( STRING )
+[!&-+*/();]                 TOKEN( yytext[0] )
+[^ \t\r\n!&-+*/();:\"']+     TOKEN( STRING )
 
 
 '[^'\n]*'  {

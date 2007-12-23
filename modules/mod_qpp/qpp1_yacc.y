@@ -28,36 +28,37 @@ int parse_result = 0;
 
 
 statement_list:
-	 	statement                   { parse_result = 1; }
+	 	statement                    { parse_result = 1; }
     ;
 
 statement:
-	    expression1                 { debug("hello"); }
+		expression1                  { debug("exp1"); }
     ;
 
 
 expression1:
-	   FIELD ':' expression2       { debug("FIELD ':' expression2"); }
-    |  expression1 '&' expression2  { debug("expression & expression"); }
-    |  expression1 '!' expression2  { debug("expression ! expression"); }
-	|  expression2                 { debug("expression2"); }
+		expression1 '&' expression2  { debug("expression & expression"); }
+	|	expression1 '!' expression2  { debug("expression ! expression"); }
+	|	expression2                  { debug("expression2"); }
 	;
 
 
 expression2:
-        expression2 '+' expression3 { debug("expression + expression"); }
-    |   expression2 expression3     { debug("expression  expression, default &"); }
-	|   expression3                 { debug("expression3"); }
+		expression2 '+' expression3 { debug("expression + expression"); }
+	|	expression2 expression3     { debug("expression  expression, default &"); }
+	|	expression3                 { debug("expression3"); }
 	;
 
 expression3:
-	   primary_expression
-	|  '(' statement_list ')'
+		atomic_expression            { debug("atomic_expression"); }
+	|	'(' statement_list ')'       { debug("'(' statement_list ')'"); }
+	|	FIELD atomic_expression      { debug("FIELD atomic_expression"); }
+	|	FIELD '(' statement_list ')' { debug("FIELD '(' statement_list ')'"); }
 	;
 
-primary_expression:
-	 	STRING                 { debug("STRING"); }
-	|	QSTRING                { debug("QSTRING"); }
+atomic_expression:
+		STRING                      { debug("STRING"); }
+	|	QSTRING                     { debug("QSTRING"); }
 	;
 
 
