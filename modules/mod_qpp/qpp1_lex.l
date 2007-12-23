@@ -30,22 +30,29 @@ word      [A-Za-z0-9_]
 
 %%
 
-ABSTRACT:                 TOKEN( FIELD )
-TITLE:                    TOKEN( FIELD )
-BODY:                     TOKEN( FIELD )
-FIELD:                    TOKEN( FIELD )
+ABSTRACT: |
+TITLE:    |
+BODY:     |
+FIELD:      {
+	yylval.sval = strdup(yytext);
+	TOKEN( FIELD );
+}
 TEST                      TOKEN( TEST )
 
 [!&-+*/();]                 TOKEN( yytext[0] )
-[^ \t\r\n!&-+*/();:\"']+     TOKEN( STRING )
-
+[^ \t\r\n!&-+*/();:\"']+     {
+	yylval.sval = (yytext);
+	TOKEN( STRING );
+}
 
 '[^'\n]*'  {
-   TOKEN( QSTRING );
+	yylval.sval = strdup(yytext);
+	TOKEN( QSTRING );
 }
 
 \"[^\"\n]*\"  {
-   TOKEN( QSTRING );
+	yylval.sval = strdup(yytext);
+	TOKEN( QSTRING );
 }
 
 

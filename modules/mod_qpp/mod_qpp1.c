@@ -11,6 +11,33 @@
 #include "mod_qpp.h"
 //#include "qpp1_yacc.h"
 
+/* operand pool */
+static qpp1_operand_t* operands = NULL;
+static int max_operand_count = 100;
+static int current_operand_index = 0;
+
+void init_operands()
+{
+	if ( operands == NULL && max_operand_count > 0 ) {
+		operands = (qpp1_operands_t *)
+			sb_malloc(sizeof(qpp1_operands_t)*max_operand_count);
+	}
+
+	current_operand_index = 0;
+	memset(operands, 0x00, sizeof(qpp1_operand_t)*max_operand_count);
+}
+
+qpp1_operand_t* new_qpp1_operand()
+{
+	if ( current_operand_index >= max_operand_count ) {
+		error("too many operands. MAX is %d. "
+			  "modify config: <%s> - MaxOperandCount",__FILE__ ,max_operand_count);
+		return NULL;
+	}
+	return &operands[current_operand_index++];
+}
+
+
 #include <string.h>
 #include <stdlib.h>
 

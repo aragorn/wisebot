@@ -2,6 +2,7 @@
 %{
 #define YYDEBUG 1
 #include "common_core.h"
+#include "mod_qpp1.h"
 #include <stdio.h>
 extern int yylex(void);
 extern void yyerror(const char* msg);
@@ -11,18 +12,25 @@ extern int yylineno;
 int parse_result = 0;
 %}
 
-%token FIELD
-%token AND OR NOT BOOLEAN
-%token WITHIN
-%token PHRASE NOOP
-%token LPAREN RPAREN
-%token STRING QSTRING 
-%token TEST
+%token <sval> FIELD
+%token <sval> AND OR NOT BOOLEAN
+%token <sval> WITHIN
+%token <sval> PHRASE NOOP
+%token <sval> LPAREN RPAREN
+%token <sval> STRING QSTRING 
+%token <sval> TEST
 %left '+' '-'
 %left '*' '/' '&' '(' ')'
 %left AND OR
 %nonassoc UMINUS
 %nonassoc NOT '!' '@'
+%union {
+	char *sval;
+	/*
+	qpp1_operand_t* operand;
+	qpp1_operator_t* operator;
+	*/
+}
 
 %%
 
@@ -50,15 +58,15 @@ expression2:
 	;
 
 expression3:
-		atomic_expression            { debug("atomic_expression"); }
+		single_operand               { debug("single_operand"); }
 	|	'(' statement_list ')'       { debug("'(' statement_list ')'"); }
-	|	FIELD atomic_expression      { debug("FIELD atomic_expression"); }
+	|	FIELD single_operand         { debug("FIELD single_operand"); }
 	|	FIELD '(' statement_list ')' { debug("FIELD '(' statement_list ')'"); }
 	;
 
-atomic_expression:
-		STRING                      { debug("STRING"); }
-	|	QSTRING                     { debug("QSTRING"); }
+single_operand:
+		STRING                      { debug("STRING[%s]", $1); }
+	|	QSTRING                     { debug("QSTRING[%s]", $1); }
 	;
 
 
@@ -66,6 +74,8 @@ atomic_expression:
 
 int qpp1_parse(char *input, int debug)
 {
+//	init_qpp1_operands();
+
 	yydebug = debug;
 	yy_scan_string(input);
 	parse_result = 0;

@@ -15,11 +15,13 @@ int main(int argc, char *argv[])
 	if (argc > 1) debug = 1;
 
 	printf("hello, world\n");
+
 	while (fgets(buffer, STRING_SIZE, stdin) != NULL)
 	{
 		int n;
 		input = sb_trim(buffer);
 		printf("input[%s]\n",input);
+
 		n = qpp1_parse(input, debug);
 		printf("result: %d\n", n);
 	}

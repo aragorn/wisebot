@@ -773,52 +773,51 @@ do_action:	/* This label is used only to access EOF actions. */
 			goto yy_find_action;
 
 case 1:
-YY_RULE_SETUP
-#line 33 "qpp1_lex.l"
-TOKEN( FIELD )
-	YY_BREAK
-case 2:
-YY_RULE_SETUP
 #line 34 "qpp1_lex.l"
-TOKEN( FIELD )
-	YY_BREAK
-case 3:
-YY_RULE_SETUP
+case 2:
 #line 35 "qpp1_lex.l"
-TOKEN( FIELD )
-	YY_BREAK
+case 3:
+#line 36 "qpp1_lex.l"
 case 4:
 YY_RULE_SETUP
 #line 36 "qpp1_lex.l"
-TOKEN( FIELD )
+{
+	yylval.sval = strdup(yytext);
+	TOKEN( FIELD );
+}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 37 "qpp1_lex.l"
+#line 40 "qpp1_lex.l"
 TOKEN( TEST )
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 39 "qpp1_lex.l"
+#line 42 "qpp1_lex.l"
 TOKEN( yytext[0] )
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 40 "qpp1_lex.l"
-TOKEN( STRING )
+#line 43 "qpp1_lex.l"
+{
+	yylval.sval = (yytext);
+	TOKEN( STRING );
+}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 43 "qpp1_lex.l"
+#line 48 "qpp1_lex.l"
 {
-   TOKEN( QSTRING );
+	yylval.sval = strdup(yytext);
+	TOKEN( QSTRING );
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 47 "qpp1_lex.l"
+#line 53 "qpp1_lex.l"
 {
-   TOKEN( QSTRING );
+	yylval.sval = strdup(yytext);
+	TOKEN( QSTRING );
 }
 	YY_BREAK
 case 10:
@@ -826,25 +825,25 @@ case 10:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 52 "qpp1_lex.l"
+#line 59 "qpp1_lex.l"
 { yyerror("Unterminated string"); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 54 "qpp1_lex.l"
+#line 61 "qpp1_lex.l"
 { /* ignore whitespaces */ save_token(yytext); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 56 "qpp1_lex.l"
+#line 63 "qpp1_lex.l"
 { yyerror("Invalid character"); }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 58 "qpp1_lex.l"
+#line 65 "qpp1_lex.l"
 ECHO;
 	YY_BREAK
-#line 848 "qpp1_lex.c"
+#line 847 "qpp1_lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1842,7 +1841,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 58 "qpp1_lex.l"
+#line 65 "qpp1_lex.l"
 
 
 

@@ -106,6 +106,7 @@
 
 #define YYDEBUG 1
 #include "common_core.h"
+#include "mod_qpp1.h"
 #include <stdio.h>
 extern int yylex(void);
 extern void yyerror(const char* msg);
@@ -134,7 +135,18 @@ int parse_result = 0;
 #endif
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+typedef union YYSTYPE
+#line 27 "qpp1_yacc.y"
+{
+	char *sval;
+	/*
+	qpp1_operand_t* operand;
+	qpp1_operator_t* operator;
+	*/
+}
+/* Line 187 of yacc.c.  */
+#line 149 "qpp1_yacc.c"
+	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 # define YYSTYPE_IS_TRIVIAL 1
@@ -146,7 +158,7 @@ typedef int YYSTYPE;
 
 
 /* Line 216 of yacc.c.  */
-#line 150 "qpp1_yacc.c"
+#line 162 "qpp1_yacc.c"
 
 #ifdef short
 # undef short
@@ -434,8 +446,8 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    31,    31,    35,    40,    41,    42,    47,    48,    49,
-      53,    54,    55,    56,    60,    61
+       0,    39,    39,    43,    48,    49,    50,    55,    56,    57,
+      61,    62,    63,    64,    68,    69
 };
 #endif
 
@@ -448,7 +460,7 @@ static const char *const yytname[] =
   "WITHIN", "PHRASE", "NOOP", "LPAREN", "RPAREN", "STRING", "QSTRING",
   "TEST", "'+'", "'-'", "'*'", "'/'", "'&'", "'('", "')'", "UMINUS", "'!'",
   "'@'", "$accept", "statement_list", "statement", "expression1",
-  "expression2", "expression3", "atomic_expression", 0
+  "expression2", "expression3", "single_operand", 0
 };
 #endif
 
@@ -1349,78 +1361,78 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 31 "qpp1_yacc.y"
+#line 39 "qpp1_yacc.y"
     { parse_result = 1; }
     break;
 
   case 3:
-#line 35 "qpp1_yacc.y"
+#line 43 "qpp1_yacc.y"
     { debug("exp1"); }
     break;
 
   case 4:
-#line 40 "qpp1_yacc.y"
+#line 48 "qpp1_yacc.y"
     { debug("expression & expression"); }
     break;
 
   case 5:
-#line 41 "qpp1_yacc.y"
+#line 49 "qpp1_yacc.y"
     { debug("expression ! expression"); }
     break;
 
   case 6:
-#line 42 "qpp1_yacc.y"
+#line 50 "qpp1_yacc.y"
     { debug("expression2"); }
     break;
 
   case 7:
-#line 47 "qpp1_yacc.y"
+#line 55 "qpp1_yacc.y"
     { debug("expression + expression"); }
     break;
 
   case 8:
-#line 48 "qpp1_yacc.y"
+#line 56 "qpp1_yacc.y"
     { debug("expression  expression, default &"); }
     break;
 
   case 9:
-#line 49 "qpp1_yacc.y"
+#line 57 "qpp1_yacc.y"
     { debug("expression3"); }
     break;
 
   case 10:
-#line 53 "qpp1_yacc.y"
-    { debug("atomic_expression"); }
+#line 61 "qpp1_yacc.y"
+    { debug("single_operand"); }
     break;
 
   case 11:
-#line 54 "qpp1_yacc.y"
+#line 62 "qpp1_yacc.y"
     { debug("'(' statement_list ')'"); }
     break;
 
   case 12:
-#line 55 "qpp1_yacc.y"
-    { debug("FIELD atomic_expression"); }
+#line 63 "qpp1_yacc.y"
+    { debug("FIELD single_operand"); }
     break;
 
   case 13:
-#line 56 "qpp1_yacc.y"
+#line 64 "qpp1_yacc.y"
     { debug("FIELD '(' statement_list ')'"); }
     break;
 
   case 14:
-#line 60 "qpp1_yacc.y"
-    { debug("STRING"); }
+#line 68 "qpp1_yacc.y"
+    { debug("STRING[%s]", (yyvsp[(1) - (1)].sval)); }
     break;
 
   case 15:
-#line 61 "qpp1_yacc.y"
-    { debug("QSTRING"); }
+#line 69 "qpp1_yacc.y"
+    { debug("QSTRING[%s]", (yyvsp[(1) - (1)].sval)); }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1424 "qpp1_yacc.c"
+#line 1436 "qpp1_yacc.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1634,11 +1646,13 @@ yyreturn:
 }
 
 
-#line 65 "qpp1_yacc.y"
+#line 73 "qpp1_yacc.y"
 
 
 int qpp1_parse(char *input, int debug)
 {
+//	init_qpp1_operands();
+
 	yydebug = debug;
 	yy_scan_string(input);
 	parse_result = 0;

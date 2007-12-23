@@ -75,7 +75,18 @@
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+typedef union YYSTYPE
+#line 27 "qpp1_yacc.y"
+{
+	char *sval;
+	/*
+	qpp1_operand_t* operand;
+	qpp1_operator_t* operator;
+	*/
+}
+/* Line 1489 of yacc.c.  */
+#line 89 "qpp1_yacc.h"
+	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 # define YYSTYPE_IS_TRIVIAL 1
