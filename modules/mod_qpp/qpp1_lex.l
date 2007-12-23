@@ -36,22 +36,16 @@ BODY                      TOKEN( FIELD )
 FIELD                     TOKEN( FIELD )
 TEST                      TOKEN( TEST )
 
-[-+*/:();]                 TOKEN( yytext[0] )
+[&-+*/:();]                 TOKEN( yytext[0] )
 [^ \t\r\n-+*/:();\"']+     TOKEN( STRING )
 
 
 '[^'\n]*'  {
-	int c = input();
-	unput(c); // just peeking 
-	if (c != '\'') TOKEN( QSTRING )
-	else yymore();
+   TOKEN( QSTRING );
 }
 
 \"[^\"\n]*\"  {
-	int c = input();
-	unput(c); // just peeking
-	if (c != '\"') TOKEN( QSTRING )
-	else yymore();
+   TOKEN( QSTRING );
 }
 
 
@@ -73,7 +67,7 @@ void yyerror(const char *s)
 
 void save_token(const char *token)
 {
-	debug("token_pos[%d] += yyleng[%d] with [%s]", token_pos, yyleng, token);
+	//debug("token_pos[%d] += yyleng[%d] with [%s]", token_pos, yyleng, token);
 	token_pos += yyleng;
 }
 

@@ -17,9 +17,11 @@ int main(int argc, char *argv[])
 	printf("hello, world\n");
 	while (fgets(buffer, STRING_SIZE, stdin) != NULL)
 	{
+		int n;
 		input = sb_trim(buffer);
 		printf("input[%s]\n",input);
-		qpp1_parse(input, debug);
+		n = qpp1_parse(input, debug);
+		printf("result: %d\n", n);
 	}
 	printf("bye!\n");
 

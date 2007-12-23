@@ -112,6 +112,8 @@ extern void yyerror(const char* msg);
 extern int yylineno;
 //extern YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str);
 
+int parse_result = 0;
+
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -144,7 +146,7 @@ typedef int YYSTYPE;
 
 
 /* Line 216 of yacc.c.  */
-#line 148 "qpp1_yacc.c"
+#line 150 "qpp1_yacc.c"
 
 #ifdef short
 # undef short
@@ -357,18 +359,18 @@ union yyalloc
 #endif
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  11
+#define YYFINAL  13
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   19
+#define YYLAST   25
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  27
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  4
+#define YYNNTS  7
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  12
+#define YYNRULES  14
 /* YYNRULES -- Number of states.  */
-#define YYNSTATES  20
+#define YYNSTATES  23
 
 /* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 #define YYUNDEFTOK  2
@@ -415,24 +417,24 @@ static const yytype_uint8 yytranslate[] =
    YYRHS.  */
 static const yytype_uint8 yyprhs[] =
 {
-       0,     0,     3,     5,     6,    10,    14,    20,    24,    28,
-      30,    32,    34
+       0,     0,     3,     5,     7,    11,    15,    19,    21,    25,
+      28,    30,    32,    36,    38
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS.  */
 static const yytype_int8 yyrhs[] =
 {
-      28,     0,    -1,    29,    -1,    -1,     3,    26,    13,    -1,
-       3,    26,    14,    -1,     3,    26,    21,    29,    22,    -1,
-      29,    20,    29,    -1,    21,    29,    22,    -1,    30,    -1,
-      13,    -1,    14,    -1,    18,    -1
+      28,     0,    -1,    29,    -1,    30,    -1,     3,    26,    31,
+      -1,    30,    20,    31,    -1,    30,    24,    31,    -1,    31,
+      -1,    31,    16,    32,    -1,    31,    32,    -1,    32,    -1,
+      33,    -1,    21,    28,    22,    -1,    13,    -1,    14,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    28,    28,    29,    47,    48,    49,    50,    51,    52,
-      69,    70,    71
+       0,    31,    31,    35,    40,    41,    42,    43,    48,    49,
+      50,    54,    55,    59,    60
 };
 #endif
 
@@ -444,7 +446,8 @@ static const char *const yytname[] =
   "$end", "error", "$undefined", "FIELD", "AND", "OR", "NOT", "BOOLEAN",
   "WITHIN", "PHRASE", "NOOP", "LPAREN", "RPAREN", "STRING", "QSTRING",
   "TEST", "'+'", "'-'", "'*'", "'/'", "'&'", "'('", "')'", "UMINUS", "'!'",
-  "'@'", "':'", "$accept", "statement", "search_exp", "search_term", 0
+  "'@'", "':'", "$accept", "statement_list", "statement", "expression1",
+  "expression2", "expression3", "primary_expression", 0
 };
 #endif
 
@@ -462,15 +465,15 @@ static const yytype_uint16 yytoknum[] =
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    27,    28,    28,    29,    29,    29,    29,    29,    29,
-      30,    30,    30
+       0,    27,    28,    29,    30,    30,    30,    30,    31,    31,
+      31,    32,    32,    33,    33
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
-       0,     2,     1,     0,     3,     3,     5,     3,     3,     1,
-       1,     1,     1
+       0,     2,     1,     1,     3,     3,     3,     1,     3,     2,
+       1,     1,     3,     1,     1
 };
 
 /* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
@@ -478,29 +481,31 @@ static const yytype_uint8 yyr2[] =
    means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       3,     0,    10,    11,    12,     0,     0,     2,     9,     0,
-       0,     1,     0,     4,     5,     0,     8,     7,     0,     6
+       0,     0,    13,    14,     0,     0,     2,     3,     7,    10,
+      11,     0,     0,     1,     0,     0,     0,     9,     4,    12,
+       5,     6,     8
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     6,     7,     8
+      -1,     5,     6,     7,     8,     9,    10
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -23
+#define YYPACT_NINF -18
 static const yytype_int8 yypact[] =
 {
-      -3,   -22,   -23,   -23,   -23,    -3,     7,    -1,   -23,   -12,
-     -17,   -23,    -3,   -23,   -23,    -3,   -23,   -23,    -8,   -23
+      -3,   -11,   -18,   -18,    -3,    20,   -18,   -17,    -8,   -18,
+     -18,   -12,    -1,   -18,   -12,   -12,   -12,   -18,    -8,   -18,
+      -8,    -8,   -18
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -23,   -23,     1,   -23
+     -18,    21,   -18,   -18,     8,    -4,   -18
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -510,22 +515,25 @@ static const yytype_int8 yypgoto[] =
 #define YYTABLE_NINF -1
 static const yytype_uint8 yytable[] =
 {
-       1,    13,    14,    12,     9,    16,    10,    11,     0,    15,
-       2,     3,    12,    17,    19,     4,    18,     0,     5,    12
+       1,     2,     3,    14,    17,     2,     3,    15,    16,     4,
+       2,     3,    22,     4,    17,    11,    17,    17,     4,    18,
+      13,    19,    20,    21,     0,    12
 };
 
 static const yytype_int8 yycheck[] =
 {
-       3,    13,    14,    20,    26,    22,     5,     0,    -1,    21,
-      13,    14,    20,    12,    22,    18,    15,    -1,    21,    20
+       3,    13,    14,    20,     8,    13,    14,    24,    16,    21,
+      13,    14,    16,    21,    18,    26,    20,    21,    21,    11,
+       0,    22,    14,    15,    -1,     4
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
    symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,     3,    13,    14,    18,    21,    28,    29,    30,    26,
-      29,     0,    20,    13,    14,    21,    22,    29,    29,    22
+       0,     3,    13,    14,    21,    28,    29,    30,    31,    32,
+      33,    26,    28,     0,    20,    24,    16,    32,    31,    22,
+      31,    31,    32
 };
 
 #define yyerrok		(yyerrstatus = 0)
@@ -1340,63 +1348,63 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 28 "qpp1_yacc.y"
-    { INFO("search_exp"); }
+#line 31 "qpp1_yacc.y"
+    { parse_result = 1; }
     break;
 
   case 3:
-#line 29 "qpp1_yacc.y"
-    { debug("empty input"); }
+#line 35 "qpp1_yacc.y"
+    { debug("hello"); }
     break;
 
   case 4:
-#line 47 "qpp1_yacc.y"
-    { debug("FIELD: STRING"); }
+#line 40 "qpp1_yacc.y"
+    { debug("FIELD ':' expression2"); }
     break;
 
   case 5:
-#line 48 "qpp1_yacc.y"
-    { debug("FIELD: QSTRING"); }
+#line 41 "qpp1_yacc.y"
+    { debug("expression & expression"); }
     break;
 
   case 6:
-#line 49 "qpp1_yacc.y"
-    { debug("FIELD: infield_exp"); }
+#line 42 "qpp1_yacc.y"
+    { debug("expression ! expression"); }
     break;
 
   case 7:
-#line 50 "qpp1_yacc.y"
-    { debug("another search_term"); }
+#line 43 "qpp1_yacc.y"
+    { debug("expression2"); }
     break;
 
   case 8:
-#line 51 "qpp1_yacc.y"
-    { debug("( search_exp )"); }
+#line 48 "qpp1_yacc.y"
+    { debug("expression + expression"); }
     break;
 
   case 9:
-#line 52 "qpp1_yacc.y"
-    { debug("search_term"); }
+#line 49 "qpp1_yacc.y"
+    { debug("expression  expression, default &"); }
     break;
 
   case 10:
-#line 69 "qpp1_yacc.y"
-    { debug("infield STRING"); }
+#line 50 "qpp1_yacc.y"
+    { debug("expression3"); }
     break;
 
-  case 11:
-#line 70 "qpp1_yacc.y"
-    { debug("infield QSTRING"); }
+  case 13:
+#line 59 "qpp1_yacc.y"
+    { debug("STRING"); }
     break;
 
-  case 12:
-#line 71 "qpp1_yacc.y"
-    { debug("got *"); }
+  case 14:
+#line 60 "qpp1_yacc.y"
+    { debug("QSTRING"); }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1400 "qpp1_yacc.c"
+#line 1408 "qpp1_yacc.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1610,17 +1618,18 @@ yyreturn:
 }
 
 
-#line 87 "qpp1_yacc.y"
+#line 64 "qpp1_yacc.y"
 
 
 int qpp1_parse(char *input, int debug)
 {
 	yydebug = debug;
 	yy_scan_string(input);
+	parse_result = 0;
 	yyparse();
-	printf("lines[%d] chars[%d]\n", yylineno, -1);
+	if (parse_result == 0) error("cannot parse query[%s]", input);
 
-	return SUCCESS;
+	return parse_result;
 }
 
 int main(int argc, char *argv[])
