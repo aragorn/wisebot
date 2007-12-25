@@ -13,17 +13,19 @@ mod_qpp_la_LIBADD  = $(libdir)/libcommon_core.la
 
 check_PROGRAMS = daum_qpp qpp1_test mod_qpp2 test_ly
 
-mod_qpp1_la_SOURCES = qpp1_yacc.y qpp1_lex.l
+AM_YFLAGS = -d -v
+mod_qpp1_la_SOURCES = mod_qpp1.c mod_qpp1.h qpp1_yacc.y qpp1_lex.l
 mod_qpp1_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_qpp1_la_LIBADD  = $(LEXLIB) $(libdir)/libcommon_core.la
 
 qpp1_test_SOURCES = qpp1_test.c
-qpp1_test_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la mod_qpp1.la
+qpp1_test_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la \
+                    $(libdir)/libcommon_util.la \
+                    mod_qpp1.la
 
 daum_qpp_SOURCES = daum_qpp.c daum_qpp.h
 daum_qpp_CFLAGS = -DTEST_PROGRAM
 
-AM_YFLAGS = -d -v
 mod_qpp2_SOURCES = qpp2_yacc.y qpp2_lex.l
 mod_qpp2_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la
 

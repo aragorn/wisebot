@@ -4,7 +4,7 @@
 #include "mod_qpp1.h"
 #include "qpp1_yacc.h"
 
-extern int qpp1_parse(char *input, int debug);
+int qpp1_yyparse(char *input, int debug);
 
 int main(int argc, char *argv[])
 {
@@ -14,18 +14,20 @@ int main(int argc, char *argv[])
 
 	if (argc > 1) debug = 1;
 
-	printf("hello, world\n");
+	info("hello, world");
 
 	while (fgets(buffer, STRING_SIZE, stdin) != NULL)
 	{
 		int n;
 		input = sb_trim(buffer);
-		printf("input[%s]\n",input);
+		info("input[%s]",input);
 
-		n = qpp1_parse(input, debug);
-		printf("result: %d\n", n);
+		init_nodes();
+		n = qpp1_yyparse(input, debug);
+		print_stack();
+		info("result: %d", n);
 	}
-	printf("bye!\n");
+	info("bye!");
 
 	return 0;
 }

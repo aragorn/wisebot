@@ -3,10 +3,11 @@
 #define YYDEBUG 1
 #include "common_core.h"
 #include "mod_qpp1.h"
+#include "qpp1_lex.h"
 #include <stdio.h>
-extern int yylex(void);
+//extern int yylex(void);
 extern void yyerror(const char* msg);
-extern int yylineno;
+//extern int yylineno;
 //extern YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str);
 
 int parse_result = 0;
@@ -26,10 +27,7 @@ int parse_result = 0;
 %nonassoc NOT '!' '@'
 %union {
 	char *sval;
-	/*
-	qpp1_operand_t* operand;
-	qpp1_operator_t* operator;
-	*/
+	/*qpp1_node_t* node;*/
 }
 
 %%
@@ -65,32 +63,33 @@ expression3:
 	;
 
 single_operand:
-		STRING                      { debug("STRING[%s]", $1); }
-	|	QSTRING                     { debug("QSTRING[%s]", $1); }
+		STRING                      { 
+	debug("STRING[%s]", $1);
+	push_operand($1);
+	}
+	|	QSTRING                     {
+	debug("QSTRING[%s]", $1); 
+	push_operand($1);
+	}
 	;
 
 
 %%
 
-int qpp1_parse(char *input, int debug)
+int qpp1_yyparse(char *input, int debug)
 {
-//	init_qpp1_operands();
+	YY_BUFFER_STATE yy_bs;
 
 	yydebug = debug;
-	yy_scan_string(input);
+	yy_bs = yy_scan_string(input);
+
 	parse_result = 0;
 	yyparse();
 	if (parse_result == 0) error("cannot parse query[%s]", input);
 
+	yy_delete_buffer(yy_bs);
+
 	return parse_result;
 }
 
-int main(int argc, char *argv[])
-{
-	if (argc > 1) yydebug = 1;
-    yyparse();
-	printf("lines[%d] chars[%d]\n", yylineno, -1);
-	
-    return 0;
-}
 

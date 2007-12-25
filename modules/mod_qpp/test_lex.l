@@ -20,7 +20,7 @@ void save_token(const char* token);
  */
 %}
 
-%option 8bit caseless yylineno
+%option 8bit caseless yylineno nounput
 %array
 %%
 

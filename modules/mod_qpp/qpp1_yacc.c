@@ -107,10 +107,11 @@
 #define YYDEBUG 1
 #include "common_core.h"
 #include "mod_qpp1.h"
+#include "qpp1_lex.h"
 #include <stdio.h>
-extern int yylex(void);
+//extern int yylex(void);
 extern void yyerror(const char* msg);
-extern int yylineno;
+//extern int yylineno;
 //extern YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str);
 
 int parse_result = 0;
@@ -136,16 +137,13 @@ int parse_result = 0;
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 27 "qpp1_yacc.y"
+#line 28 "qpp1_yacc.y"
 {
 	char *sval;
-	/*
-	qpp1_operand_t* operand;
-	qpp1_operator_t* operator;
-	*/
+	/*qpp1_node_t* node;*/
 }
 /* Line 187 of yacc.c.  */
-#line 149 "qpp1_yacc.c"
+#line 147 "qpp1_yacc.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -158,7 +156,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 162 "qpp1_yacc.c"
+#line 160 "qpp1_yacc.c"
 
 #ifdef short
 # undef short
@@ -446,8 +444,8 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    39,    39,    43,    48,    49,    50,    55,    56,    57,
-      61,    62,    63,    64,    68,    69
+       0,    37,    37,    41,    46,    47,    48,    53,    54,    55,
+      59,    60,    61,    62,    66,    70
 };
 #endif
 
@@ -1361,78 +1359,84 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 39 "qpp1_yacc.y"
+#line 37 "qpp1_yacc.y"
     { parse_result = 1; }
     break;
 
   case 3:
-#line 43 "qpp1_yacc.y"
+#line 41 "qpp1_yacc.y"
     { debug("exp1"); }
     break;
 
   case 4:
-#line 48 "qpp1_yacc.y"
+#line 46 "qpp1_yacc.y"
     { debug("expression & expression"); }
     break;
 
   case 5:
-#line 49 "qpp1_yacc.y"
+#line 47 "qpp1_yacc.y"
     { debug("expression ! expression"); }
     break;
 
   case 6:
-#line 50 "qpp1_yacc.y"
+#line 48 "qpp1_yacc.y"
     { debug("expression2"); }
     break;
 
   case 7:
-#line 55 "qpp1_yacc.y"
+#line 53 "qpp1_yacc.y"
     { debug("expression + expression"); }
     break;
 
   case 8:
-#line 56 "qpp1_yacc.y"
+#line 54 "qpp1_yacc.y"
     { debug("expression  expression, default &"); }
     break;
 
   case 9:
-#line 57 "qpp1_yacc.y"
+#line 55 "qpp1_yacc.y"
     { debug("expression3"); }
     break;
 
   case 10:
-#line 61 "qpp1_yacc.y"
+#line 59 "qpp1_yacc.y"
     { debug("single_operand"); }
     break;
 
   case 11:
-#line 62 "qpp1_yacc.y"
+#line 60 "qpp1_yacc.y"
     { debug("'(' statement_list ')'"); }
     break;
 
   case 12:
-#line 63 "qpp1_yacc.y"
+#line 61 "qpp1_yacc.y"
     { debug("FIELD single_operand"); }
     break;
 
   case 13:
-#line 64 "qpp1_yacc.y"
+#line 62 "qpp1_yacc.y"
     { debug("FIELD '(' statement_list ')'"); }
     break;
 
   case 14:
-#line 68 "qpp1_yacc.y"
-    { debug("STRING[%s]", (yyvsp[(1) - (1)].sval)); }
+#line 66 "qpp1_yacc.y"
+    { 
+	debug("STRING[%s]", (yyvsp[(1) - (1)].sval));
+	push_operand((yyvsp[(1) - (1)].sval));
+	}
     break;
 
   case 15:
-#line 69 "qpp1_yacc.y"
-    { debug("QSTRING[%s]", (yyvsp[(1) - (1)].sval)); }
+#line 70 "qpp1_yacc.y"
+    {
+	debug("QSTRING[%s]", (yyvsp[(1) - (1)].sval)); 
+	push_operand((yyvsp[(1) - (1)].sval));
+	}
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1436 "qpp1_yacc.c"
+#line 1440 "qpp1_yacc.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1646,29 +1650,24 @@ yyreturn:
 }
 
 
-#line 73 "qpp1_yacc.y"
+#line 77 "qpp1_yacc.y"
 
 
-int qpp1_parse(char *input, int debug)
+int qpp1_yyparse(char *input, int debug)
 {
-//	init_qpp1_operands();
+	YY_BUFFER_STATE yy_bs;
 
 	yydebug = debug;
-	yy_scan_string(input);
+	yy_bs = yy_scan_string(input);
+
 	parse_result = 0;
 	yyparse();
 	if (parse_result == 0) error("cannot parse query[%s]", input);
 
+	yy_delete_buffer(yy_bs);
+
 	return parse_result;
 }
 
-int main(int argc, char *argv[])
-{
-	if (argc > 1) yydebug = 1;
-    yyparse();
-	printf("lines[%d] chars[%d]\n", yylineno, -1);
-	
-    return 0;
-}
 
 

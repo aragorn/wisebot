@@ -506,7 +506,6 @@ char *yytext_ptr;
 /* $Id$ */
 #line 3 "qpp1_lex.l"
 #include "common_core.h"
-#include "mod_qpp2.h"
 #include "qpp1_yacc.h"
 extern int yylineno;
 int  token_pos  = 0;
@@ -523,7 +522,7 @@ void save_token(const char* token);
  * %array - defines yytext as a char array instead of char pointer.
  *          this enables unput() and other traditional lex functions.
  */
-#line 527 "qpp1_lex.c"
+#line 526 "qpp1_lex.c"
 
 #define INITIAL 0
 
@@ -553,8 +552,6 @@ extern int yywrap (void );
 #endif
 #endif
 
-    static void yyunput (int c,char *buf_ptr  );
-    
 #ifndef yytext_ptr
 static void yy_flex_strncpy (char *,yyconst char *,int );
 #endif
@@ -679,7 +676,7 @@ YY_DECL
 #line 31 "qpp1_lex.l"
 
 
-#line 683 "qpp1_lex.c"
+#line 680 "qpp1_lex.c"
 
 	if ( !(yy_init) )
 		{
@@ -800,7 +797,7 @@ case 7:
 YY_RULE_SETUP
 #line 43 "qpp1_lex.l"
 {
-	yylval.sval = (yytext);
+	yylval.sval = strdup(yytext);
 	TOKEN( STRING );
 }
 	YY_BREAK
@@ -843,7 +840,7 @@ YY_RULE_SETUP
 #line 65 "qpp1_lex.l"
 ECHO;
 	YY_BREAK
-#line 847 "qpp1_lex.c"
+#line 844 "qpp1_lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1162,47 +1159,6 @@ static int yy_get_next_buffer (void)
 	yy_is_jam = (yy_current_state == 47);
 
 	return yy_is_jam ? 0 : yy_current_state;
-}
-
-    static void yyunput (int c, register char * yy_bp )
-{
-	register char *yy_cp;
-    
-    yy_cp = (yy_c_buf_p);
-
-	/* undo effects of setting up yytext */
-	*yy_cp = (yy_hold_char);
-
-	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
-		{ /* need to shift things up to make room */
-		/* +2 for EOB chars. */
-		register int number_to_move = (yy_n_chars) + 2;
-		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
-					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
-		register char *source =
-				&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move];
-
-		while ( source > YY_CURRENT_BUFFER_LVALUE->yy_ch_buf )
-			*--dest = *--source;
-
-		yy_cp += (int) (dest - source);
-		yy_bp += (int) (dest - source);
-		YY_CURRENT_BUFFER_LVALUE->yy_n_chars =
-			(yy_n_chars) = YY_CURRENT_BUFFER_LVALUE->yy_buf_size;
-
-		if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
-			YY_FATAL_ERROR( "flex scanner push-back overflow" );
-		}
-
-	*--yy_cp = (char) c;
-
-    if ( c == '\n' ){
-        --yylineno;
-    }
-
-	(yytext_ptr) = yy_bp;
-	(yy_hold_char) = *yy_cp;
-	(yy_c_buf_p) = yy_cp;
 }
 
 #ifndef YY_NO_INPUT

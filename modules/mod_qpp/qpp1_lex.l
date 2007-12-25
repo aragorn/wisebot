@@ -1,7 +1,6 @@
 /* $Id$ */
 %{
 #include "common_core.h"
-#include "mod_qpp2.h"
 #include "qpp1_yacc.h"
 extern int yylineno;
 int  token_pos  = 0;
@@ -20,7 +19,8 @@ void save_token(const char* token);
  */
 %}
 
-%option 8bit caseless yylineno
+%option 8bit caseless yylineno nounput
+%option header-file="qpp1_lex.h"
 %array
 
 digit     [0-9]
@@ -41,7 +41,7 @@ TEST                      TOKEN( TEST )
 
 [!&-+*/();]                 TOKEN( yytext[0] )
 [^ \t\r\n!&-+*/();:\"']+     {
-	yylval.sval = (yytext);
+	yylval.sval = strdup(yytext);
 	TOKEN( STRING );
 }
 

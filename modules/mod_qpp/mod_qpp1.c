@@ -1,42 +1,132 @@
 /* $Id$ */
 #include "common_core.h"
+#include "common_util.h" /* strnhcpy() */
 #include "memory.h"
 #include "util.h"
+/*
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/qp.h"
 
 #include "stack.h"
 #include "tokenizer.h"
-#include "mod_qpp.h"
+*/
+#include "mod_qpp1.h"
+#include <string.h> /* memset(3) */
+#include <stdlib.h> /* free(3) */
 //#include "qpp1_yacc.h"
 
-/* operand pool */
-static qpp1_operand_t* operands = NULL;
-static int max_operand_count = 100;
-static int current_operand_index = 0;
 
-void init_operands()
+char QPP1_NODE_TYPES[][30] =
+{ "Undefined",
+  "OPERATOR_AND", "OPERATOR_OR",
+  "LAST_OPERATOR",
+  "OPERAND_STD", "OPERAND_PHRASE",
+  "OPERAND_RIGHT_TRUNCATED", "OPERAND_LEFT_TRUNCATED",
+  "Undefined"
+};
+
+/* operand pool */
+static qpp1_node_t* stack_top = NULL;
+static qpp1_node_t* free_nodes = NULL;
+static qpp1_node_t* nodes_pool = NULL;
+static int max_node_count = 100;
+
+void init_nodes()
 {
-	if ( operands == NULL && max_operand_count > 0 ) {
-		operands = (qpp1_operands_t *)
-			sb_malloc(sizeof(qpp1_operands_t)*max_operand_count);
+	int i;
+
+	if ( nodes_pool == NULL && max_node_count > 0 ) {
+		nodes_pool= (qpp1_node_t *)
+			sb_malloc(sizeof(qpp1_node_t)*max_node_count);
+	} else
+	for (i = 0; i < max_node_count; i++)
+	{
+		if (nodes_pool[i].string != NULL)
+		{
+			debug("free(nodes_pool[%d].string[%s])", i, nodes_pool[i].string);
+			free(nodes_pool[i].string);
+			nodes_pool[i].string = NULL;
+		}
 	}
 
-	current_operand_index = 0;
-	memset(operands, 0x00, sizeof(qpp1_operand_t)*max_operand_count);
+	memset(nodes_pool, 0x00, sizeof(qpp1_node_t)*max_node_count);
+	for (i = 0; i < max_node_count-1; i++)
+	{
+		nodes_pool[i].next = &nodes_pool[i+1];
+	}
+	free_nodes = &nodes_pool[0];
+
+	stack_top = NULL;
 }
 
-qpp1_operand_t* new_qpp1_operand()
+qpp1_node_t* new_qpp1_node()
 {
-	if ( current_operand_index >= max_operand_count ) {
-		error("too many operands. MAX is %d. "
-			  "modify config: <%s> - MaxOperandCount",__FILE__ ,max_operand_count);
+	qpp1_node_t* node;
+
+	if (free_nodes == NULL)
+	{
+		error("too many nodes. MAX is %d. "
+			  "modify config: <%s> - MaxNodeCount",max_node_count,__FILE__);
 		return NULL;
 	}
-	return &operands[current_operand_index++];
+
+	node = free_nodes;
+	free_nodes = node->next;
+	node->next = NULL;
+	return node;
 }
 
+int push_operand(char *string)
+{
+	qpp1_node_t* node;
+
+	node = new_qpp1_node();
+	node->type = OPERAND_STD;
+	node->string = string;
+	if (strlen(string) >= STRING_SIZE)
+		notice("Operand[%d:%s] is too long. Might be shorten to STRING_SIZE[%d]",
+			strlen(string), node->string, STRING_SIZE);
+
+	if (stack_top == NULL) stack_top = node;
+	else {
+		node->next = stack_top;
+		stack_top = node;
+	}
+
+	return SUCCESS;
+}
+
+void print_stack()
+{
+	qpp1_node_t* node = stack_top;
+
+	while ( node != NULL )
+	{
+		if ( IS_QPP1_OPERATOR(node->type) )
+			info("node is operator[%s].", QPP1_NODE_TYPES[node->type]);
+		else
+			info("node is operand[%s].", QPP1_NODE_TYPES[node->type]);
+		debug("node.string[%s]",          node->string);
+		debug("node.num_of_operands[%d]", node->num_of_operands);
+		debug("node.param[%d]",           node->param);
+
+		node = node->next;
+	}
+}
+
+/*
+int qpp1_parse(void* word_db,
+               char infix[], int max_infix_size, QueryNode postfix[], int maxNode)
+{
+	debug("infix[%s]", infix);
+
+	return 1;
+}
+*/
+
+
+#if 0
 
 #include <string.h>
 #include <stdlib.h>
@@ -1482,3 +1572,5 @@ module qpp1_module = {
     NULL,                   /* scoreboard */
     register_hooks,			/* register hook api */
 };
+
+#endif
