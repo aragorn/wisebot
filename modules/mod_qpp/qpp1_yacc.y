@@ -3,12 +3,18 @@
 #define YYDEBUG 1
 #include "common_core.h"
 #include "mod_qpp1.h"
-#include "qpp1_lex.h"
 #include <stdio.h>
-//extern int yylex(void);
+extern int yylex(void);
 extern void yyerror(const char* msg);
 //extern int yylineno;
-//extern YY_BUFFER_STATE yy_scan_string (yyconst char *yy_str);
+
+#ifndef YY_TYPEDEF_YY_BUFFER_STATE
+#define YY_TYPEDEF_YY_BUFFER_STATE
+typedef struct yy_buffer_state *YY_BUFFER_STATE;
+#endif
+
+extern YY_BUFFER_STATE yy_scan_string (const char *yy_str);
+extern void yy_delete_buffer (YY_BUFFER_STATE b);
 
 int parse_result = 0;
 %}
@@ -20,58 +26,103 @@ int parse_result = 0;
 %token <sval> LPAREN RPAREN
 %token <sval> STRING QSTRING 
 %token <sval> TEST
+%type <node> single_operand
+%type <node> expression1 expression2 expression3
+%type <node> statement 
 %left '+' '-'
 %left '*' '/' '&' '(' ')'
 %left AND OR
 %nonassoc UMINUS
 %nonassoc NOT '!' '@'
 %union {
-	char *sval;
-	/*qpp1_node_t* node;*/
+	char* sval;
+	qpp1_node_t* node;
 }
 
 %%
 
 
-statement_list:
-	 	statement                    { parse_result = 1; }
-    ;
-
 statement:
-		expression1                  { debug("exp1"); }
-    ;
+  expression1 {
+	parse_result = 1;
+	set_tree($1);
+}
+;
 
 
 expression1:
-		expression1 '&' expression2  { debug("expression & expression"); }
-	|	expression1 '!' expression2  { debug("expression ! expression"); }
-	|	expression2                  { debug("expression2"); }
-	;
+  expression1 '&' expression2  { 
+	debug("expression & expression");
+	$$ = new_operator(OPERATOR_AND, 0);
+	$$->left  = $1;
+	$$->right = $3;
+}
+| expression1 '!' expression2  {
+	debug("expression ! expression");
+	$$ = new_operator(OPERATOR_NOT, 0);
+	$$->left  = $1;
+	$$->right = $3;
+}
+| expression1     expression2  {
+	debug("expression  expression, default &");
+	$$ = new_operator(OPERATOR_AND, 0);
+	$$->left  = $1;
+	$$->right = $2;
+}
+| expression2 {
+	debug("expression2");
+	$$ = $1;
+}
+;
 
 
 expression2:
-		expression2 '+' expression3 { debug("expression + expression"); }
-	|	expression2 expression3     { debug("expression  expression, default &"); }
-	|	expression3                 { debug("expression3"); }
-	;
+  expression2 '+' expression3 {
+	debug("expression + expression");
+}
+| expression3 { $$ = $1; }
+;
 
 expression3:
-		single_operand               { debug("single_operand"); }
-	|	'(' statement_list ')'       { debug("'(' statement_list ')'"); }
-	|	FIELD single_operand         { debug("FIELD single_operand"); }
-	|	FIELD '(' statement_list ')' { debug("FIELD '(' statement_list ')'"); }
-	;
+  single_operand {
+	debug("single_operand");
+	$$ = $1;
+}
+| FIELD single_operand {
+	debug("FIELD single_operand");
+	$$ = $2;
+}
+| '(' expression1 ')' {
+	debug("'(' expression1 ')'");
+	$$ = $2;
+}
+| FIELD '(' expression1 ')' {
+	debug("FIELD '(' expression1 ')'");
+	$$ = $3;
+}
+;
 
 single_operand:
-		STRING                      { 
+  STRING {
+	qpp1_node_t* node;
+
 	debug("STRING[%s]", $1);
-	push_operand($1);
-	}
-	|	QSTRING                     {
+	node = new_qpp1_node();
+	node->type = OPERAND_STD;
+	node->string = $1;
+
+	$$ = node;
+}
+| QSTRING {
+	qpp1_node_t* node;
+
 	debug("QSTRING[%s]", $1); 
-	push_operand($1);
-	}
-	;
+	node = new_qpp1_node();
+	node->type = OPERAND_STD;
+	node->string = $1;
+	$$ = node;
+}
+;
 
 
 %%

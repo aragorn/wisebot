@@ -7,6 +7,7 @@ typedef struct qpp1_node_t qpp1_node_t;
 typedef enum {
 	OPERATOR_AND = 1,
 	OPERATOR_OR,
+	OPERATOR_NOT,
 	LAST_OPERATOR,
 	OPERAND_STD,
 	OPERAND_PHRASE,
@@ -19,16 +20,18 @@ struct qpp1_node_t {
 
 	char *string;
 
-	int num_of_operands;
 	int param;
-
-	qpp1_node_t *next;
+	qpp1_node_t *left;
+	qpp1_node_t *right;
 };
 
 void init_nodes();
 qpp1_node_t* new_qpp1_node();
-int push_operand(char *string);
-void print_stack();
+qpp1_node_t* new_operand(char *string);
+qpp1_node_t* new_operator(int type, int param);
+void set_tree(qpp1_node_t* node);
+void print_tree();
+void print_node(qpp1_node_t* node);
 
 #define IS_QPP1_OPERATOR(type) (type < LAST_OPERATOR ? 1 : 0 )
 #define IS_QPP1_OPERAND(type)  (type > LAST_OPERATOR ? 1 : 0 )

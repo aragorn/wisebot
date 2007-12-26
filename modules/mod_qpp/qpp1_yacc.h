@@ -76,10 +76,10 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 28 "qpp1_yacc.y"
+#line 37 "qpp1_yacc.y"
 {
-	char *sval;
-	/*qpp1_node_t* node;*/
+	char* sval;
+	qpp1_node_t* node;
 }
 /* Line 1489 of yacc.c.  */
 #line 86 "qpp1_yacc.h"

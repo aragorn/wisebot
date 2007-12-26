@@ -19,7 +19,7 @@
 
 char QPP1_NODE_TYPES[][30] =
 { "Undefined",
-  "OPERATOR_AND", "OPERATOR_OR",
+  "OPERATOR_AND", "OPERATOR_OR", "OPERATOR_NOT",
   "LAST_OPERATOR",
   "OPERAND_STD", "OPERAND_PHRASE",
   "OPERAND_RIGHT_TRUNCATED", "OPERAND_LEFT_TRUNCATED",
@@ -27,7 +27,7 @@ char QPP1_NODE_TYPES[][30] =
 };
 
 /* operand pool */
-static qpp1_node_t* stack_top = NULL;
+static qpp1_node_t* qpp1_tree    = NULL;
 static qpp1_node_t* free_nodes = NULL;
 static qpp1_node_t* nodes_pool = NULL;
 static int max_node_count = 100;
@@ -53,11 +53,12 @@ void init_nodes()
 	memset(nodes_pool, 0x00, sizeof(qpp1_node_t)*max_node_count);
 	for (i = 0; i < max_node_count-1; i++)
 	{
-		nodes_pool[i].next = &nodes_pool[i+1];
+		nodes_pool[i].left = &nodes_pool[i+1];
 	}
 	free_nodes = &nodes_pool[0];
 
-	stack_top = NULL;
+	qpp1_tree = NULL;
+
 }
 
 qpp1_node_t* new_qpp1_node()
@@ -72,12 +73,12 @@ qpp1_node_t* new_qpp1_node()
 	}
 
 	node = free_nodes;
-	free_nodes = node->next;
-	node->next = NULL;
+	free_nodes = node->left;
+	node->left = NULL;
 	return node;
 }
 
-int push_operand(char *string)
+qpp1_node_t* new_operand(char *string)
 {
 	qpp1_node_t* node;
 
@@ -88,31 +89,46 @@ int push_operand(char *string)
 		notice("Operand[%d:%s] is too long. Might be shorten to STRING_SIZE[%d]",
 			strlen(string), node->string, STRING_SIZE);
 
-	if (stack_top == NULL) stack_top = node;
-	else {
-		node->next = stack_top;
-		stack_top = node;
-	}
-
-	return SUCCESS;
+	return node;
 }
 
-void print_stack()
+qpp1_node_t* new_operator(int type, int param)
 {
-	qpp1_node_t* node = stack_top;
+	qpp1_node_t* node;
 
-	while ( node != NULL )
-	{
-		if ( IS_QPP1_OPERATOR(node->type) )
-			info("node is operator[%s].", QPP1_NODE_TYPES[node->type]);
-		else
-			info("node is operand[%s].", QPP1_NODE_TYPES[node->type]);
-		debug("node.string[%s]",          node->string);
-		debug("node.num_of_operands[%d]", node->num_of_operands);
-		debug("node.param[%d]",           node->param);
+	node = new_qpp1_node();
+	node->type = type;
+	node->param = param;
 
-		node = node->next;
-	}
+	return node;
+}
+
+void set_tree(qpp1_node_t* node)
+{
+	qpp1_tree = node;
+}
+
+void print_tree(void)
+{
+	print_node(qpp1_tree);
+}
+
+void print_node(qpp1_node_t* node)
+{
+	if (node == NULL) return;
+
+	
+	if ( IS_QPP1_OPERATOR(node->type) )
+		info("node is operator[%s].", QPP1_NODE_TYPES[node->type]);
+	else
+		info("node is operand[%s].", QPP1_NODE_TYPES[node->type]);
+	debug("node.string[%s]",          node->string);
+	debug("node.param[%d]",           node->param);
+
+	debug("node.left[%p]",          node->left);
+	print_node(node->left);
+	debug("node.right[%p]",          node->right);
+	print_node(node->right);
 }
 
 /*

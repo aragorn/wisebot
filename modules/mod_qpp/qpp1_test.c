@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
 		init_nodes();
 		n = qpp1_yyparse(input, debug);
-		print_stack();
+		print_tree();
 		info("result: %d", n);
 	}
 	info("bye!");
