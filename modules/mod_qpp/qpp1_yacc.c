@@ -451,7 +451,7 @@ static const yytype_int8 yyrhs[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    46,    46,    54,    60,    66,    72,    80,    83,    87,
-      91,    95,    99,   106,   116
+      91,    95,    99,   106,   110
 };
 #endif
 
@@ -1382,7 +1382,7 @@ yyreduce:
 #line 54 "qpp1_yacc.y"
     { 
 	debug("expression & expression");
-	(yyval.node) = new_operator(OPERATOR_AND, 0);
+	(yyval.node) = new_operator(OPERATOR_AND, NULL);
 	(yyval.node)->left  = (yyvsp[(1) - (3)].node);
 	(yyval.node)->right = (yyvsp[(3) - (3)].node);
 }
@@ -1392,7 +1392,7 @@ yyreduce:
 #line 60 "qpp1_yacc.y"
     {
 	debug("expression ! expression");
-	(yyval.node) = new_operator(OPERATOR_NOT, 0);
+	(yyval.node) = new_operator(OPERATOR_NOT, NULL);
 	(yyval.node)->left  = (yyvsp[(1) - (3)].node);
 	(yyval.node)->right = (yyvsp[(3) - (3)].node);
 }
@@ -1402,7 +1402,7 @@ yyreduce:
 #line 66 "qpp1_yacc.y"
     {
 	debug("expression  expression, default &");
-	(yyval.node) = new_operator(OPERATOR_AND, 0);
+	(yyval.node) = new_operator(OPERATOR_AND, NULL);
 	(yyval.node)->left  = (yyvsp[(1) - (2)].node);
 	(yyval.node)->right = (yyvsp[(2) - (2)].node);
 }
@@ -1440,7 +1440,7 @@ yyreduce:
 #line 91 "qpp1_yacc.y"
     {
 	debug("FIELD single_operand");
-	(yyval.node) = (yyvsp[(2) - (2)].node);
+	(yyval.node) = field_operator((yyvsp[(2) - (2)].node),(yyvsp[(1) - (2)].sval));
 }
     break;
 
@@ -1456,40 +1456,29 @@ yyreduce:
 #line 99 "qpp1_yacc.y"
     {
 	debug("FIELD '(' expression1 ')'");
-	(yyval.node) = (yyvsp[(3) - (4)].node);
+	(yyval.node) = field_operator((yyvsp[(3) - (4)].node),(yyvsp[(1) - (4)].sval));
 }
     break;
 
   case 13:
 #line 106 "qpp1_yacc.y"
     {
-	qpp1_node_t* node;
-
 	debug("STRING[%s]", (yyvsp[(1) - (1)].sval));
-	node = new_qpp1_node();
-	node->type = OPERAND_STD;
-	node->string = (yyvsp[(1) - (1)].sval);
-
-	(yyval.node) = node;
+	(yyval.node) = new_operand((yyvsp[(1) - (1)].sval));
 }
     break;
 
   case 14:
-#line 116 "qpp1_yacc.y"
+#line 110 "qpp1_yacc.y"
     {
-	qpp1_node_t* node;
-
 	debug("QSTRING[%s]", (yyvsp[(1) - (1)].sval)); 
-	node = new_qpp1_node();
-	node->type = OPERAND_STD;
-	node->string = (yyvsp[(1) - (1)].sval);
-	(yyval.node) = node;
+	(yyval.node) = new_operand((yyvsp[(1) - (1)].sval));
 }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1493 "qpp1_yacc.c"
+#line 1482 "qpp1_yacc.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1703,7 +1692,7 @@ yyreturn:
 }
 
 
-#line 128 "qpp1_yacc.y"
+#line 117 "qpp1_yacc.y"
 
 
 int qpp1_yyparse(char *input, int debug)

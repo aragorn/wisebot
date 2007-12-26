@@ -20,6 +20,7 @@
 char QPP1_NODE_TYPES[][30] =
 { "Undefined",
   "OPERATOR_AND", "OPERATOR_OR", "OPERATOR_NOT",
+  "OPERATOR_WITHIN", "OPERATOR_FIELD",
   "LAST_OPERATOR",
   "OPERAND_STD", "OPERAND_PHRASE",
   "OPERAND_RIGHT_TRUNCATED", "OPERAND_LEFT_TRUNCATED",
@@ -92,13 +93,24 @@ qpp1_node_t* new_operand(char *string)
 	return node;
 }
 
-qpp1_node_t* new_operator(int type, int param)
+qpp1_node_t* new_operator(int type, char* param)
 {
 	qpp1_node_t* node;
 
 	node = new_qpp1_node();
 	node->type = type;
-	node->param = param;
+	node->string = param;
+
+	if (type == OPERATOR_WITHIN)
+	{
+		node->param = atoi(param);
+	}
+
+	return node;
+}
+
+qpp1_node_t* field_operator(qpp1_node_t* node, char* field)
+{
 
 	return node;
 }
@@ -110,25 +122,36 @@ void set_tree(qpp1_node_t* node)
 
 void print_tree(void)
 {
-	print_node(qpp1_tree);
+	int depth = 0;
+	print_node(qpp1_tree, depth);
 }
 
-void print_node(qpp1_node_t* node)
+void print_node(qpp1_node_t* node, int depth)
 {
+	int abs_depth = 0;
+
 	if (node == NULL) return;
 
-	
-	if ( IS_QPP1_OPERATOR(node->type) )
-		info("node is operator[%s].", QPP1_NODE_TYPES[node->type]);
+	if (depth > 0)
+	{
+		abs_depth = depth;
+		info("%*s- %20s [%d][%s]", abs_depth*2+2, "R", 
+		     QPP1_NODE_TYPES[node->type], node->param, node->string);
+	}
+	else if (depth < 0)
+	{
+		abs_depth = 0 - depth;
+		info("%*s- %20s [%d][%s]", abs_depth*2+2, "L", 
+		     QPP1_NODE_TYPES[node->type], node->param, node->string);
+	}
 	else
-		info("node is operand[%s].", QPP1_NODE_TYPES[node->type]);
-	debug("node.string[%s]",          node->string);
-	debug("node.param[%d]",           node->param);
+	{
+		info("T- %20s [%d][%s]",
+		     QPP1_NODE_TYPES[node->type], node->param, node->string);
+	}
 
-	debug("node.left[%p]",          node->left);
-	print_node(node->left);
-	debug("node.right[%p]",          node->right);
-	print_node(node->right);
+	print_node(node->left, -1-abs_depth);
+	print_node(node->right, 1+abs_depth);
 }
 
 /*

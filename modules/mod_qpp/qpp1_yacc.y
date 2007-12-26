@@ -53,19 +53,19 @@ statement:
 expression1:
   expression1 '&' expression2  { 
 	debug("expression & expression");
-	$$ = new_operator(OPERATOR_AND, 0);
+	$$ = new_operator(OPERATOR_AND, NULL);
 	$$->left  = $1;
 	$$->right = $3;
 }
 | expression1 '!' expression2  {
 	debug("expression ! expression");
-	$$ = new_operator(OPERATOR_NOT, 0);
+	$$ = new_operator(OPERATOR_NOT, NULL);
 	$$->left  = $1;
 	$$->right = $3;
 }
 | expression1     expression2  {
 	debug("expression  expression, default &");
-	$$ = new_operator(OPERATOR_AND, 0);
+	$$ = new_operator(OPERATOR_AND, NULL);
 	$$->left  = $1;
 	$$->right = $2;
 }
@@ -90,7 +90,7 @@ expression3:
 }
 | FIELD single_operand {
 	debug("FIELD single_operand");
-	$$ = $2;
+	$$ = field_operator($2,$1);
 }
 | '(' expression1 ')' {
 	debug("'(' expression1 ')'");
@@ -98,29 +98,18 @@ expression3:
 }
 | FIELD '(' expression1 ')' {
 	debug("FIELD '(' expression1 ')'");
-	$$ = $3;
+	$$ = field_operator($3,$1);
 }
 ;
 
 single_operand:
   STRING {
-	qpp1_node_t* node;
-
 	debug("STRING[%s]", $1);
-	node = new_qpp1_node();
-	node->type = OPERAND_STD;
-	node->string = $1;
-
-	$$ = node;
+	$$ = new_operand($1);
 }
 | QSTRING {
-	qpp1_node_t* node;
-
 	debug("QSTRING[%s]", $1); 
-	node = new_qpp1_node();
-	node->type = OPERAND_STD;
-	node->string = $1;
-	$$ = node;
+	$$ = new_operand($1);
 }
 ;
 
