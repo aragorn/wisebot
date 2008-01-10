@@ -3196,7 +3196,7 @@ static int init_request(request_t* req, char* query)
 
         s = sb_trim(s);  // '\r'을 찾았을 경우 '\n'을 삭제하기 위해
 
-		e = strchr(s, '\r');  // window 형식의 newline을 찾아보고 없으면 unix 형색의 newline을 찾는다.
+		e = strchr(s, '\r');  // window 형식의 newline을 찾아보고 없으면 unix 형식의 newline을 찾는다.
         if(e == NULL) e = strchr(s, '\n');
 
         if(e == NULL && strlen(s) == 0) break;
