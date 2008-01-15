@@ -12,6 +12,7 @@ apr_name = apr-1.2.12
 apu_name = apr-util-1.2.12
 ###############################################################################
 all: 
+	@echo "prefix = [$(prefix)]"
 	@echo "Choose which package to install."
 	@echo "available packages:"
 	@echo " expat-install  - optional"
