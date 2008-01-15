@@ -8,6 +8,8 @@
 
 prefix = $(shell cd .. && pwd)
 exec_prefix = ${prefix}
+apr_name = apr-1.2.12
+apu_name = apr-util-1.2.12
 ###############################################################################
 all: 
 	@echo "Choose which package to install."
@@ -60,16 +62,14 @@ ncurses-export:
 	./configure --prefix=$(prefix)
 
 apr-export:
-	[ -f apr/buildconf ] || (gzip -c -d apr.tar.gz | tar xf -)
-	cd apr && \
-	./buildconf && \
+	[ -f $(apr_name)/buildconf ] || (gzip -c -d $(apr_name).tar.gz | tar xf -)
+	cd $(apr_name) && \
 	./configure --prefix=$(prefix)
 
 apr-util-export:
-	[ -f apr-util/buildconf ] || (gzip -c -d apr-util.tar.gz | tar xf -)
-	cd apr-util && \
-	./buildconf && \
-	./configure --prefix=$(prefix) --with-apr=$(shell pwd)/apr
+	[ -f $(apu_name)/buildconf ] || (gzip -c -d $(apu_name).tar.gz | tar xf -)
+	cd $(apu_name) && \
+	./configure --prefix=$(prefix) --with-apr=$(shell pwd)/$(apr_name)
 
 ###############################################################################
 expat: expat-export
@@ -91,10 +91,10 @@ ncurses: ncurses-export
 	cd ncurses-5.5 && make
 
 apr: apr-export
-	cd apr && make
+	cd $(apr_name) && make
 
 apr-util: apr-util-export
-	cd apr-util && make
+	cd $(apu_name) && make
 
 ###############################################################################
 expat-install: expat
@@ -116,10 +116,10 @@ ncurses-install: ncurses
 	cd ncurses-5.5 && make install
 
 apr-install: apr
-	cd apr && make install
+	cd $(apr_name) && make install
 
 apr-util-install: apr-util
-	cd apr-util && make install
+	cd $(apu_name) && make install
 ###############################################################################
 expat-clean:
 	rm -rf expat
@@ -140,10 +140,10 @@ ncurses-clean:
 	rm -rf ncurses-5.5
 
 apr-clean:
-	rm -rf apr 
+	rm -rf $(apr_name)
 
 apr-util-clean:
-	rm -rf apr-util
+	rm -rf $(apu_name)
 
 ###############################################################################
 test:
