@@ -2,6 +2,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <dlfcn.h>
 #define CORE_PRIVATE 1
 #include "common_core.h"
 #include "log_error.h"
