@@ -6,6 +6,8 @@ MAINTAINERCLEANFILES = Makefile Makefile.in
 pkglib_LTLIBRARIES = mod_udp.la 
 mod_udp_la_SOURCES = mod_udp.c mod_udp.h
 mod_udp_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_udp_la_LIBADD  = $(libdir)/libcommon_core.la
+mod_udp_la_LIBADD  = $(libdir)/libcommon_core.la \
+                     $(libdir)/libcommon_util.la \
+                     $(libdir)/libapi_common.la
 
 include ../install-pkglib.mk
