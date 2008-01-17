@@ -2,7 +2,7 @@
 # Start/stop the softbotd daemon.
 
 # XXX change SOFTBOT_ROOT path
-SOFTBOT_ROOT=
+SOFTBOT_ROOT=/home/blueend/wisebot
 
 ##############################################################################
 SOFTBOTD=bin/softbotd
@@ -110,10 +110,8 @@ wait_for()
 
 send_signal_all()
 {
-	local PID=$1
-	local SIGNAL=$2
-
-	shift; shift;
+	local PID=$1 && shift
+	local SIGNAL=$1 && shift
 	local NAME=$@
 
 	local COUNT=0
