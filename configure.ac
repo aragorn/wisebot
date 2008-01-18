@@ -495,11 +495,8 @@ AC_CONFIG_FILES([
     modules/mod_tcp/Makefile
     modules/mod_udp/Makefile
 
-	modules/mod_hash/Makefile
-
     modules/mod_sfs/Makefile
     modules/mod_ifs/Makefile
-    modules/mod_vrfi/Makefile
     modules/mod_indexer/Makefile
 
     modules/mod_qpp/Makefile
@@ -509,8 +506,6 @@ AC_CONFIG_FILES([
     modules/mod_morpheme/Makefile
     modules/mod_index_word_extractor/Makefile
 
-    modules/mod_vrm/Makefile
-    modules/mod_vbm/Makefile
 
     modules/mod_docapi/Makefile
     modules/mod_docattr/Makefile
@@ -519,7 +514,6 @@ AC_CONFIG_FILES([
     modules/mod_softbot4/Makefile
     modules/mod_did/Makefile
     modules/mod_xmlparser/Makefile
-    modules/mod_frm/Makefile
 
     modules/mod_lexicon/Makefile
 
@@ -530,6 +524,6 @@ AC_CONFIG_FILES([
     modules/mod_httpd_handler/Makefile
     modules/mod_http_client/Makefile
 
-    modules/mod_test/Makefile
+    modules/mod_vrm/Makefile
 ])
 AC_OUTPUT
