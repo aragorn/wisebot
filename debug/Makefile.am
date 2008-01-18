@@ -2,7 +2,7 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in debug_*
 
-bin_PROGRAMS = debug_sb_fopen debug_sb_tstat
+check_PROGRAMS = debug_sb_fopen debug_sb_tstat
 
 debug_sb_fopen_SOURCES = sb_fopen.c
 debug_sb_fopen_LDFLAGS = -L../lib $(DYN_LIB) $(THREAD_LIB) $(SOFTBOTD_LDFLAGS)

@@ -3,7 +3,7 @@ include $(top_builddir)/Make.defs
 
 lib_LTLIBRARIES = libapi_common.la
 libapi_common_la_SOURCES = \
-				mod_api.c mod_api.h \
+				mod_api.c \
 				lexicon.c lexicon.h \
 				cdm.c cdm.h \
 				cdm2.c cdm2.h \

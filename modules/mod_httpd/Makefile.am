@@ -29,7 +29,7 @@ mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \
                        util_filter.c util_filter.h \
                        util_string.c util_string.h \
                        util_time.c util_time.h \
-                       exports.c export_var.h
+                       exports.c 
 
 
 #mod_httpd_test_handler_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)

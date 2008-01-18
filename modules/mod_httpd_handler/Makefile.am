@@ -36,6 +36,5 @@ mod_agent_sbhandler_la_LIBADD  = $(libdir)/libcommon_core.la \
 mod_agent_sbhandler_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \
                                  $(APR_INCLUDES) $(APU_INCLUDES)
 mod_agent_sbhandler_la_SOURCES = mod_agent_sbhandler.c \
-                                 handler_util.c handler_util.h \
-                                 mod_agent_handler.h 
+                                 handler_util.c handler_util.h
 include ../install-pkglib.mk
