@@ -37,7 +37,7 @@ typedef struct _QueryNode {
 	float 	weight;
 	word_t 	word_st;
 #define MAX_ORIGINAL_WORD_LEN 1024
-	char original_word[MAX_ORIGINAL_WORD_LEN];
+	char original_word[MAX_ORIGINAL_WORD_LEN+1];
 } QueryNode;
 
 SB_DECLARE_HOOK(int,preprocess,\
