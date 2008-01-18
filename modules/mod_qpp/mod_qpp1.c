@@ -28,7 +28,7 @@ char QPP1_NODE_TYPES[][30] =
 };
 
 /* operand pool */
-static qpp1_node_t* qpp1_tree    = NULL;
+static qpp1_node_t* qpp1_tree  = NULL;
 static qpp1_node_t* free_nodes = NULL;
 static qpp1_node_t* nodes_pool = NULL;
 static int max_node_count = 100;
@@ -84,6 +84,8 @@ qpp1_node_t* new_operand(char *string)
 	qpp1_node_t* node;
 
 	node = new_qpp1_node();
+	if (node == NULL) return node;
+
 	node->type = OPERAND_STD;
 	node->string = string;
 	if (strlen(string) >= STRING_SIZE)
@@ -98,6 +100,8 @@ qpp1_node_t* new_operator(int type, char* param)
 	qpp1_node_t* node;
 
 	node = new_qpp1_node();
+	if (node == NULL) return node;
+
 	node->type = type;
 	node->string = param;
 

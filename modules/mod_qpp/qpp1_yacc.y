@@ -54,20 +54,32 @@ expression1:
   expression1 '&' expression2  { 
 	debug("expression & expression");
 	$$ = new_operator(OPERATOR_AND, NULL);
-	$$->left  = $1;
-	$$->right = $3;
+	if ($$ != NULL) {
+		$$->left  = $1;
+		$$->right = $3;
+	} else {
+		$$ = $1;
+	}
 }
 | expression1 '!' expression2  {
 	debug("expression ! expression");
 	$$ = new_operator(OPERATOR_NOT, NULL);
-	$$->left  = $1;
-	$$->right = $3;
+	if ($$ != NULL) {
+		$$->left  = $1;
+		$$->right = $3;
+	} else {
+		$$ = $1;
+	}
 }
 | expression1     expression2  {
 	debug("expression  expression, default &");
 	$$ = new_operator(OPERATOR_AND, NULL);
-	$$->left  = $1;
-	$$->right = $2;
+	if ($$ != NULL) {
+		$$->left  = $1;
+		$$->right = $2;
+	} else {
+		$$ = $1;
+	}
 }
 | expression2 {
 	debug("expression2");

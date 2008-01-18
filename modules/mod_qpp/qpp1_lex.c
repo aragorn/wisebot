@@ -506,6 +506,7 @@ char *yytext_ptr;
 /* $Id$ */
 #line 3 "qpp1_lex.l"
 #include "common_core.h"
+#include "mod_qpp1.h"
 #include "qpp1_yacc.h"
 extern int yylineno;
 int  token_pos  = 0;
@@ -522,7 +523,7 @@ void save_token(const char* token);
  * %array - defines yytext as a char array instead of char pointer.
  *          this enables unput() and other traditional lex functions.
  */
-#line 526 "qpp1_lex.c"
+#line 527 "qpp1_lex.c"
 
 #define INITIAL 0
 
@@ -673,10 +674,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 31 "qpp1_lex.l"
+#line 32 "qpp1_lex.l"
 
 
-#line 680 "qpp1_lex.c"
+#line 681 "qpp1_lex.c"
 
 	if ( !(yy_init) )
 		{
@@ -770,14 +771,14 @@ do_action:	/* This label is used only to access EOF actions. */
 			goto yy_find_action;
 
 case 1:
-#line 34 "qpp1_lex.l"
-case 2:
 #line 35 "qpp1_lex.l"
-case 3:
+case 2:
 #line 36 "qpp1_lex.l"
+case 3:
+#line 37 "qpp1_lex.l"
 case 4:
 YY_RULE_SETUP
-#line 36 "qpp1_lex.l"
+#line 37 "qpp1_lex.l"
 {
 	yylval.sval = strdup(yytext);
 	TOKEN( FIELD );
@@ -785,17 +786,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 40 "qpp1_lex.l"
+#line 41 "qpp1_lex.l"
 TOKEN( TEST )
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 42 "qpp1_lex.l"
+#line 43 "qpp1_lex.l"
 TOKEN( yytext[0] )
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 43 "qpp1_lex.l"
+#line 44 "qpp1_lex.l"
 {
 	yylval.sval = strdup(yytext);
 	TOKEN( STRING );
@@ -803,7 +804,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 48 "qpp1_lex.l"
+#line 49 "qpp1_lex.l"
 {
 	yylval.sval = strdup(yytext);
 	TOKEN( QSTRING );
@@ -811,7 +812,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 53 "qpp1_lex.l"
+#line 54 "qpp1_lex.l"
 {
 	yylval.sval = strdup(yytext);
 	TOKEN( QSTRING );
@@ -822,25 +823,25 @@ case 10:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 59 "qpp1_lex.l"
+#line 60 "qpp1_lex.l"
 { yyerror("Unterminated string"); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 61 "qpp1_lex.l"
+#line 62 "qpp1_lex.l"
 { /* ignore whitespaces */ save_token(yytext); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 63 "qpp1_lex.l"
+#line 64 "qpp1_lex.l"
 { yyerror("Invalid character"); }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 65 "qpp1_lex.l"
+#line 66 "qpp1_lex.l"
 ECHO;
 	YY_BREAK
-#line 844 "qpp1_lex.c"
+#line 845 "qpp1_lex.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1797,7 +1798,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 65 "qpp1_lex.l"
+#line 66 "qpp1_lex.l"
 
 
 

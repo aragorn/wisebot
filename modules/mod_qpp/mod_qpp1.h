@@ -23,6 +23,7 @@ struct qpp1_node_t {
 	char *string;
 
 	int param;
+	int field;
 	qpp1_node_t *left;
 	qpp1_node_t *right;
 };

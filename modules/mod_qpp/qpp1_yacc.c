@@ -450,8 +450,8 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    46,    46,    54,    60,    66,    72,    80,    83,    87,
-      91,    95,    99,   106,   110
+       0,    46,    46,    54,    64,    74,    84,    92,    95,    99,
+     103,   107,   111,   118,   122
 };
 #endif
 
@@ -1383,33 +1383,45 @@ yyreduce:
     { 
 	debug("expression & expression");
 	(yyval.node) = new_operator(OPERATOR_AND, NULL);
-	(yyval.node)->left  = (yyvsp[(1) - (3)].node);
-	(yyval.node)->right = (yyvsp[(3) - (3)].node);
+	if ((yyval.node) != NULL) {
+		(yyval.node)->left  = (yyvsp[(1) - (3)].node);
+		(yyval.node)->right = (yyvsp[(3) - (3)].node);
+	} else {
+		(yyval.node) = (yyvsp[(1) - (3)].node);
+	}
 }
     break;
 
   case 4:
-#line 60 "qpp1_yacc.y"
+#line 64 "qpp1_yacc.y"
     {
 	debug("expression ! expression");
 	(yyval.node) = new_operator(OPERATOR_NOT, NULL);
-	(yyval.node)->left  = (yyvsp[(1) - (3)].node);
-	(yyval.node)->right = (yyvsp[(3) - (3)].node);
+	if ((yyval.node) != NULL) {
+		(yyval.node)->left  = (yyvsp[(1) - (3)].node);
+		(yyval.node)->right = (yyvsp[(3) - (3)].node);
+	} else {
+		(yyval.node) = (yyvsp[(1) - (3)].node);
+	}
 }
     break;
 
   case 5:
-#line 66 "qpp1_yacc.y"
+#line 74 "qpp1_yacc.y"
     {
 	debug("expression  expression, default &");
 	(yyval.node) = new_operator(OPERATOR_AND, NULL);
-	(yyval.node)->left  = (yyvsp[(1) - (2)].node);
-	(yyval.node)->right = (yyvsp[(2) - (2)].node);
+	if ((yyval.node) != NULL) {
+		(yyval.node)->left  = (yyvsp[(1) - (2)].node);
+		(yyval.node)->right = (yyvsp[(2) - (2)].node);
+	} else {
+		(yyval.node) = (yyvsp[(1) - (2)].node);
+	}
 }
     break;
 
   case 6:
-#line 72 "qpp1_yacc.y"
+#line 84 "qpp1_yacc.y"
     {
 	debug("expression2");
 	(yyval.node) = (yyvsp[(1) - (1)].node);
@@ -1417,19 +1429,19 @@ yyreduce:
     break;
 
   case 7:
-#line 80 "qpp1_yacc.y"
+#line 92 "qpp1_yacc.y"
     {
 	debug("expression + expression");
 }
     break;
 
   case 8:
-#line 83 "qpp1_yacc.y"
+#line 95 "qpp1_yacc.y"
     { (yyval.node) = (yyvsp[(1) - (1)].node); }
     break;
 
   case 9:
-#line 87 "qpp1_yacc.y"
+#line 99 "qpp1_yacc.y"
     {
 	debug("single_operand");
 	(yyval.node) = (yyvsp[(1) - (1)].node);
@@ -1437,7 +1449,7 @@ yyreduce:
     break;
 
   case 10:
-#line 91 "qpp1_yacc.y"
+#line 103 "qpp1_yacc.y"
     {
 	debug("FIELD single_operand");
 	(yyval.node) = field_operator((yyvsp[(2) - (2)].node),(yyvsp[(1) - (2)].sval));
@@ -1445,7 +1457,7 @@ yyreduce:
     break;
 
   case 11:
-#line 95 "qpp1_yacc.y"
+#line 107 "qpp1_yacc.y"
     {
 	debug("'(' expression1 ')'");
 	(yyval.node) = (yyvsp[(2) - (3)].node);
@@ -1453,7 +1465,7 @@ yyreduce:
     break;
 
   case 12:
-#line 99 "qpp1_yacc.y"
+#line 111 "qpp1_yacc.y"
     {
 	debug("FIELD '(' expression1 ')'");
 	(yyval.node) = field_operator((yyvsp[(3) - (4)].node),(yyvsp[(1) - (4)].sval));
@@ -1461,7 +1473,7 @@ yyreduce:
     break;
 
   case 13:
-#line 106 "qpp1_yacc.y"
+#line 118 "qpp1_yacc.y"
     {
 	debug("STRING[%s]", (yyvsp[(1) - (1)].sval));
 	(yyval.node) = new_operand((yyvsp[(1) - (1)].sval));
@@ -1469,7 +1481,7 @@ yyreduce:
     break;
 
   case 14:
-#line 110 "qpp1_yacc.y"
+#line 122 "qpp1_yacc.y"
     {
 	debug("QSTRING[%s]", (yyvsp[(1) - (1)].sval)); 
 	(yyval.node) = new_operand((yyvsp[(1) - (1)].sval));
@@ -1478,7 +1490,7 @@ yyreduce:
 
 
 /* Line 1267 of yacc.c.  */
-#line 1482 "qpp1_yacc.c"
+#line 1494 "qpp1_yacc.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1692,7 +1704,7 @@ yyreturn:
 }
 
 
-#line 117 "qpp1_yacc.y"
+#line 129 "qpp1_yacc.y"
 
 
 int qpp1_yyparse(char *input, int debug)
