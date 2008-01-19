@@ -3,16 +3,10 @@ include $(top_builddir)/Make.defs
 
 MAINTAINERCLEANFILES = Makefile Makefile.in
 
-noinst_HEADERS = config.h \
-					constants.h \
-					hook.h \
-					ipc.h \
-					log_error.h \
-					modules.h \
-					pcreposix.h \
-					registry.h \
-					softbot.h \
-					util.h \
-					memory.h
-
 dist_pkgdata_DATA = auto_config.h.in
+include_HEADERS = config.h constants.h hook.h ipc.h log_error.h modules.h \
+                  registry.h \ softbot.h util.h memory.h \
+                  common_core.h common_util.h
+# Deprecated headers
+# pcreposix.h
+
