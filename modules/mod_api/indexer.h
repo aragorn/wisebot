@@ -76,6 +76,10 @@ struct word_hit_t {
 #define ERROR_DOCUMENT	 (-101)
 #define INDEXER_WAIT	 (-102)
 #define DELETED_DOCUMENT (-103)
+
+typedef struct {
+    uint32_t last_indexed_docid;
+} indexer_shared_t;
 	
 SB_DECLARE_HOOK(int,index_each_doc, \
 	(void* word_db, uint32_t did,word_hit_t *wordhit,uint32_t hitsize,
