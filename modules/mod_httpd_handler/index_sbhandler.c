@@ -9,16 +9,19 @@
 #include "mod_api/sbhandler.h"
 #include "mod_api/indexdb.h"
 #include "mod_api/lexicon.h"
+#include "mod_api/cdm2.h"
 #include <stdlib.h>
 
 // function prototype
 static int indexed_hit_count(request_rec *r, softbot_handler_rec *s);
 static int last_word_id(request_rec *r, softbot_handler_rec *s);
+static int index_status(request_rec *r, softbot_handler_rec *s);
 
 static softbot_handler_key_t index_handler_tbl[] =
 {	
 	{"hit_count", indexed_hit_count},
 	{"last_word_id", last_word_id},
+	{"index_status", index_status},
 	{NULL, NULL}
 };
 
@@ -81,7 +84,7 @@ static int get_word_info(word_t* word, int* hit_count) {
 // 단어ID에 대한 문서수
 static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
 {
-    int hit_count;
+    int hit_count = 0;
     word_t word;
     char* str_word_id = 0;
     char* str_count = 0;
@@ -124,6 +127,35 @@ static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
     }
 
 	ap_rprintf(r, "</xml>\n");
+    return SUCCESS;
+}
+
+/////////////////////////////////////////////////////////////////////////
+// 문서 등록/색인 상태
+
+static int index_status(request_rec *r, softbot_handler_rec *s)
+{
+    uint32_t last_registered_docid = 0;
+    uint32_t last_indexed_docid = 0;
+
+    last_registered_docid = sb_run_cdm_last_docid(cdm_db);
+    last_indexed_docid = indexer_shared->last_indexed_docid;
+
+	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
+	ap_rprintf(r, "<xml>\n");
+
+	ap_rprintf(r, 
+			"<item>\n" 
+				"<column name=\"last_registered_docid\">%d</column>\n" 
+				"<column name=\"last_indexed_docid\">%d</column>\n"
+				"<column name=\"is_index_completed\">%s</column>\n"
+			"</item>\n",
+			last_registered_docid, 
+			last_indexed_docid, 
+			(last_registered_docid == last_indexed_docid ? "TRUE" : "FALSE") );
+
+	ap_rprintf(r, "</xml>\n");
+
     return SUCCESS;
 }
 

@@ -8,6 +8,7 @@
 #include "mod_api/cdm2.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/indexdb.h"
+#include "mod_api/indexer.h"
 #include "mod_api/did.h"
 #include "mod_api/qp2.h"
 
@@ -60,3 +61,4 @@ extern did_db_t* did_db;
 extern cdm_db_t* cdm_db;
 extern word_db_t* word_db;
 extern index_db_t* index_db;
+extern indexer_shared_t* indexer_shared;

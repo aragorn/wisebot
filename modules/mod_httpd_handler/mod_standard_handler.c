@@ -31,6 +31,9 @@ word_db_t* word_db = NULL;
 static int index_db_set = 1;
 index_db_t *index_db = NULL;
 
+// 읽기 전용으로 사용해야 함. indexer module에서 write시에 동기화 하지 않음
+indexer_shared_t* indexer_shared = NULL;
+
 // query log
 enum qlogtype{ CUSTOM, XML };
 static enum qlogtype qlog_type = CUSTOM;
@@ -40,6 +43,8 @@ static FILE* qlog_fp = NULL;
 static char qlog_path[MAX_PATH_LEN] = "logs/query_log";
 static void (*sighup_handler)(int sig) = NULL;
 static void reopen_qlog(int sig);
+static int init_index_info();
+char indexer_shared_file[MAX_FILE_LEN] = "dat/indexer/indexer.shared";
 
 static int init_db()
 {
@@ -101,7 +106,34 @@ static int init_db()
 	if ( get_sem(&lock) != SUCCESS ) return FAIL;
 	qlog_lock = lock.id;
 
+	if ( init_index_info() != SUCCESS ) return FAIL;
+
 	return SUCCESS;
+}
+
+static int init_index_info() {
+    ipc_t ipc;
+    
+    ipc.type = IPC_TYPE_MMAP;
+    ipc.pathname = indexer_shared_file;
+    ipc.size = sizeof(indexer_shared_t);
+
+    if ( alloc_mmap(&ipc, 0) != SUCCESS ) {
+        error("alloc mmap to indexer_shared failed");
+        return FAIL;        
+    }
+    indexer_shared = (indexer_shared_t*) ipc.addr;
+
+    if ( ipc.attr == MMAP_CREATED )
+        memset( indexer_shared, 0, ipc.size );
+
+    /* some information about some data structure */
+    info("sizeof(standard_hit_t) = %d", sizeof(standard_hit_t));
+    info("sizeof(hit_t) = %d", sizeof(hit_t));
+    info("sizeof(doc_hit_t) = %d", sizeof(doc_hit_t));
+    info("STD_HITS_LEN = %d", STD_HITS_LEN);
+
+    return SUCCESS;
 }
 
 static void reopen_qlog(int sig)
@@ -529,6 +561,12 @@ static void get_query_log_type(configValue v)
     qlog_type = atoi(v.argument[0]);
 }
 
+static void set_shared_file(configValue v)
+{
+    strncpy(indexer_shared_file, v.argument[0], MAX_FILE_LEN);
+    indexer_shared_file[MAX_FILE_LEN-1] = '\0';
+}
+
 static config_t config[] = {
     CONFIG_GET("CdmSet", get_cdm_set, 1, "Cdm Set 0~..."),
     CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
@@ -538,6 +576,7 @@ static config_t config[] = {
     CONFIG_GET("QueryLogPath", get_query_log_path, 1, "QueryLogPath log/query_log"),
     CONFIG_GET("QueryLogUsed", get_query_log_used, 1, "QueryLogUsed 1"),
     CONFIG_GET("QueryLogType", get_query_log_type, 1, "QueryLogType CUSTOM:0 XML:1"),
+    CONFIG_GET("SharedFile",set_shared_file,1,"(e.g: SharedFile dat/indexer/indexer.shared)"),
     {NULL}
 };
 
