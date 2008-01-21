@@ -28,8 +28,10 @@
 #define SKIP_DOCUMENT      -104
 #define MAX_TEST_FILE_LEN	2100000000
 
+static indexer_shared_t* indexer_shared = NULL;
 static word_hit_t *wordhits_storage = NULL; // 매번 malloc, free하기 싫으니까...
 static int max_word_hit = 400000;
+char indexer_shared_file[MAX_FILE_LEN] = "dat/indexer/indexer.shared";
 
 /* XXX: 일단은 child 1개 */
 static scoreboard_t scoreboard[] = {PROCESS_SCOREBOARD(1)};
@@ -64,11 +66,6 @@ static int mCdmSet = -1;
 static int mWordDbSet = -1;
 static int mIndexDbSet = -1;
 #define BACKLOG (3)
-
-struct indexer_shared_t {
-	uint32_t last_indexed_docid;
-} *indexer_shared = NULL;
-static char indexer_shared_file[MAX_FILE_LEN] = "dat/indexer/indexer.shared";
 
 /* private functions */
 static uint32_t count_successive_wordid_same_to_first_in_wordhit
@@ -732,13 +729,13 @@ static int init() {
 
 	ipc.type = IPC_TYPE_MMAP;
 	ipc.pathname = indexer_shared_file;
-	ipc.size = sizeof(struct indexer_shared_t);
+	ipc.size = sizeof(indexer_shared_t);
 
 	if ( alloc_mmap(&ipc, 0) != SUCCESS ) {
 		error("alloc mmap to indexer_shared failed");
 		return FAIL;
 	}
-	indexer_shared = (struct indexer_shared_t*) ipc.addr;
+	indexer_shared = (indexer_shared_t*) ipc.addr;
 
 	if ( ipc.attr == MMAP_CREATED )
 		memset( indexer_shared, 0, ipc.size );
