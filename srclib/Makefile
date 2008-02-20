@@ -60,7 +60,7 @@ readline-export:
 ncurses-export:
 	[ -f ncurses-5.5/configure ] || (gzip -c -d ncurses-5.5.tar.gz | tar xf -)
 	cd ncurses-5.5 && \
-	./configure --prefix=$(prefix)
+	./configure --prefix=$(prefix) --with-shared --with-normal
 
 apr-export:
 	[ -f $(apr_name)/buildconf ] || (gzip -c -d $(apr_name).tar.gz | tar xf -)
