@@ -215,7 +215,7 @@ static int preprocess_handler(request_rec *r, softbot_handler_rec *s)
 static int search_handler(request_rec *r, softbot_handler_rec *s)
 {
     int rv = 0;
-    int i = 0, j = 0, cmt_idx = 0;
+    int i = 0, j = 0, cmt_idx = 0, deleted_cnt = 0;
 	struct timeval tv;
 	uint32_t start_time = 0, end_time = 0;
 
@@ -268,6 +268,48 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 		return FAIL;
 	}
 
+    if ( qp_request.is_delete ) {
+        int i = 0;
+        int j = 0;
+        int is_recovery = 0;
+
+        if( qp_request.select_list.cnt > 0 &&
+            qp_request.select_list.field[0].name[0] == '0' ) {
+
+            info("recovery deleted document");
+            is_recovery = 1;
+        }
+
+		for(i = 0; i < qp_response.vdl->cnt; i++) {
+			for(j = 0; j < qp_response.vdl->data[i].dochit_cnt; j++) {
+				int rv = 0;
+				uint32_t docid = qp_response.vdl->data[i].dochits[j].id;
+				docattr_t* docattr = NULL;
+
+				debug("delete docid[%u]", docid);
+
+				rv = sb_run_docattr_ptr_get(docid, &docattr);
+				if ( rv < 0 ) {
+					error("cannot get docattr of docid[%u]", docid);
+					continue;
+				}
+
+                if( is_recovery ) {
+				    rv = sb_run_docattr_set_docattr_function(docattr, "Delete", "0");
+                } else {
+				    rv = sb_run_docattr_set_docattr_function(docattr, "Delete", "1");
+                }
+
+				if ( rv < 0 ) {
+					error("cannot delete docid[%u]", docid);
+					continue;
+				}
+
+                deleted_cnt++;
+			}
+        }
+	}
+
 	if ( print_elapsed_time ) {
 		gettimeofday(&tv, NULL);
 		end_time = tv.tv_sec*1000 + tv.tv_usec/1000;
@@ -287,6 +329,12 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 			qp_request.query, 
 			qp_response.parsed_query,
             qp_response.search_result);
+
+    if ( qp_request.is_delete ) {
+	    ap_rprintf(r, 
+	            "<deleted_count>%d</deleted_count>\n", 
+                deleted_cnt);
+    }
 
 	if(server_id[0] == '\0') {
 	    ap_rprintf(r, "<server_id><![CDATA[%s]]></server_id>\n", get_ipaddress(r->pool));
@@ -310,31 +358,36 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
     ap_rprintf(r, "</groups>\n");
 	*/
 
-	/* each result */
-    ap_rprintf(r, "<vdocs count=\"%d\">\n", qp_response.vdl->cnt);
-    for(i = 0; i < qp_response.vdl->cnt; i++) {
-        virtual_document_t* vd = (virtual_document_t*)&qp_response.vdl->data[i];
+    if( qp_request.is_delete ) {
 
-        ap_rprintf(r, "<vdoc vid=\"%d\" node_id=\"%0X\" relevance=\"%d\">\n", 
-				      vd->id, vd->node_id, vd->relevance);
-        ap_rprintf(r, "<docs count=\"%d\">\n", vd->comment_cnt);
+    } else {
+		/* each result */
+		ap_rprintf(r, "<vdocs count=\"%d\">\n", qp_response.vdl->cnt);
+		for(i = 0; i < qp_response.vdl->cnt; i++) {
+			virtual_document_t* vd = (virtual_document_t*)&qp_response.vdl->data[i];
 
-        for(j = 0; j < vd->comment_cnt; j++) {
-            comment_t* cmt = &qp_response.comments[cmt_idx++];
-            ap_rprintf(r, "<doc doc_id=\"%d\">\n", cmt->did);
+			ap_rprintf(r, "<vdoc vid=\"%d\" node_id=\"%0X\" relevance=\"%d\">\n", 
+						  vd->id, vd->node_id, vd->relevance);
+			ap_rprintf(r, "<docs count=\"%d\">\n", vd->comment_cnt);
 
-			if(qp_request.output_style == STYLE_XML) {
-                ap_rprintf(r, "%s\n", cmt->s);
-			} else {
-                ap_rprintf(r, "<![CDATA[%s]]>\n", cmt->s);
+			for(j = 0; j < vd->comment_cnt; j++) {
+				comment_t* cmt = &qp_response.comments[cmt_idx++];
+				ap_rprintf(r, "<doc doc_id=\"%d\">\n", cmt->did);
+
+				if(qp_request.output_style == STYLE_XML) {
+					ap_rprintf(r, "%s\n", cmt->s);
+				} else {
+					ap_rprintf(r, "<![CDATA[%s]]>\n", cmt->s);
+				}
+				ap_rprintf(r, "</doc>\n");
 			}
-            ap_rprintf(r, "</doc>\n");
-		}
 
-        ap_rprintf(r, "</docs>\n");
-        ap_rprintf(r, "</vdoc>\n");
+			ap_rprintf(r, "</docs>\n");
+			ap_rprintf(r, "</vdoc>\n");
+		}
+		ap_rprintf(r, "</vdocs>\n");
     }
-    ap_rprintf(r, "</vdocs>\n");
+
 	ap_rprintf(r, "</xml>\n");
 
 	timelog("send_result_finish");

@@ -157,6 +157,7 @@ request_t* g_request = 0x00;
 
 static char* clause_type_str[] = {
 	"SELECT",
+	"DELETE",
 	"WEIGHT",
 	"SEARCH",
     "VIRTUAL_ID", 
@@ -3227,6 +3228,10 @@ static int init_request(request_t* req, char* query)
 			len = strlen(clause_type_str[clause_type]);
 			
 			switch(clause_type) {
+				case DELETE:
+					set_select_clause(&req->select_list, s+len);
+					req->is_delete = 1;
+					break;
 				case SELECT:
 					set_select_clause(&req->select_list, s+len);
 					break;
@@ -4463,6 +4468,11 @@ time_start();
 	}
 	INFO("light_search done");
 time_mark("light_search");
+
+    if( req->is_delete ) {
+        info("delete operation");
+		return SUCCESS;
+	}
 
 	ret = abstract_search(req, res);
 	if (ret < 0) {
