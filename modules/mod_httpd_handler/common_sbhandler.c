@@ -14,7 +14,7 @@ static softbot_handler_key_t common_handler_tbl[] =
 };
 
 /////////////////////////////////////////////
-#define SBINTERNET_TMP_DIR   "tmp"
+#define SBINTERNET_TMP_DIR   "logs"
 int sb_mktemp(char *tmp_file){
     //TODO : get temp directory
     memset(tmp_file, 0, MAX_FILE_LEN);
