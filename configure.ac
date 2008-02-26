@@ -525,5 +525,6 @@ AC_CONFIG_FILES([
     modules/mod_http_client/Makefile
 
     modules/mod_vrm/Makefile
+    modules/mod_replication/Makefile
 ])
 AC_OUTPUT
