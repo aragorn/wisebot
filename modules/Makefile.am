@@ -18,6 +18,7 @@ SUBDIRS = mod_api \
 	mod_httpd_handler \
 	mod_http_client \
 	mod_vrm \
+	mod_replication \
 	#
 
 # Deprecated modules

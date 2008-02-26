@@ -62,3 +62,4 @@ extern cdm_db_t* cdm_db;
 extern word_db_t* word_db;
 extern index_db_t* index_db;
 extern indexer_shared_t* indexer_shared;
+extern int max_replication_count;

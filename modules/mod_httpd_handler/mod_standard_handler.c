@@ -20,6 +20,8 @@ int sbhandler_common_get_table(char *name_space, void **tab);
 int sbhandler_document_get_table(char *name_space, void **tab);
 //implemented in index_handler.c
 int sbhandler_index_get_table(char *name_space, void **tab);
+//implemented in replication_handler.c
+int sbhandler_replication_get_table(char *name_space, void **tab);
 
 static int initialized = 0;
 static int did_set = 1;
@@ -30,6 +32,7 @@ static int word_db_set = 1;
 word_db_t* word_db = NULL;
 static int index_db_set = 1;
 index_db_t *index_db = NULL;
+int max_replication_count = 100;
 
 // 읽기 전용으로 사용해야 함. indexer module에서 write시에 동기화 하지 않음
 indexer_shared_t* indexer_shared = NULL;
@@ -519,6 +522,7 @@ static void register_hooks(void)
 	sb_hook_sbhandler_get_table(sbhandler_common_get_table,NULL,NULL,HOOK_REALLY_LAST);
 	sb_hook_sbhandler_get_table(sbhandler_document_get_table,NULL,NULL,HOOK_REALLY_LAST);
 	sb_hook_sbhandler_get_table(sbhandler_index_get_table,NULL,NULL,HOOK_REALLY_LAST);
+	sb_hook_sbhandler_get_table(sbhandler_replication_get_table,NULL,NULL,HOOK_REALLY_LAST);
     sb_hook_sbhandler_append_file(append_file, NULL, NULL, HOOK_MIDDLE);
 	sb_hook_sbhandler_make_memfile(make_memfile_from_postdata, NULL, NULL, HOOK_MIDDLE);
 	return;
@@ -567,6 +571,11 @@ static void set_shared_file(configValue v)
     indexer_shared_file[MAX_FILE_LEN-1] = '\0';
 }
 
+static void set_max_replication_count(configValue v)
+{
+    max_replication_count = atoi(v.argument[0]);
+}
+
 static config_t config[] = {
     CONFIG_GET("CdmSet", get_cdm_set, 1, "Cdm Set 0~..."),
     CONFIG_GET("DidSet", get_did_set, 1, "Did Set 0~..."),
@@ -577,6 +586,7 @@ static config_t config[] = {
     CONFIG_GET("QueryLogUsed", get_query_log_used, 1, "QueryLogUsed 1"),
     CONFIG_GET("QueryLogType", get_query_log_type, 1, "QueryLogType CUSTOM:0 XML:1"),
     CONFIG_GET("SharedFile",set_shared_file,1,"(e.g: SharedFile dat/indexer/indexer.shared)"),
+    CONFIG_GET("MaxReplicationCnt",set_max_replication_count,1,"send max document count for replication"),
     {NULL}
 };
 

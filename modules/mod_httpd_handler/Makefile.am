@@ -17,6 +17,7 @@ mod_standard_handler_la_SOURCES = mod_standard_handler.c mod_standard_handler.h 
                                   common_sbhandler.c \
                                   document_sbhandler.c \
                                   index_sbhandler.c \
+                                  replication_sbhandler.c \
                                   handler_util.c handler_util.h
 
 mod_search_sbhandler_la_LDFLAGS = -module -avoid-version -no-undefined
