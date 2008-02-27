@@ -361,13 +361,6 @@ static int replication_main(slot_t *slot)
             goto sleep;
         }
 
-        memfile_setOffset(buf, 0);
-
-        if(memfile_getSize(buf) == 0) {
-            error("data size zero");
-            goto sleep;
-        }
-
         register_document( buf );
 
 sleep:
