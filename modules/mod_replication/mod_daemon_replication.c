@@ -30,8 +30,9 @@ static char ip[STRING_SIZE];
 static char port[SHORT_STRING_SIZE];
 static char *canned_doc = NULL;
 static struct timeval timeout;
-static int timeout_sec = 10;
-static int max_timeout_sec = 60;
+static int min_delay_time_sec = 10;
+static int max_delay_time_sec = 60;
+static int delay_time_sec     = 10;
 
 static char field_root_name[SHORT_STRING_SIZE] = "Document";
 static char oid_name[SHORT_STRING_SIZE] = "OID";
@@ -253,13 +254,16 @@ static int register_document( memfile*  buf )
     return SUCCESS;
 }
 
-static void sleep()
+static void sleep(slot_t *slot)
 {
-	setproctitle("softbotd: %s sleep[%d], master[%s:%s]", __FILE__, timeout_sec, ip, port);
+	setproctitle("softbotd: %s sleep[%d], master[%s:%s]", __FILE__, delay_time_sec, ip, port);
 
-	timeout.tv_sec = timeout_sec;
+	timeout.tv_sec = delay_time_sec;
 	timeout.tv_usec = 0;
+
+	slot->state = SLOT_WAIT;
 	select(0, NULL, NULL, NULL, &timeout);
+	slot->state = SLOT_PROCESS;
 }
 
 static int replication_main(slot_t *slot)
@@ -298,6 +302,7 @@ static int replication_main(slot_t *slot)
 
         if( sb_run_http_client_connect( client ) == FAIL ) {
             error("sb_run_http_client_connect failed[%s:%s]", ip, port);
+	        delay_time_sec += 1;
             goto sleep;
         }
 
@@ -305,6 +310,7 @@ static int replication_main(slot_t *slot)
 
         if( sb_run_http_client_sendRequest( client ) == FAIL )  {
             error("sb_run_http_client_sendRequest failed[%s:%s]", ip, port);
+	        delay_time_sec += 1;
             goto sleep;
         }
 
@@ -312,6 +318,7 @@ static int replication_main(slot_t *slot)
 
         if( sb_run_http_client_recvResponse( client ) == FAIL )  {
             error("sb_run_http_client_recvResponse failed[%s:%s]", ip, port);
+	        delay_time_sec += 1;
             goto sleep;
         }
 
@@ -319,6 +326,7 @@ static int replication_main(slot_t *slot)
 
         if( sb_run_http_client_parseResponse( client ) == FAIL )  {
             error("sb_run_http_client_parseResponse failed[%s:%s]", ip, port);
+	        delay_time_sec += 1;
             goto sleep;
         }
 
@@ -326,27 +334,31 @@ static int replication_main(slot_t *slot)
             debug("server response code[%d], may be not exist did[%d]", 
 			        client->http->response_http_code,
 					last_registered_docid+1);
-		    if( timeout_sec < max_timeout_sec ) {
-	            timeout_sec += 1;
+		    if( delay_time_sec < max_delay_time_sec ) {
+	            delay_time_sec += 1;
 			}
             goto sleep;
-        }
+        } else {
+		    delay_time_sec = min_delay_time_sec;
+		}
 
         memfile *buf = client->http->content_buf;
         if( buf == NULL ) {
             error("content buf is NULL");
+	        delay_time_sec += 1;
             goto sleep;
         }
 
         if(client->parsing_status.state != PARSING_COMPLETE) {
             error("parse response error");
+	        delay_time_sec += 1;
             goto sleep;
         }
 
         register_document( buf );
 
 sleep:
-        sleep();
+        sleep(slot);
 
 	} /* endless while loop */
 
@@ -355,6 +367,8 @@ sleep:
 error_return:
 	if ( cdm_db ) sb_run_cdm_close( cdm_db );
 	if ( did_db ) sb_run_close_did_db( did_db );
+	if ( client ) sb_run_http_client_free( client );
+
 	slot->state = SLOT_FINISH;
 	return -1;
 }
@@ -421,16 +435,17 @@ static void set_oid_name(configValue v)
     strncpy(oid_name, v.argument[0], SHORT_STRING_SIZE-1);
 }
 
-static void set_timeout(configValue v)
+static void set_min_delay_time(configValue v)
 {
-    timeout_sec = atoi(v.argument[0]);
-    DEBUG("timeout is set to %d", timeout_sec);
+    min_delay_time_sec = atoi(v.argument[0]);
+	delay_time_sec = min_delay_time_sec;
+    DEBUG("min_delay_time_sec is set to %d", min_delay_time_sec);
 }
 
-static void set_max_timeout(configValue v)
+static void set_max_delay_time(configValue v)
 {
-    max_timeout_sec = atoi(v.argument[0]);
-    DEBUG("max_timeout is set to %d", max_timeout_sec);
+    max_delay_time_sec = atoi(v.argument[0]);
+    DEBUG("max_delay_time_sec is set to %d", max_delay_time_sec);
 }
 
 static config_t config[] = {
@@ -440,22 +455,17 @@ static config_t config[] = {
     CONFIG_GET("OidName", set_oid_name, 1, "oid element name"),
     CONFIG_GET("FieldRootName", set_field_root_name, 1, \
             "canned document root element name"),
-    CONFIG_GET("Timeout",set_timeout,1, "timeout(sec) for request"),
-    CONFIG_GET("MaxTimeout",set_max_timeout,1, "max timeout(sec) for request"),
+    CONFIG_GET("MinDelayTime",set_min_delay_time,1, "min delay time(sec) for request"),
+    CONFIG_GET("MaxDelayTime",set_max_delay_time,1, "max delay time(sec) for request"),
 	{NULL}
 };
 
-static void register_hooks(void)
-{
-	//sb_hook_last_indexed_did(last_indexed_did,NULL, NULL, HOOK_FIRST);
-}
-
-module daemon_replication2_module = {
+module daemon_replication_module = {
 	STANDARD_MODULE_STUFF,
 	config,					/* config */
 	NULL,    				/* registry */
 	init,					/* initialize function of module */
 	module_main,			/* child_main */
 	scoreboard,				/* scoreboard */
-	register_hooks			/* register hook api */
+	NULL        			/* register hook api */
 };
