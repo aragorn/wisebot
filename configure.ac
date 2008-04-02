@@ -235,11 +235,11 @@ SOFTBOTCLI_LDFLAGS=""
 case "$host" in 
   x86_64-*-linux-gnu )
     SHORT_HOST="linux_64"
-    # sets #define LINUX in auto_config.h
     AC_DEFINE(LINUX_64,1)
     OS_TYPE="unix"
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
+    EXTRA_CFLAGS="-m32 -march=i686"
     ;;
   i?86-*-linux-gnu )
     SHORT_HOST="linux"
@@ -339,8 +339,8 @@ dnl Various OS checks that apparently set required flags
 dnl AC_AIX
 
 
-CFLAGS='-Wall -g3 -O3'
-INCLUDES='-I$(includedir) -I$(top_builddir)/modules'
+CFLAGS="-Wall -g3 -O3 $EXTRA_CFLAGS"
+CPPFLAGS='-I$(includedir) -I$(top_builddir)/modules'
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
@@ -462,11 +462,6 @@ AC_SUBST(THREAD_LIB)
 AC_SUBST(DYN_LIB)
 AC_SUBST(SOFTBOTD_LDFLAGS)
 AC_SUBST(SOFTBOTCLI_LDFLAGS)
-AC_SUBST(ac_aux_dir)
-AC_SUBST(am_aux_dir)
-
-#AC_SUBST(CFLAGS)
-AC_SUBST(INCLUDES)
 
 AC_SUBST(APR_LIBS)
 AC_SUBST(APR_INCLUDES)
