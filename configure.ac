@@ -339,8 +339,8 @@ dnl Various OS checks that apparently set required flags
 dnl AC_AIX
 
 
-CFLAGS='-Wall -g3 -O2'
-INCLUDES='-I$(top_builddir)/modules'
+CFLAGS='-Wall -g3 -O3'
+INCLUDES='-I$(includedir) -I$(top_builddir)/modules'
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
@@ -465,6 +465,9 @@ AC_SUBST(SOFTBOTCLI_LDFLAGS)
 AC_SUBST(ac_aux_dir)
 AC_SUBST(am_aux_dir)
 
+#AC_SUBST(CFLAGS)
+AC_SUBST(INCLUDES)
+
 AC_SUBST(APR_LIBS)
 AC_SUBST(APR_INCLUDES)
 AC_SUBST(APR_CFLAGS)
@@ -486,6 +489,7 @@ AC_CONFIG_FILES([
     server/Makefile
     client/Makefile
 	util/Makefile
+    etc/Makefile
     debug/Makefile
 
     modules/Makefile

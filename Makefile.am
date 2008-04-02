@@ -1,6 +1,6 @@
 # $Id$ 
 
-#SUBDIRS = include common modules server client util debug
+SUBDIRS = include common modules server client util etc debug
 
 #auxdir = @ac_aux_dir@
 #AUX_DIST = $(auxdir)/install-sh $(auxdir)/missing \
