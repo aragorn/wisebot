@@ -18,10 +18,7 @@ APU_INCLUDES= @APU_INCLUDES@
 APU_CFLAGS= @APU_CFLAGS@
 APU_LDFLAGS= @APU_LDFLAGS@
 
-UNIT_TEST_INCLUDES= -I/usr/local/include
-LIBXML2_INCLUDES= -I/usr/include/libxml2
-
-INCLUDES= -I$(top_builddir)/modules -I$(top_builddir)/platform
+INCLUDES= -I$(includedir) -I$(top_builddir)/modules
 AM_CFLAGS+= -Wall -g3 -O2
 # CFLAGS : add custom CFLAGS here
 # CFLAGS=
