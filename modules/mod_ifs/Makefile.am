@@ -7,23 +7,18 @@ pkglib_LTLIBRARIES = mod_ifs.la mod_ifs_defrag.la mod_ifs_test.la
 mod_ifs_la_SOURCES = mod_ifs.c mod_ifs.h table.c
 mod_ifs_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_ifs_la_LIBADD  = $(libdir)/libcommon_core.la \
-                     $(libdir)/libapi_common.la \
-                     $(pkglibdir)/mod_sfs.la
+                     $(libdir)/libapi_common.la
 
 mod_ifs_defrag_la_SOURCES = mod_ifs_defrag.c
 mod_ifs_defrag_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_ifs_defrag_la_LIBADD  = $(libdir)/libcommon_core.la \
                             $(libdir)/libcommon_util.la \
-                            $(libdir)/libapi_common.la \
-                            $(pkglibdir)/mod_sfs.la \
-                            mod_ifs.la
+                            $(libdir)/libapi_common.la
 
 mod_ifs_test_la_SOURCES = mod_ifs_test.c
 mod_ifs_test_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_ifs_test_la_LIBADD  = $(libdir)/libcommon_core.la \
-                          $(libdir)/libapi_common.la \
-                          $(pkglibdir)/mod_sfs.la \
-                          mod_ifs.la
+                          $(libdir)/libapi_common.la
 
 check_PROGRAMS = test_ifs test2_ifs
 
@@ -44,4 +39,4 @@ test2_ifs_LDADD = mod_ifs_defrag.la \
 test2_ifs_LDFLAGS = -export-dynamic -ldl $(THREAD_LIB)
 
 #mod_ifs.la, mod_ifs_defrag.ls is needed by ifs_defrag
-include ../install-pkglib.mk
+#include ../install-pkglib.mk
