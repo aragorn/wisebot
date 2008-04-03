@@ -1,7 +1,4 @@
 # $Id$
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
 
 SOURCE_FILES = mod_sfs.c super_block.c fat.c directory.c shared_memory.c \
                mod_sfs.h super_block.h fat.h directory.h shared_memory.h
@@ -24,4 +21,3 @@ test2_sfs_LDADD   = $(libdir)/libcommon_core.la \
 test2_sfs_LDFLAGS = -export-dynamic -static -ldl
 
 #mod_sfs.la is needed by ifs_defrag
-include ../install-pkglib.mk
