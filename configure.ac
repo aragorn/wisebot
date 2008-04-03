@@ -255,7 +255,7 @@ case "$host" in
     AC_DEFINE(CYGWIN,1)
     OS_TYPE="unix"
     THREAD_LIB=""
-    DYN_LIB="-dlopen"
+    DYN_LIB="" #"-dlopen"
     ;;
   *freebsd* )
     SHORT_HOST="freebsd"
