@@ -30,38 +30,72 @@ dnl ---------------------------------------------------------------------------
   
 echo $ac_n "${nl}Configuring Apache Portable Runtime library ...${nl}"
 
-apr_found=`apr-config --version`
-echo apr version: $apr_found
+# find apr-config binary
+AC_ARG_WITH(apr_config,
+  AC_HELP_STRING([[--with-apr-config=FILE]], [Path to apr-config program]),
+  [ apr_config="$withval" ],
+  [AC_PATH_PROGS(apr_config,
+                 [apr-config apr-0-config apr-1-config], 
+                 [no], 
+                 [$PATH:/usr/sbin/:/usr/local/apache2/bin]
+                )]
+)
 
-if test -z $apr_found; then
-  AC_MSG_ERROR([APR not found. Please read the documentation.])
+echo apr version: `$apr_config --version`
+if test "$apr_config" = "no"; then
+   AC_MSG_ERROR(Could not find the apr-config program.  You can specify a location with the --with-apr-config=FILE option.  It may be named apr-0-config or apr-1-config and can be found in your apache2 bin directory.)
 fi
 
-APR_LIBS=`apr-config --link-libtool --libs`
-APR_INCLUDES=`apr-config --includes`
-APR_CFLAGS=`apr-config --cflags`
-APR_CPPFLAGS=`apr-config --cppflags`
-APR_LDFLAGS=`apr-config --ldflags`
+APR_LIBS=`$apr_config --link-libtool --libs`
+APR_INCLUDES=`$apr_config --includes`
+APR_CFLAGS=`$apr_config --cflags`
+APR_CPPFLAGS=`$apr_config --cppflags`
+APR_LDFLAGS=`$apr_config --ldflags`
 dnl APR_BINDIR=`apr-config --bindir`
 dnl SHLIBPATH_VAR=`apr-config --shlib-path-var`
 
 
 echo $ac_n "${nl}Configuring Apache Portable Runtime Utility library...${nl}"
 
-apu_found=`apu-config --version`
-echo apu version: $apu_found
+# find apu-config binary
+AC_ARG_WITH(apu_config,
+  AC_HELP_STRING([[--with-apu-config=FILE]], [Path to apu-config program]),
+  [ apu_config="$withval" ],
+  [AC_PATH_PROGS(apu_config,
+                 [apu-config apu-0-config apu-1-config], 
+                 [no], 
+                 [$PATH:/usr/sbin/:/usr/local/apache2/bin]
+                )]
+)
 
-if test -z $apu_found; then
-  AC_MSG_ERROR([APR-util not found.  Please read the documentation.])
+echo apu version: `$apu_config --version`
+if test "$apu_config" = "no"; then
+   AC_MSG_ERROR(Could not find the apu-config program.  You can specify a location with the --with-apu-config=FILE option.  It may be named apu-0-config or apu-1-config and can be found in your apache2 bin directory.)
 fi
 
 dnl XXX to test with new iconv
-APU_LIBS=`apu-config --link-libtool --libs`
-APU_LDFLAGS=`apu-config --ldflags`
-APU_INCLUDES=`apu-config --includes`
-APU_BINDIR=`apu-config --bindir`
+APU_LIBS=`$apu_config --link-libtool --libs`
+APU_LDFLAGS=`$apu_config --ldflags`
+APU_INCLUDES=`$apu_config --includes`
+APU_BINDIR=`$apu_config --bindir`
 
 dnl  APR and APU Stuff end.
+
+my_libtool=`$apr_config --apr-libtool`
+LIBTOOL="$my_libtool \$(LTFLAGS)"
+libtoolversion=`$my_libtool --version`
+case $libtoolversion in
+	*1.[[45]]*)
+		SH_LIBTOOL='$(LIBTOOL)'
+		SHLTCLFAGS="-prefer-pic"
+		LTCFLAGS="-prefer-non-pic -static"
+		;;
+	*)
+		SH_LIBTOOL='$(SHELL) $(top_builddir)/shlibtool $(LTFLAGS)'
+		SHLTCFLAGS=""
+		LTCFLAGS=""
+		;;
+esac
 
 dnl ---------------------------------------------------------------------------
 dnl header template, include/auto_config.h.in
