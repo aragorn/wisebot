@@ -3,7 +3,7 @@
 # Autoconf configuration fot SoftBot 6.0
 #
 
-AC_INIT(SoftBot, 6.0.0, support@softwise.co.kr, softbot-6.0.0)
+AC_INIT([SoftBot],[6.0.0],[support@softwise.co.kr],[softbot-6.0.0])
 PACKAGE=softbot
 
 AC_PREREQ(2.50)
@@ -12,11 +12,11 @@ AC_REVISION([$Revision$])
 
 AC_CONFIG_AUX_DIR([build])
 
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE([foreign])
 #AM_INIT_AUTOMAKE([foreign no-dependencies])
-AM_CONFIG_HEADER([include/auto_config.h])
+AC_CONFIG_HEADERS([include/auto_config.h])
 dnl AC_CONFIG_HEADER(include/auto_config.h)
 
 dnl XXX setting default prefix to `pwd` is not a good idea. --jiwon
@@ -32,7 +32,7 @@ echo $ac_n "${nl}Configuring Apache Portable Runtime library ...${nl}"
 
 # find apr-config binary
 AC_ARG_WITH(apr_config,
-  AC_HELP_STRING([[--with-apr-config=FILE]], [Path to apr-config program]),
+  AS_HELP_STRING([[--with-apr-config=FILE]],[Path to apr-config program]),
   [ apr_config="$withval" ],
   [AC_PATH_PROGS(apr_config,
                  [apr-config apr-0-config apr-1-config], 
@@ -59,7 +59,7 @@ echo $ac_n "${nl}Configuring Apache Portable Runtime Utility library...${nl}"
 
 # find apu-config binary
 AC_ARG_WITH(apu_config,
-  AC_HELP_STRING([[--with-apu-config=FILE]], [Path to apu-config program]),
+  AS_HELP_STRING([[--with-apu-config=FILE]],[Path to apu-config program]),
   [ apu_config="$withval" ],
   [AC_PATH_PROGS(apu_config,
                  [apu-config apu-0-config apu-1-config], 
@@ -249,9 +249,11 @@ dnl ---------------------------------------------------------------------------
 
 dnl See if the compiler supports __attribute__ gracefully.
 AC_MSG_CHECKING(whether compiler supports __attribute__)
-AC_TRY_COMPILE([], [int x __attribute__((__unused__));],
-compiler_supports_attribute=yes,
-compiler_supports_attribute=no)
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([[]], [[int x __attribute__((__unused__));]])],
+  [compiler_supports_attribute=yes],
+  [compiler_supports_attribute=no]
+)
 AC_MSG_RESULT($compiler_supports_attribute)
 if test x"$compiler_supports_attribute" = xyes; then
     attr_unused="__attribute__((__unused__))"
@@ -444,13 +446,14 @@ else
 
   if test "$sb_argv_set" = "no"; then
     AC_CACHE_CHECK([whether __progname and __progname_full are available],
-        pf_cv_var_progname,
-        [AC_TRY_LINK([extern char *__progname, *__progname_full;],
-            [__progname = "foo"; __progname_full = "foo bar";],
-            pf_cv_var_progname="yes",
-            pf_cv_var_progname="no"
-            )
-        ])
+      pf_cv_var_progname,
+      [AC_LINK_IFELSE(
+        [AC_LANG_PROGRAM(
+          [[extern char *__progname, *__progname_full;]],
+          [[__progname = "foo"; __progname_full = "foo bar";]])],
+        [pf_cv_var_progname="yes"],
+        [pf_cv_var_progname="no"])]
+    )
 
     if test "$pf_cv_var_progname" = "yes"; then
       AC_DEFINE(HAVE___PROGNAME, 1,
