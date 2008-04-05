@@ -88,11 +88,13 @@ case $libtoolversion in
 	*1.[[45]]*)
 		SH_LIBTOOL='$(LIBTOOL)'
 		SHLTCLFAGS="-prefer-pic"
+		AM_LIBTOOLFLAGS="--silent"
 		LTCFLAGS="-prefer-non-pic -static"
 		;;
 	*)
 		SH_LIBTOOL='$(SHELL) $(top_builddir)/shlibtool $(LTFLAGS)'
 		SHLTCFLAGS=""
+		AM_LIBTOOLFLAGS="--silent"
 		LTCFLAGS=""
 		;;
 esac
@@ -373,8 +375,8 @@ dnl Various OS checks that apparently set required flags
 dnl AC_AIX
 
 
-CFLAGS="-Wall -g3 -O3 $EXTRA_CFLAGS"
-CPPFLAGS='-I$(includedir) -I$(top_builddir)/modules'
+AM_CFLAGS="-Wall -g3 -O3 $EXTRA_CFLAGS"
+AM_CPPFLAGS='-I$(includedir) -I$(top_builddir)/modules'
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
@@ -496,6 +498,10 @@ AC_SUBST(THREAD_LIB)
 AC_SUBST(DYN_LIB)
 AC_SUBST(SOFTBOTD_LDFLAGS)
 AC_SUBST(SOFTBOTCLI_LDFLAGS)
+
+AC_SUBST(AM_CFLAGS)
+AC_SUBST(AM_CPPFLAGS)
+AC_SUBST(AM_LIBTOOLFLAGS)
 
 AC_SUBST(APR_LIBS)
 AC_SUBST(APR_INCLUDES)
