@@ -268,13 +268,13 @@ dnl ---------------------------------------------------------------------------
 dnl Check system environments
 CANONICAL_HOST="$host"
 SHORT_HOST=""
+MODULES_LDFLAGS="-module -avoid-version"
 SOFTBOTD_LDFLAGS=""
 SOFTBOTCLI_LDFLAGS=""
 case "$host" in 
   x86_64-*-linux-gnu )
     SHORT_HOST="linux_64"
     AC_DEFINE(LINUX_64,1)
-    OS_TYPE="unix"
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
     EXTRA_CFLAGS="-m32 -march=i686"
@@ -283,7 +283,6 @@ case "$host" in
     SHORT_HOST="linux"
     # sets #define LINUX in auto_config.h
     AC_DEFINE(LINUX,1)
-    OS_TYPE="unix"
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
     EXTRA_CFLAGS="-m32 -march=i686"
@@ -291,21 +290,19 @@ case "$host" in
   *pc-cygwin* )
     SHORT_HOST="cygwin"
     AC_DEFINE(CYGWIN,1)
-    OS_TYPE="unix"
+    MODULES_LDFLAGS="-avoid-version"
     THREAD_LIB=""
     DYN_LIB="" #"-dlopen"
     ;;
   *freebsd* )
     SHORT_HOST="freebsd"
     AC_DEFINE(FREEBSD,1)
-    OS_TYPE="unix"
     THREAD_LIB="-lc_r"
     DYN_LIB="-lc"
     ;;
   *-solaris* )
     SHORT_HOST="solaris"
     AC_DEFINE(SOLARIS,1)
-    OS_TYPE="unix"
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
     SOFTBOTD_LDFLAGS='-lsocket -lnsl'
@@ -315,7 +312,6 @@ case "$host" in
     # powerpc-ibm-aix5.1.0.0
     SHORT_HOST="aix5"
     AC_DEFINE(AIX5,1)
-    OS_TYPE="unix"
     THREAD_LIB="-lc -lpthread"
     DYN_LIB="-Wl,-brtl -lld"
     EXTRA_CFLAGS="-fsigned-char"
@@ -326,7 +322,6 @@ case "$host" in
   *-hpux* )
     SHORT_HOST="hpux"
     AC_DEFINE(HPUX,1)
-    OS_TYPE="unix"
     ;;
 esac
 
@@ -378,7 +373,8 @@ dnl AC_AIX
 
 
 AM_CFLAGS="-Wall -g3 -O3 $EXTRA_CFLAGS"
-AM_CPPFLAGS='-I$(includedir) -I$(top_builddir)/modules'
+AM_CPPFLAGS="-I\$(top_builddir)/modules"
+AM_LDFLAGS="-rpath \$(libdir)"
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
@@ -496,14 +492,17 @@ AC_SUBST(PACKAGE)
 AC_SUBST(SB_RELEASE_DATE)
 AC_SUBST(CANONICAL_HOST)
 
-AC_SUBST(OS_TYPE)
+AC_SUBST(LIBTOOL)
+
 AC_SUBST(THREAD_LIB)
 AC_SUBST(DYN_LIB)
+AC_SUBST(MODULES_LDFLAGS)
 AC_SUBST(SOFTBOTD_LDFLAGS)
 AC_SUBST(SOFTBOTCLI_LDFLAGS)
 
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_CPPFLAGS)
+AC_SUBST(AM_LDFLAGS)
 AC_SUBST(AM_LIBTOOLFLAGS)
 
 AC_SUBST(APR_LIBS)
