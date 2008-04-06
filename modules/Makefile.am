@@ -40,4 +40,3 @@ SUBDIRS = mod_api \
 #	mod_charconv \
 #
 
-MAINTAINERCLEANFILES = Makefile Makefile.in
