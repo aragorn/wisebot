@@ -1,7 +1,9 @@
 /* $Id$ */
-#define CORE_PRIVATE 1
 #include "common_core.h"
+/* moved to common_core.h due to precompiled header 
+#define CORE_PRIVATE 1
 #include "hangul.h"
+*/
 
 /* http://sourceware.org/ml/libc-alpha/2004-04/msg00106.html */
 

@@ -1,15 +1,17 @@
 /* $Id$ */
-#define CORE_PRIVATE 1
 #include "common_core.h"
+/* moved to common_core.h due to precompiled header 
+#define CORE_PRIVATE 1
 #include "ipc.h"
 #include "modules.h"
 #include "log_error.h"
 #include "registry.h"
 #include <stdlib.h>
-#include <search.h> /* for hash table function like hcreate.. */
+#include <search.h> // for hash table function like hcreate.
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+*/
 
 #undef DEBUG_REGISTRY_MEMORY
 

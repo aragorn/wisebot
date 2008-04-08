@@ -1,8 +1,9 @@
 /* $Id$ */
-
-#include <ctype.h>      /* strtoupper(),strtolower() */
-#include <sys/socket.h> /* connect_nonb() */
-#include <fcntl.h>      /* connect_nonb() */
+#include "common_util.h"
+/* moved to common_core.h due to precompiled header 
+#include <ctype.h>      // strtoupper(),strtolower()
+#include <sys/socket.h> // connect_nonb() 
+#include <fcntl.h>      // connect_nonb() 
 
 #include <string.h>
 #include <errno.h>
@@ -10,7 +11,7 @@
 #include <unistd.h>
 #include "common_core.h"
 #include "log_error.h"
-#include "common_util.h"
+*/
 
 /*****************************************************************************/
 /* Lock a part of a file */

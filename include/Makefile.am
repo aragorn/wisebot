@@ -1,7 +1,9 @@
 # $Id$
-include $(top_builddir)/Make.defs
 
-MAINTAINERCLEANFILES = Makefile Makefile.in
+pch: $(noinst_HEADERS)
+	rm -f *.gch
+	$(CC) $(DEFS) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o common_core.h.gch common_core.h
+	$(CC) $(DEFS) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o common_util.h.gch common_util.h
 
 dist_pkgdata_DATA = auto_config.h.in
 noinst_HEADERS = config.h constants.h hook.h ipc.h log_error.h modules.h \

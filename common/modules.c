@@ -1,24 +1,24 @@
 /* $Id$ */
+#include "common_core.h"
+/* moved to common_core.h due to precompiled header 
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <dlfcn.h>
 #define CORE_PRIVATE 1
-#include "common_core.h"
 #include "log_error.h"
 #include "memory.h"
 #include "util.h"
 #include "config.h"
 #include "hook.h"
 #include "modules.h"
+*/
 
 #ifndef AIX5
-// aix dlopen cannot deal with shared object properly. use apache-hacked dlopen
+// aix dlopen cannot deal with shared object properly. 
+// use apache-hacked dlopen.
 #  include <dlfcn.h>
 #endif
-
-//#include <sys/stat.h>
-//#include <sys/types.h>
 
 #define MAX_PORTINFO	32
 typedef struct {

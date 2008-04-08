@@ -1,10 +1,12 @@
 /* $Id$ */
-#define CORE_PRIVATE 1
 #include "common_core.h"
+/* moved to common_core.h due to precompiled header 
+#define CORE_PRIVATE 1
 #include "util.h"
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+*/
 
 const char *sb_get_server_version(void)
 {

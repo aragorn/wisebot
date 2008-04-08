@@ -1,5 +1,7 @@
-#include "msg_record.h"
-#include <string.h>
+/* $Id$ */
+#include "common_util.h"
+//#include "msg_record.h"
+//#include <string.h>
 
 void msg_record_init(msg_record_t *rec){
 	rec->used_bytes = 0;

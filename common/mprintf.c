@@ -92,7 +92,7 @@
  *
  ****************************************************************************/
 #include "common_core.h"
-#include "memory.h" /* sb_malloc(),sb_realloc() */
+//#include "memory.h" /* sb_malloc(),sb_realloc() */
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>

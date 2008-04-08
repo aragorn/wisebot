@@ -1,6 +1,7 @@
 /* $Id$ */
-#define CORE_PRIVATE 1
 #include "common_core.h"
+/* moved to common_core.h due to precompiled header 
+#define CORE_PRIVATE 1
 #include "ipc.h"
 #include "log_error.h"
 #include "modules.h"
@@ -11,7 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
-
+*/
 
 HOOK_STRUCT(
 	HOOK_LINK(set_default_sighandlers)

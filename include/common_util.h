@@ -3,12 +3,13 @@
 #define COMMON_UTIL_H 1
 
 #ifndef COMMON_CORE_H
-# error You should include "common_core.h" first.
+# include "common_core.h"
 #endif
 
 #include <time.h>
 #include <sys/times.h>
 #include <sys/socket.h>  /* struct sockaddr */
+#include <ctype.h>      // strtoupper(),strtolower()
 
 /*****************************************************************************/
 #ifndef HAVE_MERGESORT
@@ -73,6 +74,9 @@ SB_DECLARE(int)  sb_tstat_log_init(const char* file_name);
 SB_DECLARE(void) sb_tstat_log_destroy();
 SB_DECLARE(void) sb_tstat_log(char* tag);
 /*****************************************************************************/
+
+#include "hash.h"
+#include "msg_record.h"
 
 #endif
 

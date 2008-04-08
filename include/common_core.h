@@ -39,12 +39,52 @@ extern SB_DECLARE_DATA char gRegistryFile[MAX_PATH_LEN];
 extern SB_DECLARE_DATA pid_t gRootPid;
 
 #ifndef CORE_PRIVATE
+#else
+#endif
 # include "modules.h"
 # include "scoreboard.h"
 # include "config.h"
 # include "registry.h"
+# include "ipc.h"
 # include "log_error.h"
-#else
+# include "memory.h"
+# include "mprintf.h"
+# include "memfile.h"
+# include "hook.h"
+# include "setproctitle.h"
+#include "hangul.h"
+#include "ansi_color.h"
+#include "util.h"
+
+#include <stdarg.h> /* common_core.h */
+#include <unistd.h> /* common_core.h,memory.c */
+#include <fcntl.h>  /* common_core.h,memory.c */
+#include <stdio.h>  /* memory.c:77 dprintf() */
+#include <stdlib.h> /* memory.c:66 calloc() */
+#include <string.h> /* memory.c:   strerror() */
+#include <errno.h>  /* memory.c:   errno */
+#include <unistd.h> /* memory.c:78 getpid() */
+#include <time.h>   /* memory.c:78 time() */
+#include <assert.h>
+
+#ifdef HAVE_FCNTL_H
+#  include <fcntl.h>  /* common_core.h,memory.c */
 #endif
+#ifdef HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+#ifdef HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+#ifdef HAVE_PTHREAD_H
+#  include <pthread.h>
+#endif
+
+#include <sys/types.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <search.h> // for hash table function like hcreate.
 
 #endif

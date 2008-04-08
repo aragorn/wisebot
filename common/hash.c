@@ -1,9 +1,11 @@
 /* $Id$ */
+#include "common_util.h"
+/* moved to common_core.h due to precompiled header 
 #include <stdio.h>
 #include <string.h>
-#include "common_core.h"
 #include "log_error.h"
 #include "hash.h"
+*/
 
 /// XXX ??? alloc 함수만 앞에 * 가 없이 불리운다 확인 필.
 

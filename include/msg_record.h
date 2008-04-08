@@ -1,7 +1,7 @@
 #ifndef _MSG_RECORD_H_
 #define _MSG_RECORD_H_ 
 
-#include "common_core.h"
+//#include "common_core.h"
 
 //------------------------------------------------------//
 #define MAX_RECORDED_MSG_LEN	(128)

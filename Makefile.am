@@ -1,5 +1,8 @@
 # $Id$ 
 
+pch:
+	cd include && $(MAKE) $(AM_MAKEFLAGS) pch
+
 SUBDIRS = include common modules server client util etc debug
 
 #auxdir = @ac_aux_dir@

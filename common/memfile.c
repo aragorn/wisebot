@@ -1,11 +1,14 @@
 /* $Id$ */
-//#include "softbot.h"
-#include <string.h> /* memcpy(3),strlen(3) */
+/* moved to common_core.h due to precompiled header 
+#include <string.h> // memcpy(3),strlen(3) 
 #include <errno.h>
+*/
 #include "common_core.h"
+/*
 #include "memory.h"
 #include "mprintf.h"
 #include "memfile.h"
+*/
 
 static unsigned int NUMALLOCOBJ = 5;
 static unsigned int BLOCKSIZE = MEMFILE_LINE_LEN;

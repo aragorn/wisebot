@@ -1,6 +1,7 @@
 /* $Id$ */
-#define CORE_PRIVATE 1
 #include "common_core.h"
+/* moved to common_core.h due to precompiled header 
+#define CORE_PRIVATE 1
 #include "ipc.h"
 #include "modules.h"
 #include "ansi_color.h"
@@ -11,6 +12,7 @@
 #include <sys/sem.h>
 #include <unistd.h>
 #include <time.h>
+*/
 
 int   gLogLevel = MAX_LOG_LEVEL;
 char *gLogLevelStr[] = {

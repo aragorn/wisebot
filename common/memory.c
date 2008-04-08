@@ -1,5 +1,5 @@
 /* $Id$ */
-//FIXME : name is inappropriate.. isn't it? -- eerun
+/* moved to common_core.h using precompiled header 
 #define _GNU_SOURCE
 #include <stdio.h>    // 77: dprintf()
 #include <stdlib.h>   // 66: calloc
@@ -10,10 +10,13 @@
 #include <sys/mman.h>  // 198: mmap()
 #include <fcntl.h>     // 76: O_CREAT
 #define CORE_PRIVATE 1
+*/
 #include "common_core.h"
+/*
 #include "log_error.h"
 #include "ipc.h"
 #include "memory.h"
+*/
 
 #define DEBUG_MEMORY
 #undef DEBUG_MEMORY

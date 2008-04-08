@@ -24,3 +24,4 @@ pkoma
 expat
 db
 ncurses
+*.gch

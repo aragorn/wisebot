@@ -1,11 +1,14 @@
 /* $Id$ */
-
+/* moved to common_core.h due to precompiled header 
 #include <string.h>
 #define CORE_PRIVATE 1
+*/
 #include "common_core.h"
+/*
 #include "log_error.h"
 #include "modules.h"
 #include "config.h"
+*/
 
 #define DEFAULT_TAG "global"
 #define INCLUDE_DIRECTIVE "Include" 

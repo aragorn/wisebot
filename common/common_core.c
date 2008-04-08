@@ -1,14 +1,10 @@
 /* $Id$ */
-/* 
- * common_core.c
- * declare global variables.
- * --aragorn, 2005-07-07
- */
-
+/* moved to common_core.h due to precompiled header 
 #include <stdarg.h>
 #include <unistd.h>
 #include <fcntl.h>
 #define CORE_PRIVATE 1
+*/
 #include "common_core.h"
 
 char  gSoftBotRoot[MAX_PATH_LEN]  = SERVER_ROOT;

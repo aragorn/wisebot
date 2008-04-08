@@ -100,7 +100,7 @@ SB_DECLARE(int) _free_mmap(void* start,int size,const char* file,const char* cal
 
 SB_DECLARE(int) free_ipcs(void);
 
-#ifdef CORE_PRIVATE
+//#ifdef CORE_PRIVATE
 # ifdef CYGWIN
 #  define OFF_T_FORMAT "0x%llX"
 #  define KEY_T_FORMAT "0x%llX"
@@ -123,6 +123,6 @@ union semun {
 	struct seminfo *__buf;    /* buffer for IPC_INFO */
 };
 #endif /* __GNU_LIBRARY__, _SEM_SEMUN_UNDEFINED */
-#endif /* CORE_PRIVATE */
+//#endif /* CORE_PRIVATE */
 
 #endif
