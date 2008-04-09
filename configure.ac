@@ -290,7 +290,7 @@ case "$host" in
   *pc-cygwin* )
     SHORT_HOST="cygwin"
     AC_DEFINE(CYGWIN,1)
-    MODULES_LDFLAGS="-avoid-version"
+    MODULES_LDFLAGS="-module -avoid-version"
     THREAD_LIB=""
     DYN_LIB="" #"-dlopen"
     ;;
@@ -528,6 +528,7 @@ AC_CONFIG_FILES([
 	util/Makefile
     etc/Makefile
     debug/Makefile
+    srclib/Makefile
 
     modules/Makefile
     modules/mod_api/Makefile
