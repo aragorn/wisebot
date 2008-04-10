@@ -29,6 +29,8 @@
 static uint32_t mDefaultSearchField=0xffffffff;
 static uint32_t mDefaultPhraseField=0xffffffff;
 static int mMorpIdForPhrase = 20;
+static int mComplexNounOperator = QPP_OP_WITHIN;
+static int mComplexNounOperatorParam = 0;
 
 static char mPrecedence[32];		// operator precedence
 
@@ -767,8 +769,8 @@ static int pushExtendedOperand(void* word_db, StateObj *pStObj,QueryNode *pQuNod
 		/* 하나의 토큰에서 두개이상의 색인어가 추출되는 경우 within 연산으로 처리 */
 	    if (nMorpheme > 1) {
 			qnode.type = OPERATOR;
-			qnode.operator = QPP_OP_WITHIN;
-			qnode.opParam = 0; /* within 0 */
+			qnode.operator = mComplexNounOperator;
+			qnode.opParam  = mComplexNounOperatorParam; /* within 0 */
 			qnode.num_of_operands = nMorpheme;
 			nRet = stk_push(&(pStObj->postfixStack),&qnode);
 		    if (nRet < 0)
@@ -1401,6 +1403,24 @@ static void get_defaultphrasefield(configValue v)
     WARN("mDefaultPhraseField:%x",mDefaultPhraseField);
 }
 
+static void set_complex_noun_operator(configValue v)
+{
+	
+	if (strncasecmp("AND", v.argument[0], 3) == 0)
+	{
+		mComplexNounOperator = QPP_OP_AND;
+		mComplexNounOperatorParam = 0;
+	} else {
+		int distance = atoi(v.argument[0]);
+
+		mComplexNounOperator = QPP_OP_WITHIN;
+		mComplexNounOperatorParam = distance;
+	}
+
+    debug("mComplexNounOperator[%s] param[%d]",
+	       operatorName[mComplexNounOperator], mComplexNounOperatorParam);
+}
+
 // FIXME QPP_OP_PHRASE have setting BEGIN_OP_PHRASE and END_OP_PHRASE.. 
 static config_t config[] = {
 	CONFIG_GET("QPP_OP_DEFAULT",set_default_querynode,1,\
@@ -1427,6 +1447,7 @@ static config_t config[] = {
 
 	CONFIG_GET("DefaultPhraseField",get_defaultphrasefield,VAR_ARG,\
 				"Fields which is searched when phrase search "),
+	CONFIG_GET("ComplexNounOperator",set_complex_noun_operator,1,"AND or N for /N/"),
 	{NULL}
 };
 
