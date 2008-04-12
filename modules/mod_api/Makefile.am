@@ -1,7 +1,5 @@
 # $Id$
-include $(top_builddir)/Make.defs
-
-lib_LTLIBRARIES = libapi_common.la
+noinst_LTLIBRARIES = libapi_common.la
 libapi_common_la_SOURCES = \
 				mod_api.c \
 				lexicon.c lexicon.h \
@@ -12,7 +10,6 @@ libapi_common_la_SOURCES = \
 				tcp.c tcp.h \
 				udp.c udp.h \
 				qpp.c qpp.h \
-				vrfi.c vrfi.h \
 				indexer.c indexer.h \
 				docapi.c docapi.h \
 				protocol4.c protocol4.h \
@@ -29,8 +26,8 @@ libapi_common_la_SOURCES = \
 				sbhandler.c sbhandler.h
 libapi_common_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \
                            $(APR_INCLUDES) $(APU_INCLUDES)
-libapi_common_la_LDFLAGS = -shared -avoid-version -no-undefined
-libapi_common_la_LIBADD  = $(libdir)/libcommon_core.la $(APR_LIBS) $(APU_LIBS)
+libapi_common_la_LDFLAGS = -static -avoid-version
+libapi_common_la_LIBADD  = $(APR_LIBS) $(APU_LIBS)
 
 SOURCE_FILES1 = qp.c qp.h \
 				docattr.c docattr.h
@@ -40,12 +37,12 @@ SOURCE_FILES2 = qp2.c qp2.h \
 
 pkglib_LTLIBRARIES = mod_api.la mod_api2.la
 mod_api_la_SOURCES = $(SOURCE_FILES1)
-mod_api_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_api_la_LIBADD  = libapi_common.la $(libdir)/libcommon_core.la
+mod_api_la_LDFLAGS = -module -avoid-version
+mod_api_la_LIBADD  = libapi_common.la
 
 mod_api2_la_SOURCES = $(SOURCE_FILES2)
-mod_api2_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_api2_la_LIBADD  = libapi_common.la $(libdir)/libcommon_core.la
+mod_api2_la_LDFLAGS = -module -avoid-version
+mod_api2_la_LIBADD  = libapi_common.la
 
 #
 # README
