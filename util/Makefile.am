@@ -1,18 +1,16 @@
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
+# $Id$
 
 bin_PROGRAMS = ifs_defrag sort_test
 
 ifs_defrag_SOURCES = ifs_defrag.c
-ifs_defrag_LDADD = $(libdir)/$(PACKAGE)/mod_api.la \
-				   $(libdir)/libcommon_core.la $(libdir)/libcommon_util.la
-ifs_defrag_LDFLAGS = -L../lib -export-dynamic $(DYN_LIB) $(THREAD_LIB) $(SOFTBOTD_LDFLAGS)
+ifs_defrag_LDADD = ../modules/mod_api/mod_api2.la \
+				   $(libdir)/libcommon_util.la $(libdir)/libcommon_core.la \
+                   $(DYN_LIB) $(THREAD_LIB) 
+ifs_defrag_LDFLAGS = $(SOFTBOTD_LDFLAGS) -L$(libdir) -export-dynamic
 
 sort_test_SOURCES = sort_test.c
-sort_test_LDADD = $(libdir)/$(PACKAGE)/mod_api.la \
-				   $(libdir)/libcommon_core.la $(libdir)/libcommon_util.la
-sort_test_LDFLAGS = -L../lib -export-dynamic $(DYN_LIB) $(THREAD_LIB) $(SOFTBOTD_LDFLAGS)
-
-include ../modules/install-pkglib.mk
+sort_test_LDADD = ../modules/mod_api/mod_api2.la \
+				  $(libdir)/libcommon_util.la $(libdir)/libcommon_core.la \
+                  $(DYN_LIB) $(THREAD_LIB) 
+sort_test_LDFLAGS = $(SOFTBOTD_LDFLAGS) -L$(libdir) -export-dynamic 
 
