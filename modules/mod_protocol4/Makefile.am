@@ -1,13 +1,15 @@
 # $Id$
-include $(top_builddir)/Make.defs
+if CYGWIN
+noinst_LTLIBRARIES = mod_protocol4.la
+pkglib_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES = 
+pkglib_LTLIBRARIES = mod_protocol4.la
+endif
 
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
-pkglib_LTLIBRARIES = mod_protocol4.la 
-
-mod_protocol4_la_SOURCES = mod_protocol4.c mod_protocol4.h mod_client.c mod_client.h
-mod_protocol4_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_protocol4_la_LIBADD  = $(libdir)/libcommon_core.la
+mod_protocol4_la_SOURCES = mod_protocol4.c mod_protocol4.h \
+                           mod_client.c mod_client.h
+mod_protocol4_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 				
 # check_PROGRAMS = mod_protocol4_test

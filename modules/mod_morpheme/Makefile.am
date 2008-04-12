@@ -1,9 +1,11 @@
 # $Id$
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
+if CYGWIN
+noinst_LTLIBRARIES = mod_morpheme.la
+pkglib_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES = 
 pkglib_LTLIBRARIES = mod_morpheme.la
+endif
 
 mod_morpheme_la_SOURCES = mod_morpheme.c \
 				lib/ma.c lib/ma_kor.c lib/ma_eng.c \
@@ -12,8 +14,7 @@ mod_morpheme_la_SOURCES = mod_morpheme.c \
 				lib/ma_data.c lib/mak_data.c lib/ma_code.c \
 				lib/lb_std.c lib/lb_lex.c \
 				mod_morpheme.h 
-mod_morpheme_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_morpheme_la_LIBADD  = $(libdir)/libcommon_core.la
+mod_morpheme_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 #EXTRA_DIST = lib
 #

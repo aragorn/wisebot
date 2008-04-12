@@ -1,11 +1,13 @@
 # $Id$
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
+if CYGWIN
+noinst_LTLIBRARIES = mod_softbot4.la
+pkglib_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES = 
 pkglib_LTLIBRARIES = mod_softbot4.la
+endif
+
 mod_softbot4_la_SOURCES = mod_softbot4.c mod_softbot4.h
-mod_softbot4_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_softbot4_la_LIBADD  = $(libdir)/libcommon_core.la 
+mod_softbot4_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 include ../install-pkglib.mk

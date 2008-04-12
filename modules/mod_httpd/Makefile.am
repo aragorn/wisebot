@@ -1,11 +1,17 @@
 # $Id$
-
+if CYGWIN
+noinst_LTLIBRARIES = mod_httpd.la
+pkglib_LTLIBRARIES = 
+check_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES = 
 pkglib_LTLIBRARIES = mod_httpd.la
+check_LTLIBRARIES = 
+endif
+
 mod_httpd_la_LDFLAGS = $(MODULES_LDFLAGS) \
                        $(APR_LDFLAGS) $(APU_LDFLAGS)
-mod_httpd_la_LIBADD  = $(libdir)/libcommon_core.la \
-                       $(libdir)/libcommon_util.la \
-                       $(APR_LIBS) $(APU_LIBS) 
+mod_httpd_la_LIBADD  = $(APR_LIBS) $(APU_LIBS) 
 mod_httpd_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \
                        $(APR_INCLUDES) $(APU_INCLUDES)
 mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \
@@ -27,7 +33,6 @@ mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \
                        util_string.c util_string.h \
                        util_time.c util_time.h \
                        exports.c 
-
 
 #mod_httpd_test_handler_la_LDFLAGS = -module -avoid-version $(APR_LDFLAGS) $(APU_LDFLAGS)
 #mod_httpd_test_handler_la_LIBADD = $(APR_LIBS) $(APU_LIBS)

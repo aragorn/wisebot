@@ -1,13 +1,13 @@
 # $Id$
-include $(top_builddir)/Make.defs
+if CYGWIN
+noinst_LTLIBRARIES = mod_udp.la
+pkglib_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES = 
+pkglib_LTLIBRARIES = mod_udp.la
+endif
 
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
-pkglib_LTLIBRARIES = mod_udp.la 
 mod_udp_la_SOURCES = mod_udp.c mod_udp.h
-mod_udp_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_udp_la_LIBADD  = $(libdir)/libcommon_core.la \
-                     $(libdir)/libcommon_util.la \
-                     $(libdir)/libapi_common.la
+mod_udp_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 include ../install-pkglib.mk

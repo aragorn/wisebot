@@ -25,3 +25,4 @@ mod_cdm2_la_LDFLAGS = $(MODULES_LDFLAGS)
 mod_cdm3_la_SOURCES = mod_cdm3.c mod_cdm3.h
 mod_cdm3_la_LDFLAGS = $(MODULES_LDFLAGS)
 
+include ../install-pkglib.mk

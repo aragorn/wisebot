@@ -50,3 +50,4 @@ mod_api2_la_SOURCES = $(SOURCE_FILES2)
 mod_api2_la_LDFLAGS = $(MODULES_LDFLAGS)
 mod_api2_la_LIBADD  = libapi_common.la
 
+include ../install-pkglib.mk

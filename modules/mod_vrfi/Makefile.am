@@ -1,19 +1,15 @@
 # $Id$
-include $(top_builddir)/Make.defs
 
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
-pkglib_LTLIBRARIES = mod_vrfi.la
+noinst_LTLIBRARIES = mod_vrfi.la
 mod_vrfi_la_SOURCES = mod_vrfi.c mod_vrfi.h \
 					  data_handle.c data_handle.h \
 					  header_handle.c header_handle.h
-mod_vrfi_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_vrfi_la_LIBADD  = $(libdir)/libcommon_core.la
+mod_vrfi_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 #check_PROGRAMS = mod_vrfi_test
 #mod_vrfi_test_SOURCES = mod_vrfi.c mod_vrfi.h \
-						data_handle.c data_handle.h \
-						header_handle.c header_handle.h \
+#						data_handle.c data_handle.h \
+#						header_handle.c header_handle.h \
 #mod_vrfi_test_CFLAGS = -DSTANDALONE_DEBUG -g3
 #mod_vrfi_test_LDADD = $(libdir)/libcommon_core.la
 

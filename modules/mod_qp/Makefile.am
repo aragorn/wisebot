@@ -1,19 +1,21 @@
 # $Id$ 
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
-pkglib_LTLIBRARIES = mod_qp.la mod_qp2.la
+if CYGWIN
+noinst_LTLIBRARIES = mod_qp2.la
+pkglib_LTLIBRARIES = 
+check_LTLIBRARIES = mod_qp.la
+else
+noinst_LTLIBRARIES = 
+pkglib_LTLIBRARIES = mod_qp2.la
+check_LTLIBRARIES = mod_qp.la
+endif
 
 mod_qp_la_SOURCES = mod_qp.c mod_qp.h
-mod_qp_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_qp_la_LIBADD  = $(libdir)/libcommon_core.la \
-                    -lm
+mod_qp_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_qp_la_LIBADD  = -lm
 
 mod_qp2_la_SOURCES = mod_qp2.c
-mod_qp2_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_qp2_la_LIBADD  = $(libdir)/libcommon_core.la \
-                     -lm
+mod_qp2_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_qp2_la_LIBADD  = -lm
 
 #mod_qp_cdmi_la_SOURCES = mod_qp_cdmi.c mod_qp.h
 #mod_qp_cdmi_la_LDFLAGS = -module -avoid-version

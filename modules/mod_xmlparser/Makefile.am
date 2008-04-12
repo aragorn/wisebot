@@ -60,3 +60,4 @@ teststree_LDFLAGS = -export-dynamic $(DYN_LIB)
 testsimpleparser_SOURCES = mod_simple_xmlparser.c
 testsimpleparser_CFLAGS = -DTEST_PROGRAM
 
+include ../install-pkglib.mk

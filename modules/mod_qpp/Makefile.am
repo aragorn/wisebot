@@ -1,21 +1,26 @@
 # $Id$ 
-include $(top_builddir)/Make.defs
+if CYGWIN
+noinst_LTLIBRARIES = mod_qpp.la mod_qpp1.la
+pkglib_LTLIBRARIES = 
+check_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES =            mod_qpp1.la
+pkglib_LTLIBRARIES = mod_qpp.la
+check_LTLIBRARIES = 
+endif
 
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
-pkglib_LTLIBRARIES = mod_qpp.la mod_qpp1.la
-
-mod_qpp_la_SOURCES = mod_qpp.c daum_qpp.c tokenizer.c stack.c  relatedTerm.c \
-					mod_qpp.h daum_qpp.h qpp_test.h relatedTerm.h \
+mod_qpp_la_SOURCES = mod_qpp.c daum_qpp.c \
+                    tokenizer.c stack.c  relatedTerm.c \
+					mod_qpp.h daum_qpp.h \
+                    qpp_test.h relatedTerm.h \
 					stack.h synonym.h tokenizer.h 
-mod_qpp_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_qpp_la_LIBADD  = $(libdir)/libcommon_core.la
+mod_qpp_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 check_PROGRAMS = daum_qpp qpp1_test mod_qpp2 test_ly
 
 AM_YFLAGS = -d -v
 mod_qpp1_la_SOURCES = mod_qpp1.c mod_qpp1.h qpp1_yacc.y qpp1_lex.l
-mod_qpp1_la_LDFLAGS = -module -avoid-version -no-undefined
+mod_qpp1_la_LDFLAGS = $(MODULES_LDFLAGS)
 mod_qpp1_la_LIBADD  = $(LEXLIB) $(libdir)/libcommon_core.la
 
 qpp1_test_SOURCES = qpp1_test.c

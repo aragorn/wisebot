@@ -1,11 +1,13 @@
 # $Id$
-include $(top_builddir)/Make.defs
+if CYGWIN
+noinst_LTLIBRARIES = mod_tokenizer.la
+pkglib_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES = 
+pkglib_LTLIBRARIES = mod_tokenizer.la
+endif
 
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
-pkglib_LTLIBRARIES = mod_tokenizer.la 
 mod_tokenizer_la_SOURCES = mod_tokenizer.c mod_tokenizer.h
-mod_tokenizer_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_tokenizer_la_LIBADD  = $(libdir)/libcommon_core.la
+mod_tokenizer_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 include ../install-pkglib.mk

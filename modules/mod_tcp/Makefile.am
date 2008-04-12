@@ -1,13 +1,13 @@
 # $Id$
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
+if CYGWIN
+noinst_LTLIBRARIES = mod_tcp.la
+pkglib_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES = 
 pkglib_LTLIBRARIES = mod_tcp.la
+endif
+
 mod_tcp_la_SOURCES = mod_tcp.c
-mod_tcp_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_tcp_la_LIBADD  = $(libdir)/libcommon_core.la \
-                     $(libdir)/libcommon_util.la \
-                     $(libdir)/libapi_common.la
+mod_tcp_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 include ../install-pkglib.mk

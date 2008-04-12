@@ -1,15 +1,13 @@
 #d $Id$
-include $(top_builddir)/Make.defs
+if CYGWIN
+noinst_LTLIBRARIES = mod_mp.la
+pkglib_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES = 
+pkglib_LTLIBRARIES = mod_mp.la
+endif
 
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
-SOURCE_FILES = mod_mp.c mod_mp.h proc_list.c proc_list.h
-
-pkglib_LTLIBRARIES = mod_mp.la 
-
-mod_mp_la_SOURCES = $(SOURCE_FILES)
-mod_mp_la_LDFLAGS = -module -avoid-version -no-undefined $(THREAD_LIB)
-mod_mp_la_LIBADD  = $(libdir)/libcommon_core.la
+mod_mp_la_SOURCES = mod_mp.c mod_mp.h proc_list.c proc_list.h
+mod_mp_la_LDFLAGS = $(MODULES_LDFLAGS) $(THREAD_LIB)
 
 include ../install-pkglib.mk
-

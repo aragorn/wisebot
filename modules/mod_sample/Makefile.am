@@ -1,7 +1,4 @@
 # $Id$
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
 
 pkglib_LTLIBRARIES = mod_sample.la mod_sample1.la mod_sample2.la
 

@@ -1,12 +1,13 @@
 # $Id$
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
-
-pkglib_LTLIBRARIES = mod_frm.la 
+if CYGWIN
+noinst_LTLIBRARIES = mod_frm.la
+pkglib_LTLIBRARIES = 
+else
+noinst_LTLIBRARIES = 
+pkglib_LTLIBRARIES = mod_frm.la
+endif
 
 mod_frm_la_SOURCES = mod_frm.c mod_frm.h
-mod_frm_la_LDFLAGS = -module -avoid-version -no-undefined
-mod_frm_la_LIBADD  = $(libdir)/libcommon_core.la
+mod_frm_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 include ../install-pkglib.mk
