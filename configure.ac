@@ -372,9 +372,10 @@ dnl Various OS checks that apparently set required flags
 dnl AC_AIX
 
 
+CFLAGS=""
 AM_CFLAGS="-Wall -g3 -O3 $EXTRA_CFLAGS"
 AM_CPPFLAGS="-I\$(top_builddir)/modules"
-AM_LDFLAGS="-rpath \$(libdir)"
+AM_LDFLAGS=""
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
