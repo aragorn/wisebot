@@ -254,7 +254,7 @@ static int register_document( memfile*  buf )
     return SUCCESS;
 }
 
-static void sleep(slot_t *slot)
+static void set_slot_sleep(slot_t *slot)
 {
 	setproctitle("softbotd: %s sleep[%d], master[%s:%s]", __FILE__, delay_time_sec, ip, port);
 
@@ -358,7 +358,7 @@ static int replication_main(slot_t *slot)
         register_document( buf );
 
 sleep:
-        sleep(slot);
+        set_slot_sleep(slot);
 
 	} /* endless while loop */
 
