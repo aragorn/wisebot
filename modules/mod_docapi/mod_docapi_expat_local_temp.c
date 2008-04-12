@@ -13,7 +13,6 @@
 
 #include <errno.h>
 #include <string.h>
-#include "expat.h"
 
 #define MAX_ATTR_NUM			32
 
