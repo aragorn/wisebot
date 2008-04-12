@@ -1501,7 +1501,7 @@ static int operate_within(sb_stack_t *stack, QueryNode *within)
 	needed_dist = within->opParam;
 
 	sb_assert(within->opParam >= 0);
-	sb_assert(num_of_operands == 2 || within->opParam == 0);
+	//sb_assert(num_of_operands == 2 || within->opParam == 0);
 
 	while (num_of_operands >= 2) {
 		l2 = stack_pop(stack);
