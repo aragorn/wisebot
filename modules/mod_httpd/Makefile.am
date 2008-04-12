@@ -1,10 +1,7 @@
 # $Id$
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
 
 pkglib_LTLIBRARIES = mod_httpd.la
-mod_httpd_la_LDFLAGS = -module -avoid-version -no-undefined \
+mod_httpd_la_LDFLAGS = $(MODULES_LDFLAGS) \
                        $(APR_LDFLAGS) $(APU_LDFLAGS)
 mod_httpd_la_LIBADD  = $(libdir)/libcommon_core.la \
                        $(libdir)/libcommon_util.la \
@@ -47,12 +44,14 @@ mod_httpd_la_SOURCES = mod_httpd.c mod_httpd.h \
 
 BUILT_SOURCES = delete-exports test_char.h exports.c #mod_httpd.exp
 
-test_char.h: gen_test_char
+test_char.h: gen_test_char$(EXEEXT)
 	./gen_test_char > test_char.h
+
 noinst_PROGRAMS = gen_test_char #test_main
-gen_test_char_SOURCES = gen_test_char.c
-gen_test_char_CFLAGS = $(APR_CPPFLAGS) $(APR_CFLAGS) \
-                       $(APR_INCLUDES) $(APU_INCLUDES)
+gen_test_char_SOURCES  = gen_test_char.c
+gen_test_char_CPPFLAGS = $(APR_CPPFLAGS) $(APR_INCLUDES) $(APU_INCLUDES)
+gen_test_char_CFLAGS   = $(APR_CFLAGS) $(AM_CFLAGS)
+gen_test_char_LDFLAGS  = 
 
 
 # 아래 exports.c, export_vars.h 관련 내용들은 httpd-2.0.54/server/Makefile.in 에서
