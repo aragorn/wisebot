@@ -1,7 +1,13 @@
 # $Id$
-include $(top_builddir)/Make.defs
-
-MAINTAINERCLEANFILES = Makefile Makefile.in
+if CYGWIN
+noinst_LTLIBRARIES = mod_simple_xmlparser.la
+pkglib_LTLIBRARIES = 
+check_LTLIBRARIES = mod_xmlparser.la
+else
+noinst_LTLIBRARIES = 
+pkglib_LTLIBRARIES = mod_simple_xmlparser.la
+check_LTLIBRARIES = mod_xmlparser.la
+endif
 
 if SRCLIB_ICONV
 LIBICONV_LA = $(libdir)/libiconv.la
@@ -19,17 +25,16 @@ else
 LIBEXPAT_LA = -lexpat
 endif
 
-pkglib_LTLIBRARIES = mod_xmlparser.la mod_simple_xmlparser.la
 mod_xmlparser_la_SOURCES = mod_xmlparser.c parser.c \
 						   dh.c stack.c checksum.c \
 						   checksum.h dh.h parser.h stack.h
+mod_xmlparser_la_LDFLAGS = $(MODULES_LDFLAGS)
 mod_xmlparser_la_LIBADD  = $(libdir)/libcommon_core.la \
                            $(LIBEXPAT_LA) $(LIBICONV_LA)
-mod_xmlparser_la_LDFLAGS = -module -avoid-version -no-undefined
 mod_xmlparser_la_CFLAGS  = -fno-strict-aliasing
 
 mod_simple_xmlparser_la_SOURCES = mod_simple_xmlparser.c
-mod_simple_xmlparser_la_LDFLAGS = -module -avoid-version -no-undefined
+mod_simple_xmlparser_la_LDFLAGS = $(MODULES_LDFLAGS)
 
 check_PROGRAMS = teststree testparser testsimpleparser
 
@@ -55,4 +60,3 @@ teststree_LDFLAGS = -export-dynamic $(DYN_LIB)
 testsimpleparser_SOURCES = mod_simple_xmlparser.c
 testsimpleparser_CFLAGS = -DTEST_PROGRAM
 
-include ../install-pkglib.mk
