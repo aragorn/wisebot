@@ -56,8 +56,8 @@ mod_rmac2_la_LDFLAGS = -module -avoid-version -no-undefined \
 mod_koma_la_SOURCES = mod_koma.c mod_koma.h \
                       mod_koma_complex_noun_support.c \
                       mod_koma_complex_noun_support.h
-#mod_koma_la_CFLAGS = -g3 -O0
-mod_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
+mod_koma_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(includedir)
+mod_koma_la_LDFLAGS  = -module -avoid-version -L$(libdir) -lkoma -lkomatagger
 
 test_mod_koma_SOURCES = test_mod_koma.c
 test_mod_koma_CFLAGS  = -DMOD_KOMA_ENABLED
@@ -105,5 +105,5 @@ test_mod_pkoma_SOURCES = test_mod_pkoma.c
 test_mod_pkoma_CFLAGS  = 
 endif
 
-include ../install-pkglib.mk
+#include ../install-pkglib.mk
 
