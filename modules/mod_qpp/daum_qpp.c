@@ -259,6 +259,7 @@ int push_daum_tree(void* word_db, StateObj* pStObj, struct daum_tree_node* tree)
 }
 #endif
 
+#ifdef TEST_PROGRAM
 int main(int argc, char** argv)
 {
 	index_word_t tokens[128];
@@ -290,3 +291,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+#endif
