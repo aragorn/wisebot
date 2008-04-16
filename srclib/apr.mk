@@ -1,10 +1,12 @@
 # $Id$ 
 
+prefix = $(shell cd .. && pwd)
 apr_name = apr-1.2.12
 apu_name = apr-util-1.2.12
 
 apr-default:
-	@echo Available targets: apr-install apr-util-install
+	@echo "prefix = [$(prefix)]"
+	@echo "Available targets: apr-install apr-util-install"
 
 apr-export:
 	[ -f $(apr_name)/buildconf ] || (gzip -c -d $(apr_name).tar.gz | tar xf -)
