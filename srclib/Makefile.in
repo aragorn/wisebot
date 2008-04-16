@@ -8,8 +8,6 @@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
-apr_name = apr-1.2.12
-apu_name = apr-util-1.2.12
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 top_builddir = @top_builddir@
@@ -30,6 +28,8 @@ all:
 	@echo " apr-install - optional"
 	@echo " apr-util-install - optional"
 	@echo "ex) make koma2c-install"
+###############################################################################
+include apr.mk
 ###############################################################################
 cvs-export: expat-export koma2c-export
 build: expat koma2c
@@ -68,16 +68,6 @@ ncurses-export:
 	cd ncurses-5.5 && \
 	./configure --prefix=$(prefix) --with-shared --with-normal
 
-apr-export:
-	[ -f $(apr_name)/buildconf ] || (gzip -c -d $(apr_name).tar.gz | tar xf -)
-	cd $(apr_name) && \
-	./configure --prefix=$(prefix)
-
-apr-util-export:
-	[ -f $(apu_name)/buildconf ] || (gzip -c -d $(apu_name).tar.gz | tar xf -)
-	cd $(apu_name) && \
-	./configure --prefix=$(prefix) --with-apr=$(shell pwd)/$(apr_name)
-
 ###############################################################################
 expat: expat-export
 	cd expat && make
@@ -96,12 +86,6 @@ readline: readline-export
 
 ncurses: ncurses-export
 	cd ncurses-5.5 && make
-
-apr: apr-export
-	cd $(apr_name) && make
-
-apr-util: apr-util-export
-	cd $(apu_name) && make
 
 ###############################################################################
 expat-install: expat
@@ -122,11 +106,6 @@ readline-install: readline
 ncurses-install: ncurses
 	cd ncurses-5.5 && make install
 
-apr-install: apr
-	cd $(apr_name) && make install
-
-apr-util-install: apr-util
-	cd $(apu_name) && make install
 ###############################################################################
 expat-clean:
 	rm -rf expat
@@ -145,12 +124,6 @@ readline-clean:
 
 ncurses-clean:
 	rm -rf ncurses-5.5
-
-apr-clean:
-	rm -rf $(apr_name)
-
-apr-util-clean:
-	rm -rf $(apu_name)
 
 ###############################################################################
 test:
