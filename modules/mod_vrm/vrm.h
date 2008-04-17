@@ -1,5 +1,4 @@
-#include "common_core.h"
-		
+/* $Id$ */
 #ifndef VRM_H
 #define VRM_H
 

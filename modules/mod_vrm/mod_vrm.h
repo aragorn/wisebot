@@ -1,3 +1,4 @@
+/* $Id$ */
 #include "vrm.h"
 #include <inttypes.h>
 
@@ -40,7 +41,7 @@ typedef struct {
     void *block[MAX_BLOCK_NUM];
 } mmap_file_t;
 
-struct vrm_t{
+struct vrm_t {
     int lock_id;
 	mmap_file_t index;
 	mmap_file_t data;

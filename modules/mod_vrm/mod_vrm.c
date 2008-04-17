@@ -1,8 +1,8 @@
 /* $Id$ */
 
 #include "common_core.h"
-#include "memory.h"
-#include "ipc.h"
+//#include "memory.h"
+//#include "ipc.h"
 
 #include "mod_vrm.h"
 #include <sys/stat.h>
