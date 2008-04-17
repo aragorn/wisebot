@@ -14,7 +14,7 @@ mod_morpheme_la_SOURCES = mod_morpheme.c \
 				lib/ma_data.c lib/mak_data.c lib/ma_code.c \
 				lib/lb_std.c lib/lb_lex.c \
 				mod_morpheme.h 
-mod_morpheme_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_morpheme_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 #EXTRA_DIST = lib
 #

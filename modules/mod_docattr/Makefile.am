@@ -10,10 +10,10 @@ check_LTLIBRARIES = mod_docattr.la
 endif
 
 mod_docattr_la_SOURCES = mod_docattr.c mod_docattr.h
-mod_docattr_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_docattr_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 mod_docattr2_la_SOURCES = mod_docattr2.c
-mod_docattr2_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_docattr2_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 ## pkglib_LTLIBRARIES = mod_docattr_new.la
 ## mod_docattr_new_la_SOURCES = mod_docattr_new.c mod_docattr_new.h

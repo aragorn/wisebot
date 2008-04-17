@@ -10,10 +10,10 @@ check_LTLIBRARIES = mod_did2.la
 endif
 
 mod_did_la_SOURCES = mod_did.c
-mod_did_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_did_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 mod_did2_la_SOURCES = mod_did2.c
-mod_did2_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_did2_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 #mod_did_daemon_la_SOURCES = mod_did_daemon.c \
 #							mod_did_client.h mod_did_daemon.h \

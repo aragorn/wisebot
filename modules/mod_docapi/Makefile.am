@@ -11,7 +11,7 @@ endif
 #mod_docapi_la_SOURCES = mod_docapi_expat.c 
 mod_docapi_la_SOURCES = mod_docapi_expat_local_temp.c \
 						mod_docapi.h
-mod_docapi_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_docapi_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 #mod_docapi_cdmi_la_SOURCES = mod_docapi_cdmi.c mod_docapi.h
 #mod_docapi_cdmi_la_LDFLAGS = -module -avoid-version 

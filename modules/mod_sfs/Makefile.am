@@ -13,7 +13,7 @@ SOURCE_FILES = mod_sfs.c super_block.c fat.c directory.c shared_memory.c \
                mod_sfs.h super_block.h fat.h directory.h shared_memory.h
 
 mod_sfs_la_SOURCES = $(SOURCE_FILES)
-mod_sfs_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_sfs_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 check_PROGRAMS = test_sfs test2_sfs
 

@@ -10,15 +10,15 @@ check_LTLIBRARIES = mod_ifs_test.la
 endif
 
 mod_ifs_la_SOURCES = mod_ifs.c mod_ifs.h table.c
-mod_ifs_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_ifs_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_ifs_la_LIBADD  =
 
 mod_ifs_defrag_la_SOURCES = mod_ifs_defrag.c
-mod_ifs_defrag_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_ifs_defrag_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_ifs_defrag_la_LIBADD  =
 
 mod_ifs_test_la_SOURCES = mod_ifs_test.c
-mod_ifs_test_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_ifs_test_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_ifs_test_la_LIBADD  = 
 
 check_PROGRAMS = test_ifs test2_ifs

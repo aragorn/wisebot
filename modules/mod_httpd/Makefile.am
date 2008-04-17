@@ -9,7 +9,7 @@ pkglib_LTLIBRARIES = mod_httpd.la
 check_LTLIBRARIES = 
 endif
 
-mod_httpd_la_LDFLAGS = $(MODULES_LDFLAGS) \
+mod_httpd_la_LDFLAGS = -module $(MODULES_LDFLAGS) \
                        $(APR_LDFLAGS) $(APU_LDFLAGS)
 mod_httpd_la_LIBADD  = $(APR_LIBS) $(APU_LIBS) 
 mod_httpd_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \

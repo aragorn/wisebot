@@ -17,19 +17,19 @@ mod_site_general_la_SOURCES = mod_docattr_general.c \
 							  mod_qp_general.c \
 							  mod_qp_general_yacc.y \
 							  mod_qp_general_lex.l
-mod_site_general_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_site_general_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_site_general_la_LIBADD  = $(LEXLIB)
 
 mod_site_general2_la_SOURCES = mod_docattr_general2.c \
 							  mod_qp_general2.c \
 							  mod_qp_general_yacc2.y \
 							  mod_qp_general_lex2.l
-mod_site_general2_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_site_general2_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_site_general2_la_LIBADD  = $(LEXLIB)
 
 mod_test_docattr_la_SOURCES = mod_docattr_test.c \
                               mod_docattr_test.h \
 							  mod_qp_test.c
-mod_test_docattr_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_test_docattr_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 include ../install-pkglib.mk

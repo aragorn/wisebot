@@ -8,6 +8,6 @@ pkglib_LTLIBRARIES = mod_tokenizer.la
 endif
 
 mod_tokenizer_la_SOURCES = mod_tokenizer.c mod_tokenizer.h
-mod_tokenizer_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_tokenizer_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 include ../install-pkglib.mk

@@ -43,32 +43,32 @@ endif
 mod_bigram_la_SOURCES = mod_bigram.c mod_bigram.h \
                         mod_bigram_truncation_search_support.c \
                         mod_bigram_truncation_search_support.h
-mod_bigram_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_bigram_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_bigram_la_LIBADD  = liboldcodetrans.la
 
 mod_rmas_la_SOURCES   = mod_rmas.c
-mod_rmas_la_LDFLAGS   = $(MODULES_LDFLAGS)
+mod_rmas_la_LDFLAGS   = -module $(MODULES_LDFLAGS)
 
 mod_dummy_ma_la_SOURCES = mod_dummy_ma.c
-mod_dummy_ma_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_dummy_ma_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_dummy_ma_la_LIBADD  = liboldcodetrans.la
 
 mod_kor2chn_translator_la_SOURCES = mod_kor2chn_translator.c
-mod_kor2chn_translator_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_kor2chn_translator_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_kor2chn_translator_la_LIBADD  = liboldcodetrans.la
 
 mod_rmac2_la_SOURCES = mod_rmac2.c
 mod_rmac2_la_LIBADD  = $(APR_LIBS) $(APU_LIBS)
 mod_rmac2_la_CFLAGS  = $(APR_CPPFLAGS) $(APR_CFLAGS) \
                        $(APR_INCLUDES) $(APU_INCLUDES)
-mod_rmac2_la_LDFLAGS = $(MODULES_LDFLAGS) \
+mod_rmac2_la_LDFLAGS = -module $(MODULES_LDFLAGS) \
 						$(APR_LDFLAGS) $(APU_LDFLAGS)
 
 mod_koma_la_SOURCES = mod_koma.c mod_koma.h \
                       mod_koma_complex_noun_support.c \
                       mod_koma_complex_noun_support.h
 mod_koma_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(includedir)
-mod_koma_la_LDFLAGS  = $(MODULES_LDFLAGS) -L$(libdir) -lkoma -lkomatagger
+mod_koma_la_LDFLAGS  = -module $(MODULES_LDFLAGS) -L$(libdir) -lkoma -lkomatagger
 
 test_mod_koma_SOURCES = test_mod_koma.c
 test_mod_koma_CFLAGS  = -DMOD_KOMA_ENABLED
@@ -87,15 +87,15 @@ test_mod_koma_complex_noun_LDADD   = $(libdir)/libcommon_core.la \
 
 if USE_DAUM_KOMA
 mod_daum_koma_la_SOURCES = mod_daum_koma.c
-mod_daum_koma_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
+mod_daum_koma_la_LDFLAGS = -module $(MODULES_LDFLAGS) -L$(libdir) -lhanl
 
 mod_daum_koma_exact_la_SOURCES = mod_daum_exact.c
-mod_daum_koma_exact_la_LDFLAGS = -module -avoid-version -L$(libdir) -lhanl
+mod_daum_koma_exact_la_LDFLAGS = -module $(MODULES_LDFLAGS) -L$(libdir) -lhanl
 else
 mod_daum_koma_la_SOURCES = 
-mod_daum_koma_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_daum_koma_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_daum_koma_exact_la_SOURCES = 
-mod_daum_koma_exact_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_daum_koma_exact_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 endif
 
 if USE_POSTECH_KOMA
@@ -110,7 +110,7 @@ test_mod_pkoma_LDADD   = $(libdir)/libcommon_core.la \
 						 mod_pkoma.la
 else
 mod_pkoma_la_SOURCES = 
-mod_pkoma_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_pkoma_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 test_mod_pkoma_SOURCES = test_mod_pkoma.c
 test_mod_pkoma_CFLAGS  = 
 endif

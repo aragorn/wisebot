@@ -9,7 +9,7 @@ endif
 
 mod_protocol4_la_SOURCES = mod_protocol4.c mod_protocol4.h \
                            mod_client.c mod_client.h
-mod_protocol4_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_protocol4_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 				
 # check_PROGRAMS = mod_protocol4_test

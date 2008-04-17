@@ -26,7 +26,7 @@ if CYGWIN
 pkglib_LTLIBRARIES += mod_cygwin.la
 
 mod_cygwin_la_SOURCES = 
-mod_cygwin_la_LDFLAGS = $(MODULES_LDFLAGS) -no-undefined
+mod_cygwin_la_LDFLAGS = -module $(MODULES_LDFLAGS) -no-undefined
 mod_cygwin_la_LIBADD  = mod_api/mod_api2.la \
                         mod_mp/mod_mp.la \
                         mod_tcp/mod_tcp.la \

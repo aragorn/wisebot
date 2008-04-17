@@ -10,11 +10,11 @@ check_LTLIBRARIES = mod_qp.la
 endif
 
 mod_qp_la_SOURCES = mod_qp.c mod_qp.h
-mod_qp_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_qp_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_qp_la_LIBADD  = -lm
 
 mod_qp2_la_SOURCES = mod_qp2.c
-mod_qp2_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_qp2_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_qp2_la_LIBADD  = -lm
 
 #mod_qp_cdmi_la_SOURCES = mod_qp_cdmi.c mod_qp.h

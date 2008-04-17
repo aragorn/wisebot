@@ -43,11 +43,11 @@ SOURCE_FILES2 = qp2.c qp2.h \
 				docattr2.c docattr2.h
 
 mod_api_la_SOURCES = $(SOURCE_FILES1)
-mod_api_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_api_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_api_la_LIBADD  = libapi_common.la
 
 mod_api2_la_SOURCES = $(SOURCE_FILES2)
-mod_api2_la_LDFLAGS = $(MODULES_LDFLAGS)
+mod_api2_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_api2_la_LIBADD  = libapi_common.la
 
 include ../install-pkglib.mk
