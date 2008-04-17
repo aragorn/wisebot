@@ -21,18 +21,16 @@ check_PROGRAMS = daum_qpp qpp1_test mod_qpp2 test_ly
 AM_YFLAGS = -d -v
 mod_qpp1_la_SOURCES = mod_qpp1.c mod_qpp1.h qpp1_yacc.y qpp1_lex.l
 mod_qpp1_la_LDFLAGS = -module $(MODULES_LDFLAGS)
-mod_qpp1_la_LIBADD  = $(LEXLIB) $(libdir)/libcommon_core.la
+mod_qpp1_la_LIBADD  = $(LEXLIB)
 
 qpp1_test_SOURCES = qpp1_test.c
-qpp1_test_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la \
-                    $(libdir)/libcommon_util.la \
-                    mod_qpp1.la
+qpp1_test_LDADD   = $(LEXLIB) mod_qpp1.la
 
 daum_qpp_SOURCES = daum_qpp.c daum_qpp.h
 daum_qpp_CFLAGS = -DTEST_PROGRAM
 
 mod_qpp2_SOURCES = qpp2_yacc.y qpp2_lex.l
-mod_qpp2_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la
+mod_qpp2_LDADD   = $(LEXLIB)
 
 test_ly_SOURCES = test_yacc.y test_lex.l
 test_ly_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la

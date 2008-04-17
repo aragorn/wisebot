@@ -9,7 +9,7 @@ noinst_LTLIBRARIES = mod_bigram.la \
                      mod_daum_koma_exact.la \
                      mod_pkoma.la
 pkglib_LTLIBRARIES = 
-check_LTLIBRARIES = mod_ifs_test.la
+check_LTLIBRARIES = 
 else
 noinst_LTLIBRARIES = 
 pkglib_LTLIBRARIES = mod_bigram.la \
@@ -20,7 +20,7 @@ pkglib_LTLIBRARIES = mod_bigram.la \
                      mod_daum_koma.la \
                      mod_daum_koma_exact.la \
                      mod_pkoma.la
-check_LTLIBRARIES = mod_ifs_test.la
+check_LTLIBRARIES = 
 endif
 
 
