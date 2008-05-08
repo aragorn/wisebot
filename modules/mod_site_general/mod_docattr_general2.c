@@ -949,8 +949,8 @@ static int build_field_offset()
 		assigned_field[i] = 1;
 		assigned_count++;
 
-//		info("DocAttrField [%s] - offset: %d, size: %d, bit offset: %d, bit size: %d",
-//				field->name, field->offset, field->size, field->bit_offset, field->bit_size);
+		debug("DocAttrField [%s] - offset: %d, size: %d, bit offset: %d, bit size: %d",
+				field->name, field->offset, field->size, field->bit_offset, field->bit_size);
 	}
 
 /*  BIG ENDIAN 에서 정상적으로 작동하지 않는 코드다 */
@@ -973,8 +973,8 @@ static int build_field_offset()
 			assigned_field[i] = 1;
 			assigned_count++;
 
-//			info("DocAttrField [%s] - offset: %d, size: %d",
-//					field->name, field->offset, field->size);
+			debug("DocAttrField [%s] - offset: %d, size: %d",
+					field->name, field->offset, field->size);
 		}
 	}
 
@@ -989,8 +989,8 @@ static int build_field_offset()
 		assigned_field[i] = 1;
 		assigned_count++;
 
-//		info("DocAttrField [%s] - offset: %d, size: %d",
-//				field->name, field->offset, field->size);
+		debug("DocAttrField [%s] - offset: %d, size: %d",
+				field->name, field->offset, field->size);
 	}
 
 	info("DocAttr Size: %d, Field Count: %d", offset, assigned_count);
@@ -998,7 +998,7 @@ static int build_field_offset()
 		for ( i = 0; i < docattr_field_count; i++ ) {
 			print_docattr_field( &docattr_field[i] );
 		}
-		error("DocAttr size is larger than sizeof(docattr_t):%d", (int) sizeof(docattr_t));
+		error("DocAttr size(%d) is larger than sizeof(docattr_t):%d", offset, (int) sizeof(docattr_t));
 		return FAIL;
 	}
 
