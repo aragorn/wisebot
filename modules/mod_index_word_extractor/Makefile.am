@@ -35,9 +35,9 @@ liboldcodetrans_la_SOURCES = \
                         lib/ma_jamo.h \
                         lib/old_softbot.h
 if AIX5
-liboldcodetrans_la_LDFLAGS = -avoid-version -static
+liboldcodetrans_la_LDFLAGS = -static -avoid-version
 else
-liboldcodetrans_la_LDFLAGS = -avoid-version -shared
+liboldcodetrans_la_LDFLAGS = -shared -avoid-version -no-undefined
 endif
 
 mod_bigram_la_SOURCES = mod_bigram.c mod_bigram.h \
