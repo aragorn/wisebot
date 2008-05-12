@@ -31,7 +31,7 @@
 static indexer_shared_t* indexer_shared = NULL;
 static word_hit_t *wordhits_storage = NULL; // 매번 malloc, free하기 싫으니까...
 static int max_word_hit = 400000;
-char indexer_shared_file[MAX_FILE_LEN] = "dat/indexer/indexer.shared";
+static char indexer_shared_file[MAX_FILE_LEN] = "dat/indexer/indexer.shared";
 
 /* XXX: 일단은 child 1개 */
 static scoreboard_t scoreboard[] = {PROCESS_SCOREBOARD(1)};

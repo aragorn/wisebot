@@ -47,7 +47,7 @@ static char qlog_path[MAX_PATH_LEN] = "logs/query_log";
 static void (*sighup_handler)(int sig) = NULL;
 static void reopen_qlog(int sig);
 static int init_index_info();
-char indexer_shared_file[MAX_FILE_LEN] = "dat/indexer/indexer.shared";
+static char indexer_shared_file[MAX_FILE_LEN] = "dat/indexer/indexer.shared";
 
 static int init_db()
 {
