@@ -26,7 +26,7 @@ if CYGWIN
 pkglib_LTLIBRARIES += mod_cygwin.la
 
 mod_cygwin_la_SOURCES = 
-mod_cygwin_la_LDFLAGS = -module $(MODULES_LDFLAGS) -no-undefined
+mod_cygwin_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_cygwin_la_LIBADD  = mod_api/mod_api2.la \
                         mod_mp/mod_mp.la \
                         mod_tcp/mod_tcp.la \
@@ -34,6 +34,7 @@ mod_cygwin_la_LIBADD  = mod_api/mod_api2.la \
                         mod_indexer/mod_daemon_indexer2.la \
                         mod_indexer/mod_index_each_doc.la \
                         mod_qpp/mod_qpp.la mod_qp/mod_qp2.la \
+                        mod_site_general/mod_site_general2.la \
                         mod_tokenizer/mod_tokenizer.la \
                         mod_morpheme/mod_morpheme.la \
                         mod_index_word_extractor/mod_dummy_ma.la \
@@ -47,9 +48,15 @@ mod_cygwin_la_LIBADD  = mod_api/mod_api2.la \
                         mod_did/mod_did.la \
                         mod_xmlparser/mod_simple_xmlparser.la \
                         mod_lexicon/mod_lexicon.la \
+                        mod_httpd/mod_httpd.la \
+                        mod_httpd_handler/mod_httpd_handler.la \
+                        mod_http_client/mod_http_client.la \
+                        $(libdir)/libcommon_util.la $(libdir)/libcommon_core.la -lfl
                         #
 endif
 
+# mod_qpp
+# mod_site_general
 
 # Deprecated modules
 #	mod_vbm \
