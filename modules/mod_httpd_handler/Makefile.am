@@ -1,6 +1,6 @@
 # $Id$
 if CYGWIN
-pkglib_LTLIBRARIES = mod_httpd_handler.la
+noinst_LTLIBRARIES = mod_httpd_handler.la
 else
 pkglib_LTLIBRARIES = mod_httpd_handler.la \
                      mod_standard_handler.la \
