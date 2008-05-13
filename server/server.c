@@ -568,6 +568,24 @@ main(int argc, char *argv[], char *envp[])
 }
 
 /*****************************************************************************/
+static void clearModuleList(configValue a)
+{
+	debug("clear module list");
+	clear_module_list();
+}
+
+static void doAddModule(configValue a)
+{
+	module *m = NULL;
+
+	m = find_module(a.argument[0]);
+	if (m != NULL) 
+	{
+		debug("found a module[%s]", a.argument[0]);
+		add_module(m, a.argument[0]);
+	}
+} 
+
 static void doLoadModule(configValue a)
 {
 	char registry_only = 0;
@@ -696,6 +714,10 @@ static char* get_server_uptime()
 
 /** config stuff **/
 static config_t config[] = {
+	CONFIG_GET("ClearModuleList", clearModuleList, 1,
+		"a module name and the name of a shared object file to load it from"),
+	CONFIG_GET("AddModule", doAddModule, 1,
+		"a module name and the name of a shared object file to load it from"),
 	CONFIG_GET("LoadModule", doLoadModule, VAR_ARG,
 		"a module name and the name of a shared object file to load it from"),
 	CONFIG_GET("TestModule", doLoadTestModule, 2,\

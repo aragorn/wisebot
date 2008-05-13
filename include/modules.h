@@ -87,11 +87,13 @@ extern SB_DECLARE_DATA module *first_module;
 
 SB_DECLARE(module *)find_module(const char *mod_name);
 SB_DECLARE(void) set_static_modules(module *list[]);
-SB_DECLARE(int) load_static_modules();
-SB_DECLARE(int) load_dynamic_modules();
+SB_DECLARE(int) load_static_modules(void);
+SB_DECLARE(int) load_dynamic_modules(void);
+SB_DECLARE(module*) add_module(module *this, const char *mod_symbol_name);
 SB_DECLARE(module*) add_dynamic_module(const char *mod_struct_name, 
 									   const char *modulename,
 									   char registry_only);
+SB_DECLARE(void) clear_module_list(void);
 
 SB_DECLARE(int) init_core_modules(module *start_module);
 SB_DECLARE(int) init_standard_modules(module *start_module);

@@ -53,7 +53,7 @@ static int dynamic_modules = 0;
 static module **loaded_modules = NULL;
 static moduleinfo loaded_dynamic_modules[MAX_DYNAMIC_MODULES+1];
 
-static module* add_module(module *this, const char *mod_symbol_name);
+//static module* add_module(module *this, const char *mod_symbol_name);
 static void register_hooks(module *m);
 //static int unload_module(void *data);
 
@@ -188,6 +188,21 @@ int load_dynamic_modules()
 	return SUCCESS;
 #endif
 	return load_modules(DYNAMIC_MODULE_TYPE);
+}
+
+void clear_module_list(void)
+{
+    module **m = &first_module;
+    module **next_m;
+
+    while (*m) {
+    	next_m = &((*m)->next);
+    	*m = NULL;
+    	m = next_m;
+    }
+
+    /* This is required; so we add it always.  */
+    //add_named_module("http_core.c");
 }
 
 /* 
@@ -514,14 +529,11 @@ void list_config_str(char *result, char *module_name)
 		strcat(result, "  (no such module exists)\n");
 	}
 }
-/***************************************************************************
- * private functions
- */
 
 /* add the module at the end of linked list pointed by `first_module'.
  * if the module is dynamic one, add the module at the end of array,
  * `loaded_dynamic_modules' too. */
-static module* add_module(module *this, const char *mod_symbol_name)
+module* add_module(module *this, const char *mod_symbol_name)
 {
 	module *m; //*mprev;
 	char *ptr;
@@ -586,6 +598,10 @@ static module* add_module(module *this, const char *mod_symbol_name)
 	INFO("%s of %s", mod_symbol_name, this->name);
 	return this;
 }
+
+/***************************************************************************
+ * private functions
+ */
 
 static void register_hooks(module *m)
 {
