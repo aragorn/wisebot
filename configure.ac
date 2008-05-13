@@ -269,7 +269,7 @@ dnl ---------------------------------------------------------------------------
 dnl Check system environments
 CANONICAL_HOST="$host"
 SHORT_HOST=""
-MODULES_LDFLAGS="-module -avoid-version"
+MODULES_LDFLAGS="-avoid-version"
 SOFTBOTD_LDFLAGS=""
 SOFTBOTCLI_LDFLAGS=""
 case "$host" in 
@@ -376,7 +376,7 @@ dnl AC_AIX
 CFLAGS=""
 AM_CFLAGS="-Wall -g3 -O3 $EXTRA_CFLAGS"
 AM_CPPFLAGS="-I\$(top_builddir)/modules"
-AM_LDFLAGS=""
+#AM_LDFLAGS=""
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
