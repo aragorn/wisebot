@@ -1,7 +1,7 @@
 # $Id$ 
 if CYGWIN
-noinst_LTLIBRARIES = mod_qpp.la mod_qpp1.la
 pkglib_LTLIBRARIES = 
+noinst_LTLIBRARIES = mod_qpp.la mod_qpp1.la
 check_LTLIBRARIES = 
 else
 noinst_LTLIBRARIES =            mod_qpp1.la
@@ -24,16 +24,16 @@ mod_qpp1_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_qpp1_la_LIBADD  = $(LEXLIB)
 
 qpp1_test_SOURCES = qpp1_test.c
-qpp1_test_LDADD   = $(LEXLIB) mod_qpp1.la
+qpp1_test_LDADD   = mod_qpp1.la $(libdir)/libcommon_core.la $(LEXLIB) 
 
 daum_qpp_SOURCES = daum_qpp.c daum_qpp.h
 daum_qpp_CFLAGS = -DTEST_PROGRAM
 
 mod_qpp2_SOURCES = qpp2_yacc.y qpp2_lex.l
-mod_qpp2_LDADD   = $(LEXLIB)
+mod_qpp2_LDADD   = $(libdir)/libcommon_core.la $(LEXLIB)
 
 test_ly_SOURCES = test_yacc.y test_lex.l
-test_ly_LDADD   = $(LEXLIB) $(libdir)/libcommon_core.la
+test_ly_LDADD   = $(libdir)/libcommon_core.la $(LEXLIB)
 
 # check_PROGRAMS = qpp_test tokenizer_test stack_test
 # 

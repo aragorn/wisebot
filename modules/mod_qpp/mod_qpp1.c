@@ -1,9 +1,10 @@
 /* $Id$ */
 #include "common_core.h"
 #include "common_util.h" /* strnhcpy() */
+
+/*
 #include "memory.h"
 #include "util.h"
-/*
 #include "mod_api/index_word_extractor.h"
 #include "mod_api/lexicon.h"
 #include "mod_api/qp.h"

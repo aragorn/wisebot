@@ -1,5 +1,5 @@
+/* $Id$ */
 #  include "common_core.h"
-
 #ifndef TEST_PROGRAM
 #  include "memory.h"
 #else
@@ -8,7 +8,9 @@
 #  undef error
 #  define error printf
 
+#  undef sb_malloc
 #  define sb_malloc malloc
+#  undef sb_free
 #  define sb_free   free
 #endif
 
