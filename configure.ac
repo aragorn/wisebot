@@ -22,7 +22,7 @@ dnl AC_CONFIG_HEADER(include/auto_config.h)
 dnl XXX setting default prefix to `pwd` is not a good idea. --jiwon
 dnl but, we can't avoid this for a time being. --aragorn
 AC_PREFIX_DEFAULT(`pwd`)
-AM_CONDITIONAL(PREFIX_IS_PWD,test $(prefix) -eq $(top_builddir))
+AM_CONDITIONAL(PREFIX_IS_PWD,test x"$prefix" = x"$top_builddir")
 
 dnl ---------------------------------------------------------------------------
 dnl  APR and APU Stuff
