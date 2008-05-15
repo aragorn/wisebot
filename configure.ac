@@ -22,13 +22,14 @@ dnl AC_CONFIG_HEADER(include/auto_config.h)
 dnl XXX setting default prefix to `pwd` is not a good idea. --jiwon
 dnl but, we can't avoid this for a time being. --aragorn
 AC_PREFIX_DEFAULT(`pwd`)
-AC_MSG_CHECKING([if $prefix equals $top_builddir])
-if test x"$prefix" = x"$top_builddir"; then
+AC_MSG_CHECKING(if \$prefix($prefix) equals pwd)
+if test x"$prefix" = xNONE; then
     prefix_is_pwd=yes
 else
     prefix_is_pwd=no
 fi
-AM_CONDITIONAL(PREFIX_IS_PWD,test x"$prefix_is_pwd" = xyes)
+#AM_CONDITIONAL(PREFIX_IS_PWD,test x"$prefix_is_pwd" = xyes)
+AM_CONDITIONAL(PREFIX_IS_PWD,test x"$prefix" = xNONE)
 AC_MSG_RESULT($prefix_is_pwd)
 
 dnl ---------------------------------------------------------------------------
@@ -381,8 +382,8 @@ dnl AC_AIX
 
 
 CFLAGS=""
-AM_CFLAGS="-Wall -g3 -O3 $EXTRA_CFLAGS"
-AM_CPPFLAGS="-I\$(top_builddir)/modules"
+AM_CFLAGS='-Wall -g3 -O3 $EXTRA_CFLAGS'
+AM_CPPFLAGS='-I\$(top_builddir)/modules'
 #AM_LDFLAGS=""
 
 AC_LIBTOOL_WIN32_DLL
