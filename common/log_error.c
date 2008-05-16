@@ -319,7 +319,7 @@ static void init_loglock(void)
 	key = IPC_PRIVATE;
 	semid = semget(key,1,IPC_CREAT|IPC_EXCL|0600);
 	if (semid == -1 && errno == EEXIST) {
-		fprintf(stderr,"use existing semaphore for log [key=%d,semid=%d]\n", key, semid);
+		fprintf(stderr,"use existing semaphore for log [key=%d,semid=%d]\n", (int)key, semid);
 		semid = semget(key,1,0);
 	}
 
