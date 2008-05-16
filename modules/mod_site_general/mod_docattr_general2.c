@@ -1253,7 +1253,7 @@ static void get_field_sorting_order(configValue v)
 #endif
 
 static config_t config[] = {
-	CONFIG_GET("DocAttrField", get_docattr_field, 2, "docattr field : name type"),
+	CONFIG_GET("DocAttrField", get_docattr_field, 2, "DocAttrField name type"),
 	//CONFIG_GET("RidField", get_rid_field, 1, "rid field name"),
 	CONFIG_GET("Enum", get_enum, 2, "constant"),
 	//CONFIG_GET("FieldSortingOrder", get_field_sorting_order, 2,

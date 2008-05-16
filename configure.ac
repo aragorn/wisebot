@@ -286,7 +286,7 @@ case "$host" in
     AC_DEFINE(LINUX_64,1)
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
-    #EXTRA_CFLAGS="-m32 -march=i686"
+    EXTRA_CFLAGS="" #"-m32 -march=i686"
     ;;
   i?86-*-linux-gnu )
     SHORT_HOST="linux"
@@ -382,7 +382,7 @@ dnl AC_AIX
 
 
 CFLAGS=""
-AM_CFLAGS='-Wall -g3 -O3 $EXTRA_CFLAGS'
+AM_CFLAGS="-Wall -g3 -O3 $EXTRA_CFLAGS"
 AM_CPPFLAGS='-I\$(top_builddir)/modules'
 #AM_LDFLAGS=""
 
