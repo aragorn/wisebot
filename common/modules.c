@@ -72,25 +72,13 @@ module *find_module(const char *mod_name)
 	
 	strcpy(mod_short_name,p);
 
-	/* use find_module_by_symbol instead.
-	 * --aragorn (2002/08/20) */
-#if 0
-	/* for dynamic module (mod_xxx.so) */
-	p2 = strrchr(mod_short_name,'.');
-	if (p2) {
-		*p2 = '\0';
-		//XXX: module name is "mod_xxx.c"
-		strcat(mod_short_name, ".c");
-	}
-#endif
-
-	debug("mod_short_name:[%s]",mod_short_name);
-
 	for (m = first_module; m; m=m->next) {
 		if (strncmp(m->name,mod_short_name,strlen(mod_short_name))==0) {
+			debug("%s[%s] at %p",mod_short_name, m->name, m);
 			return m;
 		}
 	}
+	debug("%s is not loaded yet", mod_short_name);
 	return NULL;
 }
 
@@ -102,9 +90,11 @@ module *find_module_by_symbol(const char *mod_symbol_name)
 
 	for (mi = loaded_dynamic_modules; mi->modp; mi++) {
 		if (strncmp(mi->name,mod_symbol_name,strlen(mod_symbol_name))==0) {
+			debug("%s at %p",mod_symbol_name, mi->modp);
 			return mi->modp;
 		}
 	}
+	debug("%s is not loaded yet", mod_symbol_name);
 	return NULL;
 }
 /**
@@ -209,11 +199,11 @@ void clear_module_list(void)
  * This is called for the directive LoadModule and actually loads
  * a shared object file into the address space of the server process.
  */
-module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, char registry_only)
+module* load_module(const char *mod_symbol_name, const char *filename, char registry_only)
 {
-	//static void *selfhandle = NULL; // handle to executable file itself
+	static void *selfhandle = NULL; // handle to executable file itself
 	char modulefile[MAX_PATH_LEN];
-	void *modhandle;
+	void *modhandle = NULL;
 	void *modsym;
 	const char *error;
 	module *modp;
@@ -235,25 +225,28 @@ module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, 
 	/* always load executable itself first so that
 	 * subsequent loaded object can resolve symbols
 	 * in executables */
-#if 0 /* XXX: dlopening the executable is not needed, I think. --aragorn */
 	if (selfhandle == NULL) {
-		info("opening executable itself");
+		debug("opening executable itself");
 		selfhandle = dlopen(NULL, RTLD_NOW|RTLD_GLOBAL);
 		if (selfhandle == NULL) {
 			error("cannot load itself: %s",dlerror());
 		}
 	}
-#endif
 
-	sb_server_root_relative(modulefile, modulename);
-	//modhandle = dlopen(modulefile, RTLD_NOW|RTLD_GLOBAL|RTLD_DEEPBIND);
-	modhandle = dlopen(modulefile, RTLD_NOW|RTLD_GLOBAL);
+	if (filename != NULL && strlen(filename) > 0 )
+	{
+		sb_server_root_relative(modulefile, filename);
+		//modhandle = dlopen(modulefile, RTLD_NOW|RTLD_GLOBAL|RTLD_DEEPBIND);
+		modhandle = dlopen(modulefile, RTLD_NOW|RTLD_GLOBAL);
 
-	if (modhandle == NULL) {
-		error("cannot load(dlopen) %s into server: %s", modulename, dlerror());
-		return NULL;
+		if (modhandle == NULL) {
+			error("cannot load(dlopen) %s into server: %s", filename, dlerror());
+			return NULL;
+		}
+		debug("dlopended %s[%p] for %s", filename, modhandle, mod_symbol_name);
+	} else {
+		modhandle = selfhandle;
 	}
-	debug("loaded module %s[%p]", mod_symbol_name, modhandle);
 
 	/* retrive the pointer to the module structure symbol 
 	 * through the module name */
@@ -265,8 +258,8 @@ module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, 
 	modsym = dlsym(modhandle, mod_symbol_name);
 #endif
 	if (modsym == NULL && (error = dlerror()) != NULL) {
-		error("cannot locate(dlsym) API module structure symbol `%s' in file %s",
-				mod_symbol_name, modulename);
+		error("cannot locate(dlsym) module symbol `%s' in file %s",
+				mod_symbol_name, filename);
 		error("dlerror: %s", error);
 		return NULL;
 	}
@@ -276,7 +269,7 @@ module* add_dynamic_module(const char *mod_symbol_name, const char *modulename, 
 	if (modp->magic != MODULE_MAGIC_COOKIE) {
 		error("API module structure `%s' in file %s is garbled - "
 			" perhaps this is not a SoftBot module DSO?",
-			mod_symbol_name, modulename);
+			mod_symbol_name, filename);
 		return NULL;
 	}
 
@@ -535,7 +528,7 @@ void list_config_str(char *result, char *module_name)
  * `loaded_dynamic_modules' too. */
 module* add_module(module *this, const char *mod_symbol_name)
 {
-	module *m; //*mprev;
+	module *m;
 	char *ptr;
 
 	if (this->version != MODULE_MAGIC_NUMBER_MAJOR) {
@@ -593,9 +586,9 @@ module* add_module(module *this, const char *mod_symbol_name)
 		m->next = this;
 	}
    
-    if(mod_symbol_name == NULL) mod_symbol_name = "";
+    if(mod_symbol_name == NULL) mod_symbol_name = "(no symbol)";
 
-	INFO("%s of %s", mod_symbol_name, this->name);
+	debug("%s of %s", mod_symbol_name, this->name);
 	return this;
 }
 

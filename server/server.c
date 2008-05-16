@@ -576,13 +576,11 @@ static void clearModuleList(configValue a)
 
 static void doAddModule(configValue a)
 {
-	module *m = NULL;
+	char registry_only = 0;
 
-	m = find_module(a.argument[0]);
-	if (m != NULL) 
-	{
-		debug("found a module[%s]", a.argument[0]);
-		add_module(m, a.argument[0]);
+	if (load_module(a.argument[0], NULL, registry_only) 
+			== NULL) {
+		error("cannot load module[%s]", a.argument[1]);
 	}
 } 
 
@@ -596,7 +594,7 @@ static void doLoadModule(configValue a)
 		info("%s should be READ_REG or nothing", a.argument[2]);
 	}
 
-	if (add_dynamic_module(a.argument[0], a.argument[1], registry_only) 
+	if (load_module(a.argument[0], a.argument[1], registry_only) 
 			== NULL) {
 		error("cannot load dynamic module[%s]", a.argument[1]);
 	}
@@ -607,7 +605,7 @@ static void doLoadTestModule(configValue a)
 	if (!unittest)
 		return;
 
-	if (add_dynamic_module(a.argument[0], a.argument[1], 0) == NULL) {
+	if (load_module(a.argument[0], a.argument[1], 0) == NULL) {
 		error("cannot load test module[%s]",a.argument[1]);
 	}
 }
