@@ -595,7 +595,7 @@ static void doLoadModule(configValue a)
         info("%s should be READ_REG or nothing", a.argument[2]);
     }
 
-    if (add_dynamic_module(a.argument[0], a.argument[1], registry_only)
+    if (load_module(a.argument[0], a.argument[1], registry_only)
             == NULL) {
         error("cannot load dynamic module[%s]", a.argument[1]);
     }
