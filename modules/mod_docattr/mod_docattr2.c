@@ -34,20 +34,20 @@ static int docattr_open()
 	}
 
 	if (fstat(docattr_db_fd, &buf) == -1) {
-		error("cannot read file stat;%s", strerror(errno));
+		error("cannot read file stat: %s", strerror(errno));
 		return FALSE;
 	}
 
 	if (buf.st_size < max_doc_num * DOCATTR_ELEMENT_SIZE) {
 		if (lseek(docattr_db_fd, max_doc_num * DOCATTR_ELEMENT_SIZE - 1, 
 					SEEK_SET) == (off_t)-1) {
-			error("cannot seek end of file[%s];%s", 
+			error("cannot seek end of file[%s]: %s", 
 					docattr_db_file_path, strerror(errno));
 			return FALSE;
 		}
 
 		if (write(docattr_db_fd, &tmp, 1) == -1) {
-			error("cannot write one dump byte;%s", strerror(errno));
+			error("cannot write one dump byte: %s", strerror(errno));
 			return FALSE;
 		}
 	}
@@ -57,7 +57,7 @@ static int docattr_open()
 										MAP_SHARED,
 										docattr_db_fd, 0);
 	if (docattr_array == (void *)MAP_FAILED) {
-		error("cannot allocate memory by mmap:%s", strerror(errno));
+		error("cannot allocate memory by mmap: %s", strerror(errno));
 		return FALSE;
 	}
 
