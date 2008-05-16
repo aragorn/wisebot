@@ -128,7 +128,7 @@ void* get_shared_memory(int seq, int fd, int offset, int size)
 
 	p = mmap(0x00, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, offset);
 	if ( p == MAP_FAILED ) {
-            error("can't mmap fd[%d], offset[%d], size[%d]: %s", fd, offset, size, strerror(errno));
+            error("cannot mmap fd[%d], offset[%d], size[%d]: %s", fd, offset, size, strerror(errno));
 	    return NULL;
 	}
 #endif
