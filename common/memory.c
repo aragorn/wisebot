@@ -19,7 +19,7 @@
 */
 
 #define DEBUG_MEMORY
-#undef DEBUG_MEMORY
+//#undef DEBUG_MEMORY
 #warning When DEBUG_MEMORY is defined, server exits with acquire_lock() error.
 #ifdef AIX5
 #  undef DEBUG_MEMORY  /* there's no dprintf() on AIX.  */
@@ -177,7 +177,7 @@ void _sb_alloc_shm(int id, size_t size, const char *file, const char *function){
 #ifdef DEBUG_MEMORY
 	INIT_SHARED_MEM_LOG();
 	acquire_lock(memlog_lock);
-	dprintf(sharedmemlog_des, "%d\talloc\t%d\t%d\t%s\t%s\t%d\t%ld\n",
+	dprintf(sharedmemlog_des, "%d\talloc\t#%d\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), id, size, file, function, 0, time(NULL));
 	release_lock(memlog_lock);
 #endif //DEBUG_MEMORY
@@ -187,7 +187,7 @@ void _sb_free_shm(int id, const char *file, const char *function){
 #ifdef DEBUG_MEMORY
 	INIT_SHARED_MEM_LOG();
 	acquire_lock(memlog_lock);
-	dprintf(sharedmemlog_des, "%d\tfree\t%d\t%d\t%s\t%s\t%d\t%ld\n",
+	dprintf(sharedmemlog_des, "%d\tfree\t#%d\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), id, 0, file, function, 0, time(NULL));
 	release_lock(memlog_lock);
 #endif //DEBUG_MEMORY
