@@ -19,7 +19,7 @@
 */
 
 #define DEBUG_MEMORY
-//#undef DEBUG_MEMORY
+#undef DEBUG_MEMORY
 #warning When DEBUG_MEMORY is defined, server exits with acquire_lock() error.
 #ifdef AIX5
 #  undef DEBUG_MEMORY  /* there's no dprintf() on AIX.  */
