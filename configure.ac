@@ -278,7 +278,7 @@ dnl Check system environments
 CANONICAL_HOST="$host"
 SHORT_HOST=""
 MODULES_LDFLAGS="-avoid-version"
-SOFTBOTD_LDFLAGS=""
+SERVER_LDFLAGS=""
 SOFTBOTCLI_LDFLAGS=""
 case "$host" in 
   x86_64-*-linux-gnu )
@@ -286,7 +286,7 @@ case "$host" in
     AC_DEFINE(LINUX_64,1)
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
-    #EXTRA_CFLAGS="-m32 -march=i686"
+    EXTRA_CFLAGS="" #"-m32 -march=i686"
     ;;
   i?86-*-linux-gnu )
     SHORT_HOST="linux"
@@ -302,6 +302,7 @@ case "$host" in
     MODULES_LDFLAGS="-module -avoid-version"
     THREAD_LIB=""
     DYN_LIB="" #"-dlopen"
+    AM_LDFLAGS="-Wl,--stack,100000000" # increase stack size to 100MB
     ;;
   *freebsd* )
     SHORT_HOST="freebsd"
@@ -314,8 +315,8 @@ case "$host" in
     AC_DEFINE(SOLARIS,1)
     THREAD_LIB="-lpthread"
     DYN_LIB="-ldl"
-    SOFTBOTD_LDFLAGS='-lsocket -lnsl'
-    SOFTBOTCLI_LDFLAGS='-lsocket -lnsl'
+    SERVER_LDFLAGS="-lsocket -lnsl"
+    SOFTBOTCLI_LDFLAGS="-lsocket -lnsl"
     ;;
   *-ibm-aix5* )
     # powerpc-ibm-aix5.1.0.0
@@ -324,9 +325,9 @@ case "$host" in
     THREAD_LIB="-lc -lpthread"
     DYN_LIB="-Wl,-brtl -lld"
     EXTRA_CFLAGS="-fsigned-char"
-    SOFTBOTD_LDFLAGS='-Wl,-bdynamic -Wl,-bE:$(top_builddir)/server/softbotd.exp -Wl,-bmaxdata:0x40000000 -L/usr/local/lib -liconv'
+    SERVER_LDFLAGS='-Wl,-bdynamic -Wl,-bE:$(top_builddir)/server/softbotd.exp -Wl,-bmaxdata:0x40000000 -L/usr/local/lib -liconv'
     SOFTBOTCLI_LDFLAGS='-Wl,-bdynamic -Wl,-bE:$(top_builddir)/client/softbotcli.exp -Wl,-bmaxdata:0x40000000 -L/usr/local/lib -liconv'
-    LDFLAGS="-Wl,-brtl"
+    AM_LDFLAGS="-Wl,-brtl"
     ;;
   *-hpux* )
     SHORT_HOST="hpux"
@@ -384,7 +385,6 @@ dnl AC_AIX
 CFLAGS=""
 AM_CFLAGS="-Wall -g3 -O3 $EXTRA_CFLAGS"
 AM_CPPFLAGS='-I\$(top_builddir)/modules'
-#AM_LDFLAGS=""
 
 AC_LIBTOOL_WIN32_DLL
 AC_LIBTOOL_DLOPEN
@@ -507,7 +507,7 @@ AC_SUBST(LIBTOOL)
 AC_SUBST(THREAD_LIB)
 AC_SUBST(DYN_LIB)
 AC_SUBST(MODULES_LDFLAGS)
-AC_SUBST(SOFTBOTD_LDFLAGS)
+AC_SUBST(SERVER_LDFLAGS)
 AC_SUBST(SOFTBOTCLI_LDFLAGS)
 
 AC_SUBST(AM_CFLAGS)

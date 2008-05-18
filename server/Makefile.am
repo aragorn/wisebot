@@ -12,7 +12,7 @@ softbotd_LDADD   = $(libdir)/libcommon_core.la $(libdir)/libcommon_util.la \
                    $(DYN_LIB) $(THREAD_LIB)
 endif
 
-softbotd_LDFLAGS = $(SOFTBOTD_LDFLAGS) -L$(libdir) -export-dynamic
+softbotd_LDFLAGS = $(AM_LDFLAGS) $(SERVER_LDFLAGS) -L$(libdir) -export-dynamic
 
 # softbotd_LDFLAGS에 -export-dynamic 이 있어야 module들이 executable의 symbol을
 # resolve할 수 있다. 이 옵션이 없으면, undefined symbol 에러로 mod_mp.so 를 load
