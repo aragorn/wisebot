@@ -75,7 +75,7 @@ static int file_open(char path[], mmap_file_t *mmap_file, int block_size)
 
 	mmap_file->fd = fd;
 
-    mmap_file->header  = mmap(0x00, sizeof(header_t), 
+    mmap_file->header  = sb_mmap(0x00, sizeof(header_t), 
 					            PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 	if(mmap_file->header == MAP_FAILED)
 	{
@@ -128,14 +128,14 @@ static int frm_close(mmap_file_t *mmap_file)
 	fd = mmap_file->fd;
 
 	for( i=0; i<=mmap_file->header->allocated_blocks; i++) {
-        if(munmap(mmap_file->block[i], mmap_file->header->block_size) == -1) {
+        if(sb_munmap(mmap_file->block[i], mmap_file->header->block_size) == -1) {
             error("fail munmap data[%p], size[%d] : %s", 
         	mmap_file->header, mmap_file->header->block_size, strerror(errno)); 
             return FAIL;
         }
 	}
 
-    if(munmap((void*)mmap_file->header, sizeof(header_t)) == -1) {
+    if(sb_munmap((void*)mmap_file->header, sizeof(header_t)) == -1) {
 	    error("fail munmap data[%p], size[%d] : %s", 
 		mmap_file->header, mmap_file->header->block_size, strerror(errno)); 
 	    return FAIL;
@@ -193,7 +193,7 @@ static int extend_mmap(mmap_file_t *mmap_file)
     for(i=mmap_file->allocated_blocks; i < mmap_file->header->allocated_blocks; i++) {
         mmap_file->allocated_blocks++;
 	    curr_pos = mmap_file->allocated_blocks * block_size + header_block_size; //XXX header size
-        ptr = mmap(0x00, mmap_file->header->block_size, PROT_READ|PROT_WRITE, MAP_SHARED, 
+        ptr = sb_mmap(0x00, mmap_file->header->block_size, PROT_READ|PROT_WRITE, MAP_SHARED, 
     					mmap_file->fd, curr_pos);
     	if(ptr == MAP_FAILED)
     	{

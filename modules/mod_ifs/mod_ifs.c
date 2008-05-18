@@ -799,18 +799,18 @@ static int __move_file_segment(ifs_t* ifs, int from_seg, int to_seg)
 		error("cannot deactivate sfs, num[%d]", to_seg);
 	}
 
-	free(file_array);
+	sb_free(file_array);
 
 	return SUCCESS;
 
 fail:
     if(__sfs_deactivate(ifs, to_seg) == FAIL) {
 		error("cannot deactivate sfs, num[%d]", to_seg);
-		free(file_array);
+		sb_free(file_array);
 		return -1;
 	}
 
-	free(file_array);
+	sb_free(file_array);
 
 	return FAIL;
 }

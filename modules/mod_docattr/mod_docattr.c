@@ -54,7 +54,7 @@ static int docattr_open()
 		}
 	}
 
-	docattr_array = (void*)mmap(NULL, max_doc_num * DOCATTR_ELEMENT_SIZE,
+	docattr_array = (void*)sb_mmap(NULL, max_doc_num * DOCATTR_ELEMENT_SIZE,
 										PROT_READ | PROT_WRITE,
 										MAP_SHARED,
 										docattr_db_fd, 0);
@@ -92,7 +92,7 @@ static int docattr_close()
 		return FALSE;
 	} */
 
-	ret = munmap(docattr_array, max_doc_num * DOCATTR_ELEMENT_SIZE);
+	ret = sb_munmap(docattr_array, max_doc_num * DOCATTR_ELEMENT_SIZE);
 	if (ret == -1) {
 		error("cannot unmap:%s", strerror(errno));
 		return FALSE;

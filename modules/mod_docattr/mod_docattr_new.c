@@ -70,7 +70,7 @@ static int load_docattr_db_info(docattr_db_t *docattr_db)
 	}
 	
 	info("^^^ using mmap  ########");
-	docattr_db->db_info = (docattr_db_info_t *)mmap(NULL, sizeof(docattr_db_info_t), 
+	docattr_db->db_info = (docattr_db_info_t *)sb_mmap(NULL, sizeof(docattr_db_info_t), 
 							PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (docattr_db->db_info == NULL) {
 		error("docattr_db->db_info mmap return NULL");	
@@ -126,7 +126,7 @@ static int create_docattr_file(docattr_db_t *docattr_db, int file_idx)
 	
 	info("^^^ using mmap  ########");
 	docattr_db->docattr_arrays[file_idx] = 
-		(void *)mmap(NULL, DOCATTR_FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+		(void *)sb_mmap(NULL, DOCATTR_FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	
 	if (docattr_db->docattr_arrays[file_idx] == NULL) return FAIL;
 
@@ -164,7 +164,7 @@ static int load_docattr_file(docattr_db_t *docattr_db, int file_idx)
 	
 	info("^^^ using mmap  ########");
 	docattr_db->docattr_arrays[file_idx] = 
-		(void *)mmap(NULL, DOCATTR_FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+		(void *)sb_mmap(NULL, DOCATTR_FILE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	
 	if (docattr_db->docattr_arrays[file_idx] == NULL) return FAIL;
 
@@ -236,7 +236,7 @@ static int docattr_close(docattr_db_t *docattr_db)
 	
 	for (i=0 ; i<docattr_db->db_info->file_num ; i++) {
 		info("~~~~ munmapping ");
-		ret = munmap(docattr_db->docattr_arrays[i], DOCATTR_FILE_SIZE);
+		ret = sb_munmap(docattr_db->docattr_arrays[i], DOCATTR_FILE_SIZE);
 		if (ret == -1) {
 			error("cannot sync memory to file:error%s", strerror(errno));
 			return FAIL;
@@ -244,7 +244,7 @@ static int docattr_close(docattr_db_t *docattr_db)
 	}
 
 	info("~~~~ munmapping ");
-	ret = munmap((void *)docattr_db->db_info, sizeof(docattr_db_info_t));
+	ret = sb_munmap((void *)docattr_db->db_info, sizeof(docattr_db_info_t));
 	if (ret == -1) {
 		error("cannot unmap docattr_db :%s", strerror(errno));
 		return FAIL;

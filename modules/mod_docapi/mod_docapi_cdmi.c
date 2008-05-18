@@ -47,14 +47,14 @@ static document_t *
 DAPI_initDoc () {
 	int i;
 	document_t *doc;
-	doc = (document_t *)malloc(sizeof(document_t));
+	doc = (document_t *)sb_malloc(sizeof(document_t));
 	if (doc == NULL) {
 		return NULL;
 	}
 
-	doc->buffer = (void *)malloc(DAPI_DEFAULT_BUFFER_SIZE);
+	doc->buffer = (void *)sb_malloc(DAPI_DEFAULT_BUFFER_SIZE);
 	if (doc->buffer == NULL) {
-		free(doc);
+		sb_free(doc);
 		return NULL;
 	}
 	doc->usedsize = 0;
@@ -86,9 +86,9 @@ DAPI_freeDoc (document_t           *doc) {
 	if (doc == NULL) return;
 
 	if (doc->buffer)
-		free(doc->buffer);
+		sb_free(doc->buffer);
 
-	free(doc);
+	sb_free(doc);
 }
 
 static int

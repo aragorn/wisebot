@@ -478,21 +478,21 @@ static void allocate_test_input(test_input_t *t)
 	int i;
 
 	if (t->data == NULL)
-		t->data = (char *)malloc(DATA_SIZE * 2);
+		t->data = (char *)sb_malloc(DATA_SIZE * 2);
 	if (t->data == NULL) {
 		error("data malloc(%d * 2) failed: %s", DATA_SIZE, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	if (t->test_files == NULL)
-		t->test_files = (test_file_t*)malloc(sizeof(test_file_t)*MAX_FILE_ID);
+		t->test_files = (test_file_t*)sb_malloc(sizeof(test_file_t)*MAX_FILE_ID);
 	if (t->test_files == NULL) {
 		error("test_files malloc(%d * %d) failed: %s", (int) sizeof(test_file_t), MAX_FILE_ID, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	if (t->test_order == NULL)
-		t->test_order = (int *)malloc(sizeof(int) * MAX_FILE_ID);
+		t->test_order = (int *)sb_malloc(sizeof(int) * MAX_FILE_ID);
 	if (t->test_order == NULL) {
 		error("test_order malloc(%d * %d) failed: %s", (int)sizeof(int), MAX_FILE_ID, strerror(errno));
 		exit(EXIT_FAILURE);
@@ -503,7 +503,7 @@ static void allocate_test_input(test_input_t *t)
     }
 
 	if (t->buffer == NULL)
-		t->buffer = (char *)malloc(MAX_FILE_SIZE);
+		t->buffer = (char *)sb_malloc(MAX_FILE_SIZE);
 	if (t->buffer == NULL) {
 		error("buffer malloc(%d) failed: %s", MAX_FILE_SIZE, strerror(errno));
 		exit(EXIT_FAILURE);

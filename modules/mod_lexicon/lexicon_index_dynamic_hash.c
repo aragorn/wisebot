@@ -81,7 +81,7 @@ static void *hash_alloc_data_func(hash_t *hash, int data_idx, int size)
 	char hash_data_path[MAX_PATH_LEN];
 
 	sprintf(hash_data_path, "%s.hash_data.%03d", hash->path, data_idx);
-	CRIT("hash [%d]th data path is %s", data_idx, hash_data_path); 
+	debug("hash [%d]th data path is %s", data_idx, hash_data_path); 
 	
     mmap.type        = IPC_TYPE_MMAP;
     mmap.pathname    = hash_data_path;
@@ -178,7 +178,7 @@ int lexicon_index_open( lexicon_t *word_db )
 	int mmap_attr;
 
 	
-    CRIT("lexicon use dynamic hash for indexing");
+    info("lexicon uses dynamic hash for indexing");
     
     sprintf(hash_path, "%s.hash", word_db->path);
 

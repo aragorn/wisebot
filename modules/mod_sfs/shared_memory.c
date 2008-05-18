@@ -16,7 +16,7 @@ int unmmap_memory(void* base_address, int size)
 		return FAIL;
 	}
 #else
-	if(munmap(base_address, size) == -1) {
+	if(sb_munmap(base_address, size) == -1) {
 		error("fail unmap: %s", strerror(errno));
 		return FAIL;
 	}
@@ -126,7 +126,7 @@ void* get_shared_memory(int seq, int fd, int offset, int size)
 		create = 1;
 	}
 
-	p = mmap(0x00, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, offset);
+	p = sb_mmap(0x00, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, offset);
 	if ( p == MAP_FAILED ) {
             error("cannot mmap fd[%d], offset[%d], size[%d]: %s", fd, offset, size, strerror(errno));
 	    return NULL;

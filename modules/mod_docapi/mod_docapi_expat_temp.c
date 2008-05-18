@@ -112,7 +112,7 @@ DAPI_get (DocId             docId,
 	char tmpChar[DOCUMENT_SIZE];
 	bzero(tmpChar, DOCUMENT_SIZE);
 
-	doc = malloc(sizeof(DocObject));
+	doc = sb_malloc(sizeof(DocObject));
 	if (doc == NULL) {
 		error("cannot allocate memory for DocObject: %s", strerror(errno));
 		return FALSE;
@@ -167,7 +167,7 @@ DAPI_getAbstract (int              numRetrievedDoc,
 	}
 
 	for (i=0; i<numRetrievedDoc; i++) {
-		docs[i] = malloc(sizeof(DocObject));
+		docs[i] = sb_malloc(sizeof(DocObject));
 		if (docs[i] == NULL) {
 			error("out of memory: cannot alloc memory for DocObject");
 			return FALSE;

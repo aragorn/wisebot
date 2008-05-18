@@ -57,7 +57,7 @@ struct localdata {
 static DocObject *doc_alloc(struct localdata *data) {
 	DocObject *doc;
 
-	doc = (DocObject *)malloc(sizeof(DocObject));
+	doc = (DocObject *)sb_malloc(sizeof(DocObject));
 	if (doc == NULL) {
 		error("out of memory");
 		return NULL;
@@ -73,7 +73,7 @@ static DocObject *doc_alloc(struct localdata *data) {
 static FieldObject *field_alloc(struct localdata *data) {
 	FieldObject *field;
 
-	field = (FieldObject *)malloc(sizeof(FieldObject));
+	field = (FieldObject *)sb_malloc(sizeof(FieldObject));
 	if (field == NULL) {
 		error("out of memory");
 		return NULL;
@@ -93,7 +93,7 @@ static AttrObject *attr_alloc(struct localdata *data) {
 	AttrObject *attr;
 	int i;
 
-	attr = (AttrObject *)malloc(sizeof(AttrObject));
+	attr = (AttrObject *)sb_malloc(sizeof(AttrObject));
 	if (attr == NULL) {
 		error("out of memory");
 		return NULL;
@@ -316,7 +316,7 @@ DAPI_get (DocId             docId,
 	int tmpChar[DOCUMENT_SIZE];
 	bzero(tmpChar, DOCUMENT_SIZE);
 
-	doc = malloc(sizeof(DocObject));
+	doc = sb_malloc(sizeof(DocObject));
 	if (doc == NULL) {
 		error("cannot allocate memory for DocObject: %s", strerror(errno));
 		return FALSE;
@@ -388,7 +388,7 @@ DAPI_getAbstract (int              numRetrievedDoc,
 	}
 
 	for (i=0; i<numRetrievedDoc; i++) {
-		docs[i] = malloc(sizeof(DocObject));
+		docs[i] = sb_malloc(sizeof(DocObject));
 		if (docs[i] == NULL) {
 			error("out of memory: cannot alloc memory for DocObject");
 			return FALSE;

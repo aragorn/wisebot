@@ -415,7 +415,7 @@ int main(int argc, char** argv)
 
 	fseek(fp, 0, SEEK_END);
 	int length = ftell(fp);
-	char* buffer = (char*) malloc( length );
+	char* buffer = (char*) sb_malloc( length );
 
 	fseek(fp, 0, SEEK_SET);
 	int readlen = fread(buffer, length, 1, fp);
@@ -449,7 +449,7 @@ int main(int argc, char** argv)
 	}
 
 	free_parser(p);
-	free(buffer);
+	sb_free(buffer);
 
 	return 0;
 }

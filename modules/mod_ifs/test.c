@@ -58,7 +58,7 @@ static void __allocate_test_input(ifs_test_input_t *t)
 	t->local.test_files = (test_file_t*)(t->p + offset);
 
 	if (t->local.test_order == NULL) {
-		t->local.test_order = (int *)malloc(sizeof(int) * MAX_FILE_ID);
+		t->local.test_order = (int *)sb_malloc(sizeof(int) * MAX_FILE_ID);
 		if(t->local.test_order == NULL) {
 			error("test_order malloc(%d * %d) failed: %s", (int) sizeof(int), MAX_FILE_ID, strerror(errno));
 			exit(EXIT_FAILURE);
@@ -71,7 +71,7 @@ static void __allocate_test_input(ifs_test_input_t *t)
     }
 
 	if (t->local.buffer == NULL)
-		t->local.buffer = (char *)malloc(MAX_TEST_FILE_SIZE);
+		t->local.buffer = (char *)sb_malloc(MAX_TEST_FILE_SIZE);
 	if (t->local.buffer == NULL) {
 		error("buffer malloc(%d) failed: %s", MAX_TEST_FILE_SIZE, strerror(errno));
 		exit(EXIT_FAILURE);

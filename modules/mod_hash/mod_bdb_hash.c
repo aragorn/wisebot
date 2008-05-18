@@ -370,11 +370,11 @@ static int bdb_hash_count(api_hash_t* hash, int* count)
 			break;
 		default:
 			error("unknown type: %d", (int) bdb_hash->type);
-			free( sp );
+			sb_free( sp );
 			return FAIL;
 	}
 
-	free( sp );
+	sb_free( sp );
 	return SUCCESS;
 }
 
