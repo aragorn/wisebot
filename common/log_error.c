@@ -180,7 +180,7 @@ int log_setlevelstr(const char* levelstr)
 
 static void acquire_loglock(int semid)
 {
-	if ((screen_log > 0) || (semid < 0)) return;
+	if (semid < 0) return;
 
 	if (acquire_lock(semid) != SUCCESS) {
 		perror("acquire_loglock error: ");
@@ -188,7 +188,7 @@ static void acquire_loglock(int semid)
 }
 static void release_loglock(int semid)
 {
-	if ((screen_log > 0) || (semid < 0)) return;
+	if (semid < 0) return;
 
 	if (release_lock(semid) != SUCCESS) {
 		perror("release_loglock error: ");
