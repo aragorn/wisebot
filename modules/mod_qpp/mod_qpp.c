@@ -1371,7 +1371,7 @@ static void get_defaultsearchfield(configValue v)
     mDefaultSearchField=0L;
 
     for (i=0; i<v.argNum; i++) {
-		WARN("arg %d: %s",i,v.argument[i]);
+		debug("arg %d: %s",i,v.argument[i]);
     }
 
     for (i=0; i<v.argNum; i++) {
@@ -1380,7 +1380,7 @@ static void get_defaultsearchfield(configValue v)
         mDefaultSearchField |= (1L << fieldid);
     }
 
-    WARN("mDefaultSearchField:%x",mDefaultSearchField);
+    debug("mDefaultSearchField:%x",mDefaultSearchField);
 }
 
 static void get_defaultphrasefield(configValue v)
@@ -1391,7 +1391,7 @@ static void get_defaultphrasefield(configValue v)
     mDefaultPhraseField=0L;
 
     for (i=0; i<v.argNum; i++) {
-		WARN("arg %d: %s",i,v.argument[i]);
+		debug("arg %d: %s",i,v.argument[i]);
     }
 
     for (i=0; i<v.argNum; i++) {
@@ -1400,7 +1400,7 @@ static void get_defaultphrasefield(configValue v)
         mDefaultPhraseField |= (1L << fieldid);
     }
 
-    WARN("mDefaultPhraseField:%x",mDefaultPhraseField);
+    debug("mDefaultPhraseField:%x",mDefaultPhraseField);
 }
 
 static void set_complex_noun_operator(configValue v)

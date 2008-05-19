@@ -1100,7 +1100,7 @@ static void set_meta_data(configValue v)
 	}
 	strncat(meta_data, buf, left);
 
-	info("meta data: %s", meta_data);
+	debug("meta data: %s", meta_data);
 }
 
 static int init(void)

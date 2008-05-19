@@ -1142,7 +1142,7 @@ void set_fieldname(configValue v)
 
 	if (v.argNum < 6) {
 		error("Field directive must have 5 args at least.");
-		error("\t e.g) Field 1 Court yes(index) 0(morp_id) 0(morp_id) yes(paragraph search)");
+		error("\t e.g) Field 1 FieldName yes(index) 0(morp_id) 0(morp_id) yes(paragraph search)");
 		error("\t but argNum:%d for Field %s",v.argNum,v.argument[0]);
 		return ;
 	}
@@ -1161,7 +1161,7 @@ void set_fieldname(configValue v)
 
 	strncpy(mFieldName[fieldid],v.argument[1],MAX_FIELD_STRING-1);
 	mFieldName[fieldid][MAX_FIELD_STRING-1] = '\0';
-	warn("mFieldName[%d] = %s", fieldid, mFieldName[fieldid]);
+	debug("mFieldName[%d] = %s", fieldid, mFieldName[fieldid]);
 	
 	mIndexerMorpAnalyzerId[fieldid]=atoi(v.argument[3]);
 	mQppMorpAnalyzerId[fieldid]=atoi(v.argument[4]);
