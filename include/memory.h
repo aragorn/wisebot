@@ -40,6 +40,9 @@
 #	define sb_fork()			fork()
 #endif
 
+SB_DECLARE(void) sb_memory_debug_on(void);
+SB_DECLARE(void) sb_memory_debug_off(void);
+
 SB_DECLARE(void *) _sb_malloc(size_t size, const char *file, const char *function, int line);
 SB_DECLARE(void *) _sb_calloc(size_t nmemb, size_t size, const char *file, const char *function, int line);
 SB_DECLARE(void *) _sb_realloc(void *ptr, size_t size, const char *file, const char *function, int line);

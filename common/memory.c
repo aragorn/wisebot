@@ -19,13 +19,14 @@
 */
 
 #define DEBUG_MEMORY
-#undef DEBUG_MEMORY
 #ifdef AIX5
 #  undef DEBUG_MEMORY  /* there's no dprintf() on AIX.  */
 #endif                 /* cannot print debug message to a file descriptor. */
 
 #ifdef DEBUG_MEMORY
-#warning DEBUG_MEMORY IS TURNED ON.
+#warning DEBUG_MEMORY IS AVAILABLE.
+
+static int debug_memory = 0;
 static char *local_memory_log_file = "logs/local_mem_log";
 static char *shared_memory_log_file = "logs/shared_mem_log";
 
@@ -68,11 +69,22 @@ if ( sharedmemlog_des == -1 ) {	\
 		SB_ABORT();	\
 	}	\
 }
+
+void sb_memory_debug_on(void)
+{
+	debug_memory = 1;
+}
+
+void sb_memory_debug_off(void)
+{
+	debug_memory = 0;
+}
 		
 void *_sb_malloc(size_t size, const char *file, const char *function, int line)
 {
 #ifdef DEBUG_MEMORY
 	void *ptr = calloc(size,1);
+	if (debug_memory == 0) return ptr;
 	if ( !ptr ) return NULL;
 	
 	INIT_LOCAL_MEM_LOG();
@@ -90,6 +102,7 @@ void *_sb_calloc(size_t nmemb, size_t size, const char *file, const char *functi
 {
 #ifdef DEBUG_MEMORY
 	void *ptr = calloc(nmemb, size);
+	if (debug_memory == 0) return ptr;
 	if ( !ptr ) return NULL;
 	
 	INIT_LOCAL_MEM_LOG();
@@ -110,6 +123,7 @@ void *_sb_strdup(char *inptr, const char *file, const char *function, int line)
 	void *ptr = malloc(size);
 	if ( !ptr ) return NULL;
 	memcpy(ptr, inptr, size);
+	if (debug_memory == 0) return ptr;
 	
 	INIT_LOCAL_MEM_LOG();
 	acquire_lock(memlog_lock);
@@ -127,6 +141,7 @@ void *_sb_realloc(void *ptr, size_t size, const char *file, const char *function
 #ifdef DEBUG_MEMORY
 	void *new_ptr = realloc(ptr, size);
 	if ( !new_ptr ) return NULL;
+	if (debug_memory == 0) return new_ptr;
 	
 	INIT_LOCAL_MEM_LOG();
 	acquire_lock(memlog_lock);
@@ -144,28 +159,34 @@ void *_sb_realloc(void *ptr, size_t size, const char *file, const char *function
 void _sb_free(void *ptr, const char *file, const char *function, int line)
 {
 #ifdef DEBUG_MEMORY
+	free(ptr);
+	if (debug_memory == 0) return;
+
 	INIT_LOCAL_MEM_LOG();
 	if (memlog_lock > 0) acquire_lock(memlog_lock);
 	dprintf(localmemlog_des, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), ptr, 0, file, function, line, time(NULL));
 	if (memlog_lock > 0)release_lock(memlog_lock);
+
+	return;
 #endif //DEBUG_MEMORY
-	free(ptr);
 }
 
 
 pid_t _sb_fork(void){
 #ifdef DEBUG_MEMORY
-	pid_t tmp = fork();
-	if ( tmp <= 0 ) {	//failure or child process
-		return tmp;
+	pid_t pid = fork();
+	if ( pid <= 0 ) {	//failure or child process
+		return pid;
 	}
+	if (debug_memory == 0) return pid;
+
 	INIT_LOCAL_MEM_LOG();
 	acquire_lock(memlog_lock);
 	dprintf(localmemlog_des, "%d\tfork\t%d\t%ld\n",
-			getpid(), tmp, time(NULL));
+			getpid(), pid, time(NULL));
 	release_lock(memlog_lock);
-	return tmp;
+	return pid;
 #else
 	return fork();
 #endif //DEBUG_MEMORY
@@ -175,6 +196,8 @@ pid_t _sb_fork(void){
 
 void _sb_alloc_shm(int id, size_t size, const char *file, const char *function){
 #ifdef DEBUG_MEMORY
+	if (debug_memory == 0) return;
+
 	INIT_SHARED_MEM_LOG();
 	acquire_lock(memlog_lock);
 	dprintf(sharedmemlog_des, "%d\talloc\t#%d\t%d\t%s\t%s\t%d\t%ld\n",
@@ -185,6 +208,8 @@ void _sb_alloc_shm(int id, size_t size, const char *file, const char *function){
 
 void _sb_free_shm(int id, const char *file, const char *function){
 #ifdef DEBUG_MEMORY
+	if (debug_memory == 0) return;
+
 	INIT_SHARED_MEM_LOG();
 	acquire_lock(memlog_lock);
 	dprintf(sharedmemlog_des, "%d\tfree\t#%d\t%d\t%s\t%s\t%d\t%ld\n",
@@ -199,6 +224,7 @@ void *_sb_mmap(void *start, size_t length, int prot, int flags, int fd, off_t of
 	struct stat buf;
 	void *ptr = mmap(start, length, prot, flags, fd, offset);
 	if ( !ptr ) return NULL;
+	if (debug_memory == 0) return ptr;
 
 	if ( fstat(fd, &buf) < 0 ) return ptr;
 	
@@ -223,6 +249,8 @@ void *_sb_mmap(void *start, size_t length, int prot, int flags, int fd, off_t of
 
 int _sb_munmap(void *start, size_t length, const char *file, const char *function, int line){
 #ifdef DEBUG_MEMORY
+	if (debug_memory == 0) return munmap(start, length);
+
 	INIT_LOCAL_MEM_LOG();
 	INIT_SHARED_MEM_LOG();
 

@@ -652,6 +652,13 @@ static void setDebugModuleName(configValue a)
 	}
 }
 
+static void setMemoryDebug(configValue a)
+{
+	if (strncasecmp("yes", a.argument[0], 3) == 0 ||
+	    strncasecmp("on",  a.argument[0], 3) == 0 ) sb_memory_debug_on();
+	else sb_memory_debug_off();
+}
+
 static void setPidFile(configValue a)
 {
 	debug("pid file. argument[0]:%s",a.argument[0]);
@@ -730,6 +737,8 @@ static config_t config[] = {
 				"debug message only with these modules or only without these modules"),
 	CONFIG_GET("DebugModuleName", setDebugModuleName, VAR_ARG, \
 				"lists module names for DebugModulePolicy"),
+	CONFIG_GET("MemoryDebug", setMemoryDebug, 1, \
+				"turn on or off(default) MemoryDebug mode"),
 	CONFIG_GET("PidFile", setPidFile, 1, \
 				"save process id of softbot in this file"),
 	CONFIG_GET("RegistryFile", setRegistryFile, 1, \
