@@ -539,6 +539,7 @@ AC_CONFIG_FILES([
     etc/Makefile
     debug/Makefile
     srclib/Makefile
+    dat/Makefile
 
     modules/Makefile
     modules/mod_api/Makefile

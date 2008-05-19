@@ -3,7 +3,7 @@
 pch:
 	cd include && $(MAKE) $(AM_MAKEFLAGS) pch
 
-SUBDIRS = include common modules server client util etc debug
+SUBDIRS = include common modules server client util etc dat debug
 
 if PREFIX_IS_PWD
 else
