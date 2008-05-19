@@ -66,7 +66,7 @@ void init_memory_debug()
 				shared_memory_log_file, strerror(errno));
 			SB_ABORT();
 		}
-		setvbuf(local_log, (char*)NULL, _IOLBF, 0);
+		setvbuf(shared_log, (char*)NULL, _IOLBF, 0);
 	}
 
 	if ( memlog_lock == -1 ) {
@@ -229,7 +229,7 @@ void *_sb_mmap(void *start, size_t length, int prot, int flags, int fd, off_t of
 		fprintf(shared_log, "%d\talloc\t#%ld\t%d\t%s\t%s\t%d\t%ld\t-mmap[%p]\n",
 				getpid(), buf.st_ino, length, file, function, line, time(NULL), ptr);
 		release_lock(memlog_lock);
-	}else if ( flags && MAP_PRIVATE ) {
+	} else if ( flags && MAP_PRIVATE ) {
 		acquire_lock(memlog_lock);
 		fprintf(local_log, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld-mmap\n",
 				getpid(), ptr, length, file, function, line, time(NULL));
