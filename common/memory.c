@@ -1,7 +1,7 @@
 /* $Id$ */
 /* moved to common_core.h using precompiled header 
 #define _GNU_SOURCE
-#include <stdio.h>    // 77: dprintf()
+#include <stdio.h>    // 77: fprintf()
 #include <stdlib.h>   // 66: calloc
 #include <string.h>   // strerror()
 #include <errno.h>    // errno
@@ -19,9 +19,6 @@
 */
 
 #define DEBUG_MEMORY
-#ifdef AIX5
-#  undef DEBUG_MEMORY  /* there's no dprintf() on AIX.  */
-#endif                 /* cannot print debug message to a file descriptor. */
 
 #ifdef DEBUG_MEMORY
 #warning DEBUG_MEMORY IS AVAILABLE.
@@ -30,54 +27,61 @@ static int debug_memory = 0;
 static char *local_memory_log_file = "logs/local_mem_log";
 static char *shared_memory_log_file = "logs/shared_mem_log";
 
-static int localmemlog_des = -1;
-static int sharedmemlog_des = -1;
+static FILE* local_log  = NULL;
+static FILE* shared_log = NULL;
 
 static int memlog_lock = -1;
+static void init_memory_debug();
 #endif //DEBUG_MEMORY
-
-#define INIT_LOCAL_MEM_LOG()	\
-if ( localmemlog_des == -1 ) {	\
-	localmemlog_des = sb_open(local_memory_log_file, O_CREAT | O_WRONLY | O_TRUNC, 00644);	\
-	if ( localmemlog_des == -1 ) { \
-		crit("cannot open local memory log file[%s]: %s", \
-				local_memory_log_file, strerror(errno));	\
-		SB_ABORT();	\
-	}	\
-	if ( memlog_lock == -1 ) { \
-		ipc_t lock; \
-		lock.type = IPC_TYPE_SEM; \
-		lock.pid  = 'l'; \
-		lock.pathname = local_memory_log_file; \
-\
-		if ( get_sem(&lock) != SUCCESS ) { \
-			crit("cannot get semaphore for memory log file[%s]: %s", \
-					local_memory_log_file, strerror(errno)); \
-			SB_ABORT(); \
-		} \
-		memlog_lock = lock.id; \
-	} \
-}
-	
-#define INIT_SHARED_MEM_LOG()	\
-if ( sharedmemlog_des == -1 ) {	\
-	sharedmemlog_des = sb_open(shared_memory_log_file, \
-								O_CREAT | O_WRONLY | O_TRUNC, 00644);	\
-	if ( sharedmemlog_des == -1 ) { \
-		crit("cannot open shared memory log file[%s]: %s", \
-				shared_memory_log_file, strerror(errno));	\
-		SB_ABORT();	\
-	}	\
-}
 
 void sb_memory_debug_on(void)
 {
 	debug_memory = 1;
+	init_memory_debug();
 }
 
 void sb_memory_debug_off(void)
 {
 	debug_memory = 0;
+}
+
+void init_memory_debug()
+{
+	if (local_log == NULL)
+	{
+		if ((local_log = sb_fopen(local_memory_log_file, "w")) == NULL)
+		{
+			crit("cannot open local memory log file[%s]: %s", 
+				local_memory_log_file, strerror(errno));
+			SB_ABORT();
+		}
+		setvbuf(local_log, (char*)NULL, _IOLBF, 0);
+	}
+
+	if (shared_log == NULL)
+	{
+		if ((shared_log = sb_fopen(shared_memory_log_file, "w")) == NULL)
+		{
+			crit("cannot open shared memory log file[%s]: %s", 
+				shared_memory_log_file, strerror(errno));
+			SB_ABORT();
+		}
+		setvbuf(local_log, (char*)NULL, _IOLBF, 0);
+	}
+
+	if ( memlog_lock == -1 ) {
+		ipc_t lock;
+		lock.type = IPC_TYPE_SEM;
+		lock.pid  = 'l';
+		lock.pathname = local_memory_log_file;
+
+		if ( get_sem(&lock) != SUCCESS ) {
+			crit("cannot get semaphore for memory log file[%s]: %s",
+					local_memory_log_file, strerror(errno));
+			SB_ABORT();
+		}
+		memlog_lock = lock.id;
+	}
 }
 		
 void *_sb_malloc(size_t size, const char *file, const char *function, int line)
@@ -87,9 +91,8 @@ void *_sb_malloc(size_t size, const char *file, const char *function, int line)
 	if (debug_memory == 0) return ptr;
 	if ( !ptr ) return NULL;
 	
-	INIT_LOCAL_MEM_LOG();
 	acquire_lock(memlog_lock);
-	dprintf(localmemlog_des, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld\n",
+	fprintf(local_log, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), ptr, size, file, function, line, time(NULL));
 	release_lock(memlog_lock);
 	return ptr;
@@ -105,9 +108,8 @@ void *_sb_calloc(size_t nmemb, size_t size, const char *file, const char *functi
 	if (debug_memory == 0) return ptr;
 	if ( !ptr ) return NULL;
 	
-	INIT_LOCAL_MEM_LOG();
 	acquire_lock(memlog_lock);
-	dprintf(localmemlog_des, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld\n",
+	fprintf(local_log, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), ptr, nmemb*size, file, function, line, time(NULL));
 	release_lock(memlog_lock);
 	return ptr;
@@ -125,9 +127,8 @@ void *_sb_strdup(char *inptr, const char *file, const char *function, int line)
 	memcpy(ptr, inptr, size);
 	if (debug_memory == 0) return ptr;
 	
-	INIT_LOCAL_MEM_LOG();
 	acquire_lock(memlog_lock);
-	dprintf(localmemlog_des, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld\n",
+	fprintf(local_log, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), ptr, size, file, function, line, time(NULL));
 	release_lock(memlog_lock);
 	return ptr;
@@ -143,11 +144,10 @@ void *_sb_realloc(void *ptr, size_t size, const char *file, const char *function
 	if ( !new_ptr ) return NULL;
 	if (debug_memory == 0) return new_ptr;
 	
-	INIT_LOCAL_MEM_LOG();
 	acquire_lock(memlog_lock);
-	dprintf(localmemlog_des, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\n",
+	fprintf(local_log, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), ptr, 0, file, function, line, time(NULL));
-	dprintf(localmemlog_des, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld\n",
+	fprintf(local_log, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), new_ptr, size, file, function, line, time(NULL));
 	release_lock(memlog_lock);
 	return new_ptr;
@@ -162,9 +162,8 @@ void _sb_free(void *ptr, const char *file, const char *function, int line)
 	free(ptr);
 	if (debug_memory == 0) return;
 
-	INIT_LOCAL_MEM_LOG();
 	if (memlog_lock > 0) acquire_lock(memlog_lock);
-	dprintf(localmemlog_des, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\n",
+	fprintf(local_log, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), ptr, 0, file, function, line, time(NULL));
 	if (memlog_lock > 0)release_lock(memlog_lock);
 
@@ -181,9 +180,8 @@ pid_t _sb_fork(void){
 	}
 	if (debug_memory == 0) return pid;
 
-	INIT_LOCAL_MEM_LOG();
 	acquire_lock(memlog_lock);
-	dprintf(localmemlog_des, "%d\tfork\t%d\t%ld\n",
+	fprintf(local_log, "%d\tfork\t%d\t%ld\n",
 			getpid(), pid, time(NULL));
 	release_lock(memlog_lock);
 	return pid;
@@ -198,9 +196,8 @@ void _sb_alloc_shm(int id, size_t size, const char *file, const char *function){
 #ifdef DEBUG_MEMORY
 	if (debug_memory == 0) return;
 
-	INIT_SHARED_MEM_LOG();
 	acquire_lock(memlog_lock);
-	dprintf(sharedmemlog_des, "%d\talloc\t#%d\t%d\t%s\t%s\t%d\t%ld\n",
+	fprintf(shared_log, "%d\talloc\t#%d\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), id, size, file, function, 0, time(NULL));
 	release_lock(memlog_lock);
 #endif //DEBUG_MEMORY
@@ -210,9 +207,8 @@ void _sb_free_shm(int id, const char *file, const char *function){
 #ifdef DEBUG_MEMORY
 	if (debug_memory == 0) return;
 
-	INIT_SHARED_MEM_LOG();
 	acquire_lock(memlog_lock);
-	dprintf(sharedmemlog_des, "%d\tfree\t#%d\t%d\t%s\t%s\t%d\t%ld\n",
+	fprintf(shared_log, "%d\tfree\t#%d\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), id, 0, file, function, 0, time(NULL));
 	release_lock(memlog_lock);
 #endif //DEBUG_MEMORY
@@ -229,15 +225,13 @@ void *_sb_mmap(void *start, size_t length, int prot, int flags, int fd, off_t of
 	if ( fstat(fd, &buf) < 0 ) return ptr;
 	
 	if ( flags && MAP_SHARED ) {
-		INIT_SHARED_MEM_LOG();
 		acquire_lock(memlog_lock);
-		dprintf(sharedmemlog_des, "%d\talloc\t#%ld\t%d\t%s\t%s\t%d\t%ld\t-mmap[%p]\n",
+		fprintf(shared_log, "%d\talloc\t#%ld\t%d\t%s\t%s\t%d\t%ld\t-mmap[%p]\n",
 				getpid(), buf.st_ino, length, file, function, line, time(NULL), ptr);
 		release_lock(memlog_lock);
 	}else if ( flags && MAP_PRIVATE ) {
-		INIT_LOCAL_MEM_LOG();
 		acquire_lock(memlog_lock);
-		dprintf(localmemlog_des, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld-mmap\n",
+		fprintf(local_log, "%d\talloc\t%p\t%d\t%s\t%s\t%d\t%ld-mmap\n",
 				getpid(), ptr, length, file, function, line, time(NULL));
 		release_lock(memlog_lock);
 	}
@@ -251,13 +245,10 @@ int _sb_munmap(void *start, size_t length, const char *file, const char *functio
 #ifdef DEBUG_MEMORY
 	if (debug_memory == 0) return munmap(start, length);
 
-	INIT_LOCAL_MEM_LOG();
-	INIT_SHARED_MEM_LOG();
-
 	acquire_lock(memlog_lock);
-	dprintf(localmemlog_des, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\t-munmap\n",
+	fprintf(local_log, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\t-munmap\n",
 			getpid(), start, 0, file, function, line, time(NULL));
-	dprintf(sharedmemlog_des, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\t-munmap[%p]\n",
+	fprintf(shared_log, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\t-munmap[%p]\n",
 			getpid(), (void*)0, 0, file, function, line, time(NULL), start);
 	release_lock(memlog_lock);
 
