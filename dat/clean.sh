@@ -4,20 +4,19 @@
 set -x
 dir=`pwd`
 reldir=`basename $dir`
-if [ "$reldir" = "dat" ]
+if [ ! "$reldir" = "dat" -a ! "$reldir" = "var" ]
 then
-	cd test && rm -f * ; cd $dir
-	cd cdm && rm -f * ; cd $dir
-	cd did && rm -f * ; cd $dir
-	cd lexicon && rm -f * ; cd $dir
-	cd lexicon/wordtoid && rm -f *; cd $dir
-	cd lexicon/idtoword && rm -f *; cd $dir
-	cd indexer && rm -f * ; cd $dir
-	cd ../logs && rm -f * ; cd $dir
-	rm -f softbotd*.reg ; cd $dir
-	cd crawler && rm -f * ; cd $dir
-else
 	echo "you must run this script in dat directory"
+	exit
 fi
 
-../scripts/clear_ipcs
+subdirs="test cdm did lexicon indexer crawler";
+for dir in $subdirs;
+do
+	test -d $dir && rm -f $dir/* ;
+done
+
+test -d ../logs && rm -f ../logs/* 
+test -x ../scripts/clear_ipcs && ../scripts/clear_ipcs
+
+echo "done."

@@ -4,15 +4,19 @@
 set -x
 dir=`pwd`
 reldir=`basename $dir`
-if [ "$reldir" = "dat" ]
+if [ ! "$reldir" = "dat" -a ! "$reldir" = "var" ]
 then
-	cd lexicon && rm -f * ; cd $dir
-	cd lexicon/wordtoid && rm -f * ; cd $dir
-	cd lexicon/idtoword && rm -f * ; cd $dir
-	cd indexer && rm -f * ; cd $dir
-	cd ../logs && rm -f indexer_log* ; cd $dir
-else
 	echo "you must run this script in dat directory"
+	exit
 fi
 
-../scripts/clear_ipcs
+subdirs="lexicon indexer";
+for dir in $subdirs;
+do
+	test -d $dir && rm -f $dir/* ;
+done
+
+test -d ../logs && rm -f ../logs/indexer_log* 
+test -x ../scripts/clear_ipcs && ../scripts/clear_ipcs
+
+echo "done."
