@@ -73,6 +73,8 @@ static int docattr_synchronize()
 {
 	int ret;
 
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 /*	ret = msync(docattr_array, max_doc_num * sizeof(doc_attr_t), MS_ASYNC);*/
 	ret = msync(docattr_array, max_doc_num * DOCATTR_ELEMENT_SIZE, 
 			MS_SYNC | MS_INVALIDATE);
@@ -87,10 +89,7 @@ static int docattr_close()
 {
 	int ret;
 
-/*	ret = docattr_synchronize();
-	if (ret < 0) {
-		return FALSE;
-	} */
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
 
 	ret = sb_munmap(docattr_array, max_doc_num * DOCATTR_ELEMENT_SIZE);
 	if (ret == -1) {
@@ -107,6 +106,8 @@ static int docattr_close()
 //          temporary coding.... must be modified
 static int docattr_get(uint32_t docid, void *p_doc_attr)
 {
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 	memcpy(p_doc_attr, docattr_array+(docid-1)*DOCATTR_ELEMENT_SIZE, 
 			DOCATTR_ELEMENT_SIZE);
 	
@@ -115,6 +116,8 @@ static int docattr_get(uint32_t docid, void *p_doc_attr)
 
 static int docattr_ptr_get(uint32_t docid, docattr_t **p_doc_attr)
 {
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 	*p_doc_attr = (docattr_t*) (docattr_array+(docid-1)*DOCATTR_ELEMENT_SIZE);
 
 	return TRUE;
@@ -122,6 +125,8 @@ static int docattr_ptr_get(uint32_t docid, docattr_t **p_doc_attr)
 
 static int docattr_set(uint32_t docid, void *p_doc_attr)
 {
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 	if ( docid >= max_doc_num ) {
 		error("docid[%u] is bigger than max_doc_num[%u]. modify config <mod_docattr.c> - MaxDocNum", docid, max_doc_num);
 		return FALSE;
@@ -138,6 +143,8 @@ static int docattr_get_array(uint32_t *dest_did, int dest_size, uint32_t *src_di
 {
 	int i, j;
 	void *ele;
+
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
 
 	if (dest_size < src_size)
 		warn("dest_size[%d] < src_size[%d], so there can be some missing documents."
@@ -164,6 +171,8 @@ static int docattr_set_array(uint32_t *did_list, int listsize,
 	int i, ret;
 	void *ele;
 
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 	for (i=0; i<listsize; i++) {
 		if ( did_list[i] >= max_doc_num ) {
 			error("docid[%u] is bigger than max_doc_num[%u]. modify config <mod_docattr.c> - MaxDocNum", did_list[i], max_doc_num);
@@ -185,6 +194,8 @@ static int docattr_get_index_list(sort_base_t *sort_dest, sort_base_t *sort_sour
 	int i, j, listsize;
 	void *ele=NULL;
 	int ret;
+
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
 
 	if(sort_dest->type == INDEX_LIST) {
 		index_list_t* dest = (index_list_t*)sort_dest;
@@ -243,6 +254,8 @@ static int docattr_set_index_list(index_list_t *list, maskfunc func, void *mask)
 	int i, listsize, ret;
 	void *ele=NULL;
 
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 	listsize = list->ndochits;
 	for (i=0; i<listsize; i++) {
 		ele = docattr_array + 
@@ -258,6 +271,8 @@ static int docattr_set_index_list(index_list_t *list, maskfunc func, void *mask)
 static int docattr_index_list_sortby(sort_base_t *sort_base, void *userdata,
 		int (*compar)(const void *, const void *, void *))
 {
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 	if(sort_base->type == INDEX_LIST) {
 		index_list_t* list = (index_list_t*)sort_base;
 	    debug("index list->ndochits:%u", list->ndochits);
@@ -319,7 +334,7 @@ module docattr_module = {
 	STANDARD_MODULE_STUFF,
 	config,					/* conf table */
 	NULL,					/* registry */
-	docattr_open,			/* initialize */
+	NULL,					/* initialize */
 	NULL,					/* child_main */
 	NULL,					/* scoreboard */
 	register_hooks			/* register hook api */

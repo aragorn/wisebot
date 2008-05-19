@@ -58,19 +58,18 @@ static int docattr_open()
 										docattr_db_fd, 0);
 	if (docattr_array == (void *)MAP_FAILED) {
 		error("cannot allocate memory by mmap: %s", strerror(errno));
+		docattr_array = NULL;
 		return FALSE;
 	}
 
-	info("%d bytes is allocated(mapped) by docattr module (shared memory:%p)",
+	info("%'d bytes is allocated(mapped) by docattr module (shared memory:%p)",
 			max_doc_num * DOCATTR_ELEMENT_SIZE, docattr_array);
 	return TRUE;
 }
 
 static int docattr_get_base_ptr(docattr_t** base_ptr, int* record_size)
 {
-    if(docattr_array == NULL) {
-		return FALSE;
-	}
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
 
 	*base_ptr = docattr_array;
 	*record_size = docattr_size;
@@ -82,6 +81,8 @@ static int docattr_get_base_ptr(docattr_t** base_ptr, int* record_size)
 static int docattr_synchronize() 
 {
 	int ret;
+
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
 
 /*	ret = msync(docattr_array, max_doc_num * sizeof(doc_attr_t), MS_ASYNC);*/
 	ret = msync(docattr_array, max_doc_num * DOCATTR_ELEMENT_SIZE, 
@@ -97,10 +98,7 @@ static int docattr_close()
 {
 	int ret;
 
-/*	ret = docattr_synchronize();
-	if (ret < 0) {
-		return FALSE;
-	} */
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
 
 	ret = sb_munmap(docattr_array, max_doc_num * DOCATTR_ELEMENT_SIZE);
 	if (ret == -1) {
@@ -117,6 +115,8 @@ static int docattr_close()
 //          temporary coding.... must be modified
 static int docattr_get(uint32_t docid, void *p_doc_attr)
 {
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 	memcpy(p_doc_attr, docattr_array+(docid-1)*DOCATTR_ELEMENT_SIZE, 
 			DOCATTR_ELEMENT_SIZE);
 	
@@ -125,6 +125,8 @@ static int docattr_get(uint32_t docid, void *p_doc_attr)
 
 static int docattr_ptr_get(uint32_t docid, docattr_t **p_doc_attr)
 {
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 	*p_doc_attr = (docattr_t*) (docattr_array+(docid-1)*DOCATTR_ELEMENT_SIZE);
 
 	return TRUE;
@@ -132,6 +134,8 @@ static int docattr_ptr_get(uint32_t docid, docattr_t **p_doc_attr)
 
 static int docattr_set(uint32_t docid, void *p_doc_attr)
 {
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
+
 	if ( docid >= max_doc_num ) {
 		error("docid[%u] is bigger than max_doc_num[%u]. modify config <mod_docattr.c> - MaxDocNum", docid, max_doc_num);
 		return FALSE;
@@ -148,6 +152,8 @@ static int docattr_get_array(uint32_t *dest_did, int dest_size, uint32_t *src_di
 {
 	int i, j;
 	void *ele;
+
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
 
 	if (dest_size < src_size)
 		warn("dest_size[%d] < src_size[%d], so there can be some missing documents."
@@ -173,6 +179,8 @@ static int docattr_set_array(uint32_t *did_list, int listsize,
 {
 	int i, ret;
 	void *ele;
+
+	if (docattr_array == NULL && docattr_open() != TRUE) return FALSE;
 
 	for (i=0; i<listsize; i++) {
 		if ( did_list[i] >= max_doc_num ) {
@@ -232,7 +240,7 @@ module docattr2_module = {
 	STANDARD_MODULE_STUFF,
 	config,					/* conf table */
 	NULL,					/* registry */
-	docattr_open,			/* initialize */
+	NULL,					/* initialize */
 	NULL,					/* child_main */
 	NULL,					/* scoreboard */
 	register_hooks			/* register hook api */
