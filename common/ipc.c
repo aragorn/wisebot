@@ -42,7 +42,7 @@ int free_ipcs()
 				fail++;
 			}
 #ifdef DEBUG_SOFTBOT
-			_sb_free_shm(allocated_ipcs[i].id, __FILE__, __FUNCTION__);
+			//_sb_free_shm(allocated_ipcs[i].id, __FILE__, __FUNCTION__);
 #endif //DEBUG_SOFTBOT
 			break;
 		case IPC_TYPE_SEM:

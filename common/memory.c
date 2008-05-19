@@ -20,12 +20,12 @@
 
 #define DEBUG_MEMORY
 #undef DEBUG_MEMORY
-#warning When DEBUG_MEMORY is defined, server exits with acquire_lock() error.
 #ifdef AIX5
 #  undef DEBUG_MEMORY  /* there's no dprintf() on AIX.  */
 #endif                 /* cannot print debug message to a file descriptor. */
 
 #ifdef DEBUG_MEMORY
+#warning DEBUG_MEMORY IS TURNED ON.
 static char *local_memory_log_file = "logs/local_mem_log";
 static char *shared_memory_log_file = "logs/shared_mem_log";
 
@@ -145,10 +145,10 @@ void _sb_free(void *ptr, const char *file, const char *function, int line)
 {
 #ifdef DEBUG_MEMORY
 	INIT_LOCAL_MEM_LOG();
-	acquire_lock(memlog_lock);
+	if (memlog_lock > 0) acquire_lock(memlog_lock);
 	dprintf(localmemlog_des, "%d\tfree\t%p\t%d\t%s\t%s\t%d\t%ld\n",
 			getpid(), ptr, 0, file, function, line, time(NULL));
-	release_lock(memlog_lock);
+	if (memlog_lock > 0)release_lock(memlog_lock);
 #endif //DEBUG_MEMORY
 	free(ptr);
 }
@@ -205,7 +205,7 @@ void *_sb_mmap(void *start, size_t length, int prot, int flags, int fd, off_t of
 	if ( flags && MAP_SHARED ) {
 		INIT_SHARED_MEM_LOG();
 		acquire_lock(memlog_lock);
-		dprintf(sharedmemlog_des, "%d\talloc\t%ld\t%d\t%s\t%s\t%d\t%ld\t-mmap[%p]\n",
+		dprintf(sharedmemlog_des, "%d\talloc\t#%ld\t%d\t%s\t%s\t%d\t%ld\t-mmap[%p]\n",
 				getpid(), buf.st_ino, length, file, function, line, time(NULL), ptr);
 		release_lock(memlog_lock);
 	}else if ( flags && MAP_PRIVATE ) {
