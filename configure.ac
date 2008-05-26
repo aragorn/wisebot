@@ -302,7 +302,7 @@ case "$host" in
     MODULES_LDFLAGS="-module -avoid-version"
     THREAD_LIB=""
     DYN_LIB="" #"-dlopen"
-    AM_LDFLAGS="-Wl,--stack,100000000" # increase stack size to 100MB
+    AM_LDFLAGS="-Wl,--stack,50000000" # increase stack size to 50MB
     ;;
   *freebsd* )
     SHORT_HOST="freebsd"
@@ -540,6 +540,7 @@ AC_CONFIG_FILES([
     debug/Makefile
     srclib/Makefile
     dat/Makefile
+    scripts/Makefile
 
     modules/Makefile
     modules/mod_api/Makefile
