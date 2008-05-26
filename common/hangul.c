@@ -5,7 +5,8 @@
 #include "hangul.h"
 */
 
-/* http://sourceware.org/ml/libc-alpha/2004-04/msg00106.html */
+/* Locale-independent Character Conversion
+ * http://sourceware.org/ml/libc-alpha/2004-04/msg00106.html */
 
 static char toupperh(const char c)
 {

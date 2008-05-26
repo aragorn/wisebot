@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+my $charset = shift || "cp949";
+
+if ($charset eq "cp949")
+{
+	foreach my $upper (0xCA .. 0xFD)     # 0xB0 .. 0xC8
+	{
+		foreach my $lower (0xA1 .. 0xFE) # 0xA1 .. 0xFE
+		{
+			my $hu = $upper - 0xCA + 0xB0;
+			my $hl = $lower;
+			my $hanja  = pack("cc", $upper, $lower);
+			my $hangul = pack("cc", $hu   , $hl);
+			printf("\t /* %s 0x%02X%02X - %s */ 0x%02X%02X,\n",
+			             $hanja, $upper, $lower, $hangul, $hu, $hl );
+		}
+
+	}
+
+} else
+{
+	print "Unknown charset!\n";
+	exit;
+}
