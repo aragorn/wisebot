@@ -41,39 +41,28 @@ static char debug_module_name[DEBUG_MODULE_NUM][SHORT_STRING_SIZE];
 
 static char* color_format[] = {
 	/*         module.c     function     */
-	CLEAR GREEN "%s" CLEAR " %s() " BLINK BOLD WHITE ON_RED " ", /* emerg */
-	CLEAR GREEN "%s" CLEAR " %s() " BLINK BOLD WHITE ON_RED " ", /* alert */
-	CLEAR GREEN "%s" CLEAR " %s() " BOLD WHITE ON_RED " ", /* crit */
-	CLEAR GREEN "%s" CLEAR " %s() " BOLD RED     " ", /* error */
-	CLEAR GREEN "%s" CLEAR " %s() " YELLOW       " ", /* warn */
-	CLEAR GREEN "%s" CLEAR " %s() " CYAN         " ", /* notice */
-	CLEAR GREEN "%s" CLEAR " %s() " CYAN         " ", /* info */
-	CLEAR GREEN "%s" CLEAR " %s()  "              , /* debug */
+	CLEAR GREEN "%s:%d" CLEAR " %s() " BLINK BOLD WHITE ON_RED " ", /* emerg */
+	CLEAR GREEN "%s:%d" CLEAR " %s() " BLINK BOLD WHITE ON_RED " ", /* alert */
+	CLEAR GREEN "%s:%d" CLEAR " %s() " BOLD WHITE ON_RED " ", /* crit */
+	CLEAR GREEN "%s:%d" CLEAR " %s() " BOLD RED     " ", /* error */
+	CLEAR GREEN "%s:%d" CLEAR " %s() " YELLOW       " ", /* warn */
+	CLEAR GREEN "%s:%d" CLEAR " %s() " CYAN         " ", /* notice */
+	CLEAR GREEN "%s:%d" CLEAR " %s() " CYAN         " ", /* info */
+	CLEAR GREEN "%s:%d" CLEAR " %s()  "              , /* debug */
 };
 
 static FILE *fplog  = NULL; // error_log
 static FILE *fpqlog = NULL; // query_log
 static int  screen_log = 0;
 
-#ifndef HAVE_SETLINEBUF
-void setlinebuf(FILE *stream)
-{
-	setvbuf(stream, (char*)NULL, _IOLBF, 0);
-}
-#endif
-
 #define DEBUG_LOG_ERROR
 //#undef DEBUG_LOG_ERROR
-
-static int  semid = -1;
-static void init_loglock(void);
 
 void set_screen_log(void) {
 	screen_log = 1;
 }
 
 void open_error_log(const char* error_log, const char* query_log) {
-	init_loglock();
 
 	if ((fpqlog = sb_fopen(query_log,"a")) == NULL){
 		crit("cannot open query log file %s: %s", query_log, strerror(errno));
@@ -94,7 +83,6 @@ void open_error_log(const char* error_log, const char* query_log) {
 }
 
 void close_error_log() {
-	int ignored = 0;
 
 	if (fplog) {
 		fclose(fplog);
@@ -105,9 +93,6 @@ void close_error_log() {
 		fclose(fpqlog);
 		fpqlog = NULL;
 	}
-	
-	if (semid != -1 && semctl(semid, ignored, IPC_RMID) != 0)
-		fprintf(stderr, "error while removing semaphore: %s", strerror(errno));
 }
 
 void reopen_error_log(const char* error_log, const char* query_log)
@@ -178,23 +163,6 @@ int log_setlevelstr(const char* levelstr)
 	return FAIL;
 }
 
-static void acquire_loglock(int semid)
-{
-	if (semid < 0) return;
-
-	if (acquire_lock(semid) != SUCCESS) {
-		perror("acquire_loglock error: ");
-	}
-}
-static void release_loglock(int semid)
-{
-	if (semid < 0) return;
-
-	if (release_lock(semid) != SUCCESS) {
-		perror("release_loglock error: ");
-	}
-}
-
 /* check log condition by name of module and log level */
 static int check_log_condition(const char *module, int level)
 {
@@ -247,7 +215,9 @@ void log_error_core(int          level,
 					const char  *format, va_list args)
 {
 	time_t now;
-	
+	static char linked_format[STRING_SIZE+1];
+	int pid = getpid();
+
 	if (check_log_condition(aModule, level)==FAIL)	
 		return;
 
@@ -256,22 +226,22 @@ void log_error_core(int          level,
     if (strrchr(aModule,'\\'))
         aModule = 1+ strrchr(aModule,'\\');
 
-	acquire_loglock(semid);
-	if (fplog == NULL) {
-		fprintf (stderr, color_format[level], aModule, aCaller);
-		vfprintf(stderr, format, args);
-		fprintf(stderr, " " CLEAR "\n");
+	if (screen_log) {
+		linked_format[0] = '\0';
+		snprintf(linked_format, STRING_SIZE, color_format[level], aModule, pid, aCaller);
+		strncat(linked_format, format,         STRING_SIZE);
+		strncat(linked_format, " " CLEAR "\n", STRING_SIZE);
+		vfprintf(stderr, linked_format, args);
 	} else {
 		time(&now);
-		fprintf (fplog, "[%.24s] [%s] %s %s() ",
-					ctime(&now),
-					gLogLevelStr[level],
-					aModule,
-					aCaller);
-		vfprintf(fplog, format, args);
-		fputc('\n', fplog);
+		linked_format[0] = '\0';
+		snprintf(linked_format, STRING_SIZE, 
+                 "[%.24s] [%s] %s:%d %s() ",
+                 ctime(&now), gLogLevelStr[level], aModule, pid, aCaller);
+		strncat(linked_format, format, STRING_SIZE);
+		strncat(linked_format, "\n",   STRING_SIZE);
+		vfprintf(stderr, linked_format, args);
 	}
-	release_loglock(semid);
 
 	return;
 }
@@ -280,13 +250,9 @@ void log_query(const char* query)
 {
 	time_t now;
 	
-	acquire_loglock(semid);
-
 	time(&now);
 	if ( fpqlog )
 		fprintf (fpqlog, "[%.24s] %s\n", ctime(&now), query);
-
-	release_loglock(semid);
 
 	return;
 }
@@ -310,30 +276,6 @@ void _sb_abort(const char *file, const char *caller)
 	abort();
 }
 
-
-static void init_loglock(void)
-{
-	key_t key;
-	union semun semarg;
-
-	key = IPC_PRIVATE;
-	semid = semget(key,1,IPC_CREAT|IPC_EXCL|0600);
-	if (semid == -1 && errno == EEXIST) {
-		fprintf(stderr,"use existing semaphore for log [key=%d,semid=%d]\n", (int)key, semid);
-		semid = semget(key,1,0);
-	}
-
-	if (semid == -1) {
-		perror("error while getting sema for log: ");
-	} else {
-		semarg.val = 1;
-		if (semctl(semid,0,SETVAL,semarg) == -1) {
-		    perror("semctl SETVAL error: ");
-		}
-	}
-
-	return;
-}
 
 double timediff(struct timeval *later, struct timeval *first)
 {

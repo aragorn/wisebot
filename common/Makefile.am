@@ -18,7 +18,7 @@ libcommon_core_la_SOURCES = common_core.c \
 							scoreboard.c \
 							util.c \
 							hangul.c
-libcommon_core_la_LDFLAGS = -shared -avoid-version -no-undefined
+libcommon_core_la_LDFLAGS = -module -avoid-version -no-undefined
 libcommon_core_la_LIBADD  = $(DYN_LIB) $(THREAD_LIB)
 
 check_string_SOURCES = check_string.c
@@ -32,5 +32,5 @@ libcommon_util_la_SOURCES = common_util.c \
 							memfile.c \
 							mprintf.c \
 							msg_record.c
-libcommon_util_la_LDFLAGS = -shared -avoid-version -no-undefined
+libcommon_util_la_LDFLAGS = -module -avoid-version -no-undefined
 libcommon_util_la_LIBADD = libcommon_core.la
