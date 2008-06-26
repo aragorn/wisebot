@@ -447,7 +447,7 @@ cron) cron
     ;;
 cron_non_stop) cron_non_stop
     ;;
-*)	echo "Usage: $0 start|stop|status|restart|reopen|cron"
+*)	echo "Usage: $0 start|stop|status|restart|reopen|cron|cron_non_stop"
 	exit 1 
     ;;
 esac
