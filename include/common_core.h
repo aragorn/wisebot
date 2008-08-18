@@ -53,6 +53,7 @@ extern SB_DECLARE_DATA pid_t gRootPid;
 # include "hook.h"
 # include "setproctitle.h"
 #include "hangul.h"
+#include "hanja.h"
 #include "ansi_color.h"
 #include "util.h"
 
