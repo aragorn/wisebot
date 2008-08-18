@@ -110,6 +110,7 @@ static int kor2chn_translator_analyze(index_word_extractor_t *extractor, index_w
 		switch(token_array[i].type)
 		{ 
 			case TOKEN_CHINESE: 
+				/* TODO should be replaced by common/hanja.c:sb_hanja2hangul() */
 				CDconvChn2Kor(token_array[i].string , token_array[i].string);
 
 				// falls through
