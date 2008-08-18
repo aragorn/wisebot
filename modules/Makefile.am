@@ -7,7 +7,7 @@ SUBDIRS = mod_api \
 	mod_sfs mod_ifs \
 	mod_indexer \
 	mod_qpp mod_qp \
-	mod_tokenizer mod_morpheme mod_index_word_extractor \
+	mod_tokenizer mod_index_word_extractor \
 	mod_docapi mod_cdm mod_docattr \
 	mod_protocol4 mod_softbot4 \
 	mod_did \

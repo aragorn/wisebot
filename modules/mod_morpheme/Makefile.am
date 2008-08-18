@@ -1,11 +1,6 @@
 # $Id$
-if CYGWIN
 noinst_LTLIBRARIES = mod_morpheme.la
 pkglib_LTLIBRARIES = 
-else
-noinst_LTLIBRARIES = 
-pkglib_LTLIBRARIES = mod_morpheme.la
-endif
 
 mod_morpheme_la_SOURCES = mod_morpheme.c \
 				lib/ma.c lib/ma_kor.c lib/ma_eng.c \
