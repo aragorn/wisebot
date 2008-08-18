@@ -124,9 +124,10 @@ static int add_token(token_t *token, unsigned char *c, int *pass)
 				break;
 			}
 
-			/* ±æAI°¡ ³N¾i°¡´A °æ¿i¿¡´A ±×±iAo token¿¡ copyCI°i
-			 * ´UA½ token¿¡´U ³ª¸OAo ºIºÐA≫ copyCO ¼o AO°O..
+            /* 길이가 넘어가는 경우에는 그까지 token에 copy하고
+			 * 다음 token에다 나머지 부분을 copy할 수 있게..
 			 */
+
 			if (i+1 >= MAX_WORD_LEN || i+2 >= MAX_WORD_LEN)
 				break;
 
