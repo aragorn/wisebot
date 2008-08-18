@@ -163,24 +163,12 @@ static general_sort_t* general_sort = NULL;
 
 static int string_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
-	// 한자 -> 한글 처리 해야 한다
-	int left;
-	char title[SHORT_STRING_SIZE], _value[SHORT_STRING_SIZE];
-	WordList wordlist;
-	Morpheme morp;
+	char hangul[SHORT_STRING_SIZE+1], sz_value[SHORT_STRING_SIZE+1];
 
-	title[0] = '\0';
-	strncpy(_value, value, SHORT_STRING_SIZE-1);
-	_value[SHORT_STRING_SIZE-1] = '\0';
-	sb_run_morp_set_text(&morp, _value, 4);
-	left = SHORT_STRING_SIZE;
-	while( sb_run_morp_get_wordlist( &morp, &wordlist, 4 ) != FAIL &&
-			left > 0 ) {
-		strncat( title, wordlist.words[1].word, left );
-		left -= strlen( wordlist.words[1].word );
-	}
+	strncpy(sz_value, value, SHORT_STRING_SIZE); sz_value[SHORT_STRING_SIZE] = '\0';
+	sb_hanja2hangul(hangul, sz_value, "cp949");
 
-	strncpy( DATA_POSITION, value, field->size );
+	strncpy( DATA_POSITION, hangul, field->size );
 	((char*) DATA_POSITION)[field->size-1] = '\0';
 	return SUCCESS;
 }
