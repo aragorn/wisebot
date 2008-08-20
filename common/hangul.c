@@ -1,5 +1,6 @@
 /* $Id$ */
 #include "common_core.h"
+#include "common_util.h"
 /* moved to common_core.h due to precompiled header 
 #define CORE_PRIVATE 1
 #include "hangul.h"

@@ -74,6 +74,8 @@ SB_DECLARE(int)  sb_tstat_log_init(const char* file_name);
 SB_DECLARE(void) sb_tstat_log_destroy();
 SB_DECLARE(void) sb_tstat_log(char* tag);
 /*****************************************************************************/
+#include "hangul.h"
+#include "hanja.h"
 
 #include "hash.h"
 #include "msg_record.h"

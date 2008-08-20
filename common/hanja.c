@@ -1,18 +1,19 @@
 /* $Id$ */
 #include "common_core.h"
+#include "common_util.h"
 
-static int hanja2hangul_cp949(char *dest, const char *src);
+static char* hanja2hangul_cp949(char* dest, const char* src, int len);
 
-int sb_hanja2hangul(char *dest, const char *src, const char *charset)
+char* sb_hanja2hangul(char* dest, const char* src, int len, const char* charset)
 {
 	if (strncasecmp(charset, "cp949", 7) == 0) {
-		return hanja2hangul_cp949(dest, src);
+		return hanja2hangul_cp949(dest, src, len);
 	} else
 	if (strncasecmp(charset, "cp949", 7) == 0) {
-		return hanja2hangul_cp949(dest, src);
+		return hanja2hangul_cp949(dest, src, len);
 	} else {
-		strcpy(dest, src);
-		return strlen(dest);
+		strnhcpy(dest, src, len);
+		return dest + strlen(dest);
 	}
 }
 
@@ -4908,10 +4909,54 @@ static short hanja2hangul_table[52*94] = {
 };
 
 
-static int hanja2hangul_cp949(char *dest, const char *from)
+static char* hanja2hangul_cp949(char *dest, const char* from, int len)
 {
-	unsigned char *src;
-	int count = 0, index;
+	int j, last;
+	const unsigned char *src;
+	int converted = 0;
+	char *to = dest;
+	for (src = (unsigned char*)from; *src != '\0'; )
+	{
+		int is_hanja = 0;
+
+		if ( *src <= 0x7F )
+		{ last = 1; }               /* 1byte ASCII */
+		else
+		if ( 0xCA <= *src     && *src     <= 0xFD &&
+			 0xA1 <= *(src+1) && *(src+1) <= 0xFE )
+		{ last = 2; is_hanja = 1; } /* 2byte 한자 */
+		else
+		{ last = 2; }               /* 2byte 한글 및 특수기호 등 */
+
+		if (src+last >= (unsigned char*)from + len) break;
+
+
+		if (is_hanja == 0) for(j = 0; j < last; j++) *dest++ = *src++;
+		else
+		{   /* 2byte 한자 */
+			int index = (*src - 0xCA)* 94;
+			index     += *(src+1) - 0xA1;
+			*dest     = hanja2hangul_table[index] >> 8;
+			*(dest+1) = hanja2hangul_table[index] & 0xFF;
+#ifdef ENABLE_CHECK
+			debug("%c%c[0x%02X%02X] - %c%c[0x%02X%02X]",
+			       *src, *(src+1), *src, *(src+1),
+			       *dest, *(dest+1), (unsigned char)*dest, (unsigned char)*(dest+1));
+#endif
+			converted ++;
+			src+=2; dest+=2;
+		}
+#ifdef ENABLE_CHECK
+		//notice("%s", from);
+		//warn("%s", to);
+#endif
+    }
+
+	*dest = '\0';
+
+    return dest;
+#if 0
+	dest;
 	for (src = from; *src != NULL; src++, dest++)
 	{
 #ifdef ENABLE_CHECK
@@ -4944,6 +4989,7 @@ static int hanja2hangul_cp949(char *dest, const char *from)
 	}
 	*dest = 0x00;
 	return count;
+#endif
 }
 
 #ifdef ENABLE_CHECK
@@ -4955,10 +5001,10 @@ main(int argc, char *argv[])
 
 	while ( fgets(src, LONG_STRING_SIZE, stdin) != NULL )
 	{
-		int count = sb_hanja2hangul(dest, src, "cp949");
-		sb_assert(strlen(src) == count);
-		printf("converted %d char.\n", count);
+		//sb_hanja2hangul(dest, src, LONG_STRING_SIZE, "cp949");
+		sb_hanja2hangul(dest, src, 20, "cp949");
 		fputs(dest, stdout);
+		fputs("---\n", stdout);
 	}
 	return EXIT_SUCCESS;
 }

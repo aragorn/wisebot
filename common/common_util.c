@@ -144,8 +144,8 @@ char* strnhcpy(char* dest, char const* src, int len)
         last = ((unsigned char)src[i] >= 0x80 &&
                 (unsigned char)src[i+1] >= 0x30) ? 2 : 1;
         for(j = 0; j < last; i++, j++) dest[i] = src[i];
-    } while(i < len && src[i] != 0);
-    if(i > len) i -= last;
+    } while(i + last < len && src[i] != 0);
+
     dest[i] = 0;
     return dest;
 } 
