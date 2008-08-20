@@ -163,10 +163,9 @@ static general_sort_t* general_sort = NULL;
 
 static int string_set_func(docattr_t* docattr, docattr_field_t* field, char *value)
 {
-	char hangul[SHORT_STRING_SIZE+1], sz_value[SHORT_STRING_SIZE+1];
+	char hangul[SHORT_STRING_SIZE+1];
 
-	strncpy(sz_value, value, SHORT_STRING_SIZE); sz_value[SHORT_STRING_SIZE] = '\0';
-	sb_hanja2hangul(hangul, sz_value, "cp949");
+	sb_hanja2hangul(hangul, value, SHORT_STRING_SIZE, "cp949");
 
 	strncpy( DATA_POSITION, hangul, field->size );
 	((char*) DATA_POSITION)[field->size-1] = '\0';
