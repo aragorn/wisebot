@@ -39,7 +39,6 @@ extern module rmac2_module;
 extern module sfs_module;
 extern module ifs_module;
 extern module rmas_module;
-extern module morpheme_module;
 
 extern module qpp_module;
 extern module qp2_module;
@@ -84,7 +83,6 @@ module *server_static_modules[] = {
 	&sfs_module,
 	&ifs_module,
 	&rmas_module,
-	&morpheme_module,
 
 	&qpp_module,
 	&qp2_module,
