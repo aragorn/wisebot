@@ -157,7 +157,7 @@ struct groupby_rule_list_t {
     char clause[LONG_STRING_SIZE];
 }; 
 
-#define MAX_CARDINALITY (256)
+#define MAX_CARDINALITY (1024)
 struct groupby_result_list_t {
     groupby_rule_list_t rules;
     int result[MAX_GROUP_RULE][MAX_CARDINALITY];
