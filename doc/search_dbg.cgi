@@ -34,7 +34,7 @@ if ($submit eq "ok")
   my $escaped_param_value = escape($param_value);
   my $t1 = new Benchmark;
   my $r;
-  if ( $target =~ m/^\/search\// )
+  if ( $target =~ m|/search/| )
   {
     $r = $ua->request(GET $target . "?q=" . $escaped_query);
   } else {
