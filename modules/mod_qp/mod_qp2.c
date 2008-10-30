@@ -2902,7 +2902,7 @@ static int add_operation(operation_list_t* op_list, char* clause, int clause_typ
 
     switch(clause_type) {
         case WHERE:
-            strncpy(op_list->list[op_list->cnt].rule.where, clause, LONG_STRING_SIZE-1);
+            strncpy(op_list->list[op_list->cnt].rule.where, clause, LONG_LONG_STRING_SIZE-1);
             break;
         case GROUP_BY:
         case COUNT_BY:

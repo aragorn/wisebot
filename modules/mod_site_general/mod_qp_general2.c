@@ -1165,7 +1165,7 @@ retry:
 
 	// Delete field가 없으면 강제로 넣어야 하는데... shit 이다.
 	if ( find_field_from_cond( "Delete" ) == NULL ) {
-		char attrquery2[LONG_STRING_SIZE];
+		char attrquery2[LONG_LONG_STRING_SIZE];
 
 		if ( sizeof(attrquery2) < len+20 ) {
 			error("insufficient attrquery2 size. current attrquery len:[%d]", len);
@@ -1295,7 +1295,7 @@ retry:
 
 	// Delete field가 없으면 default로 입력.
 	if ( find_field_from_cond( "Delete" ) == NULL ) {
-		char clause2[LONG_STRING_SIZE];
+		char clause2[LONG_LONG_STRING_SIZE];
 
 		if ( sizeof(clause2) < len+20 ) {
 			error("insufficient attrquery2 size. current attrquery len:[%d]", len);
