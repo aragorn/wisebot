@@ -171,7 +171,7 @@ struct operation_t {
 		groupby_rule_list_t groupby;
 		orderby_rule_list_t orderby;
         limit_t limit;
-        char where[LONG_STRING_SIZE];
+        char where[LONG_STRING_SIZE*4]; //4k
 	}rule;
 };
 
