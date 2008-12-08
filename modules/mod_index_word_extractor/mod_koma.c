@@ -242,7 +242,7 @@ void koma_set_text(koma_handle_t* handle, const char* text)
 {
     static char *hanja_conv_text = NULL;
     if (hanja_conv_text == NULL) {
-        hanja_conv_text = (char *)sb_malloc(DOCUMENT_SIZE);
+        hanja_conv_text = (char *)sb_malloc(MAX_SENTENCE_LENGTH);
         if (hanja_conv_text == NULL) {
             crit("out of memory: %s", strerror(errno));
             return;
