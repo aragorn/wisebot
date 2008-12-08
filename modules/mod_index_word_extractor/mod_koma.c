@@ -242,14 +242,14 @@ void koma_set_text(koma_handle_t* handle, const char* text)
 {
     static char *hanja_conv_text = NULL;
     if (hanja_conv_text == NULL) {
-        hanja_conv_text = (char *)sb_malloc(MAX_SENTENCE_LENGTH);
+        hanja_conv_text = (char *)sb_malloc(DOCUMENT_SIZE); // 문서전체가 될 수 있다.
         if (hanja_conv_text == NULL) {
             crit("out of memory: %s", strerror(errno));
             return;
         }
     }
 
-	sb_hanja2hangul(hanja_conv_text, text, MAX_SENTENCE_LENGTH, "cp949");
+	sb_hanja2hangul(hanja_conv_text, text, DOCUMENT_SIZE, "cp949");
 
 	// set handle
 	handle->orig_text = hanja_conv_text;
