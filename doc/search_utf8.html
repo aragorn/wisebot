@@ -1,0 +1,56 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=utf8"><!-- saved from url=(0022)http://internet.e-mail -->
+
+
+<script>
+<!--
+var g_query;
+
+function search()
+{
+    g_query = query = document.all.query.value;
+    document.all.theform.action=document.all.url.value;
+
+        /* 연산자 encoding */
+        query = query.replace("&", "%26");
+        query = query.replace("+", "%2B");
+
+        document.all.query.value = query;
+        document.all.theform.submit();
+
+        document.all.query.value = g_query;
+}
+-->
+</script>
+</head><body>
+<table>
+<tbody><tr>
+<td>
+    <form id="theform" action="http://dev.softwise.co.kr:8881/search/search" target="result">
+        <input id="url" size="50" value="http://dev.softwise.co.kr:8881/search/search" type="text">
+        <br>
+    <textarea id="query" name="q" rows="10" cols="50"></textarea>
+    <input value="ok" onclick="javascript:search()" type="button">
+    </form>
+</td>
+<td width="30">
+</td><td>
+</td><td>
+예제)
+<br>
+<pre>----------------------------------------------
+example
+----------------------------------------------
+SELECT *
+SEARCH pattern:softwisezzz
+ORDER_BY RELEVANCY DESC
+LIMIT 0, 10
+
+</pre>
+</td>
+</tr>
+</tbody></table>
+
+<iframe name="result" width="100%" height="100%"> 
+&lt;/body&gt;    
+&lt;/html&gt;</iframe></body></html>

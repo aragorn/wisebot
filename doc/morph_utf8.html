@@ -1,0 +1,66 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=utf8"><!-- saved from url=(0022)http://internet.e-mail -->
+
+
+<script>
+<!--
+function morph()
+{
+    var body = query = document.all.body.value;
+    var uri = document.all.url.value + '?contenttype=' + document.all.style.value
+              + '&metadata=' + encodeURIComponent('body#0:') + document.all.morphId.value;
+              
+    if( document.all.morphId.value == 100) {
+        uri += '&rawkomatext=';
+    }
+
+    document.all.theform.action =uri;
+     
+    document.all.theform.submit();
+}
+-->
+</script>
+</head><body>
+<table>
+<tbody><tr>
+<td>
+    출력 형태 : <select id="style">
+        <option value="text">TEXT</option>
+        <option value="xml" selected="selected">XML</option>
+    </select><br>
+
+    색인어 추출 방식 : <select id="morphId">
+        <option value="0">morph_id(0) - 어절단위</option>
+        <option value="100">morph_id(100) - 기본 형태소 분석</option>
+        <option value="10" selected="selected">morph_id(10) - 형태소 분석(품사 필터링)</option>
+        <option value="11">morph_id(11) - 형태소 분석(품사 필터링 + 복합명사 처리)</option>
+        <option value="12">morph_id(12) - 형태소 분석(품사 필터링 + 복합명사 처리 + 복합명사 처리전 개별명사 제거)</option>
+        <option value="20">morph_id(20) - 기본 바이그램</option>
+        <option value="21">morph_id(21) - 절단검색 지원 바이그램</option>
+        <option value="30">morph_id(30) - utf8 지원 바이그램</option>
+    </select>
+    <form id="theform" target="result" method="post">
+        <input id="url" size="50" value="http://dev.softwise.co.kr:8881/document/ma" type="text">
+        <br>
+    <textarea name="body" id="body" rows="10" cols="120">&lt;Document&gt;
+&lt;body&gt;&lt;![CDATA[
+
+이곳에 분석 대상 텍스트를 입력해주세요
+
+]]&gt;&lt;/body&gt;
+&lt;/Document&gt;    
+    </textarea>
+    <input value="분석하기" onclick="javascript:morph()" type="button">
+    </form>
+</td>
+<td width="30">
+</td><td>
+</td><td>
+<pre></pre>
+</td>
+</tr>
+</tbody></table>
+
+<iframe name="result" width="100%" height="100%"> 
+&lt;/body&gt;    
+&lt;/html&gt;</iframe></body></html>
