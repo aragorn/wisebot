@@ -9,10 +9,10 @@ static int bigram_word_add(char* output, int* output_idx, int output_len,
                     char* cur_word, int cur_word_type, 
 					char* pre_word, int pre_word_type);
 /*
- * uni_type_index ë¶„ì„ê¸° ìƒì„±
+ * uni_type_index ºĞ¼®±â »ı¼º
  *
- * in : ì—†ìŒ
- * out : í•¸ë“¤
+ * in : ¾øÀ½
+ * out : ÇÚµé
  */
 unia_t* utf8_initialize()
 {
@@ -26,10 +26,10 @@ unia_t* utf8_initialize()
 }
 
 /*
- * uni_type_index ë¶„ì„ê¸° ì†Œë©¸
+ * uni_type_index ºĞ¼®±â ¼Ò¸ê
  *
- * in : í•¸ë“¤
- * out : ì—†ìŒ
+ * in : ÇÚµé
+ * out : ¾øÀ½
  */
 void utf8_destroy(unia_t* unia) {
     if( unia != NULL ) {
@@ -39,11 +39,11 @@ void utf8_destroy(unia_t* unia) {
 
 /*
  * byte order mark check.
- * http://ko.wikipedia.org/wiki/ë°”ì´íŠ¸_ìˆœì„œ_í‘œì‹
+ * http://ko.wikipedia.org/wiki/¹ÙÀÌÆ®_¼ø¼­_Ç¥½Ä
  *
- * in : ë¬¸ì„œ ìµœì´ˆ 3byte
- * out : 0 : ì—†ìŒ
- *       1 : ìˆìŒ
+ * in : ¹®¼­ ÃÖÃÊ 3byte
+ * out : 0 : ¾øÀ½
+ *       1 : ÀÖÀ½
  */
 int check_bom(unsigned char* header) {
     if( strlen( header ) < 3 ) {
@@ -58,19 +58,19 @@ int check_bom(unsigned char* header) {
 }
 
 /*
- * ë‘ê¸€ìì”© ê²°í•©í•œë‹¤.(bigram)
+ * µÎ±ÛÀÚ¾¿ °áÇÕÇÑ´Ù.(bigram)
  *
  * in :
- *    output : ì¶œë ¥ë²„í¼ 
- *    output_idx : ì¶œë ¥ë²„í¼ì˜ ì…ë ¥ ìœ„ì¹˜
- *    output_len : ì¶œë ¥ë²„í¼ì˜ ê¸¸ì´
- *    cur_word : í˜„ì¬ ë¬¸ì
- *    cur_word_type : í˜„ì¬ ë¬¸ìì˜ íƒ€ì…
- *    pre_word : ì´ì „ ë¬¸ì
- *    pre_word_type : ì´ì „ ë¬¸ìì˜ íƒ€ì…
+ *    output : Ãâ·Â¹öÆÛ 
+ *    output_idx : Ãâ·Â¹öÆÛÀÇ ÀÔ·Â À§Ä¡
+ *    output_len : Ãâ·Â¹öÆÛÀÇ ±æÀÌ
+ *    cur_word : ÇöÀç ¹®ÀÚ
+ *    cur_word_type : ÇöÀç ¹®ÀÚÀÇ Å¸ÀÔ
+ *    pre_word : ÀÌÀü ¹®ÀÚ
+ *    pre_word_type : ÀÌÀü ¹®ÀÚÀÇ Å¸ÀÔ
  *
- * out : 0 : ì‹¤íŒ¨
- *       1 : ì„±ê³µ
+ * out : 0 : ½ÇÆĞ
+ *       1 : ¼º°ø
  */
 int bigram_word_add(char* output, int* output_idx, int output_len,
                     char* cur_word, int cur_word_type, 
@@ -110,24 +110,26 @@ int bigram_word_add(char* output, int* output_idx, int output_len,
 
         output[*output_idx] = ' ';
         (*output_idx)++;
+
+        output[(*output_idx)] = '\0';
 	}
 
     return 1;
 }
 
 /*
- * ì°¸ê³  : http://ko.wikipedia.org/wiki/UTF-8
- * ìœ ë‹ˆì½”ë“œ í† í° ë¶„ë¦¬
- * 1. white spaceë¥¼ êµ¬ë¶„ìœ¼ë¡œ í•˜ì—¬ ë‹¨ì–´ë¥¼ bigrameìœ¼ë¡œ ë¶„ë¦¬
+ * Âü°í : http://ko.wikipedia.org/wiki/UTF-8
+ * À¯´ÏÄÚµå ÅäÅ« ºĞ¸®
+ * 1. white space¸¦ ±¸ºĞÀ¸·Î ÇÏ¿© ´Ü¾î¸¦ bigrameÀ¸·Î ºĞ¸®
  *
  * in :
- * - unia : í•¸ë“¤
- * - input : utf-8 ë¬¸ìì—´(null terminated string)
- * - ouput : spaceë¡œ êµ¬ë¶„ëœ í† í° array
- * - output_len : output bufferì˜ ê¸¸ì´
+ * - unia : ÇÚµé
+ * - input : utf-8 ¹®ÀÚ¿­(null terminated string)
+ * - ouput : space·Î ±¸ºĞµÈ ÅäÅ« array
+ * - output_len : output bufferÀÇ ±æÀÌ
  *
- * out : 0 : ì„±ê³µ 
- *       -1 : ë²„í¼ì˜¤ë²„í”Œë¡œìš°(ë²„í¼ê¸¸ì´ ê¹Œì§€ë§Œ ë¶„ì„)
+ * out : 0 : ¼º°ø 
+ *       -1 : ¹öÆÛ¿À¹öÇÃ·Î¿ì(¹öÆÛ±æÀÌ ±îÁö¸¸ ºĞ¼®)
  */
 int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
 {
@@ -144,7 +146,7 @@ int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
     char pre_word[5] = { 0 };
     int pre_word_type = -1;
 
-    /* bom ì²´í¬í•˜ì—¬ ì¡´ì¬í•˜ë©´ skip */
+    /* bom Ã¼Å©ÇÏ¿© Á¸ÀçÇÏ¸é skip */
     if( check_bom( sp ) ) {
         sp += 3;
     }
@@ -154,11 +156,11 @@ int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
         
         //sleep(1);
         
-        /* ë¬¸ìê°€ ì‹œì‘í–ˆìœ¼ë©´ ì™„ì„±í• ë•Œê¹Œì§€ loop */
+        /* ¹®ÀÚ°¡ ½ÃÀÛÇßÀ¸¸é ¿Ï¼ºÇÒ¶§±îÁö loop */
         if( started_char ) {
             cur_word[cur_char_idx] = *sp;
             
-			/* ë¬¸ìê°€ ì™„ë£Œë¨ */
+			/* ¹®ÀÚ°¡ ¿Ï·áµÊ */
             if(cur_char_idx == (cur_char_len-1))  { // 4byte char -> idx : 0 ~ 3
                 started_char = 0;
                 cur_word[cur_char_idx+1] = '\0';
@@ -199,6 +201,7 @@ int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
 						}
                         output[output_idx] = ' ';
                         output_idx++;
+                        output[output_idx] = '\0';
 					break;
 					default:
 					    if( ! bigram_word_add( output, &output_idx, output_len, cur_word, cur_word_type, pre_word, pre_word_type ) ) {
@@ -220,7 +223,7 @@ int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
         
         unsigned char checkbyte = *sp & 0xF0;
         
-        /* ë¬¸ìì˜ ì‹œì‘ byteë¥¼ ì²´í¬í•˜ì—¬ ë¬¸ìì˜ ê¸¸ì´ ì²´í¬ */
+        /* ¹®ÀÚÀÇ ½ÃÀÛ byte¸¦ Ã¼Å©ÇÏ¿© ¹®ÀÚÀÇ ±æÀÌ Ã¼Å© */
         switch( checkbyte ) {
             case 0xF0: // 4byte char
                 started_char = 1;
@@ -241,13 +244,13 @@ int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
                 //debug("2bytes char[%x][%x]\n", *sp, checkbyte);
             break;
             default:
-                 /* 0x1000(ìµœìƒìœ„ ë¹„íŠ¸ 1) ì´ ì•„ë‹ˆë©´ 1byte char */
+                 /* 0x1000(ÃÖ»óÀ§ ºñÆ® 1) ÀÌ ¾Æ´Ï¸é 1byte char */
                 if( (*sp & 0x80) !=  0x80 ) {
                     started_char = 1;
                     cur_char_len = 1;
                     cur_char_idx = 0;
                 } else {
-                 /* 0x1000 ì´ë©´ utf8ë¬¸ìê°€ ì´ë‹˜ */
+                 /* 0x1000 ÀÌ¸é utf8¹®ÀÚ°¡ ÀÌ´Ô */
                     started_char = 1;
                     cur_char_len = 1;
                     cur_char_idx = 0;
