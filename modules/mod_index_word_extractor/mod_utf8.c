@@ -108,7 +108,7 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 			continue;
 		}
 
-		//warn("add word[%s]", s);
+		warn("add word[%s]", s);
 		strncpy(index_word[index_word_idx].word, strtoupper(s), MAX_WORD_LEN);
 		index_word[index_word_idx].word[MAX_WORD_LEN-1] = '\0';
 		index_word[index_word_idx].pos = *pos;
@@ -118,10 +118,10 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 		if(e == NULL) break;
 		s = e+1;
 
-		//warn("add word[%s]", word);
+		//warn("add word[%s]", s);
 		if(index_word_idx +1 >= max && strlen(s) > 0) {
 			strncpy(handle->remain_token, s, MAX_WORD_LEN);
-			return index_word_idx+1;
+			return index_word_idx;
 		}
 	}
 
@@ -155,8 +155,9 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 		utf8_analyze(handle->unia, curr_token, result, MAX_OUTPUT-1);
 
 		warn("result[%s], index_word_idx[%d], max[%d], [%s]", result, index_word_idx, max, e);
+
 		/*
-		 * DHA의 출력은 공백으로 구분된 색인어 문자열입니다.
+		 * 출력은 공백으로 구분된 색인어 문자열입니다.
 		 */
 		for (s=result; index_word_idx<max;) {
 			e = strchr(s, ' ');
@@ -177,7 +178,7 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
                 continue;
             }
 
-			//warn("word[%s]", s);
+			warn("add word[%s]", s);
 			strncpy(index_word[index_word_idx].word, strtoupper(s), MAX_WORD_LEN);
 			index_word[index_word_idx].word[MAX_WORD_LEN-1] = '\0';
 			index_word[index_word_idx].pos = *pos;
@@ -192,7 +193,7 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 					//warn("save word[%s], index_word_idx[%d]", s, index_word_idx);
 					strncpy(handle->remain_token, s, MAX_WORD_LEN);
                 }
-			    return index_word_idx+1;
+			    return index_word_idx;
             }
 		}
 		

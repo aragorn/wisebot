@@ -152,8 +152,7 @@ int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
     }
 
     for (i = 0; *sp != '\0'; i++) {
-        debug( "scan bytes[%d]sp[%x], cur_char_len[%d], cur_char_idx[%d]\n\n", i, *sp, cur_char_len, cur_char_idx );
-        
+        //debug( "scan bytes[%d]sp[%x], cur_char_len[%d], cur_char_idx[%d]\n\n", i, *sp, cur_char_len, cur_char_idx );
         //sleep(1);
         
         /* 문자가 시작했으면 완성할때까지 loop */
