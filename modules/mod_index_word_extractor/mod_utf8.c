@@ -108,7 +108,7 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 			continue;
 		}
 
-		warn("add word[%s]", s);
+		//warn("add word[%s]", s);
 		strncpy(index_word[index_word_idx].word, strtoupper(s), MAX_WORD_LEN);
 		index_word[index_word_idx].word[MAX_WORD_LEN-1] = '\0';
 		index_word[index_word_idx].pos = *pos;
@@ -151,10 +151,10 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 
 		if(strlen(curr_token) == 0) continue;
 
-		warn("curr_token[%s]", curr_token);
+		//warn("curr_token[%s]", curr_token);
 		utf8_analyze(handle->unia, curr_token, result, MAX_OUTPUT-1);
 
-		warn("result[%s], index_word_idx[%d], max[%d], [%s]", result, index_word_idx, max, e);
+		//warn("result[%s], index_word_idx[%d], max[%d], [%s]", result, index_word_idx, max, e);
 
 		/*
 		 * 출력은 공백으로 구분된 색인어 문자열입니다.
@@ -178,7 +178,7 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
                 continue;
             }
 
-			warn("add word[%s]", s);
+			//warn("add word[%s]", s);
 			strncpy(index_word[index_word_idx].word, strtoupper(s), MAX_WORD_LEN);
 			index_word[index_word_idx].word[MAX_WORD_LEN-1] = '\0';
 			index_word[index_word_idx].pos = *pos;
