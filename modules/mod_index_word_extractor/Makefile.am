@@ -7,7 +7,8 @@ noinst_LTLIBRARIES = mod_bigram.la \
                      mod_kor2chn_translator.la \
                      mod_daum_koma.la \
                      mod_daum_koma_exact.la \
-                     mod_pkoma.la
+                     mod_pkoma.la \
+                     mod_utf8.la
 pkglib_LTLIBRARIES = 
 check_LTLIBRARIES = 
 else
@@ -19,7 +20,8 @@ pkglib_LTLIBRARIES = mod_bigram.la \
                      mod_kor2chn_translator.la \
                      mod_daum_koma.la \
                      mod_daum_koma_exact.la \
-                     mod_pkoma.la
+                     mod_pkoma.la \
+                     mod_utf8.la
 check_LTLIBRARIES = 
 endif
 
@@ -52,6 +54,9 @@ mod_rmas_la_LDFLAGS   = -module $(MODULES_LDFLAGS)
 mod_dummy_ma_la_SOURCES = mod_dummy_ma.c
 mod_dummy_ma_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 mod_dummy_ma_la_LIBADD  = liboldcodetrans.la
+
+mod_utf8_la_SOURCES = mod_utf8.c utf8_analyzer.c
+mod_utf8_la_LDFLAGS = -module $(MODULES_LDFLAGS)
 
 mod_kor2chn_translator_la_SOURCES = mod_kor2chn_translator.c
 mod_kor2chn_translator_la_LDFLAGS = -module $(MODULES_LDFLAGS)
