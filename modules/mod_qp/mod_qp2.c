@@ -270,6 +270,33 @@ static void cut_string(char* text, int maxLen)
 	return;
 }
 
+/**
+ * utf8의 특징
+ * 1. 바이트로 표시된 문자의 최상위 비트는 항상 0이다.
+ * 2. 바이트 이상으로 표시된 문자의 경우, 첫 바이트의 상위 비트들이 그 문자를 표시하는데 필요한 바이트 수를 결정한다.
+ *    예를 들어서 2바이트는 110으로 시작하고, 3바이트는 1110으로 시작한다.
+ * 3. 첫 바이트가 아닌 나머지 바이트들은 상위 2비트가 항상 10이다.
+ *
+ * 마지막부터 scan 해서 첫 byte에 NULL을 셋팅한다.
+ * 결과적으로 마지막 한 글자를 무조건 삭제하게 된다.
+ **/
+static void cut_string_utf8(char* text, int maxLen)
+{
+    char* last_ptr = text + strlen(text) - 1;
+
+	while( 1 ) {
+		if( (((*last_ptr)&0xff) >> 6) != 2 ) {
+			*last_ptr = '\0';
+			break;
+		} else {
+			last_ptr--;
+
+			if( last_ptr == text ) break;
+		}
+    }
+
+	return;
+}
 /////////////////////////////////////////////////////////
 /*    end util                                       */
 /////////////////////////////////////////////////////////
@@ -2351,7 +2378,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 
                             warn("position[%d]", doc_hits->hits[m].std_hit.position-4);
 
-                            if(field_info[k].qpp_morpid == 16) {
+                            if(field_info[k].qpp_morpid == 16 || field_info[k].qpp_morpid == 30) {
 							    summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
                             } else if(field_info[k].qpp_morpid >= 10 && field_info[k].qpp_morpid < 16) {
 							    summary_pos = get_start_comment_koma(field_value, doc_hits->hits[m].std_hit.position-4);
@@ -2364,7 +2391,13 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 									field_info[k].name, summary_pos, doc_hits->hits[m].std_hit.position,
 									field_value);
 							strncpy(summary, field_value + summary_pos, comment_length+1);
-							cut_string( summary, comment_length);
+
+                            if(field_info[k].qpp_morpid == 30) {
+							    cut_string_utf8( summary, comment_length);
+						    } else {
+							    cut_string( summary, comment_length);
+                            }
+
 							exist_summary = 1;
 							break;
 						}
