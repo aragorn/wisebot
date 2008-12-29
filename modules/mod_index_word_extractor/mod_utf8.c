@@ -189,7 +189,7 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 			s = e+1;
 
 		    if(index_word_idx + 1 >= max) {
-                if(strlen(e) > 0) {
+                if(strlen(s) > 0) {
 					//warn("save word[%s], index_word_idx[%d]", s, index_word_idx);
 					strncpy(handle->remain_token, s, MAX_WORD_LEN);
                 }
