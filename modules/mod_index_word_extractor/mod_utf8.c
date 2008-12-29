@@ -192,7 +192,11 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
                 if(strlen(s) > 0) {
 					//warn("save word[%s], index_word_idx[%d]", s, index_word_idx);
 					strncpy(handle->remain_token, s, MAX_WORD_LEN);
-                }
+                } else {
+			        //남은 어절이 없으며, 버퍼가 full 일 경우
+			        (*pos)++;
+			    }
+
 			    return index_word_idx;
             }
 		}
