@@ -63,3 +63,4 @@ extern word_db_t* word_db;
 extern index_db_t* index_db;
 extern indexer_shared_t* indexer_shared;
 extern int max_replication_count;
+extern char default_charset[SHORT_STRING_SIZE+1];

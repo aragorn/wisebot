@@ -155,6 +155,7 @@ static int preprocess_handler(request_rec *r, softbot_handler_rec *s)
     int i = 0;
     int num_of_node = 0;
     QueryNode qnodes[MAX_QUERY_NODES];
+	char content_type[SHORT_STRING_SIZE+1];
 
 	if(apr_table_get(s->parameters_in, "q") == NULL ||
 			strlen(apr_table_get(s->parameters_in, "q")) == 0) {
@@ -168,8 +169,10 @@ static int preprocess_handler(request_rec *r, softbot_handler_rec *s)
     num_of_node = sb_run_preprocess(word_db, (char *)apr_table_get(s->parameters_in, "q"), 
                                     MAX_QUERY_STRING_SIZE, qnodes, MAX_QUERY_NODES);
         
-	ap_set_content_type(r, "text/xml; charset=euc-kr");
-	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
+	snprintf( content_type, SHORT_STRING_SIZE, "text/xml; charset=%s", default_charset);
+	ap_set_content_type(r, content_type);
+	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"%s\"?>\n", default_charset);
+
 	ap_rprintf(r, "<xml>\n");
 
     for ( i=0; i<num_of_node; i++) {
@@ -218,6 +221,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
     int i = 0, j = 0, cmt_idx = 0, deleted_cnt = 0;
 	struct timeval tv;
 	uint32_t start_time = 0, end_time = 0;
+	char content_type[SHORT_STRING_SIZE+1];
 
     init_server(r, s);
 
@@ -316,9 +320,10 @@ static int search_handler(request_rec *r, softbot_handler_rec *s)
 	}
 
 	timelog("send_result_start");
-	ap_set_content_type(r, "text/xml; charset=euc-kr");
-	ap_rprintf(r,
-			"<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
+
+	snprintf( content_type, SHORT_STRING_SIZE, "text/xml; charset=%s", default_charset);
+	ap_set_content_type(r, content_type);
+	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"%s\"?>\n", default_charset);
 
 	ap_rprintf(r, 
 			"<xml>\n"

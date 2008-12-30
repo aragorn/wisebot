@@ -32,6 +32,7 @@ static int view_status_handler(request_rec *r, softbot_handler_rec *s){
 	FILE *fp;
 	char *target;
 	char *module_name;
+	char content_type[SHORT_STRING_SIZE+1];
 
 	CHECK_REQUEST_CONTENT_TYPE(r, NULL);
 	
@@ -114,7 +115,8 @@ static int view_status_handler(request_rec *r, softbot_handler_rec *s){
 	}
 	fclose(fp);
 
-	ap_set_content_type(r, "text/xml; charset=euc-kr");
+    snprintf( content_type, SHORT_STRING_SIZE, "text/xml; charset=%s", default_charset);
+	ap_set_content_type(r, content_type);
 	if( sb_run_sbhandler_append_file(r, file) != SUCCESS ) {
 		error("sb_run_sbhandler_append_file failed");
 		sb_unlink(file);

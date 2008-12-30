@@ -30,14 +30,16 @@ static softbot_handler_key_t index_handler_tbl[] =
 static int last_word_id(request_rec *r, softbot_handler_rec *s)
 {
     uint32_t last_word_id = 0;
+	char content_type[SHORT_STRING_SIZE+1];
 
 	if ( sb_run_get_num_of_word( word_db, &last_word_id ) != SUCCESS ) {
 		warn("lexicon failed to get last wordid");
 		return FAIL;
 	}
 
-	ap_rprintf(r,
-			"<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
+    snprintf( content_type, SHORT_STRING_SIZE, "text/xml; charset=%s", default_charset);
+    ap_set_content_type(r, content_type);
+    ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"%s\"?>\n", default_charset);
 	ap_rprintf(r, 
 			"<xml>\n"
 			    "<item>\n" 
@@ -90,6 +92,7 @@ static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
     char* str_count = 0;
     int count = 0;
     int i = 0;
+	char content_type[SHORT_STRING_SIZE+1];
 
     str_word_id = apr_pstrdup(r->pool, apr_table_get(s->parameters_in, "word_id"));
 
@@ -107,7 +110,10 @@ static int indexed_hit_count(request_rec *r, softbot_handler_rec *s)
         count = atoi(str_count);
     }
 
-	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
+    snprintf( content_type, SHORT_STRING_SIZE, "text/xml; charset=%s", default_charset);
+	ap_set_content_type(r, content_type);
+	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"%s\"?>\n", default_charset);
+
 	ap_rprintf(r, "<xml>\n");
 
     for( i = 0; i < count; i++ ) {
@@ -137,11 +143,14 @@ static int index_status(request_rec *r, softbot_handler_rec *s)
 {
     uint32_t last_registered_docid = 0;
     uint32_t last_indexed_docid = 0;
+	char content_type[SHORT_STRING_SIZE+1];
 
     last_registered_docid = sb_run_cdm_last_docid(cdm_db);
     last_indexed_docid = indexer_shared->last_indexed_docid;
 
-	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"euc-kr\"?>\n");
+    snprintf( content_type, SHORT_STRING_SIZE, "text/xml; charset=%s", default_charset);
+	ap_set_content_type(r, content_type);
+	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"%s\"?>\n", default_charset);
 	ap_rprintf(r, "<xml>\n");
 
 	ap_rprintf(r, 

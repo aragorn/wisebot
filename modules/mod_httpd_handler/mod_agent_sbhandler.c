@@ -769,6 +769,7 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
     int i = 0, j = 0;
 	struct timeval tv;
 	uint32_t start_time = 0, end_time = 0;
+	char content_type[SHORT_STRING_SIZE+1];
 
 	if ( print_elapsed_time ) {
 		gettimeofday(&tv, NULL);
@@ -839,9 +840,9 @@ static int search_handler(request_rec *r, softbot_handler_rec *s){
 		end_time = tv.tv_sec*1000 + tv.tv_usec/1000;
 	}
 
-	ap_set_content_type(r, "text/xml; charset=euc-kr");
-	ap_rprintf(r,
-			"<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n");
+	snprintf( content_type, SHORT_STRING_SIZE, "text/xml; charset=%s", default_charset);
+	ap_set_content_type(r, content_type);
+	ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"%s\"?>\n", default_charset);
 
 	ap_rprintf(r, 
 			"<xml>\n"

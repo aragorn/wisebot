@@ -228,6 +228,7 @@ static int document_select(request_rec *r, softbot_handler_rec *s)
     uint32_t docid = 0;
     char* OID = 0;
     char* DID = 0;
+    char content_type[SHORT_STRING_SIZE+1];
 
     OID = apr_pstrdup(r->pool, apr_table_get(s->parameters_in, "OID"));
     DID = apr_pstrdup(r->pool, apr_table_get(s->parameters_in, "DID"));
@@ -269,7 +270,9 @@ static int document_select(request_rec *r, softbot_handler_rec *s)
 		return FAIL;
 	}
 
-    ap_rwrite("<?xml version=\"1.0\" encoding=\"euc-kr\" ?>", strlen("<?xml version=\"1.0\" encoding=\"euc-kr\" ?>"), r);
+    snprintf( content_type, SHORT_STRING_SIZE, "text/xml; charset=%s", default_charset);
+    ap_set_content_type(r, content_type);
+    ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"%s\"?>\n", default_charset);
     ap_rwrite(canned_doc, strlen(canned_doc), r);
 
     return SUCCESS;
@@ -296,6 +299,7 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
 	int is_raw_koma_text = 0;
     char* contenttype = NULL;
     char* rawkomatext = NULL;
+	char content_type[SHORT_STRING_SIZE+1];
 
     is_binary = equals_content_type(r, "x-softbotd/binary");
 
@@ -466,7 +470,6 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
         int cnt = merge_buffer.data_size / sizeof(index_word_t);
 	    char tag[5];
 
-#define XML_EUC_KR_HEADER "<?xml version=\"1.0\" encoding=\"euc-kr\" ?>\n"
         if(is_plantext) {
 				ap_rprintf(r, "%d\n", cnt);
 				for(i = 0; i < cnt; i++) {
@@ -478,7 +481,10 @@ static int document_ma(request_rec *r, softbot_handler_rec *s)
 					ap_rprintf(r, "%s %d %s\n", idx->word, idx->pos, tag);
 				}
 		} else {
-				ap_rwrite(XML_EUC_KR_HEADER, strlen(XML_EUC_KR_HEADER), r);
+		        snprintf( content_type, SHORT_STRING_SIZE, "text/xml; charset=%s", default_charset);
+			    ap_set_content_type(r, content_type);
+			    ap_rprintf(r, "<?xml version=\"1.0\" encoding=\"%s\"?>\n", default_charset);
+
 				ap_rprintf(r, "<items count=\"%d\">", cnt);
 				for(i = 0; i < cnt; i++) {
 					idx = (index_word_t*)merge_buffer.data + i;
