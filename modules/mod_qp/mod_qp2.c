@@ -2380,7 +2380,7 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
                             warn("position[%d]", doc_hits->hits[m].std_hit.position-4);
 
                             if(field_info[k].qpp_morpid == 30) {
-							    summary_pos = get_start_comment_utf8(field_value, doc_hits->hits[m].std_hit.position-2);
+							    summary_pos = get_start_comment_utf8(field_value, doc_hits->hits[m].std_hit.position-4);
 							} if(field_info[k].qpp_morpid == 16) {
 							    summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
                             } else if(field_info[k].qpp_morpid >= 10 && field_info[k].qpp_morpid < 16) {
