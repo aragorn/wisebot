@@ -181,6 +181,7 @@ static char* output_style_str[] = { "XML", "SOFTBOT4", };
 static int	get_start_comment(char *pszStr, int lPosition);
 static int	get_start_comment_koma(char *pszStr, int lPosition);
 static int	get_start_comment_dha(char *txt, int start_word_pos);
+static int	get_start_comment_utf8(char *txt, int start_word_pos);
 
 static int init_response(response_t* res);
 static int init_request(request_t* res, char* query);
@@ -2378,7 +2379,9 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 
                             warn("position[%d]", doc_hits->hits[m].std_hit.position-4);
 
-                            if(field_info[k].qpp_morpid == 16 || field_info[k].qpp_morpid == 30) {
+                            if(field_info[k].qpp_morpid == 30) {
+							    summary_pos = get_start_comment_utf8(field_value, doc_hits->hits[m].std_hit.position-2);
+							} if(field_info[k].qpp_morpid == 16) {
 							    summary_pos = get_start_comment_dha(field_value, doc_hits->hits[m].std_hit.position-4);
                             } else if(field_info[k].qpp_morpid >= 10 && field_info[k].qpp_morpid < 16) {
 							    summary_pos = get_start_comment_koma(field_value, doc_hits->hits[m].std_hit.position-4);
@@ -2387,9 +2390,13 @@ static int get_comment(request_t* req, doc_hit_t* doc_hits, select_list_t* sl, c
 							    summary_pos = get_start_comment(field_value, doc_hits->hits[m].std_hit.position-4);
                             }
 
+/*
 							debug("%s SUM summary_pos[%d], position[%u], [%s]",
 									field_info[k].name, summary_pos, doc_hits->hits[m].std_hit.position,
 									field_value);
+*/
+							info("%s SUM summary_pos[%d], position[%u]",
+									field_info[k].name, summary_pos, doc_hits->hits[m].std_hit.position);
 							strncpy(summary, field_value + summary_pos, comment_length+1);
 
                             if(field_info[k].qpp_morpid == 30) {
@@ -2539,6 +2546,77 @@ static int	get_start_comment_dha(char *txt, int start_word_pos)
 		if(byte_pos < 0) byte_pos = 0;
 	}
 	*/
+
+    return byte_pos;
+}
+
+/*
+ * byte order mark check.
+ * http://ko.wikipedia.org/wiki/바이트_순서_표식
+ *
+ * in : 문서 최초 3byte
+ * out : 0 : 없음
+ *       1 : 있음
+ */
+static int check_bom(unsigned char* header) {
+    if( strlen( header ) < 3 ) {
+        return 0;
+    } else if( header[0] == 0xEF &&
+               header[1] == 0xBB &&
+               header[2] == 0xBF ) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static int	get_start_comment_utf8(char *txt, int start_word_pos)
+{
+    int word_pos = 1;
+    char* p = txt;
+    int byte_pos = 0;
+
+	if (p == NULL) return 0;
+    if (start_word_pos <= 0) return 0;
+
+    /* bom 체크하여 존재하면 skip */
+    if( check_bom( p ) ) {
+        p += 3;
+    }
+
+    while(1) {
+        if(p == NULL) break;
+
+		if( IS_WHITE(*p) ) {
+			word_pos++;
+			byte_pos++;
+			p++;
+
+		    if(*p == '\0') return 0;
+
+			while( IS_WHITE(*p) ) {
+				byte_pos++;
+				p++;
+
+		        if(*p == '\0') return 0;
+			}
+
+/*
+           {
+			   char buf[128];
+			   strncpy(buf, p, 6);
+			   buf[7] = '\0';
+			   warn("word[%s], pos[%d]", buf, word_pos);
+		   }
+*/
+        } else {
+			byte_pos++;
+			p++;
+        }
+
+        if(word_pos == start_word_pos) break;
+		if(*p == '\0') return 0;
+    } 
 
     return byte_pos;
 }

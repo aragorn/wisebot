@@ -6,8 +6,7 @@
 
 static int check_bom(unsigned char* header);
 static int bigram_word_add(char* output, int* output_idx, int output_len,
-                    char* cur_word, int cur_word_type, 
-					char* pre_word, int pre_word_type);
+                    char* cur_word, char* pre_word);
 /*
  * uni_type_index 분석기 생성
  *
@@ -65,37 +64,20 @@ int check_bom(unsigned char* header) {
  *    output_idx : 출력버퍼의 입력 위치
  *    output_len : 출력버퍼의 길이
  *    cur_word : 현재 문자
- *    cur_word_type : 현재 문자의 타입
  *    pre_word : 이전 문자
- *    pre_word_type : 이전 문자의 타입
  *
  * out : 0 : 실패
  *       1 : 성공
  */
 int bigram_word_add(char* output, int* output_idx, int output_len,
-                    char* cur_word, int cur_word_type, 
-					char* pre_word, int pre_word_type)
+                    char* cur_word, char* pre_word)
 {
     if( *output_idx == (output_len-1) ) {
 	    warn("output buffer overflower, output_idx[%d], output_len[%d]", *output_idx, output_len);
         return 0;
 	}
 
-    if( cur_word_type == T_BLN ||
-        cur_word_type == T_SPC ||
-        cur_word_type == T_SYM ||
-        cur_word_type == T_CTK ||
-		cur_word_type < 0 ) {
-
-        output[*output_idx] = ' ';
-        (*output_idx)++;
-	} else if( pre_word_type == T_BLN ||
-			pre_word_type == T_SPC ||
-			pre_word_type == T_SYM ||
-			pre_word_type == T_CTK ||
-			pre_word_type < 0 ) {
-		; // do nothing
-	} else {
+	if( strlen( pre_word ) > 0 ) {
 		if( *output_idx == (output_len-2) ) {
 			warn("output buffer overflower, output_idx[%d], output_len[%d]", *output_idx, output_len);
 			return 0;
@@ -113,7 +95,7 @@ int bigram_word_add(char* output, int* output_idx, int output_len,
 
         output[(*output_idx)] = '\0';
 	}
-
+	
     return 1;
 }
 
@@ -139,12 +121,9 @@ int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
     int cur_char_idx = 0;
     int output_idx = 0;
     int i;
-    unsigned short uni_type_index = 0x0000;
 
     char cur_word[5] = { 0 };
-    int cur_word_type = -1;
     char pre_word[5] = { 0 };
-    int pre_word_type = -1;
 
     /* bom 체크하여 존재하면 skip */
     if( check_bom( sp ) ) {
@@ -164,55 +143,13 @@ int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
                 started_char = 0;
                 cur_word[cur_char_idx+1] = '\0';
 
-                switch( cur_char_len ) { 
-                    case 1:
-                        uni_type_index = (unsigned short)cur_word[0];
-                    break;
-                    case 2:
-                        uni_type_index = (unsigned short)cur_word[0] & 0x1f;
-                        uni_type_index = uni_type_index << 6;
-                        uni_type_index = uni_type_index | ((unsigned short)cur_word[1] & 0x3f);
-                    break;
-                    case 3:
-                        uni_type_index = (unsigned short)cur_word[0] & 0x0f;
-                        uni_type_index = uni_type_index << 6;
-                        uni_type_index = uni_type_index | ((unsigned short)cur_word[1] & 0x3f);
-                        uni_type_index = uni_type_index << 6;
-                        uni_type_index = uni_type_index | ((unsigned short)cur_word[2] & 0x3f);
-                    break;
-                    default:
-                    break;
-                }
-
-                cur_word_type = cType2[uni_type_index];
-				switch( cur_word_type ) {
-					case T_BLN: /* blank characters */
-					case T_SPC: /* special characters */
-					case T_SYM: /* symbolic characters */
-					case T_CTK: /* control characters */
-						switch( (char)uni_type_index ) {
-							case '+':
-							case '.':
-							case ',':
-							break;
-							default:
-                            break;
-						}
-                        output[output_idx] = ' ';
-                        output_idx++;
-                        output[output_idx] = '\0';
-					break;
-					default:
-					    if( ! bigram_word_add( output, &output_idx, output_len, cur_word, cur_word_type, pre_word, pre_word_type ) ) {
-					        warn("can not add bigram words");
-							return -1;
-						}
-						strcpy( pre_word, cur_word);
-						pre_word_type = cur_word_type;
-						debug("word[%s]", cur_word);
-					break;
+				if( ! bigram_word_add( output, &output_idx, output_len, cur_word, pre_word ) ) {
+					warn("can not add bigram words");
+					return -1;
 				}
-                uni_type_index = 0x0000;
+
+				strcpy( pre_word, cur_word);
+				debug("word[%s]", cur_word);
             }
             
             cur_char_idx++;
@@ -258,6 +195,18 @@ int utf8_analyze(unia_t* unia, char* input, char* output, int output_len)
             break;
         }
     }
+
+    // 외글자인 경우 색인어로 채택
+    if( strlen(pre_word) == 0 ) {
+	    // word add.
+        strcpy( output[output_idx], cur_word );
+        output_idx += strlen(cur_word);
+
+        output[output_idx] = ' ';
+        output_idx++;
+
+        output[output_idx] = '\0';
+	}
 
     return 1;
 }

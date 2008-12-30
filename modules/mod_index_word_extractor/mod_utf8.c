@@ -68,7 +68,7 @@ static int unia_set_text(index_word_extractor_t* extractor, const char* text)
 
 	handle->text = sb_trim(text);
 	handle->next_text = sb_trim(text);
-	handle->position = 1;
+	handle->position = 0;
 	handle->remain_token[0] = '\0';
 	
 	return SUCCESS;
@@ -102,32 +102,37 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 		}
 
 		if(strlen(s) == 0) {
-			if(e == NULL) break;
+			if(e == NULL) {
+		        //warn("1 : remain text end...break : *pos[%d], index_word_idx[%d], e[%s]", *pos, index_word_idx, e);
+			
+			    break;
+			}
 
 			s = e+1;
 			continue;
 		}
 
-		//warn("add word[%s]", s);
+		//warn("1 : add word[%s], *pos[%d], index_word_idx[%d]", s, *pos, index_word_idx);
+
 		strncpy(index_word[index_word_idx].word, strtoupper(s), MAX_WORD_LEN);
 		index_word[index_word_idx].word[MAX_WORD_LEN-1] = '\0';
 		index_word[index_word_idx].pos = *pos;
 		index_word[index_word_idx].len = strlen(index_word[index_word_idx].word);
 		index_word_idx++;
 		
-		if(e == NULL) break;
+		if(e == NULL) {
+		    //warn("2 : remain text end...break : *pos[%d], index_word_idx[%d], e[%s]", *pos, index_word_idx, e);
+
+		    break;
+		}
 		s = e+1;
 
-		//warn("add word[%s]", s);
 		if(index_word_idx +1 >= max && strlen(s) > 0) {
 			strncpy(handle->remain_token, s, MAX_WORD_LEN);
+
+		    //warn("remain text end...return : *pos[%d], index_word_idx[%d], e[%s]", *pos, index_word_idx, e);
 			return index_word_idx;
 		}
-	}
-
-	// 나머지를 다 처리했으면 position 증가
-	if(strlen(handle->remain_token) > 0) {
-        (*pos)++;
 	}
 
 	handle->remain_token[0] = '\0';
@@ -149,10 +154,11 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 			}
 		}
 
-		if(strlen(curr_token) == 0) continue;
+		if(strlen( sb_trim(curr_token) ) == 0) continue;
 
-		//warn("curr_token[%s]", curr_token);
+		//warn("curr_token[%s], trim txt[%s]", curr_token, sb_trim(curr_token));
 		utf8_analyze(handle->unia, curr_token, result, MAX_OUTPUT-1);
+		(*pos)++;
 
 		//warn("result[%s], index_word_idx[%d], max[%d], [%s]", result, index_word_idx, max, e);
 
@@ -172,36 +178,42 @@ static int unia_analyze(index_word_extractor_t *extractor, index_word_t *index_w
 			//warn("word[%s]", s);
 
             if(strlen(s) == 0) {
-				if(e == NULL) break;
+				if(e == NULL) {
+		            //warn("1 text end...return : *pos[%d], index_word_idx[%d], e[%s]", *pos, index_word_idx, e);
+
+				    break;
+				}
 
 				s = e+1;
                 continue;
             }
 
-			//warn("add word[%s]", s);
+		    //warn("2 : add word[%s], *pos[%d], index_word_idx[%d]", s, *pos, index_word_idx);
+
 			strncpy(index_word[index_word_idx].word, strtoupper(s), MAX_WORD_LEN);
 			index_word[index_word_idx].word[MAX_WORD_LEN-1] = '\0';
 			index_word[index_word_idx].pos = *pos;
 			index_word[index_word_idx].len = strlen(index_word[index_word_idx].word);
 			index_word_idx++;
 			
-			if(e == NULL) break;
+			if(e == NULL) {
+		        //warn("2 text end...return : *pos[%d], index_word_idx[%d], e[%s]", *pos, index_word_idx, e);
+			
+				break;
+			}
 			s = e+1;
 
 		    if(index_word_idx + 1 >= max) {
-                if(strlen(s) > 0) {
+                if(strlen( sb_trim(s) ) > 0) {
 					//warn("save word[%s], index_word_idx[%d]", s, index_word_idx);
 					strncpy(handle->remain_token, s, MAX_WORD_LEN);
-                } else {
-			        //남은 어절이 없으며, 버퍼가 full 일 경우
-			        (*pos)++;
-			    }
+                }
 
+		        //warn("text end...return : *pos[%d], index_word_idx[%d], e[%s]", *pos, index_word_idx, e);
+ 
 			    return index_word_idx;
             }
 		}
-		
-		(*pos)++;
 	} // loop 
 
 	handle->remain_token[0] = '\0';
